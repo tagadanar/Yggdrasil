@@ -2,110 +2,171 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { transformSkillsToGraph, initializeUserProgress } from '../../lib/skillTreeUtils';
-import { UserProgress } from '../../types/skills';
 
-// Dynamically import the SkillGraph component to avoid SSR issues with the Canvas
-const SkillGraph = dynamic(
-  () => import('../../components/SkillTree/SkillGraph'),
-  { ssr: false }
-);
+const SkillGraph = dynamic(() => import('../../components/SkillTree/SkillGraph'), {
+  ssr: false,
+});
+import PlayerPanel from '../../components/SkillTree/PlayerPanel';
+import skillsData from '../../data/skills';
+import { SkillGraph as SkillGraphType, UserProgress, Module, SkillNode, SkillLink } from '../../types/skills';
+import { unlockSkill } from '../../lib/skillTreeUtils';
 
 export default function SkillsPage() {
-  const [userProgress, setUserProgress] = useState<UserProgress>(initializeUserProgress());
-  const [initialized, setInitialized] = useState(false);
+  const [userProgress, setUserProgress] = useState<UserProgress>({
+    playerName: '',
+    unlockedSkills: {}
+  });
   
-  // Load saved progress from localStorage on client-side
+  const [graphData, setGraphData] = useState<SkillGraphType>({
+    nodes: [],
+    links: []
+  });
+  
+  // Initialize graph data from skills.json
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedProgress = localStorage.getItem('skillTreeProgress');
-      if (savedProgress) {
-        try {
-          setUserProgress(JSON.parse(savedProgress));
-        } catch (e) {
-          console.error('Failed to parse saved progress:', e);
+    const nodes: SkillNode[] = [];
+    const links: SkillLink[] = [];
+    
+    // Add fundamental skills as central nodes
+    skillsData.fundamental_skills.forEach(skill => {
+      nodes.push({
+        id: skill.id,
+        name: skill.nom,
+        description: skill.description,
+        level: 0,
+        actions_cles: [],
+        concepts_acquis: [],
+        skillPoints: {
+          problem_solving: 0,
+          coding_implementation: 0,
+          systems_thinking: 0,
+          collaboration_communication: 0,
+          learning_adaptability: 0
+        },
+        isUnlocked: true,
+        canUnlock: true,
+        unlockedAt: new Date()
+      });
+    });
+    
+    // Add domain nodes and their modules
+    skillsData.domaines_principaux.forEach((domain, domainIndex) => {
+      // Add domain node
+      const domainNode: SkillNode = {
+        id: domain.id,
+        name: domain.titre,
+        description: '',
+        level: 1,
+        actions_cles: [],
+        concepts_acquis: [],
+        skillPoints: {
+          problem_solving: 0,
+          coding_implementation: 0,
+          systems_thinking: 0,
+          collaboration_communication: 0,
+          learning_adaptability: 0
+        },
+        isUnlocked: true,
+        canUnlock: true,
+        unlockedAt: new Date()
+      };
+      nodes.push(domainNode);
+      
+      // Link domain to fundamental skills
+      skillsData.fundamental_skills.forEach(skill => {
+        const skillNode = nodes.find(n => n.id === skill.id);
+        if (skillNode) {
+          links.push({
+            source: domainNode,
+            target: skillNode,
+            value: 1
+          });
         }
-      }
-      setInitialized(true);
-    }
+      });
+      
+      // Add module nodes and link them to domain
+      domain.modules.forEach((module, moduleIndex) => {
+        const moduleId = `${domain.id}_${moduleIndex}`;
+        const moduleNode: SkillNode = {
+          id: moduleId,
+          name: module.titre,
+          description: '',
+          level: 2,
+          actions_cles: module.actions_cles,
+          concepts_acquis: module.concepts_acquis,
+          skillPoints: module.skill_points,
+          isUnlocked: false,
+          canUnlock: true,
+          unlockedAt: undefined
+        };
+        nodes.push(moduleNode);
+        
+        // Link module to domain
+        links.push({
+          source: moduleNode,
+          target: domainNode,
+          value: 2
+        });
+      });
+    });
+    
+    setGraphData({ nodes, links });
+    
+    // Initialize user progress with fundamental skills
+    const initialProgress: UserProgress = {
+      playerName: '',
+      unlockedSkills: {}
+    };
+    
+    // Add fundamental skills as unlocked
+    skillsData.fundamental_skills.forEach(skill => {
+      initialProgress.unlockedSkills[skill.id] = {
+        id: skill.id,
+        name: skill.nom,
+        description: skill.description,
+        level: 0,
+        actions_cles: [],
+        concepts_acquis: [],
+        skillPoints: {
+          problem_solving: 0,
+          coding_implementation: 0,
+          systems_thinking: 0,
+          collaboration_communication: 0,
+          learning_adaptability: 0
+        },
+        isUnlocked: true,
+        canUnlock: true,
+        unlockedAt: new Date()
+      };
+    });
+    
+    setUserProgress(initialProgress);
   }, []);
   
-  // Save progress to localStorage when it changes
-  useEffect(() => {
-    if (initialized && typeof window !== 'undefined') {
-      localStorage.setItem('skillTreeProgress', JSON.stringify(userProgress));
-    }
-  }, [userProgress, initialized]);
-  
-  // Transform skills data for visualization
-  const skillGraph = transformSkillsToGraph(userProgress);
-  
-  // Handle progress updates
-  const handleProgressUpdate = (updatedProgress: UserProgress) => {
-    setUserProgress(updatedProgress);
+  const handleProgressUpdate = (progress: UserProgress) => {
+    setUserProgress(progress);
   };
   
-  // Show loading state until client-side initialization is complete
-  if (!initialized) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-900">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-teal-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-slate-300">Chargement de l'arbre de compétences...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleNameChange = (name: string) => {
+    setUserProgress(prev => ({
+      ...prev,
+      playerName: name
+    }));
+  };
   
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100">
-      <header className="p-4 bg-slate-800 border-b border-slate-700">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-teal-400">Arbre de Compétences</h1>
-          <div className="flex items-center space-x-4">
-            <div className="bg-slate-700 px-3 py-1 rounded-full text-sm">
-              <span>Skills débloqués: {userProgress.unlockedSkills.length}</span>
-            </div>
-            <button 
-              onClick={() => setUserProgress(initializeUserProgress())}
-              className="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-full text-sm transition-colors"
-            >
-              Réinitialiser
-            </button>
-          </div>
-        </div>
-      </header>
-      
-      <main className="relative w-full h-[calc(100vh-64px)]">
-        <div className="absolute inset-0">
-          <SkillGraph 
-            data={skillGraph} 
-            userProgress={userProgress}
-            onProgressUpdate={handleProgressUpdate}
-          />
-        </div>
-        
-        <div className="absolute bottom-4 left-4 right-4 bg-slate-800/80 backdrop-blur-sm p-3 rounded-lg max-w-md text-sm">
-          <p className="mb-2">
-            <span className="text-teal-400 font-medium">Double-cliquez</span> sur un nœud disponible pour le débloquer.
-            <span className="text-teal-400 font-medium ml-2">Glissez</span> pour explorer l'arbre.
-          </p>
-          <div className="flex items-center space-x-4 text-xs text-slate-400">
-            <div className="flex items-center">
-              <span className="inline-block w-3 h-3 rounded-full bg-teal-400 mr-1"></span>
-              Débloqué
-            </div>
-            <div className="flex items-center">
-              <span className="inline-block w-3 h-3 rounded-full bg-teal-600 mr-1"></span>
-              Disponible
-            </div>
-            <div className="flex items-center">
-              <span className="inline-block w-3 h-3 rounded-full bg-slate-600 mr-1"></span>
-              Verrouillé
-            </div>
-          </div>
-        </div>
-      </main>
+    <div className="flex h-screen">
+      <div className="flex-1">
+        <SkillGraph
+          data={graphData}
+          userProgress={userProgress}
+          onProgressUpdate={handleProgressUpdate}
+        />
+      </div>
+      <PlayerPanel
+        userProgress={userProgress}
+        onNameChange={handleNameChange}
+      />
     </div>
   );
 } 

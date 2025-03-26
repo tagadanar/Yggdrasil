@@ -1,4 +1,4 @@
-import { SkillGraph, SkillNode, SkillLink, UserProgress } from '../types/skills';
+import { SkillGraph, SkillNode, SkillLink, UserProgress, Module } from '../types/skills';
 import skillsData from '../skills.json';
 
 /**
@@ -135,15 +135,60 @@ export function initializeUserProgress(): UserProgress {
   };
 }
 
-/**
- * Unlock a skill and update user progress
- */
-export function unlockSkill(skillId: string, progress: UserProgress): UserProgress {
-  if (!progress.unlockedSkills.includes(skillId) && canUnlockSkill(skillId, progress)) {
-    return {
-      ...progress,
-      unlockedSkills: [...progress.unlockedSkills, skillId]
-    };
+const logMessages = [
+  "Félicitations ! Vous avez débloqué {module}. Une nouvelle étape dans votre parcours !",
+  "Bravo ! {module} est maintenant accessible. Continuez votre progression !",
+  "Vous venez de débloquer {module}. De nouvelles connaissances vous attendent !",
+  "Un nouveau chapitre s'ouvre avec {module}. Explorez-le !",
+  "Excellent travail ! {module} est désormais disponible pour approfondir vos compétences."
+];
+
+export function generateLogMessage(moduleName: string): string {
+  const template = logMessages[Math.floor(Math.random() * logMessages.length)];
+  return template.replace('{module}', moduleName);
+}
+
+export function formatDate(date: Date): string {
+  return date.toLocaleString('fr-FR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+export function unlockSkill(userProgress: UserProgress, moduleId: string, module: Module): UserProgress {
+  const now = new Date();
+  
+  const unlockedSkills = {
+    ...userProgress.unlockedSkills,
+    [moduleId]: {
+      ...module,
+      unlockedAt: now,
+      logMessage: generateLogMessage(module.name),
+      formattedDate: formatDate(now),
+      isUnlocked: true,
+      canUnlock: false
+    }
+  };
+
+  // If "Rejoindre l'école" is unlocked, unlock all other nodes
+  if (moduleId === 'join_school') {
+    Object.keys(unlockedSkills).forEach(key => {
+      if (key !== 'join_school' && unlockedSkills[key]) {
+        unlockedSkills[key] = {
+          ...unlockedSkills[key],
+          isUnlocked: true,
+          canUnlock: false
+        };
+      }
+    });
   }
-  return progress;
+
+  return {
+    ...userProgress,
+    unlockedSkills
+  };
 } 
