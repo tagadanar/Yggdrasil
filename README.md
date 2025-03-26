@@ -12,7 +12,7 @@ Yggdrasil is a dynamic skill tracking and visualization platform designed to hel
 
 ### Prerequisites
 
-- Node.js (v18+)
+- Node.js (v18.18.0 or higher, v23+ recommended)
 - npm or yarn
 
 ### Quick Start
