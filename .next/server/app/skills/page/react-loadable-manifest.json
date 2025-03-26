@@ -1,0 +1,10 @@
+{
+  "[project]/components/SkillTree/SkillGraph.tsx [app-client] (ecmascript, next/dynamic entry)": {
+    "id": "[project]/components/SkillTree/SkillGraph.tsx [app-client] (ecmascript, next/dynamic entry)",
+    "files": [
+      "static/chunks/node_modules_19c1aca7._.js",
+      "static/chunks/components_SkillTree_SkillGraph_tsx_2d69673f._.js",
+      "static/chunks/components_SkillTree_SkillGraph_tsx_c6f5dfcc._.js"
+    ]
+  }
+}

@@ -1,0 +1,575 @@
+{
+  "titre_parcours": "Parcours de Compétences en Ingénierie Logicielle – Approche par la Pratique",
+  "philosophie": "Chaque compétence est acquise en réalisant des projets concrets. On commence par 'faire', puis on explore la théorie pour comprendre 'pourquoi' et 'comment' mieux faire.",
+  "fundamental_skills": [
+    { "id": "problem_solving", "nom": "Résolution de Problèmes & Algorithmique", "description": "Capacité à analyser un problème, concevoir une solution logique et efficace, et choisir les bonnes structures/algorithmes." },
+    { "id": "coding_implementation", "nom": "Codage & Implémentation", "description": "Maîtrise de la syntaxe, des outils (IDE, debuggers), des paradigmes de programmation et capacité à écrire du code fonctionnel et propre." },
+    { "id": "systems_thinking", "nom": "Pensée Systémique & Architecture", "description": "Compréhension des interactions entre les différentes couches (matériel, OS, réseau, BDD, application) et conception de systèmes cohérents." },
+    { "id": "collaboration_communication", "nom": "Collaboration & Communication", "description": "Aptitude à travailler en équipe, utiliser les outils collaboratifs (Git), documenter et communiquer efficacement sur des sujets techniques." },
+    { "id": "learning_adaptability", "nom": "Apprentissage Continu & Adaptabilité", "description": "Capacité à acquérir rapidement de nouvelles compétences techniques, à s'adapter aux changements et à mener une veille technologique." }
+  ],
+  "domaines_principaux": [
+    {
+      "id": "1_Creer_Premiers_Programmes",
+      "titre": "1. Créer ses Premiers Programmes (Les Bases par l'Action)",
+      "modules": [
+        {
+          "titre": "1.1. Automatiser des Tâches Simples (Introduction au code)",
+          "actions_cles": [
+            "Écrire des scripts (Shell, Python) pour manipuler des fichiers, du texte.",
+            "Utiliser un terminal et les commandes de base (Navigation, gestion fichiers)."
+          ],
+          "concepts_acquis": [ "Variables", "Conditions", "Boucles", "Fonctions simples", "Entrée/sortie" ],
+          "skill_points": {
+            "problem_solving": 2,
+            "coding_implementation": 3,
+            "systems_thinking": 1,
+            "collaboration_communication": 0,
+            "learning_adaptability": 3
+          }
+        },
+        {
+          "titre": "1.2. Développer un Petit Jeu ou Utilitaire en C (Maîtrise bas niveau)",
+          "actions_cles": [
+            "Gérer la mémoire manuellement (malloc/free).",
+            "Manipuler les pointeurs et les structures de données simples (tableaux, listes chaînées).",
+            "Compiler et débugger son code."
+          ],
+          "concepts_acquis": [ "Compilation", "Types de données", "Pointeurs", "Gestion mémoire", "Structures de contrôle", "Modularité basique" ],
+          "skill_points": {
+            "problem_solving": 4,
+            "coding_implementation": 5,
+            "systems_thinking": 2,
+            "collaboration_communication": 1,
+            "learning_adaptability": 3
+          }
+        },
+        {
+          "titre": "1.3. Partager et Versionner son Code (Outils collaboratifs)",
+          "actions_cles": [
+            "Utiliser Git pour suivre les modifications (commit, branch, merge).",
+            "Collaborer sur un dépôt distant (GitHub/GitLab)."
+          ],
+          "concepts_acquis": [ "Contrôle de version décentralisé", "Bonnes pratiques de commit" ],
+          "skill_points": {
+            "problem_solving": 1,
+            "coding_implementation": 1,
+            "systems_thinking": 1,
+            "collaboration_communication": 5,
+            "learning_adaptability": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "2_Construire_Applications_Web",
+      "titre": "2. Construire des Applications Web Complètes (Du Navigateur à la Base de Données)",
+      "modules": [
+        {
+          "titre": "2.1. Créer une Interface Web Interactive (Front-End)",
+          "actions_cles": [
+            "Structurer une page (HTML), la styliser (CSS).",
+            "Ajouter de l'interactivité (JavaScript, DOM).",
+            "Utiliser un framework front-end (React, Vue ou Angular) pour une application monopage (SPA).",
+            "Appeler des APIs externes."
+          ],
+          "concepts_acquis": [ "Modèle client-serveur", "HTTP", "Rendu navigateur", "Frameworks JS", "État applicatif front-end" ],
+          "skill_points": {
+            "problem_solving": 2,
+            "coding_implementation": 4,
+            "systems_thinking": 1,
+            "collaboration_communication": 2,
+            "learning_adaptability": 4
+          }
+        },
+        {
+          "titre": "2.2. Développer le Cerveau de l'Application (Back-End)",
+          "actions_cles": [
+            "Mettre en place un serveur web (Node.js/Express, Python/Django/Flask, Java/Spring Boot).",
+            "Créer des APIs (RESTful, introduction à GraphQL) pour communiquer avec le front-end.",
+            "Gérer l'authentification et les sessions utilisateur."
+          ],
+          "concepts_acquis": [ "Frameworks back-end", "Routage", "Middlewares", "Sécurité web basique (authentification)", "ORM simples" ],
+          "skill_points": {
+            "problem_solving": 4,
+            "coding_implementation": 4,
+            "systems_thinking": 3,
+            "collaboration_communication": 2,
+            "learning_adaptability": 3
+          }
+        },
+        {
+          "titre": "2.3. Stocker et Récupérer des Données (Bases de Données)",
+          "actions_cles": [
+            "Concevoir un schéma de base de données relationnelle (SQL).",
+            "Écrire des requêtes SQL (CRUD, jointures).",
+            "Utiliser une base de données NoSQL (ex: MongoDB) pour des cas d'usage spécifiques.",
+            "Connecter l'application back-end à la base de données."
+          ],
+          "concepts_acquis": [ "Modélisation de données (Entité-Association, Relationnel)", "SGBDR vs NoSQL", "Transactions ACID (bases)", "Indexation basique" ],
+          "skill_points": {
+            "problem_solving": 4,
+            "coding_implementation": 2,
+            "systems_thinking": 3,
+            "collaboration_communication": 1,
+            "learning_adaptability": 2
+          }
+        },
+        {
+          "titre": "2.4. Assembler le Tout : Projet Full-Stack",
+          "actions_cles": [
+            "Intégrer Front-end, Back-end et Base de données dans un projet cohérent.",
+            "Déployer une première version simple (ex: sur une VM, Heroku, Netlify)."
+          ],
+          "concepts_acquis": [ "Architecture N-tiers simple", "Déploiement applicatif basique", "Variables d'environnement" ],
+          "skill_points": {
+            "problem_solving": 3,
+            "coding_implementation": 3,
+            "systems_thinking": 4,
+            "collaboration_communication": 4, 
+            "collaboration_communication_comment": "assuming team project",
+            "learning_adaptability": 2
+          }
+        }
+      ]
+    },
+        {
+      "id": "3_Industrialiser_Developpement",
+      "titre": "3. Industrialiser et Fiabiliser le Développement (Passer à l'Échelle Pro)",
+      "modules": [
+        {
+          "titre": "3.1. Écrire du Code de Qualité et le Tester",
+          "actions_cles": [
+            "Appliquer les principes SOLID et les Design Patterns simples en Orienté Objet (Java, C# ou C++).",
+            "Écrire des tests unitaires et d'intégration (JUnit, pytest, Jest...).",
+            "Mettre en place des pratiques de revue de code systématique.",
+            "Utiliser des linters et formateurs de code."
+          ],
+          "concepts_acquis": [ "POO avancée (interfaces, classes abstraites)", "Design Patterns (GoF basiques)", "TDD/BDD", "Qualité logicielle", "Dette technique", "Refactoring" ],
+          "skill_points": {
+            "problem_solving": 4,
+            "coding_implementation": 4,
+            "systems_thinking": 2,
+            "collaboration_communication": 3,
+            "collaboration_communication_comment": "code review",
+            "learning_adaptability": 3
+          }
+        },
+        {
+          "titre": "3.2. Travailler Efficacement en Équipe (Méthodes Agiles)",
+          "actions_cles": [
+            "Participer à un projet en Scrum ou Kanban (Rituels, rôles).",
+            "Gérer un backlog produit, estimer des tâches (points, idéal jours).",
+            "Utiliser des outils de suivi de projet (Jira, Trello, Asana)."
+          ],
+          "concepts_acquis": [ "Manifeste Agile & Principes", "Flux de travail (Workflow)", "Collaboration et communication d'équipe", "Gestion de projet Agile" ],
+          "skill_points": {
+            "problem_solving": 2,
+            "coding_implementation": 1,
+            "systems_thinking": 1,
+            "collaboration_communication": 5,
+            "learning_adaptability": 2
+          }
+        },
+        {
+          "titre": "3.3. Automatiser la Chaîne de Production (CI/CD & DevOps)",
+          "actions_cles": [
+            "Configurer un pipeline d'intégration continue (GitLab CI, GitHub Actions, Jenkins).",
+            "Automatiser les tests, le build et l'analyse statique.",
+            "Mettre en place un déploiement continu simple sur un environnement de test/staging."
+          ],
+          "concepts_acquis": [ "Automatisation (Build, Test, Deploy)", "Culture DevOps", "Infrastructure as Code (initiation)", "Gestion des artefacts" ],
+          "skill_points": {
+            "problem_solving": 2,
+            "coding_implementation": 2,
+            "systems_thinking": 4,
+            "collaboration_communication": 3,
+            "learning_adaptability": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "4_Gerer_Infrastructure",
+      "titre": "4. Gérer l'Infrastructure Sous-jacente (Faire Tourner les Applications)",
+      "modules": [
+        {
+          "titre": "4.1. Maîtriser l'Environnement Linux",
+          "actions_cles": [
+            "Administrer un serveur Linux (installation, gestion des paquets, utilisateurs, permissions).",
+            "Configurer des services courants (serveur web Nginx/Apache, BDD PostgreSQL/MySQL).",
+            "Scripting avancé (Bash, Python) pour l'automatisation des tâches d'admin.",
+            "Diagnostiquer des problèmes système (logs, monitoring basique)."
+          ],
+          "concepts_acquis": [ "Administration système Linux", "Principes des OS (Processus, mémoire, FS, I/O)", "Ligne de commande avancée" ],
+          "skill_points": {
+            "problem_solving": 3,
+            "coding_implementation": 2,
+            "coding_implementation_comment": "scripting",
+            "systems_thinking": 5,
+            "collaboration_communication": 1,
+            "learning_adaptability": 3
+          }
+        },
+        {
+          "titre": "4.2. Comprendre et Configurer les Réseaux",
+          "actions_cles": [
+            "Mettre en place un petit réseau local (adressage IP, sous-réseaux, routage simple).",
+            "Configurer des services réseau (DNS, DHCP).",
+            "Analyser le trafic réseau (Wireshark, tcpdump).",
+            "Configurer un pare-feu (iptables/ufw)."
+          ],
+          "concepts_acquis": [ "Modèle TCP/IP & OSI", "Protocoles réseau clés (IP, TCP, UDP, HTTP, DNS...)", "Sécurité réseau de base (pare-feu, NAT)" ],
+          "skill_points": {
+            "problem_solving": 3,
+            "coding_implementation": 1,
+            "systems_thinking": 5,
+            "collaboration_communication": 1,
+            "learning_adaptability": 3
+          }
+        },
+        {
+          "titre": "4.3. Virtualiser et Conteneuriser les Applications",
+          "actions_cles": [
+            "Utiliser des hyperviseurs (VirtualBox, VMware, KVM) pour créer des VMs.",
+            "Créer des images Docker personnalisées (Dockerfile).",
+            "Orchestrer une application multi-conteneurs avec Docker Compose.",
+            "Gérer les volumes et les réseaux Docker."
+          ],
+          "concepts_acquis": [ "Virtualisation vs Conteneurisation", "Isolation des processus", "Reproductibilité des environnements", "Microservices (introduction pratique)" ],
+          "skill_points": {
+            "problem_solving": 2,
+            "coding_implementation": 2,
+            "coding_implementation_comment": "dockerfile, compose file",
+            "systems_thinking": 4,
+            "collaboration_communication": 2,
+            "learning_adaptability": 4
+          }
+        },
+        {
+          "titre": "4.4. Explorer le Cloud et l'Orchestration",
+          "actions_cles": [
+            "Utiliser les services de base d'un fournisseur cloud (AWS, Azure ou GCP : VM, S3/Blob Storage, RDS/SQL Database).",
+            "Déployer une application conteneurisée sur un service managé (ECS, AKS, GKE - initiation).",
+            "Déployer et gérer des applications simples avec Kubernetes (kubectl, Pods, Services, Deployments).",
+            "Écrire des scripts simples pour provisionner l'infrastructure (Terraform/Ansible initiation)."
+          ],
+          "concepts_acquis": [ "Modèles IaaS/PaaS/SaaS/FaaS", "Avantages du Cloud (Scalabilité, élasticité, coût)", "Cloud Native", "Orchestration de conteneurs", "Infrastructure as Code (principes)" ],
+          "skill_points": {
+            "problem_solving": 3,
+            "coding_implementation": 2,
+            "coding_implementation_comment": "iac",
+            "systems_thinking": 5,
+            "collaboration_communication": 2,
+            "learning_adaptability": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "5_Securiser_Systemes",
+      "titre": "5. Sécuriser les Systèmes (Penser Attaque et Défense)",
+      "modules": [
+        {
+          "titre": "5.1. Trouver les Failles d'une Application Web (Pentesting Web)",
+          "actions_cles": [
+            "Identifier et exploiter les vulnérabilités du Top 10 OWASP (Injection SQL, XSS, CSRF...).",
+            "Utiliser des outils de scan et d'exploitation (Burp Suite, OWASP ZAP, sqlmap, nmap...).",
+            "Rédiger un rapport de pentest simple."
+          ],
+          "concepts_acquis": [ "Vulnérabilités web courantes", "Méthodologie de pentest (reconnaissance, scan, exploitation, post-exploitation)", "Sécurité offensive" ],
+          "skill_points": {
+            "problem_solving": 5, 
+            "problem_solving_comment": "thinking like attacker",
+            "coding_implementation": 2,
+            "coding_implementation_comment": "scripting exploits",
+            "systems_thinking": 4,
+            "systems_thinking_comment": "understanding system weaknesses",
+            "collaboration_communication": 2,
+            "collaboration_communication_comment": "reporting",
+            "learning_adaptability": 4,
+            "learning_adaptability_comment": "new tools/vulns"
+          }
+        },
+        {
+          "titre": "5.2. Défendre son Infrastructure (Sécurité Défensive)",
+          "actions_cles": [
+            "Appliquer des configurations sécurisées (hardening) aux serveurs et services.",
+            "Configurer et surveiller un pare-feu et un système de détection d'intrusion (IDS/IPS).",
+            "Mettre en place une gestion des identités et des accès (IAM) robuste.",
+            "Analyser des logs de sécurité pour détecter des anomalies."
+          ],
+          "concepts_acquis": [ "Sécurité périmétrique et en profondeur", "Hardening système", "Monitoring de sécurité", "Principes du moindre privilège" ],
+          "skill_points": {
+            "problem_solving": 3,
+            "coding_implementation": 1,
+            "systems_thinking": 5,
+            "collaboration_communication": 2,
+            "learning_adaptability": 3
+          }
+        },
+        {
+          "titre": "5.3. Comprendre et Utiliser la Cryptographie (Protéger l'Information)",
+          "actions_cles": [
+            "Configurer HTTPS sur un serveur web (génération/installation de certificats TLS/SSL).",
+            "Implémenter le hachage sécurisé des mots de passe (salage, algorithmes robustes).",
+            "Chiffrer/déchiffrer des données sensibles (ex: avec GPG ou bibliothèques crypto).",
+            "Utiliser SSH de manière sécurisée (clés publiques/privées)."
+          ],
+          "concepts_acquis": [ "Chiffrement symétrique vs asymétrique", "Fonctions de hachage cryptographique", "Infrastructure à Clé Publique (PKI)", "Protocoles sécurisés (TLS, SSH)" ],
+          "skill_points": {
+            "problem_solving": 3,
+            "coding_implementation": 2,
+            "systems_thinking": 3,
+            "collaboration_communication": 1,
+            "learning_adaptability": 3
+          }
+        },
+        {
+          "titre": "5.4. Analyser du Code Suspect (Introduction Rétro-ingénierie)",
+          "actions_cles": [
+            "Désassembler un programme simple (ex: crackme) avec des outils comme Ghidra ou IDA Free.",
+            "Utiliser un débogueur (gdb, x64dbg) pour analyser l'exécution pas à pas.",
+            "Identifier des schémas de code simples en assembleur (x86/x64)."
+          ],
+          "concepts_acquis": [ "Assembleur (bases)", "Analyse statique vs dynamique", "Décompilation/Désassemblage", "Analyse de malware (introduction)" ],
+          "skill_points": {
+            "problem_solving": 4,
+            "coding_implementation": 3,
+            "coding_implementation_comment": "reading asm",
+            "systems_thinking": 4,
+            "systems_thinking_comment": "how programs run",
+            "collaboration_communication": 1,
+            "learning_adaptability": 4,
+            "learning_adaptability_comment": "specialized tools"
+          }
+        }
+      ]
+    },
+    {
+      "id": "6_Exploiter_Donnees",
+      "titre": "6. Exploiter la Puissance des Données (Analyse et IA)",
+      "modules": [
+        {
+          "titre": "6.1. Explorer et Visualiser des Données (Data Analysis)",
+          "actions_cles": [
+            "Nettoyer, transformer et préparer des jeux de données (Pandas, NumPy).",
+            "Réaliser des analyses statistiques descriptives pour comprendre les données.",
+            "Créer des graphiques et visualisations pertinentes (Matplotlib, Seaborn).",
+            "Utiliser un outil de BI (Tableau Public, Power BI Desktop) pour créer un dashboard simple."
+          ],
+          "concepts_acquis": [ "Data Wrangling / Préparation de données", "Statistiques descriptives", "Data Visualization (principes et outils)", "Business Intelligence (introduction)" ],
+          "skill_points": {
+            "problem_solving": 3,
+            "coding_implementation": 3,
+            "coding_implementation_comment": "pandas/numpy",
+            "systems_thinking": 1,
+            "collaboration_communication": 2,
+            "collaboration_communication_comment": "presenting findings",
+            "learning_adaptability": 3,
+            "learning_adaptability_comment": "data tools"
+          }
+        },
+        {
+          "titre": "6.2. Construire des Modèles Prédictifs Simples (Machine Learning)",
+          "actions_cles": [
+            "Entraîner des modèles de régression (linéaire, logistique) et de classification (Arbres de décision, SVM, KNN) avec Scikit-learn.",
+            "Évaluer la performance des modèles (accuracy, precision, recall, F1-score, MSE...).",
+            "Appliquer des techniques de feature engineering (sélection, encodage...).",
+            "Mettre en place une validation croisée."
+          ],
+          "concepts_acquis": [ "Apprentissage supervisé (principes)", "Algorithmes ML courants", "Métriques d'évaluation", "Préparation des données pour le ML", "Sur-apprentissage / Sous-apprentissage" ],
+          "skill_points": {
+            "problem_solving": 4, 
+            "problem_solving_comment": "model selection, feature eng.",
+            "coding_implementation": 3,
+            "coding_implementation_comment": "scikit-learn API",
+            "systems_thinking": 2,
+            "systems_thinking_comment": "data pipeline awareness",
+            "collaboration_communication": 2,
+            "collaboration_communication_comment": "explaining model results",
+            "learning_adaptability": 4,
+            "learning_adaptability_comment": "ml concepts & libraries"
+          }
+        },
+        {
+          "titre": "6.3. Mettre en Place un Pipeline de Données (Data Engineering)",
+          "actions_cles": [
+            "Extraire des données de différentes sources (APIs, BDD, fichiers plats).",
+            "Écrire des scripts pour transformer et nettoyer les données.",
+            "Charger les données dans un data warehouse simple (ex: PostgreSQL avec schéma étoile) ou un data lake (ex: stockage S3).",
+            "Utiliser un outil d'orchestration simple (ex: cron + scripts, introduction à Airflow)."
+          ],
+          "concepts_acquis": [ "Processus ETL/ELT", "Stockage de données à grande échelle (concepts Data Warehouse / Data Lake)", "Pipelines de données", "Qualité des données (initiation)" ],
+          "skill_points": {
+            "problem_solving": 3,
+            "coding_implementation": 3,
+            "coding_implementation_comment": "scripting et orchestration",
+            "systems_thinking": 4,
+            "systems_thinking_comment": "data flow, storage systems",
+            "collaboration_communication": 2,
+            "collaboration_communication_comment": "data engineering tools",
+            "learning_adaptability": 4
+          }
+        },
+        {
+          "titre": "6.4. Tester des Applications d'IA Avancées (Deep Learning & NLP/Vision)",
+          "actions_cles": [
+            "Utiliser des bibliothèques comme TensorFlow/Keras ou PyTorch.",
+            "Charger et utiliser des modèles pré-entraînés (ex: pour classification d'images avec ResNet, analyse de sentiment avec BERT).",
+            "Effectuer un fine-tuning simple d'un modèle pré-entraîné sur une tâche spécifique.",
+            "Intégrer un modèle ML simple dans une application web."
+          ],
+          "concepts_acquis": [ "Introduction aux réseaux de neurones", "Deep Learning (cas d'usage)", "Traitement du Langage Naturel (NLP) - concepts clés", "Vision par Ordinateur - concepts clés", "Transfer Learning", "MLOps (introduction : déploiement de modèle)" ],
+          "skill_points": {
+            "problem_solving": 4,
+            "coding_implementation": 3,
+            "coding_implementation_comment": "tf/keras/pytorch API",
+            "systems_thinking": 3,
+            "systems_thinking_comment": "integration, mlops",
+            "collaboration_communication": 1,
+            "learning_adaptability": 5,
+            "learning_adaptability_comment": "rapidly evolving field"
+          }
+        }
+      ]
+    },
+    {
+      "id": "7_Approfondir_Fondations",
+      "titre": "7. Approfondir les Fondations (Comprendre le 'Pourquoi' pour Innover)",
+      "note": "Ces concepts sont souvent introduits au fil de l'eau pour résoudre des problèmes spécifiques rencontrés dans les projets, ou via des modules/projets dédiés à l'optimisation ou à la compréhension profonde.",
+      "modules": [
+        {
+          "titre": "7.1. Optimiser son Code : Algorithmique & Complexité",
+          "actions_cles": [
+            "Analyser la complexité temps/espace d'algorithmes existants et identifier les goulots d'étranglement.",
+            "Choisir et implémenter la structure de données la plus adaptée (arbres équilibrés, graphes, tables de hachage avancées).",
+            "Résoudre des problèmes algorithmiques complexes (via plateformes type CodinGame, LeetCode, projets spécifiques).",
+            "Implémenter des algorithmes de graphes (parcours, plus court chemin), de programmation dynamique."
+          ],
+          "concepts_acquis": [ "Analyse de complexité (Big O, Omega, Theta)", "Structures de données avancées", "Paradigmes algorithmiques (Diviser pour régner, Glouton, DP)", "Algorithmique du texte", "Algorithmes de graphes" ],
+          "skill_points": {
+            "problem_solving": 5,
+            "coding_implementation": 4,
+            "systems_thinking": 1,
+            "collaboration_communication": 1,
+            "learning_adaptability": 3
+          }
+        },
+        {
+          "titre": "7.2. Comprendre la Machine : Architecture & Systèmes",
+          "actions_cles": [
+            "Analyser l'impact du cache et de la hiérarchie mémoire sur la performance.",
+            "Explorer le fonctionnement interne d'un OS (ordonnancement de processus, gestion de la mémoire virtuelle).",
+            "Comprendre les étapes clés de la compilation (lexing, parsing, génération de code).",
+            "Écrire du code système simple (appels système, IPC)."
+          ],
+          "concepts_acquis": [ "Architecture des processeurs (pipeline, SIMD)", "Hiérarchie mémoire (cache, RAM, disque)", "Systèmes d'exploitation avancés", "Compilation et interprétation", "Théorie des langages et automates (bases)" ],
+          "skill_points": {
+            "problem_solving": 3,
+            "coding_implementation": 2,
+            "systems_thinking": 5,
+            "collaboration_communication": 1,
+            "learning_adaptability": 3
+          }
+        },
+        {
+          "titre": "7.3. Les Maths au Service de l'Info : Logique, Graphes, Probabilités",
+          "actions_cles": [
+            "Modéliser des problèmes concrets avec la théorie des graphes.",
+            "Utiliser la logique propositionnelle et des prédicats pour raisonner sur des systèmes.",
+            "Appliquer les concepts de probabilités et statistiques pour l'analyse de données et l'évaluation de modèles ML.",
+            "Comprendre les bases mathématiques de la cryptographie."
+          ],
+          "concepts_acquis": [ "Mathématiques discrètes (Logique, Ensembles, Graphes, Combinatoire)", "Probabilités et Statistiques appliquées", "Algèbre linéaire (pour IA, graphisme)", "Calcul différentiel (pour optimisation, IA)" ],
+          "skill_points": {
+            "problem_solving": 4,
+            "problem_solving_comment": "mathematical modeling",
+            "coding_implementation": 1,
+            "systems_thinking": 2,
+            "collaboration_communication": 1,
+            "learning_adaptability": 2,
+            "learning_adaptability_comment": "abstract concepts"
+          }
+        }
+      ]
+    },
+    {
+      "id": "8_Agir_Ingenieur_Responsable",
+      "titre": "8. Agir en Ingénieur Responsable et Efficace (Compétences Transverses)",
+      "note": "Ces compétences se développent tout au long du cursus, à travers tous les projets, les interactions et des modules dédiés.",
+      "modules": [
+         {
+          "titre": "8.1. Communiquer et Vulgariser la Technique",
+          "actions_cles": [
+            "Rédiger une documentation technique claire et concise (README, API docs, architecture).",
+            "Préparer et réaliser des présentations techniques (démos, soutenances).",
+            "Participer activement aux revues de code (donner et recevoir du feedback constructif).",
+            "Expliquer des concepts techniques complexes à des non-experts."
+          ],
+          "concepts_acquis": [ "Communication écrite et orale", "Vulgarisation technique", "Documentation logicielle", "Feedback constructif" ],
+           "skill_points": {
+            "problem_solving": 1,
+            "coding_implementation": 1,
+            "systems_thinking": 2,
+            "collaboration_communication": 5,
+            "learning_adaptability": 1
+          }
+        },
+        {
+          "titre": "8.2. Piloter des Projets et Innover",
+          "actions_cles": [
+            "Estimer la charge de travail et planifier les étapes d'un projet.",
+            "Identifier et gérer les risques techniques d'un projet.",
+            "Contribuer à la définition de la vision produit et à la priorisation (si applicable).",
+            "Mener une veille technologique active et proposer des améliorations/innovations."
+          ],
+          "concepts_acquis": [ "Gestion de projet (bases)", "Gestion des risques", "Gestion de produit (initiation)", "Veille technologique", "Innovation et créativité" ],
+          "skill_points": {
+            "problem_solving": 3,
+            "coding_implementation": 1,
+            "systems_thinking": 3,
+            "collaboration_communication": 4,
+            "learning_adaptability": 4,
+            "learning_adaptability_comment": "veille, innovation"
+          }
+        },
+        {
+          "titre": "8.3. Développer son Professionnalisme",
+          "actions_cles": [
+            "Identifier ses propres axes d'amélioration et mettre en place un plan d'apprentissage.",
+            "Aborder des problèmes complexes avec méthode et persévérance.",
+            "Prendre des décisions éclairées face à des contraintes (temps, ressources, technique).",
+            "Respecter les engagements et les délais."
+          ],
+          "concepts_acquis": [ "Apprentissage autonome (Learnability)", "Pensée critique", "Résolution de problèmes complexes", "Gestion du temps et organisation", "Adaptabilité et résilience", "Éthique professionnelle" ],
+          "skill_points": {
+            "problem_solving": 2,
+            "coding_implementation": 1,
+            "systems_thinking": 1,
+            "collaboration_communication": 3,
+            "learning_adaptability": 5,
+            "learning_adaptability_comment": "core of professionalism"
+          }
+        },
+        {
+            "titre": "8.4. Comprendre le Contexte Économique et Légal",
+            "actions_cles": [
+                "Analyser le modèle économique d'une application ou d'un service.",
+                "Comprendre les bases de la propriété intellectuelle (licences logicielles, brevets).",
+                "Identifier les implications légales et éthiques d'un projet (ex: RGPD, biais IA)."
+             ],
+            "concepts_acquis": [ "Business Models du numérique", "Droit du numérique (PI, Contrats, Données personnelles)", "Éthique de l'IA et de la Tech", "Stratégie d'entreprise (bases)" ],
+            "skill_points": {
+                "problem_solving": 2,
+                "coding_implementation": 0,
+                "systems_thinking": 2,
+                "collaboration_communication": 2,
+                "learning_adaptability": 3,
+                "learning_adaptability_comment": "understanding non-technical constraints"
+            }
+        }
+      ]
+    }
+  ]
+}
