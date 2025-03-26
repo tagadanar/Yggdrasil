@@ -1,50 +1,57 @@
-# Yggdrasil: Skill Tree Visualization Platform 🌳
+# Yggdrasil : Votre Arbre de Compétences Interactif 🌳
 
-## Project Overview
+## Le Projet : Visualiser Votre Parcours Pédagogique
 
-Yggdrasil is a dynamic skill tracking and visualization platform designed to help developers map their learning journey and professional growth.
+Yggdrasil est une plateforme dynamique conçue pour **visualiser et suivre votre montée en compétences** tout au long de votre parcours chez [Nom de l'école ou "votre formation"]. Inspiré par notre approche pédagogique **"apprendre en faisant" (*learning by doing*)**, Yggdrasil transforme votre apprentissage en une aventure visuelle, concrète et motivante. Voyez exactement comment chaque projet vous fait grandir !
 
-### Key Features
+![Aperçu d'Yggdrasil](https://github.com/user-attachments/assets/8df07986-8c34-48e2-8453-15ab072e59e2)
+*(Remplacez l'URL par le lien réel si nécessaire)*
 
-- **Interactive Skill Graph**: Visualize your technical skill progression
-- **Modular Learning Paths**: Track and unlock skills across different domains
-- **Personalized Progress Tracking**: Monitor your individual development
+### Fonctionnalités Clés (Ce que Yggdrasil vous apporte)
 
-### Prerequisites
+-   **Graphe de Compétences Interactif** : Visualisez votre progression technique comme un véritable arbre de compétences qui grandit avec vous.
+-   **Parcours d'Apprentissage Modulaires** : Suivez et **débloquez** des compétences spécifiques au fur et à mesure que vous validez des projets et des modules pédagogiques.
+-   **Suivi Personnalisé et Motivateur** : Observez concrètement votre développement, identifiez vos points forts et les prochaines compétences à maîtriser.
 
-- Node.js (v18.18.0 or higher, v23+ recommended)
-- npm or yarn
+### Prérequis Techniques
 
-### Quick Start
+-   Node.js (v18.18.0 ou supérieur, v23+ recommandé)
+-   npm ou yarn
+
+### Démarrage Rapide (Lancez Yggdrasil en 5 minutes !)
 
 ```bash
-# Install dependencies
+# 1. Installez les dépendances nécessaires
 npm install
 
-# Run development server
+# 2. Lancez le serveur de développement
 npm run dev
 
-# Access the application
-# Open http://localhost:3000
+# 3. Accédez à l'application
+# Ouvrez votre navigateur à l'adresse http://localhost:3000
 ```
 
-### Running Tests
+### Lancer les Tests
 
 ```bash
-# Execute test suite
+# Exécutez la suite de tests pour vérifier que tout fonctionne
 npm test
 ```
 
-### Project Philosophy
+### Notre Philosophie Pédagogique (Pourquoi Yggdrasil ?)
 
-We believe in continuous learning and transparent skill development. Yggdrasil provides a visual, intuitive approach to understanding and tracking professional growth in software development.
+Chez [Nom de l'école/Nous], nous croyons que l'apprentissage se fait **par la pratique** et que la progression doit être **visible et valorisante**. Yggdrasil incarne cette philosophie :
 
-### Contributing
+-   Il rend **tangible** le lien entre les projets que vous réalisez et les compétences fondamentales que vous développez.
+-   Il vous permet de **voir concrètement** comment chaque défi relevé vous fait **monter en niveau** dans les domaines clés de l'ingénierie logicielle.
+-   C'est un outil pour **vous approprier** votre parcours, célébrer vos succès et cibler vos prochains objectifs d'apprentissage.
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Contribuer au Projet
 
-### License
+Envie d'améliorer Yggdrasil ? Les contributions sont les bienvenues ! N'hésitez pas à proposer une Pull Request.
 
-MIT License
+### Licence
 
-**Empower your learning journey** 🚀
+Licence MIT
+
+**Visualisez et Maîtrisez votre Parcours de Codeur !** 🚀
