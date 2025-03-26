@@ -5,7 +5,6 @@
 Yggdrasil est une plateforme dynamique conçue pour **visualiser et suivre votre montée en compétences** tout au long de votre parcours chez [Nom de l'école ou "votre formation"]. Inspiré par notre approche pédagogique **"apprendre en faisant" (*learning by doing*)**, Yggdrasil transforme votre apprentissage en une aventure visuelle, concrète et motivante. Voyez exactement comment chaque projet vous fait grandir !
 
 ![Aperçu d'Yggdrasil](https://github.com/user-attachments/assets/8df07986-8c34-48e2-8453-15ab072e59e2)
-*(Remplacez l'URL par le lien réel si nécessaire)*
 
 ### Fonctionnalités Clés (Ce que Yggdrasil vous apporte)
 
