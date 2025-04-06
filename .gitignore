@@ -1,34 +1,45 @@
-# Start of Selection
-# Node modules
-node_modules/
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
 
-# Build output
-.next/
-out/
+# Testing
+/coverage
 
-# Log files
+# Next.js
+/.next/
+/out/
+.swc/
+
+# Production
+/build
+/dist
+
+# Misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Dependency directories
-.pnp/
-.pnp.js
+# Local env files
+.env*.local
+.env
 
-# TypeScript
-*.tsbuildinfo
-
-# IDE and editor files
+# Editor directories and files
 .idea/
 .vscode/
-*.sublime-project
-*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# Miscellaneous
-.DS_Store
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-# End of Selection
+# Backup and temporary files
+*.bak
+*.tmp
+*.old
+*.old.txt
