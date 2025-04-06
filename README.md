@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 101 IT School - Learn Computer Science by Doing
+
+An interactive learning platform that visualizes computer science curriculum as an interactive skill tree. Students can track their progress, unlock new courses by completing prerequisites, and view their learning path in an engaging format.
+
+## Features
+
+- **Interactive Curriculum Graph**: Visualize the entire computer science curriculum as an interconnected skill tree
+- **Progress Tracking**: Mark courses as completed to unlock prerequisites
+- **Visual Learning Path**: See prerequisites and dependencies for each course
+- **Curriculum Editor**: Admin interface to customize the curriculum structure (add, remove, edit courses)
+- **Responsive Design**: Works on desktop and mobile devices
+
+## Tech Stack
+
+- **Frontend**: Next.js, React, TypeScript, TailwindCSS
+- **State Management**: React Context API
+- **Visualization**: D3.js
+- **Testing**: Jest, React Testing Library
+- **Authentication**: Custom JWT-based auth system with a dev bypass
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 16.x or later
+- npm or yarn
+
+### Installation
+
+1. Clone the repository
+   ```bash
+   git clone https://github.com/yourusername/101-it-school.git
+   cd 101-it-school
+   ```
+
+2. Install dependencies
+   ```bash
+   npm install
+   ```
+
+3. Start the development server
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+### Testing
+
+Run tests with:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+101-it-school/
+├── src/
+│   ├── app/                # Next.js app router
+│   ├── components/         # React components
+│   │   ├── auth/           # Authentication components
+│   │   ├── curriculum/     # Curriculum visualization components
+│   │   └── ui/             # Shared UI components
+│   ├── contexts/           # React context providers
+│   ├── lib/                # Utilities and helper functions
+│   └── types/              # TypeScript type definitions
+├── public/                 # Static assets
+├── tests/                  # Test files
+└── ...                     # Config files
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Running the Project
+To run the project:
 
-## Learn More
+- Clone the repository
+- Install dependencies: npm install
+- Start the development server: npm run dev
+- Open http://localhost:3000
+- Use the "Dev Login" button to bypass authentication
 
-To learn more about Next.js, take a look at the following resources:
+## Authentication
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+For development purposes, you can use the "Dev Login" button to bypass authentication. In a production environment, this would be replaced with a proper authentication flow.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Curriculum Structure
 
-## Deploy on Vercel
+The curriculum is organized by:
+- **Years**: Major divisions of the curriculum (e.g., "Year 1", "Year 2")
+- **Categories**: Subject areas within each year (e.g., "Programming Foundations", "Web Development")
+- **Courses**: Individual courses within categories
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Each course can have:
+- **Prerequisites**: Courses that must be completed before this one can be started
+- **Starting Node**: A course that has no prerequisites and can be started immediately
+- **Final Node**: A capstone or terminal course
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT
+
+## Acknowledgments
+
+- This project is designed for educational purposes to help students visualize their learning journey
+- Inspired by skill trees in games and learning pathways in computer science education
+- Built with a focus on interactive visualization and engagement
