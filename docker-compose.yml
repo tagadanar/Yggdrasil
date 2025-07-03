@@ -1,0 +1,266 @@
+# Docker Compose for 101 School Platform Development Environment
+version: '3.8'
+
+services:
+  # Database Services
+  mongodb:
+    image: mongo:7.0
+    container_name: 101school-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: school_platform
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - school-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: 101school-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - school-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: packages/api-gateway/Dockerfile
+    container_name: 101school-api-gateway
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - USER_SERVICE_URL=http://user-service:3002
+      - COURSE_SERVICE_URL=http://course-service:3003
+      - PLANNING_SERVICE_URL=http://planning-service:3004
+      - NEWS_SERVICE_URL=http://news-service:3005
+      - STATISTICS_SERVICE_URL=http://statistics-service:3006
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3007
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-for-development
+    depends_on:
+      - redis
+      - auth-service
+      - user-service
+      - course-service
+      - planning-service
+      - news-service
+      - statistics-service
+      - notification-service
+    networks:
+      - school-network
+
+  # Microservices
+  auth-service:
+    build:
+      context: .
+      dockerfile: packages/api-services/auth-service/Dockerfile
+    container_name: 101school-auth-service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/school_platform?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-for-development
+      - JWT_EXPIRES_IN=24h
+      - BCRYPT_ROUNDS=12
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - school-network
+
+  user-service:
+    build:
+      context: .
+      dockerfile: packages/api-services/user-service/Dockerfile
+    container_name: 101school-user-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/school_platform?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-for-development
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - school-network
+
+  course-service:
+    build:
+      context: .
+      dockerfile: packages/api-services/course-service/Dockerfile
+    container_name: 101school-course-service
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/school_platform?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-for-development
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - school-network
+
+  planning-service:
+    build:
+      context: .
+      dockerfile: packages/api-services/planning-service/Dockerfile
+    container_name: 101school-planning-service
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-for-development
+    depends_on:
+      - redis
+    networks:
+      - school-network
+
+  news-service:
+    build:
+      context: .
+      dockerfile: packages/api-services/news-service/Dockerfile
+    container_name: 101school-news-service
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - PORT=3005
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/school_platform?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-for-development
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - school-network
+
+  statistics-service:
+    build:
+      context: .
+      dockerfile: packages/api-services/statistics-service/Dockerfile
+    container_name: 101school-statistics-service
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=development
+      - PORT=3006
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/school_platform?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-for-development
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - school-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: packages/api-services/notification-service/Dockerfile
+    container_name: 101school-notification-service
+    restart: unless-stopped
+    ports:
+      - "3007:3007"
+    environment:
+      - NODE_ENV=development
+      - PORT=3007
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-for-development
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_USER=
+      - SMTP_PASS=
+    depends_on:
+      - redis
+      - mailhog
+    networks:
+      - school-network
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+    container_name: 101school-frontend
+    restart: unless-stopped
+    ports:
+      - "3100:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - NEXTAUTH_URL=http://localhost:3100
+      - NEXTAUTH_SECRET=your-super-secret-nextauth-key-for-development
+    depends_on:
+      - api-gateway
+    networks:
+      - school-network
+
+  # Development Tools
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: 101school-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - school-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: 101school-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - api-gateway
+    networks:
+      - school-network
+
+# Networks
+networks:
+  school-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local

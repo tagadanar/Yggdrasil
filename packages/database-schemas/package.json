@@ -1,0 +1,25 @@
+{
+  "name": "@101-school/database-schemas",
+  "version": "1.0.0",
+  "description": "Database schemas and models for 101 School Platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "dependencies": {
+    "@101-school/shared-utilities": "^1.0.0",
+    "mongoose": "^8.9.3",
+    "mongodb-memory-server": "^10.1.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.7.2"
+  }
+}

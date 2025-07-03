@@ -1,0 +1,12 @@
+
+> @101-school/frontend@1.0.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, using available port 3002 instead.
+   ▲ Next.js 15.3.4
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.1.42:3002
+
+ ✓ Starting...
+ ✓ Ready in 1407ms
+[?25h

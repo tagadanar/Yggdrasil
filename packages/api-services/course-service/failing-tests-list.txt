@@ -1,0 +1,57 @@
+# Course Service Failing Tests - Systematic Fix List
+
+## TypeScript Compilation Errors (Must fix first)
+1. **CourseService.comprehensive.test.ts** - Cannot run due to TS errors
+   - 'course' is possibly 'null' (lines around 521-522)
+   - Property access on Document types without proper typing
+
+2. **CourseEndpoints.integration.test.ts** - Cannot run due to TS errors
+   - 'instructor._id' is of type 'unknown'
+   - Multiple similar type issues
+
+## Integration Test Failures (CourseService.integration.test.ts)
+3. **should prevent duplicate enrollments** - Course creation failing
+4. **should return accurate course statistics** - Statistics functionality
+5. **should include category statistics** - Statistics functionality  
+6. **should include instructor statistics** - Statistics functionality
+7. **should handle invalid student/course IDs in enrollment** - Error handling
+8. **should handle concurrent enrollment attempts** - Concurrency handling
+
+## Service Tests Failures (CourseService.test.ts)
+9. **should unenroll student successfully** - Unenrollment logic
+10. **should search courses by title** - Search functionality
+11. **should filter courses by category** - Filtering logic
+12. **should filter courses by level** - Filtering logic
+13. **should paginate results** - Pagination logic
+14. **should sort results** - Sorting logic
+15. **should return course statistics** - Statistics
+
+## New Endpoints Test Failures (CourseService.newEndpoints.test.ts)
+16. **should handle non-existent user** (checkEnrollmentEligibility)
+17. **should return prerequisites for course with user ID** - Prerequisites logic
+18. **should return prerequisites for course without user ID** - Prerequisites logic
+19. **should handle course with no prerequisites** - Prerequisites edge case
+20. **should return enrolled courses for student** - Enrollment queries
+21. **should return empty array for user with no enrollments** - Empty state
+22. **should not return inactive courses** - Filtering logic
+23. **should handle non-existent user ID** (getEnrolledCourses)
+24. **should return distinct course categories** - Missing `distinct` mock
+25. **should return sorted categories** - Categories logic
+26. **should only include categories from active courses** - Filtering
+27. **should export course data as JSON for instructor** - Export functionality
+28. **should export course data as CSV for instructor** - Export functionality  
+29. **should return error for unsupported format** - Export error handling
+30. **should handle non-existent user** (exportCourseData)
+31. **should handle non-existent user** (importCourseData)
+32. **should handle database connection errors gracefully** - Error handling
+33. **should handle concurrent enrollment checks** - Concurrency
+34. **should handle large progress data objects** - Progress handling
+
+## Priority Order for Fixes:
+1. Fix TypeScript compilation errors (tests 1-2)
+2. Add missing mock methods (test 24 - `distinct`)
+3. Fix core service logic issues (tests 3, 9)
+4. Fix statistics functionality (tests 4-6, 15)
+5. Fix search/filter issues in service tests (tests 10-14)
+6. Fix new endpoints functionality (tests 16-34)
+7. Fix integration edge cases (tests 7-8)
