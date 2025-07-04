@@ -17,8 +17,39 @@ import {
   AssessmentType
 } from '@101-school/shared-utilities';
 
-// Database Course interface (extend SharedCourse for compatibility)
-export interface Course extends Omit<SharedCourse, '_id'>, Document {
+// Database Course interface - explicitly define all properties to avoid Mongoose type issues  
+export interface Course extends Document {
+  // Properties from SharedCourse
+  title: string;
+  description: string;
+  code: string;
+  credits: number;
+  level: CourseLevel;
+  category: CourseCategory;
+  instructor: string;
+  instructorInfo?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  duration: CourseDuration;
+  schedule: CourseSchedule[];
+  capacity: number;
+  enrolledStudents: string[];
+  prerequisites: string[];
+  tags: string[];
+  status: CourseStatus;
+  visibility: CourseVisibility;
+  chapters: CourseChapter[];
+  resources: CourseResource[];
+  assessments: CourseAssessment[];
+  isActive: boolean;
+  startDate: Date;
+  endDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  
+  // Instance methods
   enrollStudent(studentId: string): Promise<boolean>;
   unenrollStudent(studentId: string): Promise<boolean>;
   hasCapacity(): boolean;
@@ -26,6 +57,11 @@ export interface Course extends Omit<SharedCourse, '_id'>, Document {
   isStudentEnrolled(studentId: string): boolean;
   canStudentEnroll(studentId: string): Promise<boolean>;
   updateProgress(studentId: string, chapterId: string, sectionId: string): Promise<void>;
+  
+  // Virtual properties (need to be explicitly declared for TypeScript)
+  enrollmentCount: number;
+  availableSpots: number;
+  isEnrollmentOpen: boolean;
 }
 
 // Extend the model interface for static methods
@@ -408,17 +444,22 @@ CourseSchema.statics.getCourseStats = function() {
   ]);
 };
 
-// Pre-save middleware
+// Pre-validate middleware for calculations
+CourseSchema.pre('validate', function(this: any, next) {
+  // Calculate total hours before validation
+  if (this.duration) {
+    this.duration.totalHours = this.duration.weeks * this.duration.hoursPerWeek;
+  }
+  
+  next();
+});
+
+// Pre-save middleware for additional validations
 CourseSchema.pre('save', function(this: any, next) {
   // Validate end date is after start date
   if (this.endDate <= this.startDate) {
     next(new Error('End date must be after start date'));
     return;
-  }
-  
-  // Calculate total hours if not provided
-  if (this.duration) {
-    this.duration.totalHours = this.duration.weeks * this.duration.hoursPerWeek;
   }
   
   next();

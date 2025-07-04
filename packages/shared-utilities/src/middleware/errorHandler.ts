@@ -129,7 +129,12 @@ export const errorHandler = (
  */
 export const asyncHandler = (fn: Function) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+    try {
+      const result = fn(req, res, next);
+      Promise.resolve(result).catch(next);
+    } catch (error) {
+      next(error);
+    }
   };
 };
 
@@ -324,7 +329,11 @@ export const ErrorUtils = {
    * Create a standardized error response
    */
   createErrorResponse: (error: AppError, requestId?: string) => {
-    return ResponseHelper.error(error.message, error.code);
+    return {
+      success: false,
+      error: error.message,
+      code: error.code
+    };
   },
 
   /**

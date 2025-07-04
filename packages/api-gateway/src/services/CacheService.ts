@@ -4,6 +4,7 @@ import { CacheConfig } from '../types/gateway';
 interface CacheEntry {
   data: any;
   timestamp: Date;
+  lastAccessed: Date;
   ttl: number;
   hits: number;
 }
@@ -11,12 +12,20 @@ interface CacheEntry {
 export class CacheService {
   private cache: Map<string, CacheEntry> = new Map();
   private config: CacheConfig;
+  private cleanupInterval?: NodeJS.Timeout;
 
   constructor(config: CacheConfig) {
     this.config = config;
     
     if (config.enabled) {
       this.startCleanupInterval();
+    }
+  }
+
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = undefined;
     }
   }
 
@@ -35,24 +44,32 @@ export class CacheService {
       return null;
     }
 
-    // Update hit count
+    // Update hit count and last accessed time
     entry.hits++;
+    entry.lastAccessed = new Date(Date.now());
     return entry.data;
   }
 
   set(key: string, data: any, ttl?: number): void {
     if (!this.config.enabled) return;
 
-    const cacheTtl = ttl || this.config.ttl;
+    const cacheTtl = ttl !== undefined ? ttl : this.config.ttl;
     
-    // Check cache size limit
-    if (this.cache.size >= this.config.maxSize) {
+    // Handle zero or negative TTL - don't cache
+    if (cacheTtl <= 0) {
+      return;
+    }
+    
+    // Check cache size limit (only if we're adding a new key)
+    if (!this.cache.has(key) && this.cache.size >= this.config.maxSize) {
       this.evictLeastRecentlyUsed();
     }
 
+    const now = new Date(Date.now());
     const entry: CacheEntry = {
       data,
-      timestamp: new Date(),
+      timestamp: now,
+      lastAccessed: now,
       ttl: cacheTtl,
       hits: 0
     };
@@ -113,11 +130,11 @@ export class CacheService {
 
   private evictLeastRecentlyUsed(): void {
     let oldestKey: string | null = null;
-    let oldestTime = Date.now();
+    let oldestTime = Number.MAX_VALUE;
 
     for (const [key, entry] of this.cache) {
-      if (entry.timestamp.getTime() < oldestTime) {
-        oldestTime = entry.timestamp.getTime();
+      if (entry.lastAccessed.getTime() < oldestTime) {
+        oldestTime = entry.lastAccessed.getTime();
         oldestKey = key;
       }
     }
@@ -128,7 +145,7 @@ export class CacheService {
   }
 
   private startCleanupInterval(): void {
-    setInterval(() => {
+    this.cleanupInterval = setInterval(() => {
       this.cleanup();
     }, 60000); // Cleanup every minute
   }
@@ -145,6 +162,11 @@ export class CacheService {
     }
 
     expiredKeys.forEach(key => this.cache.delete(key));
+  }
+
+  // Public method for testing
+  public forceCleanup(): void {
+    this.cleanup();
   }
 
   generateKey(req: any): string {

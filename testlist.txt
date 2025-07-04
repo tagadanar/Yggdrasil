@@ -1,0 +1,85 @@
+# Complete Test Suite List for Yggdrasil Educational Platform
+# Generated on: $(date)
+# Total Test Files: 44
+
+## API Gateway (3 suites)
+packages/api-gateway/__tests__/services/CacheService.test.ts
+packages/api-gateway/__tests__/services/GatewayService.test.ts
+packages/api-gateway/__tests__/services/MetricsService.test.ts
+
+## Auth Service (4 suites)
+packages/api-services/auth-service/__tests__/controllers/AuthController.test.ts
+packages/api-services/auth-service/__tests__/integration/AuthUserCourseIntegration.test.ts
+packages/api-services/auth-service/__tests__/middleware/authMiddleware.test.ts
+packages/api-services/auth-service/__tests__/services/AuthService.test.ts
+
+## Course Service (8 suites)
+packages/api-services/course-service/__tests__/integration/CourseEndpoints.integration.test.ts
+packages/api-services/course-service/__tests__/integration/CourseService.integration.test.ts
+packages/api-services/course-service/__tests__/integration/CourseUserIntegration.test.ts
+packages/api-services/course-service/__tests__/services/CourseService.comprehensive.test.ts
+packages/api-services/course-service/__tests__/services/CourseService.newEndpoints.test.ts
+packages/api-services/course-service/__tests__/services/CourseService.simple.test.ts
+packages/api-services/course-service/__tests__/services/CourseService.test.ts
+packages/api-services/course-service/__tests__/services/CourseService.unit.test.ts
+
+## News Service (6 suites)
+packages/api-services/news-service/__tests__/controllers/NewsController.integration.test.ts
+packages/api-services/news-service/__tests__/controllers/NewsController.unit.test.ts
+packages/api-services/news-service/__tests__/integration/NewsNotificationIntegration.test.ts
+packages/api-services/news-service/__tests__/NewsService.integration.test.ts
+packages/api-services/news-service/__tests__/services/NewsService.integration.test.ts
+packages/api-services/news-service/__tests__/services/NewsService.test.ts
+
+## Notification Service (4 suites)
+packages/api-services/notification-service/__tests__/controllers/NotificationController.test.ts
+packages/api-services/notification-service/__tests__/services/NotificationService.test.js
+packages/api-services/notification-service/__tests__/services/NotificationService.test.ts
+packages/api-services/notification-service/__tests__/services/WebSocketService.test.ts
+
+## Planning Service (2 suites)
+packages/api-services/planning-service/__tests__/integration/PlanningNotificationIntegration.test.ts
+packages/api-services/planning-service/__tests__/services/CalendarService.test.ts
+
+## Statistics Service (5 suites)
+packages/api-services/statistics-service/__tests__/controllers/StatisticsController.test.ts
+packages/api-services/statistics-service/__tests__/integration/StatisticsAPI.integration.test.ts
+packages/api-services/statistics-service/__tests__/integration/StatisticsCrossPlatformIntegration.test.ts
+packages/api-services/statistics-service/__tests__/services/StatisticsService.comprehensive.test.ts
+packages/api-services/statistics-service/__tests__/services/StatisticsService.test.ts
+
+## User Service (3 suites)
+packages/api-services/user-service/__tests__/integration/UserService.profile.integration.test.ts
+packages/api-services/user-service/__tests__/services/UserService.test.ts
+packages/api-services/user-service/__tests__/UserService.integration.test.ts
+
+## Database Schemas (4 suites)
+packages/database-schemas/__tests__/connection/database.test.ts
+packages/database-schemas/__tests__/models/Course.test.ts
+packages/database-schemas/__tests__/models/News.test.ts
+packages/database-schemas/__tests__/models/User.test.ts
+
+## Frontend (2 suites)
+packages/frontend/__tests__/services/CourseService.test.ts
+packages/frontend/__tests__/services/UserAPI.test.ts
+
+## Shared Utilities (5 suites)
+packages/shared-utilities/__tests__/helpers/auth.test.ts
+packages/shared-utilities/__tests__/helpers/date.test.ts
+packages/shared-utilities/__tests__/helpers/validation.test.ts
+packages/shared-utilities/__tests__/middleware/errorHandler.test.ts
+packages/shared-utilities/__tests__/validation/schemas.test.ts
+
+# Test Distribution:
+# - API Gateway: 3 suites
+# - Auth Service: 4 suites
+# - Course Service: 8 suites (most comprehensive)
+# - News Service: 6 suites
+# - Notification Service: 4 suites
+# - Planning Service: 2 suites
+# - Statistics Service: 5 suites
+# - User Service: 3 suites
+# - Database Schemas: 4 suites
+# - Frontend: 2 suites
+# - Shared Utilities: 5 suites
+# TOTAL: 44 test suites

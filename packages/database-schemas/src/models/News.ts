@@ -120,7 +120,18 @@ NewsSchema.statics.findForAudience = function(audience: string[]) {
       { targetAudience: { $in: audience } },
       { targetAudience: 'all' }
     ]
-  }).sort({ priority: -1, publishedAt: -1 });
+  }).sort({ publishedAt: -1 }).then((articles: NewsArticle[]) => {
+    // Sort by priority manually: urgent > high > medium > low
+    const priorityOrder = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1 };
+    return articles.sort((a, b) => {
+      const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
+      const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
+      if (aPriority !== bPriority) {
+        return bPriority - aPriority; // Descending priority
+      }
+      return new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime(); // Descending date
+    });
+  });
 };
 
 NewsSchema.statics.markAsRead = async function(articleId: string, userId: string) {

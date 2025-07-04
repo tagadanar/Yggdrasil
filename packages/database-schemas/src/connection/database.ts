@@ -165,3 +165,6 @@ export class DatabaseConnection {
     }
   }
 }
+
+// Export alias for compatibility
+export const Database = DatabaseConnection;
