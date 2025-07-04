@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// MongoDB connection URL
-const MONGODB_URI = 'mongodb://admin:password123@localhost:27017/school_platform?authSource=admin';
+// MongoDB connection URL from environment variable
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/yggdrasil-dev';
 
 // Demo users data
 const demoUsers = [
   {
-    email: 'admin@101school.com',
-    password: 'Admin123!',
+    email: 'admin@yggdrasil.edu',
+    password: process.env.DEMO_PASSWORD || 'Admin123!',
     role: 'admin',
     profile: {
       firstName: 'Admin',
@@ -17,8 +17,8 @@ const demoUsers = [
     }
   },
   {
-    email: 'staff@101school.com', 
-    password: 'Admin123!',
+    email: 'staff@yggdrasil.edu', 
+    password: process.env.DEMO_PASSWORD || 'Admin123!',
     role: 'staff',
     profile: {
       firstName: 'Alice',
@@ -28,8 +28,8 @@ const demoUsers = [
     }
   },
   {
-    email: 'teacher@101school.com',
-    password: 'Admin123!', 
+    email: 'teacher@yggdrasil.edu',
+    password: process.env.DEMO_PASSWORD || 'Admin123!', 
     role: 'teacher',
     profile: {
       firstName: 'John',
@@ -39,8 +39,8 @@ const demoUsers = [
     }
   },
   {
-    email: 'student@101school.com',
-    password: 'Admin123!',
+    email: 'student@yggdrasil.edu',
+    password: process.env.DEMO_PASSWORD || 'Admin123!',
     role: 'student', 
     profile: {
       firstName: 'Jane',
@@ -114,10 +114,10 @@ async function initializeDatabase() {
 
     console.log('🎉 Database initialization completed successfully!');
     console.log('Demo accounts created:');
-    console.log('- admin@101school.com (Admin)');
-    console.log('- staff@101school.com (Staff)');
-    console.log('- teacher@101school.com (Teacher)');
-    console.log('- student@101school.com (Student)');
+    console.log('- admin@yggdrasil.edu (Admin)');
+    console.log('- staff@yggdrasil.edu (Staff)');
+    console.log('- teacher@yggdrasil.edu (Teacher)');
+    console.log('- student@yggdrasil.edu (Student)');
     console.log('Default password for all users: Admin123!');
     
   } catch (error) {

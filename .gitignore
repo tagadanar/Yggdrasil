@@ -16,13 +16,29 @@ pnpm-debug.log*
 # TypeScript cache
 **/*.tsbuildinfo
 
-# Env files
+# Environment files - NEVER commit these!
 .env
 .env.*.local
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+*.env
+**/*.env
+
+# Secrets and credentials - Security critical!
+secrets/
+credentials/
+keys/
+certificates/
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.csr
+config/secrets.json
+auth.json
 
 # OS & Editor junk
 .DS_Store
@@ -50,6 +66,13 @@ jest-output/
 scripts/setup-database.js.log
 *.sqlite
 *.db
+
+# Uploaded files that might contain sensitive data
+uploads/
+**/uploads/
+user-uploads/
+profile-photos/
+temp-files/
 
 # Lint/formatter logs
 .eslintcache

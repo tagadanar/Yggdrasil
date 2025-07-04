@@ -1,16 +1,16 @@
-// MongoDB Initialization Script for 101 School Platform
+// MongoDB Initialization Script for Yggdrasil Educational Platform
 
 // Create the main database
-db = db.getSiblingDB('school_platform');
+db = db.getSiblingDB('yggdrasil-dev');
 
-// Create application user
+// Create application user - use environment variables for credentials
 db.createUser({
-  user: 'school_app',
-  pwd: 'school_app_password',
+  user: process.env.MONGO_APP_USER || 'yggdrasil_app',
+  pwd: process.env.MONGO_APP_PASSWORD || 'please-change-in-production',
   roles: [
     {
       role: 'readWrite',
-      db: 'school_platform'
+      db: 'yggdrasil-dev'
     }
   ]
 });

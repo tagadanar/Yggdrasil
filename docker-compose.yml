@@ -8,9 +8,9 @@ services:
     container_name: 101school-mongodb
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password123
-      MONGO_INITDB_DATABASE: school_platform
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-change-me-in-production}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-yggdrasil-dev}
     ports:
       - "27017:27017"
     volumes:
@@ -50,7 +50,7 @@ services:
       - STATISTICS_SERVICE_URL=http://statistics-service:3006
       - NOTIFICATION_SERVICE_URL=http://notification-service:3007
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-for-development
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
     depends_on:
       - redis
       - auth-service
@@ -75,9 +75,9 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3001
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/school_platform?authSource=admin
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-change-me-in-production}@mongodb:27017/${MONGO_DATABASE:-yggdrasil-dev}?authSource=admin
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-for-development
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - JWT_EXPIRES_IN=24h
       - BCRYPT_ROUNDS=12
     depends_on:
@@ -97,9 +97,9 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3002
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/school_platform?authSource=admin
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-change-me-in-production}@mongodb:27017/${MONGO_DATABASE:-yggdrasil-dev}?authSource=admin
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-for-development
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
     depends_on:
       - mongodb
       - redis
@@ -117,9 +117,9 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3003
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/school_platform?authSource=admin
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-change-me-in-production}@mongodb:27017/${MONGO_DATABASE:-yggdrasil-dev}?authSource=admin
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-for-development
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
     depends_on:
       - mongodb
       - redis
@@ -138,7 +138,7 @@ services:
       - NODE_ENV=development
       - PORT=3004
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-for-development
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
     depends_on:
       - redis
     networks:
@@ -155,9 +155,9 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3005
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/school_platform?authSource=admin
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-change-me-in-production}@mongodb:27017/${MONGO_DATABASE:-yggdrasil-dev}?authSource=admin
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-for-development
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
     depends_on:
       - mongodb
       - redis
@@ -175,9 +175,9 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3006
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/school_platform?authSource=admin
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-change-me-in-production}@mongodb:27017/${MONGO_DATABASE:-yggdrasil-dev}?authSource=admin
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-for-development
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
     depends_on:
       - mongodb
       - redis
@@ -196,7 +196,7 @@ services:
       - NODE_ENV=development
       - PORT=3007
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-for-development
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - SMTP_HOST=mailhog
       - SMTP_PORT=1025
       - SMTP_USER=
@@ -220,7 +220,7 @@ services:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://localhost:3000
       - NEXTAUTH_URL=http://localhost:3100
-      - NEXTAUTH_SECRET=your-super-secret-nextauth-key-for-development
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-change-me-in-production}
     depends_on:
       - api-gateway
     networks:

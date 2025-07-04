@@ -7,7 +7,7 @@ const app = express();
 const PORT = 3001;
 
 // MongoDB connection
-const MONGODB_URI = 'mongodb://admin:password123@localhost:27017/school_platform?authSource=admin';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/yggdrasil-dev';
 
 // Simple User Schema
 const userSchema = new mongoose.Schema({
