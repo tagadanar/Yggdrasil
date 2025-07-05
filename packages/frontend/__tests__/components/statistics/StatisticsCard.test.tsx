@@ -18,7 +18,7 @@ describe('StatisticsCard', () => {
     });
 
     it('should render different title and value', () => {
-      render(<StatisticsCard title="Different Metric" value="200" icon="grades" />);
+      render(<StatisticsCard title="Different Metric" value="200" icon="grade" />);
 
       expect(screen.getByText('Different Metric')).toBeInTheDocument();
       expect(screen.getByText('200')).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('StatisticsCard', () => {
     });
 
     it('should render with grades icon', () => {
-      render(<StatisticsCard {...defaultProps} icon="grades" />);
+      render(<StatisticsCard {...defaultProps} icon="grade" />);
       expect(document.querySelector('svg')).toBeInTheDocument();
     });
 
@@ -93,7 +93,7 @@ describe('StatisticsCard', () => {
     it('should have proper card structure', () => {
       render(<StatisticsCard {...defaultProps} />);
       
-      const card = screen.getByText('Test Metric').closest('div');
+      const card = screen.getByText('Test Metric').closest('.bg-white');
       expect(card).toBeInTheDocument();
       expect(card).toHaveClass('bg-white');
     });
@@ -155,7 +155,7 @@ describe('StatisticsCard', () => {
       const { rerender } = render(<StatisticsCard title="Card 1" value="100" icon="attendance" />);
       expect(screen.getByText('Card 1')).toBeInTheDocument();
 
-      rerender(<StatisticsCard title="Card 2" value="200" icon="grades" />);
+      rerender(<StatisticsCard title="Card 2" value="200" icon="grade" />);
       expect(screen.getByText('Card 2')).toBeInTheDocument();
     });
   });

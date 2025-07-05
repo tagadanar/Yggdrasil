@@ -4,14 +4,36 @@ import { StatisticsDashboard } from '@/components/statistics/StatisticsDashboard
 import { useAuth } from '@/context/AuthContext';
 
 // Mock dependencies
-jest.mock('@/context/AuthContext');
+jest.mock('@/context/AuthContext', () => ({
+  useAuth: jest.fn()
+}));
 jest.mock('@/components/statistics/ExportButton', () => {
   return function MockExportButton({ timePeriod }: { timePeriod: string }) {
     return <button data-testid="export-button">Export {timePeriod} data</button>;
   };
 });
+jest.mock('@/components/statistics/AttendanceChart', () => {
+  return function MockAttendanceChart({ data }: { data: any }) {
+    return <div data-testid="attendance-chart">Attendance Chart</div>;
+  };
+});
+jest.mock('@/components/statistics/GradeChart', () => {
+  return function MockGradeChart({ data }: { data: any }) {
+    return <div data-testid="grade-chart">Grade Chart</div>;
+  };
+});
+jest.mock('@/components/statistics/EngagementChart', () => {
+  return function MockEngagementChart({ data }: { data: any }) {
+    return <div data-testid="engagement-chart">Engagement Chart</div>;
+  };
+});
+jest.mock('@/components/ui/LoadingSpinner', () => {
+  return function MockLoadingSpinner() {
+    return <div data-testid="loading-spinner" role="status">Loading...</div>;
+  };
+});
 
-const mockUseAuth = useAuth as jest.Mock;
+const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -29,24 +51,33 @@ describe('StatisticsDashboard', () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({
-        attendanceData: [
-          { period: 'Week 1', rate: 85.5 },
-          { period: 'Week 2', rate: 88.2 },
-        ],
-        gradeData: [
-          { subject: 'Math', average: 78.5 },
-          { subject: 'Science', average: 82.1 },
-        ],
-        engagementData: [
-          { metric: 'Active Users', value: 150 },
-          { metric: 'Course Completions', value: 45 },
-        ],
-        schoolStats: {
-          totalStudents: 120,
-          activeCourses: 15,
-          completionRate: 78,
-          averageGrade: 78.2,
+        attendance: {
+          rate: 85.5,
+          trend: 'up',
+          data: [
+            { period: 'Week 1', rate: 85.5 },
+            { period: 'Week 2', rate: 88.2 },
+          ]
         },
+        grades: {
+          average: 78.5,
+          trend: 'stable',
+          distribution: [
+            { subject: 'Math', average: 78.5 },
+            { subject: 'Science', average: 82.1 },
+          ]
+        },
+        engagement: {
+          score: 75,
+          trend: 'up',
+          data: [
+            { metric: 'Active Users', value: 150 },
+            { metric: 'Course Completions', value: 45 },
+          ]
+        },
+        overview: {
+          totalStudents: 120
+        }
       }),
     });
   });
@@ -67,10 +98,10 @@ describe('StatisticsDashboard', () => {
       render(<StatisticsDashboard />);
       
       await waitFor(() => {
-        expect(screen.getByDisplayValue('This Month')).toBeInTheDocument();
+        const selector = screen.getByRole('combobox');
+        expect(selector).toBeInTheDocument();
+        expect(selector).toHaveValue('month');
       });
-      
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
     });
 
     it('should render export button', async () => {

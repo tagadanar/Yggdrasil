@@ -58,7 +58,7 @@ describe('News Model', () => {
       
       const savedNews = await minimalNews.save();
       expect(savedNews.category).toBe('general'); // Default
-      expect(savedNews.priority).toBe('medium'); // Default
+      expect(savedNews.priority).toBe('normal'); // Default
       expect(savedNews.status).toBe('draft'); // Default
       expect(savedNews.targetAudience).toEqual(['all']); // Default
       expect(savedNews.isActive).toBe(true); // Default

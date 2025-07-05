@@ -11,7 +11,7 @@ export interface NewsArticle extends Document {
   status: 'draft' | 'published' | 'archived';
   publishedAt?: Date;
   featuredImage?: string;
-  priority: 'low' | 'normal' | 'high' | 'urgent' | 'emergency';
+  priority: 'low' | 'normal' | 'medium' | 'high' | 'urgent' | 'emergency';
   targetAudience: string[];
   notificationSent: boolean;
   readBy: string[];
@@ -63,7 +63,7 @@ const NewsSchema = new Schema<NewsArticle>({
   featuredImage: String,
   priority: {
     type: String,
-    enum: ['low', 'normal', 'high', 'urgent', 'emergency'],
+    enum: ['low', 'normal', 'medium', 'high', 'urgent', 'emergency'],
     default: 'normal'
   },
   targetAudience: {
@@ -121,8 +121,8 @@ NewsSchema.statics.findForAudience = function(audience: string[]) {
       { targetAudience: 'all' }
     ]
   }).sort({ publishedAt: -1 }).then((articles: NewsArticle[]) => {
-    // Sort by priority manually: urgent > high > medium > low
-    const priorityOrder = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1 };
+    // Sort by priority manually: emergency > urgent > high > medium > normal > low
+    const priorityOrder = { 'emergency': 6, 'urgent': 5, 'high': 4, 'medium': 3, 'normal': 2, 'low': 1 };
     return articles.sort((a, b) => {
       const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
       const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 0;

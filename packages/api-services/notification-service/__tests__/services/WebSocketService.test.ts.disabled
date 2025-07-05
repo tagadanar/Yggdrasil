@@ -33,10 +33,12 @@ describe('WebSocketService', () => {
   });
 
   afterAll((done) => {
-    io.close();
-    httpServer.close();
     clientSocket.close();
-    done();
+    io.close(() => {
+      httpServer.close(() => {
+        done();
+      });
+    });
   });
 
   afterEach(() => {
