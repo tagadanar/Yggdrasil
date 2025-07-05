@@ -1,35 +1,28 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../../src/index';
 import { NewsModel } from '@101-school/database-schemas';
 
 describe('NewsController Integration Tests', () => {
+  let mongoServer: MongoMemoryServer;
+
   beforeAll(async () => {
-    // Skip MongoDB for development tests - use in-memory storage
-    // The service will automatically fallback to in-memory storage
+    // Start in-memory MongoDB server
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
   });
 
   beforeEach(async () => {
-    // Clear in-memory storage before each test if needed
-    try {
-      if (mongoose.connection.readyState === 1) {
-        await NewsModel.deleteMany({});
-      }
-    } catch (error) {
-      // Ignore MongoDB errors in development - service uses in-memory storage
-    }
+    // Clear database before each test
+    await NewsModel.deleteMany({});
   });
 
   afterAll(async () => {
-    // Clean up and close connection if it exists
-    try {
-      if (mongoose.connection.readyState === 1) {
-        await NewsModel.deleteMany({});
-        await mongoose.connection.close();
-      }
-    } catch (error) {
-      // Ignore MongoDB errors in development
-    }
+    // Clean up and close connection
+    await mongoose.connection.close();
+    await mongoServer.stop();
   });
 
   describe('POST /api/news', () => {
@@ -131,7 +124,7 @@ describe('NewsController Integration Tests', () => {
           category: 'general',
           tags: ['published'],
           status: 'published',
-          priority: 'medium',
+          priority: 'normal',
           targetAudience: ['all'],
           notificationSent: false,
           readBy: [],
@@ -197,7 +190,7 @@ describe('NewsController Integration Tests', () => {
         category: 'general',
         tags: ['original'],
         status: 'draft',
-        priority: 'medium',
+        priority: 'normal',
         targetAudience: ['all'],
         notificationSent: false,
         readBy: [],
@@ -242,7 +235,7 @@ describe('NewsController Integration Tests', () => {
         category: 'general',
         tags: ['delete'],
         status: 'published',
-        priority: 'medium',
+        priority: 'normal',
         targetAudience: ['all'],
         notificationSent: false,
         readBy: [],

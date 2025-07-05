@@ -66,7 +66,7 @@ describe('NewsController Unit Tests', () => {
           category: 'general',
           tags: ['test'],
           status: 'published', // Should be mapped from isPublished: true
-          priority: 'medium',
+          priority: 'normal',
           isPinned: false,
           isFeatured: false
         }),
@@ -159,7 +159,7 @@ describe('NewsController Unit Tests', () => {
         isPublished: true
       };
 
-      req.params = { articleId: 'test-id' };
+      req.params = { id: 'test-id' };
       req.body = frontendData;
 
       MockedNewsService.updateArticle.mockResolvedValue({

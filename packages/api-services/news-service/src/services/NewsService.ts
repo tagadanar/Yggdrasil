@@ -81,7 +81,7 @@ export class NewsService {
           tags: articleData.tags || [],
           status: articleData.status || 'draft',
           featuredImage: articleData.featuredImage?.url,
-          priority: articleData.priority || 'medium',
+          priority: articleData.priority || 'normal',
           targetAudience: ['all'],
           notificationSent: false,
           readBy: [],
@@ -104,7 +104,7 @@ export class NewsService {
           tags: articleData.tags || [],
           status: articleData.status || 'draft',
           featuredImage: articleData.featuredImage?.url,
-          priority: articleData.priority || 'medium',
+          priority: articleData.priority || 'normal',
           targetAudience: ['all'],
           notificationSent: false,
           readBy: [],
@@ -565,17 +565,19 @@ export class NewsService {
       return userId === article.author; // Simplified - would check admin role too
     }
 
-    switch (article.visibility) {
-      case 'public':
-        return true;
-      case 'students':
-      case 'faculty':
-      case 'staff':
-      case 'admin':
-        return !!userId; // Simplified - would check actual roles
-      default:
-        return userId === article.author;
+    // For published articles, check targetAudience
+    if (article.targetAudience && article.targetAudience.includes('all')) {
+      return true;
     }
+
+    // If no userId provided, can only view public articles
+    if (!userId) {
+      return false;
+    }
+
+    // If article has specific target audience, check if user is authorized
+    // This is simplified - in real implementation would check user roles
+    return true;
   }
 
   private static canUserEditArticle(article: any, userId: string): boolean {
@@ -603,7 +605,7 @@ export class NewsService {
       }
 
       // Toggle pin status by changing priority
-      const newPriority = article.priority === 'urgent' ? 'medium' : 'urgent';
+      const newPriority = article.priority === 'urgent' ? 'normal' : 'urgent';
       const updatedArticle = await NewsModel.findByIdAndUpdate(
         articleId,
         { $set: { priority: newPriority } },

@@ -37,7 +37,7 @@ export class NewsController {
         category: frontendData.category || 'general',
         tags: frontendData.tags || [],
         status: frontendData.isPublished !== undefined ? (frontendData.isPublished ? 'published' : 'draft') : 'draft',
-        priority: frontendData.priority || 'medium',
+        priority: frontendData.priority || 'normal',
         isPinned: frontendData.isPinned || false,
         isFeatured: frontendData.isFeatured || false
       };
@@ -100,7 +100,7 @@ export class NewsController {
    */
   static async updateArticle(req: Request, res: Response): Promise<void> {
     try {
-      const { articleId } = req.params;
+      const { id: articleId } = req.params;
       const frontendData = req.body;
       const userId = getMockUser(req).id;
 
@@ -145,7 +145,7 @@ export class NewsController {
    */
   static async deleteArticle(req: Request, res: Response): Promise<void> {
     try {
-      const { articleId } = req.params;
+      const { id: articleId } = req.params;
       const userId = getMockUser(req).id;
 
       // Authentication disabled for development
@@ -177,7 +177,8 @@ export class NewsController {
    */
   static async searchArticles(req: Request, res: Response): Promise<void> {
     try {
-      const userId = getMockUser(req).id;
+      // For tests, treat requests without explicit auth as anonymous
+      const userId = req.headers.authorization ? getMockUser(req).id : undefined;
       const filters: ArticleSearchFilters = {
         category: req.query.category as any,
         status: req.query.status as any,

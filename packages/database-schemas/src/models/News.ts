@@ -11,7 +11,7 @@ export interface NewsArticle extends Document {
   status: 'draft' | 'published' | 'archived';
   publishedAt?: Date;
   featuredImage?: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: 'low' | 'normal' | 'high' | 'urgent' | 'emergency';
   targetAudience: string[];
   notificationSent: boolean;
   readBy: string[];
@@ -63,8 +63,8 @@ const NewsSchema = new Schema<NewsArticle>({
   featuredImage: String,
   priority: {
     type: String,
-    enum: ['low', 'medium', 'high', 'urgent'],
-    default: 'medium'
+    enum: ['low', 'normal', 'high', 'urgent', 'emergency'],
+    default: 'normal'
   },
   targetAudience: {
     type: [String],
@@ -151,7 +151,7 @@ NewsSchema.statics.searchArticles = function(query: string) {
 };
 
 // Pre-save middleware
-NewsSchema.pre('save', function(next) {
+NewsSchema.pre<NewsArticle>('save', function(next) {
   if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
     this.publishedAt = new Date();
   }

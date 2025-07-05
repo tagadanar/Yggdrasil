@@ -1,24 +1,28 @@
 import { NewsService } from '../../src/services/NewsService';
 import { NewsModel } from '@101-school/database-schemas';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { NewsCategory, ArticlePriority } from '../../src/types/news';
 
 describe('NewsService Integration Tests', () => {
+  let mongoServer: MongoMemoryServer;
+
   beforeAll(async () => {
-    // Connect to test database
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/yggdrasil-news-test';
+    // Start in-memory MongoDB server
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
     await mongoose.connect(mongoUri);
   });
 
   beforeEach(async () => {
     // Clear database before each test
-    await NewsService.clearStorage();
+    await NewsModel.deleteMany({});
   });
 
   afterAll(async () => {
     // Clean up and close connection
-    await NewsService.clearStorage();
     await mongoose.connection.close();
+    await mongoServer.stop();
   });
 
   describe('Article Creation', () => {
@@ -84,7 +88,8 @@ describe('NewsService Integration Tests', () => {
         excerpt: 'Retrieval excerpt',
         category: 'general' as NewsCategory,
         tags: ['retrieve'],
-        status: 'published' as any
+        status: 'published' as any,
+        priority: 'normal' as ArticlePriority
       };
 
       const createResult = await NewsService.createArticle(articleData, 'test-author-id');
@@ -336,7 +341,8 @@ describe('NewsService Integration Tests', () => {
         excerpt: 'Read excerpt',
         category: 'general' as NewsCategory,
         tags: ['read'],
-        status: 'published' as any
+        status: 'published' as any,
+        priority: 'normal' as ArticlePriority
       };
 
       const createResult = await NewsService.createArticle(articleData, 'test-author-id');

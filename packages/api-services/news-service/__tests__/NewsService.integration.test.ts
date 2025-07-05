@@ -12,9 +12,15 @@ const mockNewsModel = {
   countDocuments: jest.fn(),
 };
 
+const mockUserModel = {
+  findById: jest.fn(),
+  deleteMany: jest.fn(),
+};
+
 // Mock the database schemas
 jest.mock('@101-school/database-schemas', () => ({
   NewsModel: mockNewsModel,
+  UserModel: mockUserModel,
   DatabaseConnection: {
     connect: jest.fn().mockResolvedValue(true),
     disconnect: jest.fn().mockResolvedValue(undefined),
@@ -63,7 +69,7 @@ describe('NewsService Integration Tests', () => {
     };
 
     // Set up user model mocks
-    mockUserModel.findById.mockImplementation((id) => {
+    mockUserModel.findById.mockImplementation((id: string) => {
       if (id === authorId) return Promise.resolve(authorUser);
       if (id === studentId) return Promise.resolve(studentUser);
       if (id === adminId) return Promise.resolve(adminUser);
