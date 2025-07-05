@@ -13,6 +13,15 @@ router.get('/', CourseController.searchCourses);
 // Get course statistics
 router.get('/stats', CourseController.getCourseStats);
 
+// Get enrolled courses for current user (must be before /:courseId)
+router.get('/enrolled', CourseController.getEnrolledCourses);
+
+// Get course categories (must be before /:courseId)
+router.get('/categories', CourseController.getCategories);
+
+// Get course levels (must be before /:courseId)
+router.get('/levels', CourseController.getLevels);
+
 // Get courses by instructor
 router.get('/instructor/:instructorId', CourseController.getCoursesByInstructor);
 
@@ -57,15 +66,6 @@ router.post('/:courseId/feedback', CourseController.submitCourseFeedback);
 
 // Get course prerequisites
 router.get('/:courseId/prerequisites', CourseController.getCoursePrerequisites);
-
-// Get enrolled courses for current user
-router.get('/enrolled', CourseController.getEnrolledCourses);
-
-// Get course categories
-router.get('/categories', CourseController.getCategories);
-
-// Get course levels
-router.get('/levels', CourseController.getLevels);
 
 // Export course data
 router.get('/:courseId/export', CourseController.exportCourseData);

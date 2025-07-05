@@ -261,9 +261,9 @@ export default function SettingsPage() {
                       {/* Profile Photo */}
                       <div className="flex items-center space-x-6">
                         <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
-                          {user.profile?.profilePhoto ? (
+                          {user?.profile?.profilePhoto ? (
                             <img
-                              src={user.profile.profilePhoto}
+                              src={user?.profile?.profilePhoto}
                               alt="Photo de profil"
                               className="w-full h-full rounded-full object-cover"
                             />
@@ -336,7 +336,7 @@ export default function SettingsPage() {
                         />
                       </div>
 
-                      {user.role === 'student' && (
+                      {user?.role === 'student' && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Numéro d'étudiant
@@ -350,7 +350,7 @@ export default function SettingsPage() {
                         </div>
                       )}
 
-                      {(user.role === 'teacher' || user.role === 'staff') && (
+                      {(user?.role === 'teacher' || user?.role === 'staff') && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Département

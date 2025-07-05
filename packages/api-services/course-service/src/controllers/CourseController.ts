@@ -264,9 +264,15 @@ export class CourseController {
           total: result.total
         });
       } else {
-        res.status(400).json({
+        // Check if it's a database connection error (should be 500)
+        const isInternalError = result.error.includes('Database connection error') || 
+                               result.error.includes('Database operation failed');
+        const statusCode = isInternalError ? 500 : 400;
+        const errorMessage = isInternalError ? 'Internal server error' : result.error;
+        
+        res.status(statusCode).json({
           success: false,
-          error: result.error
+          error: errorMessage
         });
       }
     } catch (error: any) {

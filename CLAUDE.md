@@ -288,10 +288,49 @@ describe('LoginForm', () => {
 ```
 
 ### Testing Commands
-```bash
-# Run all tests
-npm test
 
+#### 🎯 Recommended Test Commands
+For large codebases with many tests, use these optimized commands that provide clean, readable summaries:
+
+```bash
+# Run all tests with clean summary (RECOMMENDED)
+npm run test:summary
+
+# Run tests with minimal output (for quick checks)
+npm run test:quiet
+
+# Full verbose output (use sparingly - generates wall of text)
+npm test
+```
+
+**Output Example:**
+```
+================================================================================
+🌳 YGGDRASIL TEST SUMMARY
+================================================================================
+📊 Total Tests: 150
+✅ Passed: 148
+❌ Failed: 2
+⏳ Pending: 0
+📈 Success Rate: 98.7%
+
+📦 PACKAGE BREAKDOWN:
+  ✅ api-gateway: 4 test files
+  ❌ auth-service: 8 test files
+  ✅ frontend: 12 test files
+
+🔥 FAILED TESTS:
+  📁 auth-service:
+    ❌ AuthService should validate email format
+    ❌ AuthMiddleware should handle expired tokens
+
+================================================================================
+🎯 Overall Result: ❌ 2 TESTS FAILED
+================================================================================
+```
+
+#### 🔧 Other Test Commands
+```bash
 # Run tests in watch mode
 npm test -- --watch
 
@@ -475,7 +514,7 @@ export const requireRole = (roles: UserRole[]) => {
 npm install --save-dev husky
 
 # Add pre-commit script
-npx husky add .husky/pre-commit "npm run lint && npm run typecheck && npm test"
+npx husky add .husky/pre-commit "npm run lint && npm run typecheck && npm run test:quiet"
 ```
 
 ### CI/CD Pipeline
@@ -512,7 +551,7 @@ jobs:
       run: npm run typecheck
     
     - name: Run tests
-      run: npm test -- --coverage
+      run: npm run test:summary -- --coverage
     
     - name: Upload coverage
       uses: codecov/codecov-action@v1
@@ -605,7 +644,9 @@ npm run dev:frontend        # Frontend only
 npm run dev:services        # Backend services only
 
 # Testing
-npm test                    # Run all tests
+npm run test:summary        # Run all tests with clean summary (RECOMMENDED)
+npm run test:quiet          # Run tests with minimal output
+npm test                    # Run all tests (verbose - use sparingly)
 npm run test:unit           # Unit tests only
 npm run test:integration    # Integration tests
 npm run test:e2e           # End-to-end tests

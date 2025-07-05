@@ -8,6 +8,9 @@ import HomePage from '@/app/page';
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
+  usePathname: jest.fn(() => '/test-path'),
+  useParams: jest.fn(() => ({ id: 'test-id' })),
+  useSearchParams: jest.fn(() => new URLSearchParams()),
 }));
 
 // Mock AuthContext

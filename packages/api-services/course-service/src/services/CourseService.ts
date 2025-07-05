@@ -55,8 +55,18 @@ export class CourseService {
    */
   static async createCourse(courseData: CreateCourseData, instructorId: string): Promise<CourseResult> {
     try {
+      // Convert date strings to Date objects if needed (for HTTP API compatibility)
+      const processedCourseData = {
+        ...courseData,
+        startDate: typeof courseData.startDate === 'string' ? new Date(courseData.startDate) : courseData.startDate,
+        endDate: typeof courseData.endDate === 'string' ? new Date(courseData.endDate) : courseData.endDate,
+        enrollmentDeadline: courseData.enrollmentDeadline && typeof courseData.enrollmentDeadline === 'string' 
+          ? new Date(courseData.enrollmentDeadline) 
+          : courseData.enrollmentDeadline
+      };
+
       // Validate course data
-      const validation = ValidationHelper.validateSchema(createCourseSchema, courseData);
+      const validation = ValidationHelper.validateSchema(createCourseSchema, processedCourseData);
       if (!validation.success) {
         return { success: false, error: `Course validation failed: ${validation.errors!.join('; ')}` };
       }
@@ -72,20 +82,20 @@ export class CourseService {
       }
 
       // Check if course code already exists
-      const existingCourse = await CourseModel.findOne({ code: courseData.code.toUpperCase() });
+      const existingCourse = await CourseModel.findOne({ code: processedCourseData.code.toUpperCase() });
       if (existingCourse) {
         return { success: false, error: 'Course code already exists' };
       }
 
       // Validate date range
-      if (courseData.endDate <= courseData.startDate) {
+      if (processedCourseData.endDate <= processedCourseData.startDate) {
         return { success: false, error: 'End date must be after start date' };
       }
 
       // Create course
       const course = await CourseModel.create({
-        ...courseData,
-        code: courseData.code.toUpperCase(),
+        ...processedCourseData,
+        code: processedCourseData.code.toUpperCase(),
         instructor: instructorId,
         instructorInfo: {
           firstName: (instructor as any).profile.firstName,

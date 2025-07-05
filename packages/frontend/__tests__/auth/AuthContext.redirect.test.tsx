@@ -86,7 +86,16 @@ describe('AuthContext Redirect Behavior', () => {
         profile: { firstName: 'Test', lastName: 'User' },
       };
 
-      mockTokenStorage.getAccessToken.mockReturnValue('valid-token');
+      // Create a valid JWT token with an expiry in the future
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(JSON.stringify({ 
+        sub: 'user-id', 
+        exp: Math.floor(Date.now() / 1000) + 3600 // expires in 1 hour
+      }));
+      const signature = 'mock-signature';
+      const validJWT = `${header}.${payload}.${signature}`;
+      
+      mockTokenStorage.getAccessToken.mockReturnValue(validJWT);
       mockAuthAPI.getCurrentUser.mockResolvedValue({
         success: true,
         data: mockUser,

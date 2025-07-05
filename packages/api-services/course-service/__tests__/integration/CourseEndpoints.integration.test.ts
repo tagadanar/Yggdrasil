@@ -7,11 +7,14 @@ import mongoose from 'mongoose';
 
 // Mock authentication middleware for testing
 const mockAuthMiddleware = (req: any, res: any, next: any) => {
-  // Set mock user data for testing
-  req.user = {
-    id: req.headers['test-user-id'] || 'defaultUserId',
-    role: req.headers['test-user-role'] || 'student'
-  };
+  // Only set user data if test headers are provided
+  if (req.headers['test-user-id'] && req.headers['test-user-role']) {
+    req.user = {
+      id: req.headers['test-user-id'],
+      role: req.headers['test-user-role']
+    };
+  }
+  // If no test headers, req.user remains undefined (for auth tests)
   next();
 };
 
@@ -42,11 +45,15 @@ describe('Course API Endpoints Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clean collections
-    await CourseModel.deleteMany({});
-    await UserModel.deleteMany({});
+    // Reset mock data (setup file provides comprehensive mocks)
+    if (CourseModel.__resetMockData) {
+      CourseModel.__resetMockData();
+    }
+    if (UserModel.__resetMockUsers) {
+      UserModel.__resetMockUsers();
+    }
 
-    // Create test users
+    // Create test users using the mocked UserModel
     const instructor = await UserModel.create({
       email: `instructor-${Date.now()}@example.com`,
       password: 'hashedPassword',
@@ -86,11 +93,11 @@ describe('Course API Endpoints Integration Tests', () => {
       isActive: true
     });
 
-    instructorId = (instructor._id as any).toString();
-    studentId = (student._id as any).toString();
-    adminId = (admin._id as any).toString();
+    instructorId = instructor._id.toString();
+    studentId = student._id.toString();
+    adminId = admin._id.toString();
 
-    // Create test courses
+    // Create test courses using the mocked CourseModel
     const course = await CourseModel.create({
       title: 'Integration Test Course',
       description: 'Course for integration testing',
@@ -149,8 +156,8 @@ describe('Course API Endpoints Integration Tests', () => {
       enrollmentDeadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
     });
 
-    courseId = (course._id as any).toString();
-    enrolledCourseId = (enrolledCourse._id as any).toString();
+    courseId = course._id.toString();
+    enrolledCourseId = enrolledCourse._id.toString();
   });
 
   describe('GET /courses', () => {
@@ -267,13 +274,26 @@ describe('Course API Endpoints Integration Tests', () => {
     };
 
     it('should create course as instructor', async () => {
+      // Convert dates to ISO strings as they would be sent over HTTP
+      const courseDataForAPI = {
+        ...validCourseData,
+        startDate: validCourseData.startDate.toISOString(),
+        endDate: validCourseData.endDate.toISOString()
+      };
+
       const response = await request(app)
         .post('/courses')
         .set('test-user-id', instructorId)
         .set('test-user-role', 'teacher')
-        .send(validCourseData)
-        .expect(201);
+        .send(courseDataForAPI);
 
+      // Log the response for debugging
+      if (response.status !== 201) {
+        console.log('Course creation failed:', response.status, response.body);
+        console.log('Sent data:', courseDataForAPI);
+      }
+
+      expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data.title).toBe(validCourseData.title);
       expect(response.body.data.code).toBe(validCourseData.code);
@@ -281,11 +301,18 @@ describe('Course API Endpoints Integration Tests', () => {
     });
 
     it('should create course as admin', async () => {
+      // Convert dates to ISO strings as they would be sent over HTTP
+      const courseDataForAPI = {
+        ...validCourseData,
+        startDate: validCourseData.startDate.toISOString(),
+        endDate: validCourseData.endDate.toISOString()
+      };
+
       const response = await request(app)
         .post('/courses')
         .set('test-user-id', adminId)
         .set('test-user-role', 'admin')
-        .send(validCourseData)
+        .send(courseDataForAPI)
         .expect(201);
 
       expect(response.body.success).toBe(true);
@@ -293,9 +320,16 @@ describe('Course API Endpoints Integration Tests', () => {
     });
 
     it('should return 401 for unauthorized user', async () => {
+      // Convert dates to ISO strings as they would be sent over HTTP
+      const courseDataForAPI = {
+        ...validCourseData,
+        startDate: validCourseData.startDate.toISOString(),
+        endDate: validCourseData.endDate.toISOString()
+      };
+
       const response = await request(app)
         .post('/courses')
-        .send(validCourseData)
+        .send(courseDataForAPI)
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -416,7 +450,7 @@ describe('Course API Endpoints Integration Tests', () => {
 
   describe('PATCH /courses/:courseId/publish', () => {
     beforeEach(async () => {
-      // Ensure course is in draft status
+      // Ensure course is in draft status using the mocked method
       await CourseModel.findByIdAndUpdate(courseId, { status: 'draft' });
     });
 
@@ -860,21 +894,23 @@ describe('Course API Endpoints Integration Tests', () => {
 
   describe('Error handling', () => {
     it('should handle 500 errors gracefully', async () => {
-      // Mock database error
+      // Mock database error by making find throw
       const originalFind = CourseModel.find;
       CourseModel.find = jest.fn().mockImplementation(() => {
         throw new Error('Database connection error');
       });
 
-      const response = await request(app)
-        .get('/courses')
-        .expect(500);
+      try {
+        const response = await request(app)
+          .get('/courses')
+          .expect(500);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Internal server error');
-
-      // Restore original method
-      CourseModel.find = originalFind;
+        expect(response.body.success).toBe(false);
+        expect(response.body.error).toBe('Internal server error');
+      } finally {
+        // Restore original method in finally block to ensure it's always restored
+        CourseModel.find = originalFind;
+      }
     });
 
     it('should handle malformed JSON requests', async () => {

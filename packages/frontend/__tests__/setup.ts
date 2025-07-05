@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 
-// Suppress JSDOM navigation errors that are expected in test environment
+// Suppress JSDOM navigation errors and React warnings that are expected in test environment
 const originalConsoleError = console.error;
 beforeAll(() => {
   console.error = (...args) => {
@@ -8,7 +8,9 @@ beforeAll(() => {
     const errorMessage = args[0]?.toString() || '';
     if (
       errorMessage.includes('Error: Not implemented: navigation') ||
-      errorMessage.includes('Not implemented: navigation (except hash changes)')
+      errorMessage.includes('Not implemented: navigation (except hash changes)') ||
+      errorMessage.includes('Warning: An update to') ||
+      errorMessage.includes('inside a test was not wrapped in act')
     ) {
       return;
     }
@@ -63,6 +65,7 @@ jest.mock('@/context/AuthContext', () => ({
     login: jest.fn(),
     logout: jest.fn(),
     isLoading: false,
+    isAuthenticated: true,
   }),
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
