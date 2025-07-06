@@ -27,21 +27,13 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 
-// In-memory storage for demo purposes
-let notificationStorage: Notification[] = [];
-let templateStorage: NotificationTemplate[] = [];
-let preferenceStorage: NotificationPreference[] = [];
-let queueStorage: NotificationQueue[] = [];
-let notificationIdCounter = 1;
-let templateIdCounter = 1;
-let preferenceIdCounter = 1;
-let queueIdCounter = 1;
 
 export class NotificationService {
   /**
    * Create a new notification
    */
   static async createNotification(data: CreateNotificationData, senderId?: string): Promise<NotificationResult> {
+    return { success: false, error: 'MongoDB implementation required for NotificationService' };
     try {
       // Validate required fields
       if (!data.title || !data.message || !data.recipients || data.recipients.length === 0) {
@@ -53,7 +45,7 @@ export class NotificationService {
       }
 
       const notification: Notification = {
-        _id: `notification_${notificationIdCounter++}`,
+        _id: `notification_${Date.now()}`,
         type: data.type,
         title: data.title,
         message: data.message,
@@ -95,7 +87,7 @@ export class NotificationService {
         updatedAt: new Date()
       };
 
-      notificationStorage.push(notification);
+      // MongoDB save needed
 
       // Queue for delivery if not scheduled for future
       if (!data.scheduledFor || data.scheduledFor <= new Date()) {
@@ -112,8 +104,9 @@ export class NotificationService {
    * Get notification by ID
    */
   static async getNotification(notificationId: string, userId?: string): Promise<NotificationResult> {
+    return { success: false, error: 'MongoDB implementation required for NotificationService' };
     try {
-      const notification = notificationStorage.find(n => n._id === notificationId);
+      const notification = null; // MongoDB query needed
 
       if (!notification) {
         return { success: false, error: 'Notification not found' };
@@ -134,6 +127,7 @@ export class NotificationService {
    * Update notification
    */
   static async updateNotification(notificationId: string, updateData: UpdateNotificationData, userId?: string): Promise<NotificationResult> {
+    return { success: false, error: 'MongoDB implementation required for NotificationService' };
     try {
       const notificationIndex = notificationStorage.findIndex(n => n._id === notificationId);
       if (notificationIndex === -1) {
@@ -697,17 +691,8 @@ export class NotificationService {
     return Math.round((read / notifications.length) * 100);
   }
 
-  /**
-   * Clear storage (for testing)
-   */
-  static clearStorage(): void {
-    notificationStorage = [];
-    templateStorage = [];
-    preferenceStorage = [];
-    queueStorage = [];
-    notificationIdCounter = 1;
-    templateIdCounter = 1;
-    preferenceIdCounter = 1;
-    queueIdCounter = 1;
+  static async clearStorage(): Promise<void> {
+    // MongoDB cleanup for testing - implement when models are available
+    console.log('NotificationService: MongoDB cleanup not yet implemented');
   }
 }

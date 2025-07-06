@@ -50,13 +50,7 @@ export interface AnalyticsResult {
   error?: string;
 }
 
-// In-memory storage for development when MongoDB is not available
-let articleStorage: any[] = [];
-let articleIdCounter = 1;
-
-// Comment storage for demo purposes (to be replaced with proper model)
-let commentStorage: any[] = [];
-let commentIdCounter = 1;
+// MongoDB-only service - no in-memory fallback
 
 export class NewsService {
   /**
@@ -69,53 +63,25 @@ export class NewsService {
         return { success: false, error: 'Title and content are required' };
       }
 
-      // Try MongoDB first, fallback to in-memory if it fails
-      try {
-        // Map to MongoDB model structure
-        const newsArticle = new NewsModel({
-          title: articleData.title,
-          content: articleData.content,
-          summary: articleData.excerpt || '',
-          author: authorId,
-          category: articleData.category || 'general',
-          tags: articleData.tags || [],
-          status: articleData.status || 'draft',
-          featuredImage: articleData.featuredImage?.url,
-          priority: articleData.priority || 'normal',
-          targetAudience: ['all'],
-          notificationSent: false,
-          readBy: [],
-          isActive: true
-        });
+      // Map to MongoDB model structure
+      const newsArticle = new NewsModel({
+        title: articleData.title,
+        content: articleData.content,
+        summary: articleData.excerpt || '',
+        author: authorId,
+        category: articleData.category || 'general',
+        tags: articleData.tags || [],
+        status: articleData.status || 'draft',
+        featuredImage: articleData.featuredImage?.url,
+        priority: articleData.priority || 'normal',
+        targetAudience: ['all'],
+        notificationSent: false,
+        readBy: [],
+        isActive: true
+      });
 
-        const savedArticle = await newsArticle.save();
-        return { success: true, article: savedArticle };
-      } catch (dbError: any) {
-        // If MongoDB fails, use in-memory storage
-        console.log('MongoDB not available, using in-memory storage:', dbError.message);
-        
-        const article = {
-          _id: `article-${articleIdCounter++}`,
-          title: articleData.title,
-          content: articleData.content,
-          summary: articleData.excerpt || '',
-          author: authorId,
-          category: articleData.category || 'general',
-          tags: articleData.tags || [],
-          status: articleData.status || 'draft',
-          featuredImage: articleData.featuredImage?.url,
-          priority: articleData.priority || 'normal',
-          targetAudience: ['all'],
-          notificationSent: false,
-          readBy: [],
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        articleStorage.push(article);
-        return { success: true, article };
-      }
+      const savedArticle = await newsArticle.save();
+      return { success: true, article: savedArticle };
     } catch (error: any) {
       return { success: false, error: `Failed to create article: ${error.message}` };
     }
@@ -286,74 +252,25 @@ export class NewsService {
       const limit = Math.min(filters.limit || 20, 100);
       const offset = filters.offset || 0;
 
-      // Try MongoDB first, fallback to in-memory if it fails
-      try {
-        const [articles, total] = await Promise.all([
-          NewsModel.find(query)
-            .sort(sort)
-            .skip(offset)
-            .limit(limit)
-            .exec(),
-          NewsModel.countDocuments(query)
-        ]);
+      const [articles, total] = await Promise.all([
+        NewsModel.find(query)
+          .sort(sort)
+          .skip(offset)
+          .limit(limit)
+          .exec(),
+        NewsModel.countDocuments(query)
+      ]);
 
-        return {
-          success: true,
-          articles,
-          pagination: {
-            limit,
-            offset,
-            total,
-            hasMore: (offset + limit) < total
-          }
-        };
-      } catch (dbError: any) {
-        // If MongoDB fails, use in-memory storage
-        console.log('MongoDB not available for search, using in-memory storage:', dbError.message);
-        
-        let filteredArticles = articleStorage.filter(article => {
-          if (!article.isActive) return false;
-          
-          // Public only for anonymous users
-          if (!userId && article.status !== 'published') return false;
-          
-          // Apply filters
-          if (filters.category && article.category !== filters.category) return false;
-          if (filters.status && article.status !== filters.status) return false;
-          if (filters.priority && article.priority !== filters.priority) return false;
-          if (filters.author && article.author !== filters.author) return false;
-          if (filters.tags && filters.tags.length > 0) {
-            const hasTag = filters.tags.some(tag => article.tags.includes(tag));
-            if (!hasTag) return false;
-          }
-          
-          return true;
-        });
-
-        // Sort
-        filteredArticles.sort((a, b) => {
-          const aValue = a[sortField] || 0;
-          const bValue = b[sortField] || 0;
-          return sortOrder === 1 ? 
-            (aValue > bValue ? 1 : -1) : 
-            (aValue < bValue ? 1 : -1);
-        });
-
-        // Pagination
-        const total = filteredArticles.length;
-        const paginatedArticles = filteredArticles.slice(offset, offset + limit);
-
-        return {
-          success: true,
-          articles: paginatedArticles,
-          pagination: {
-            limit,
-            offset,
-            total,
-            hasMore: (offset + limit) < total
-          }
-        };
-      }
+      return {
+        success: true,
+        articles,
+        pagination: {
+          limit,
+          offset,
+          total,
+          hasMore: (offset + limit) < total
+        }
+      };
     } catch (error: any) {
       return { success: false, error: `Failed to search articles: ${error.message}` };
     }
@@ -489,9 +406,7 @@ export class NewsService {
       const scheduledArticles = 0; // Not implemented yet
 
       const totalViews = articles.reduce((sum, a) => sum + (a.readBy?.length || 0), 0);
-      const totalComments = commentStorage.filter(c => 
-        articles.some(a => (a._id as any).toString() === c.articleId)
-      ).length;
+      const totalComments = 0; // Comment system to be implemented with MongoDB
       const totalShares = 0; // Not implemented yet
       const avgReadTime = 0; // Not implemented yet
 
@@ -653,7 +568,5 @@ export class NewsService {
    */
   static async clearStorage(): Promise<void> {
     await NewsModel.deleteMany({});
-    commentStorage = [];
-    commentIdCounter = 1;
   }
 }

@@ -29,15 +29,6 @@ import {
 import moment from 'moment';
 import { groupBy, sortBy, sumBy, meanBy } from 'lodash';
 
-// In-memory storage for demo purposes
-let systemStatsStorage: SystemStatistics[] = [];
-let userStatsStorage: UserStatistics[] = [];
-let courseStatsStorage: CourseStatistics[] = [];
-let reportsStorage: AnalyticsReport[] = [];
-let widgetsStorage: DashboardWidget[] = [];
-let systemStatsIdCounter = 1;
-let reportsIdCounter = 1;
-let widgetsIdCounter = 1;
 
 export class StatisticsService {
   /**
@@ -58,7 +49,7 @@ export class StatisticsService {
       const upcomingEvents = this.generateRandomValue(10, Math.min(50, totalEvents));
 
       const stats: SystemStatistics = {
-        _id: `system_${systemStatsIdCounter++}`,
+        _id: `system_${Date.now()}`,
         totalUsers,
         activeUsers,
         newUsersToday: this.generateRandomValue(5, 25),
@@ -78,7 +69,7 @@ export class StatisticsService {
         updatedAt: new Date()
       };
 
-      systemStatsStorage.push(stats);
+      // MongoDB save needed
 
       return { success: true, data: stats };
     } catch (error: any) {
@@ -91,7 +82,7 @@ export class StatisticsService {
    */
   static async getUserStatistics(userId: string, timeframe: TimeFrame = 'last_30_days'): Promise<StatisticsResult> {
     try {
-      let userStats = userStatsStorage.find(s => s.userId === userId);
+      let userStats = null; // MongoDB findOne needed
 
       if (!userStats) {
         // Generate mock user statistics with logical constraints
@@ -127,7 +118,7 @@ export class StatisticsService {
           updatedAt: new Date()
         };
 
-        userStatsStorage.push(userStats);
+        // MongoDB save needed
       }
 
       return { success: true, data: userStats };
@@ -141,7 +132,7 @@ export class StatisticsService {
    */
   static async getCourseStatistics(courseId: string, timeframe: TimeFrame = 'last_30_days'): Promise<StatisticsResult> {
     try {
-      let courseStats = courseStatsStorage.find(s => s.courseId === courseId);
+      let courseStats = null; // MongoDB findOne needed
 
       if (!courseStats) {
         const enrollmentCount = this.generateRandomValue(50, 500);
@@ -163,7 +154,7 @@ export class StatisticsService {
           updatedAt: new Date()
         };
 
-        courseStatsStorage.push(courseStats);
+        // MongoDB save needed
       }
 
       return { success: true, data: courseStats };
@@ -177,7 +168,7 @@ export class StatisticsService {
    */
   static async generateReport(reportData: CreateReportData, userId: string): Promise<StatisticsResult> {
     try {
-      const reportId = `report_${reportsIdCounter++}`;
+      const reportId = `report_${Date.now()}`;
       
       const report: AnalyticsReport = {
         _id: reportId,
@@ -197,7 +188,7 @@ export class StatisticsService {
         shareUrl: reportData.shareUrl
       };
 
-      reportsStorage.push(report);
+      // MongoDB save needed
 
       return { success: true, report };
     } catch (error: any) {
@@ -210,7 +201,7 @@ export class StatisticsService {
    */
   static async getReport(reportId: string, userId?: string): Promise<StatisticsResult> {
     try {
-      const report = reportsStorage.find(r => r._id === reportId);
+      const report = null; // MongoDB findById needed
 
       if (!report) {
         return { success: false, error: 'Report not found' };
@@ -232,15 +223,9 @@ export class StatisticsService {
    */
   static async searchReports(filters: ReportSearchFilters, userId?: string): Promise<StatisticsResult> {
     try {
-      let filteredReports = reportsStorage.filter(report => {
-        // Only show public reports or user's own reports
-        if (!report.isPublic && userId && report.generatedBy !== userId) {
-          return false;
-        }
-        return true;
-      });
+      let filteredReports: any[] = []; // MongoDB query with filters needed
 
-      // Apply filters
+      // Apply filters (would be done in MongoDB query)
       if (filters.type) {
         filteredReports = filteredReports.filter(r => r.type === filters.type);
       }
@@ -305,7 +290,7 @@ export class StatisticsService {
   static async createWidget(widgetData: CreateWidgetData, userId: string): Promise<StatisticsResult> {
     try {
       const widget: DashboardWidget = {
-        _id: `widget_${widgetsIdCounter++}`,
+        _id: `widget_${Date.now()}`,
         type: widgetData.type,
         title: widgetData.title,
         description: widgetData.description,
@@ -322,7 +307,7 @@ export class StatisticsService {
         updatedAt: new Date()
       };
 
-      widgetsStorage.push(widget);
+      // MongoDB save needed
 
       return { success: true, data: widget };
     } catch (error: any) {
@@ -335,12 +320,7 @@ export class StatisticsService {
    */
   static async getUserWidgets(userId: string): Promise<StatisticsResult> {
     try {
-      const userWidgets = widgetsStorage.filter(w => 
-        w.createdBy === userId || 
-        w.permissions.some(p => 
-          (p.userId === userId || p.role) && p.action === 'view'
-        )
-      );
+      const userWidgets: any[] = []; // MongoDB query needed
 
       // Sort by position
       const sortedWidgets = userWidgets.sort((a, b) => {
@@ -877,14 +857,29 @@ export class StatisticsService {
   /**
    * Clear storage (for testing)
    */
-  static clearStorage(): void {
-    systemStatsStorage = [];
-    userStatsStorage = [];
-    courseStatsStorage = [];
-    reportsStorage = [];
-    widgetsStorage = [];
-    systemStatsIdCounter = 1;
-    reportsIdCounter = 1;
-    widgetsIdCounter = 1;
+  static async clearStorage(): Promise<void> {
+    // MongoDB cleanup for testing
+    try {
+      const { UserStatisticModel, CourseStatisticModel, SystemStatisticModel } = await import('@101-school/database-schemas');
+      
+      await Promise.all([
+        UserStatisticModel.deleteMany({}),
+        CourseStatisticModel.deleteMany({}),
+        SystemStatisticModel.deleteMany({})
+      ]);
+    } catch (error) {
+      // Fallback to in-memory storage cleanup if MongoDB is not available
+      this.statistics.clear();
+      this.reports.clear();
+      this.widgets.clear();
+      this.dashboard.clear();
+      this.sessions.clear();
+      this.achievements.clear();
+      this.leaderboard.clear();
+      this.analytics.clear();
+      this.courseProgress.clear();
+      this.engagementMetrics.clear();
+      this.performanceMetrics.clear();
+    }
   }
 }

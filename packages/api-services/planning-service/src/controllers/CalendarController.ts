@@ -13,7 +13,7 @@ declare global {
     }
   }
 }
-import { SimplifiedCalendarService as CalendarService } from '../services/SimplifiedCalendarService';
+import { CalendarService } from '../services/CalendarService';
 import { CreateEventData, UpdateEventData, EventSearchFilters, CalendarViewType } from '../types/calendar';
 
 export class CalendarController {

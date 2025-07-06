@@ -166,6 +166,19 @@ module.exports = {
         }],
       },
       moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+    },
+    // Scripts tests
+    {
+      displayName: 'scripts',
+      testEnvironment: 'node',
+      testMatch: [
+        '<rootDir>/scripts/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
+        '<rootDir>/scripts/**/__tests__/**/!(setup).(ts|tsx|js)'
+      ],
+      moduleNameMapper: {
+        '^@101-school/shared-utilities$': '<rootDir>/packages/shared-utilities/src',
+        '^@101-school/database-schemas$': '<rootDir>/packages/database-schemas/src'
+      }
     }
   ],
   testTimeout: 30000,

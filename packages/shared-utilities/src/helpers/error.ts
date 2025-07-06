@@ -5,7 +5,10 @@ export class ErrorHelper {
    * Handle service errors with consistent format
    */
   static handleServiceError(message: string, error: any): { success: false; error: string } {
-    console.error(`${message}:`, error);
+    // Only log in non-test environments to reduce noise
+    if (process.env.NODE_ENV !== 'test') {
+      console.error(`${message}:`, error);
+    }
     
     if (error.name === 'ValidationError') {
       return { success: false, error: `Validation failed: ${error.message}` };

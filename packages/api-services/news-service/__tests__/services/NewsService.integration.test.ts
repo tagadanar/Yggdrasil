@@ -8,6 +8,11 @@ describe('NewsService Integration Tests', () => {
   let mongoServer: MongoMemoryServer;
 
   beforeAll(async () => {
+    // Disconnect any existing connections
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+    
     // Start in-memory MongoDB server
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
@@ -21,7 +26,9 @@ describe('NewsService Integration Tests', () => {
 
   afterAll(async () => {
     // Clean up and close connection
-    await mongoose.connection.close();
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
     await mongoServer.stop();
   });
 

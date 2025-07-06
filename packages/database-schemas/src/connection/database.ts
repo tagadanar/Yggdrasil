@@ -3,6 +3,10 @@ import mongoose from 'mongoose';
 
 export class DatabaseConnection {
   private static isInitialized = false;
+  
+  private static get isDevelopment(): boolean {
+    return process.env.NODE_ENV === 'development';
+  }
 
   /**
    * Connect to MongoDB database
@@ -14,19 +18,49 @@ export class DatabaseConnection {
         return true;
       }
 
-      await mongoose.connect(uri, {
+      // In development mode, ensure MongoDB is required
+      if (this.isDevelopment) {
+        if (!uri || uri.includes('memory://') || (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://'))) {
+          throw new Error('Development mode requires real MongoDB connection. In-memory databases not allowed.');
+        }
+      }
+
+      const connectOptions = {
         maxPoolSize: 10,
-        serverSelectionTimeoutMS: 5000,
+        serverSelectionTimeoutMS: this.isDevelopment ? 10000 : 5000, // More time in dev
         socketTimeoutMS: 45000,
-      });
+      };
+
+      await mongoose.connect(uri, connectOptions);
 
       this.setupEventListeners();
       this.isInitialized = true;
 
       console.log('✅ Database connected successfully');
+      
+      // In development, verify the connection with a ping
+      if (this.isDevelopment) {
+        await this.validateDevelopmentConnection();
+      }
+      
       return true;
     } catch (error) {
       console.error('❌ Database connection failed:', error);
+      
+      // If it's a development validation error, re-throw it directly
+      if (error instanceof Error && error.message.includes('Development mode requires real MongoDB connection')) {
+        throw error;
+      }
+      
+      // In development mode, provide helpful error messages
+      if (this.isDevelopment) {
+        console.error('🚨 Development Mode Error:');
+        console.error('   MongoDB connection is required for development.');
+        console.error('   Please ensure MongoDB is running via:');
+        console.error('   npm run dev:mongodb');
+        console.error('   or manually: docker-compose -f docker-compose.dev.yml up -d mongodb');
+      }
+      
       throw new Error(`Database connection failed: ${error}`);
     }
   }
@@ -116,6 +150,51 @@ export class DatabaseConnection {
       await this.disconnect();
       process.exit(0);
     });
+  }
+
+  /**
+   * Validate development connection with comprehensive checks
+   */
+  private static async validateDevelopmentConnection(): Promise<void> {
+    try {
+      const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
+
+      // Ping the database
+      await db.admin().ping();
+      
+      // Verify we can list collections
+      const collections = await db.listCollections().toArray();
+      
+      console.log('🔍 Development connection validated:');
+      console.log(`   📊 Database: ${mongoose.connection.name}`);
+      console.log(`   🖥️  Host: ${mongoose.connection.host}:${mongoose.connection.port}`);
+      console.log(`   📚 Collections: ${collections.length}`);
+      
+      // Warn if no collections exist (might be a fresh database)
+      if (collections.length === 0) {
+        console.log('⚠️  No collections found. Database may need initialization.');
+        console.log('   Run: npm run setup:db');
+      }
+      
+    } catch (error) {
+      console.error('❌ Development connection validation failed:', error);
+      throw new Error(`Development validation failed: ${error}`);
+    }
+  }
+
+  /**
+   * Enforce MongoDB connection for development operations
+   */
+  static enforceConnectionForDevelopment(): void {
+    if (this.isDevelopment && !this.isConnected()) {
+      throw new Error(
+        'MongoDB connection required in development mode. ' +
+        'Please run "npm run dev:mongodb" to start MongoDB before running services.'
+      );
+    }
   }
 
   /**

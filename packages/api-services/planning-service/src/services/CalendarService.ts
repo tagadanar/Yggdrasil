@@ -572,4 +572,11 @@ export class CalendarService {
       return { success: false, error: `Failed to book slot: ${error.message}` };
     }
   }
+
+  /**
+   * Clear all storage (for testing)
+   */
+  static async clearStorage(): Promise<void> {
+    await CalendarEventModel.deleteMany({});
+  }
 }

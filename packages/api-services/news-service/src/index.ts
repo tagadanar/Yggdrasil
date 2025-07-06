@@ -11,19 +11,16 @@ const app = express();
 const PORT = process.env.PORT || 3005;
 const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/yggdrasil-news';
 
-// Database connection - only if MongoDB is available
-if (process.env.MONGODB_URI || process.env.MONGO_URI) {
-  mongoose.connect(MONGO_URI)
-    .then(() => {
-      console.log('Connected to MongoDB');
-    })
-    .catch((error) => {
-      console.error('MongoDB connection error:', error);
-      console.log('Continuing without MongoDB - using in-memory storage');
-    });
-} else {
-  console.log('No MongoDB URI provided - using in-memory storage for development');
-}
+// Database connection - MongoDB is required
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    console.log('✅ News Service connected to MongoDB');
+  })
+  .catch((error) => {
+    console.error('❌ MongoDB connection failed:', error);
+    console.error('🚨 News Service requires MongoDB to function');
+    process.exit(1);
+  });
 
 // Security middleware
 app.use(helmet());
