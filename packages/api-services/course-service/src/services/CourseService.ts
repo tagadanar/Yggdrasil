@@ -59,10 +59,7 @@ export class CourseService {
       const processedCourseData = {
         ...courseData,
         startDate: typeof courseData.startDate === 'string' ? new Date(courseData.startDate) : courseData.startDate,
-        endDate: typeof courseData.endDate === 'string' ? new Date(courseData.endDate) : courseData.endDate,
-        enrollmentDeadline: courseData.enrollmentDeadline && typeof courseData.enrollmentDeadline === 'string' 
-          ? new Date(courseData.enrollmentDeadline) 
-          : courseData.enrollmentDeadline
+        endDate: typeof courseData.endDate === 'string' ? new Date(courseData.endDate) : courseData.endDate
       };
 
       // Validate course data
@@ -870,7 +867,7 @@ export class CourseService {
       if (userId) {
         // In a real implementation, check user's completed courses
         // For now, assume no prerequisites are completed
-        missing = prerequisites.map(p => (p as any).code);
+        missing = prerequisites.map((p: any) => p.code);
       }
 
       return {

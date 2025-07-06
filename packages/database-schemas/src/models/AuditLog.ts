@@ -181,4 +181,4 @@ AuditLogSchema.statics.findSecurityEvents = function() {
   }).sort({ timestamp: -1 });
 };
 
-export const AuditLogModel = mongoose.model<AuditLog, AuditLogModel>('AuditLog', AuditLogSchema);
+export const AuditLogModel = (mongoose.models.AuditLog as AuditLogModel) || mongoose.model<AuditLog, AuditLogModel>('AuditLog', AuditLogSchema);

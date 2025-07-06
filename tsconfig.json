@@ -18,7 +18,13 @@
     "paths": {
       "@shared/*": ["packages/shared-utilities/*"],
       "@database/*": ["packages/database-schemas/*"],
-      "@testing/*": ["packages/testing-utilities/*"]
+      "@testing/*": ["packages/testing-utilities/*"],
+      "@101-school/shared-utilities": ["packages/shared-utilities/src"],
+      "@101-school/shared-utilities/*": ["packages/shared-utilities/src/*"],
+      "@101-school/database-schemas": ["packages/database-schemas/src"],
+      "@101-school/database-schemas/*": ["packages/database-schemas/src/*"],
+      "@101-school/testing-utilities": ["packages/testing-utilities/src"],
+      "@101-school/testing-utilities/*": ["packages/testing-utilities/src/*"]
     }
   },
   "include": [

@@ -205,6 +205,6 @@ UserStatisticSchema.index({ userId: 1, period: 1, date: 1 }, { unique: true });
 CourseStatisticSchema.index({ courseId: 1, period: 1, date: 1 }, { unique: true });
 SystemStatisticSchema.index({ period: 1, date: 1 }, { unique: true });
 
-export const UserStatisticModel = mongoose.model<UserStatistic>('UserStatistic', UserStatisticSchema);
-export const CourseStatisticModel = mongoose.model<CourseStatistic>('CourseStatistic', CourseStatisticSchema);
-export const SystemStatisticModel = mongoose.model<SystemStatistic>('SystemStatistic', SystemStatisticSchema);
+export const UserStatisticModel = mongoose.models.UserStatistic as mongoose.Model<UserStatistic> || mongoose.model<UserStatistic>('UserStatistic', UserStatisticSchema);
+export const CourseStatisticModel = mongoose.models.CourseStatistic as mongoose.Model<CourseStatistic> || mongoose.model<CourseStatistic>('CourseStatistic', CourseStatisticSchema);
+export const SystemStatisticModel = mongoose.models.SystemStatistic as mongoose.Model<SystemStatistic> || mongoose.model<SystemStatistic>('SystemStatistic', SystemStatisticSchema);

@@ -1,7 +1,20 @@
 // Path: packages/api-services/course-service/src/controllers/CourseController.ts
 import { Request, Response } from 'express';
+
+// Extend Request interface to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        role: string;
+      };
+    }
+  }
+}
 import { CourseService } from '../services/CourseService';
-import { CreateCourseData, UpdateCourseData, CourseSearchFilters } from '../types/course';
+import { CreateCourseData, UpdateCourseData, CourseSearchFilters } from '@101-school/shared-utilities';
 
 export class CourseController {
   /**
@@ -265,10 +278,11 @@ export class CourseController {
         });
       } else {
         // Check if it's a database connection error (should be 500)
-        const isInternalError = result.error.includes('Database connection error') || 
-                               result.error.includes('Database operation failed');
+        const errorMsg = result.error || 'Unknown error';
+        const isInternalError = errorMsg.includes('Database connection error') || 
+                               errorMsg.includes('Database operation failed');
         const statusCode = isInternalError ? 500 : 400;
-        const errorMessage = isInternalError ? 'Internal server error' : result.error;
+        const errorMessage = isInternalError ? 'Internal server error' : errorMsg;
         
         res.status(statusCode).json({
           success: false,

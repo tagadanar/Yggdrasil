@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "nodemon src/app.ts",
+    "dev": "nodemon --exec \"npx ts-node\" src/index.ts",
     "build": "tsc",
     "start": "node dist/app.js",
     "test": "jest",

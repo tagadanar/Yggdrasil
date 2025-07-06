@@ -121,7 +121,14 @@ export class UserService {
       if (updateData.profile) {
         // Merge profile fields instead of replacing the entire profile
         Object.keys(updateData.profile).forEach(key => {
-          updateFields[`profile.${key}`] = updateData.profile![key as keyof UserProfile];
+          let value = updateData.profile![key as keyof UserProfile];
+          
+          // Handle empty studentId - convert empty strings to undefined to avoid duplicate key errors
+          if (key === 'studentId' && typeof value === 'string' && value.trim() === '') {
+            value = undefined;
+          }
+          
+          updateFields[`profile.${key}`] = value;
         });
       }
 

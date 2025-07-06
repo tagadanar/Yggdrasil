@@ -8,9 +8,12 @@
     "packages/api-services/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:services\"",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:services\" \"npm run dev:health-monitor\"",
     "dev:frontend": "npm run dev --workspace=packages/frontend",
-    "dev:services": "npm run dev --workspace=packages/api-services/auth-service",
+    "dev:services": "concurrently \"npm run dev --workspace=packages/api-services/auth-service\" \"npm run dev --workspace=packages/api-services/news-service\" \"npm run dev --workspace=packages/api-services/course-service\" \"npm run dev --workspace=packages/api-services/user-service\" \"npm run dev --workspace=packages/api-services/statistics-service\" \"npm run dev --workspace=packages/api-services/planning-service\" \"npm run dev --workspace=packages/api-services/notification-service\"",
+    "dev:health-monitor": "sleep 10 && node scripts/wait-for-services.js 60",
+    "health-check": "node scripts/health-check.js",
+    "health-check:watch": "node scripts/health-check.js --watch",
     "test": "jest",
     "test:summary": "jest --verbose=false",
     "test:quiet": "jest --silent",

@@ -594,6 +594,70 @@ export class AuthService {
 }
 ```
 
+## 🏥 Health Monitoring & Service Checks
+
+### Health Check System
+The Yggdrasil platform includes a comprehensive health check system to monitor all services:
+
+#### Health Check Scripts
+```bash
+# Check all services once
+npm run health-check
+
+# Continuously monitor services (every 30 seconds)
+npm run health-check:watch
+
+# Wait for services to start (used in npm run dev)
+node scripts/wait-for-services.js [timeout_seconds]
+```
+
+#### Service Health Endpoints
+All API services expose health check endpoints:
+- **Auth Service**: `http://localhost:3001/health`
+- **Course Service**: `http://localhost:3003/health`
+- **Planning Service**: `http://localhost:3004/health`
+- **News Service**: `http://localhost:3005/health`
+- **Statistics Service**: `http://localhost:3006/health`
+- **Notification Service**: `http://localhost:3007/health`
+- **Frontend**: `http://localhost:3000/` (Next.js built-in)
+
+#### Integrated Development Workflow
+When you run `npm run dev`, the system automatically:
+1. Starts all services concurrently
+2. Waits 10 seconds for services to initialize
+3. Monitors service health for 60 seconds
+4. Provides real-time status updates
+5. Reports final health status
+
+```bash
+# Development with automatic health monitoring
+npm run dev
+
+# Example output:
+# 🌳 Yggdrasil Services Startup Monitor
+# ⏳ Waiting for services to start...
+# ✅ Auth Service is ready
+# ✅ News Service is ready
+# ✅ Course Service is ready
+# ...
+# 🎉 All services are ready!
+# 🏥 Running final health check...
+# ✅ Frontend             - Healthy (45ms)
+# ✅ Auth Service         - Healthy (12ms)
+# ✅ News Service         - Healthy (8ms)
+# 🚀 All systems go! Services are healthy and ready.
+```
+
+#### Custom Health Check Configuration
+The health check system can be customized by modifying `scripts/health-check.js`:
+
+```javascript
+const services = [
+  { name: 'Custom Service', url: 'http://localhost:3008', path: '/health' },
+  // Add your custom services here
+];
+```
+
 ## 📈 Monitoring & Metrics
 
 ### Application Metrics
@@ -639,9 +703,13 @@ app.get('/health', async (req, res) => {
 
 ```bash
 # Development
-npm run dev                 # Start all services
+npm run dev                 # Start all services with health monitoring
 npm run dev:frontend        # Frontend only
 npm run dev:services        # Backend services only
+
+# Health Monitoring
+npm run health-check        # Check all services once
+npm run health-check:watch  # Monitor services continuously
 
 # Testing
 npm run test:summary        # Run all tests with clean summary (RECOMMENDED)

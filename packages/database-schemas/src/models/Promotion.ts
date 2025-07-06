@@ -176,4 +176,4 @@ PromotionSchema.statics.removeCourse = async function(promotionId: string, cours
   return true;
 };
 
-export const PromotionModel = mongoose.model<Promotion, PromotionModel>('Promotion', PromotionSchema);
+export const PromotionModel = (mongoose.models.Promotion as PromotionModel) || mongoose.model<Promotion, PromotionModel>('Promotion', PromotionSchema);

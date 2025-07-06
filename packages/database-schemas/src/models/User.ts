@@ -95,7 +95,14 @@ const UserProfileSchema = new Schema<UserProfile>({
   studentId: {
     type: String,
     sparse: true,
-    unique: true
+    unique: true,
+    validate: {
+      validator: function(v: string) {
+        // Allow undefined/null, but if provided, must not be empty string
+        return v === undefined || v === null || (typeof v === 'string' && v.trim().length > 0);
+      },
+      message: 'Student ID cannot be an empty string'
+    }
   },
   department: String,
   specialties: [String],
@@ -301,5 +308,5 @@ UserSchema.pre<User>('save', function(next) {
   next();
 });
 
-// Create and export the model
-export const UserModel = mongoose.model<User, UserModel>('User', UserSchema);
+// Create and export the model with safe registration
+export const UserModel = (mongoose.models.User as UserModel) || mongoose.model<User, UserModel>('User', UserSchema);

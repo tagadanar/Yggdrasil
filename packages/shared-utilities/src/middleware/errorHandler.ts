@@ -2,7 +2,25 @@
 import { Request, Response, NextFunction } from 'express';
 import { ResponseHelper } from '../helpers/response';
 import { HTTP_STATUS } from '../constants';
-import { AuditLogModel } from '../../../database-schemas/src';
+
+// Optional audit logger interface for dependency injection
+export interface AuditLogger {
+  logAction(
+    userId: string,
+    action: string,
+    resourceType: string,
+    details: any,
+    metadata?: any
+  ): Promise<void>;
+}
+
+// Global audit logger instance (can be injected)
+let auditLogger: AuditLogger | null = null;
+
+// Function to inject audit logger implementation
+export const setAuditLogger = (logger: AuditLogger): void => {
+  auditLogger = logger;
+};
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -253,10 +271,15 @@ const shouldAuditError = (error: AppError, statusCode: number): boolean => {
  */
 const auditError = async (error: AppError, req: Request): Promise<void> => {
   try {
+    // Only log if audit logger is available
+    if (!auditLogger) {
+      return;
+    }
+
     const userId = (req as any).user?.id || 'anonymous';
     const action = determineErrorAction(error);
     
-    await AuditLogModel.logAction(
+    await auditLogger.logAction(
       userId,
       action,
       'system',

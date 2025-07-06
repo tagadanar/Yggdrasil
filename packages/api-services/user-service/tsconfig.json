@@ -6,7 +6,8 @@
     "declarationMap": true,
     "sourceMap": true,
     "noEmit": false,
-    "isolatedModules": false
+    "isolatedModules": false,
+    "module": "commonjs"
   },
   "include": ["src/**/*", "src/types/express.d.ts"],
   "exclude": ["**/*.test.ts", "dist"]

@@ -1,5 +1,19 @@
 // Path: packages/api-services/user-service/src/controllers/UserController.ts
 import { Request, Response } from 'express';
+
+// Extend Request interface to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        _id: string;
+        id: string;
+        email: string;
+        role: string;
+      };
+    }
+  }
+}
 import { UserService } from '../services/UserService';
 import { ResponseHelper, HTTP_STATUS } from '../../../../shared-utilities/src';
 

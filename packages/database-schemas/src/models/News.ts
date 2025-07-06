@@ -158,4 +158,4 @@ NewsSchema.pre<NewsArticle>('save', function(next) {
   next();
 });
 
-export const NewsModel = mongoose.model<NewsArticle, NewsModel>('News', NewsSchema);
+export const NewsModel = (mongoose.models.News as NewsModel) || mongoose.model<NewsArticle, NewsModel>('News', NewsSchema);

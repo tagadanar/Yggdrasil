@@ -266,4 +266,4 @@ ScheduleSchema.pre('save', function(next) {
   next();
 });
 
-export const ScheduleModel = mongoose.model<CalendarEvent, ScheduleModel>('Schedule', ScheduleSchema);
+export const ScheduleModel = (mongoose.models.Schedule as ScheduleModel) || mongoose.model<CalendarEvent, ScheduleModel>('Schedule', ScheduleSchema);

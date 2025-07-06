@@ -465,4 +465,4 @@ CourseSchema.pre('save', function(this: any, next) {
   next();
 });
 
-export const CourseModel = mongoose.model<Course, CourseModel>('Course', CourseSchema);
+export const CourseModel = (mongoose.models.Course as CourseModel) || mongoose.model<Course, CourseModel>('Course', CourseSchema);
