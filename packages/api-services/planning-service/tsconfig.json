@@ -5,13 +5,15 @@
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "module": "commonjs"
+    "module": "commonjs",
+    "target": "es2020"
   },
   "include": [
     "src/**/*"
@@ -19,9 +21,6 @@
   "exclude": [
     "node_modules",
     "dist",
-    "__tests__",
-    "src/models/CalendarEvent.ts",
-    "src/models/Schedule.ts",
-    "src/services/CalendarService.ts"
+    "__tests__"
   ]
 }

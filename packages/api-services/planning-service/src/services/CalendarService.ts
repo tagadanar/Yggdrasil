@@ -106,7 +106,7 @@ export class CalendarService {
    */
   static async getEvent(eventId: string, userId?: string): Promise<EventResult> {
     try {
-      const event = await CalendarEventModel.findById(eventId)
+      const event = await CalendarEventModel.findOne({ _id: eventId, isActive: true })
         .populate('organizer', 'profile.firstName profile.lastName email')
         .populate('attendees', 'profile.firstName profile.lastName email');
 
@@ -180,7 +180,7 @@ export class CalendarService {
         $set: { isActive: false, status: 'cancelled' }
       });
 
-      return { success: true };
+      return { success: true, message: 'Event deleted successfully' };
     } catch (error: any) {
       return { success: false, error: `Failed to delete event: ${error.message}` };
     }

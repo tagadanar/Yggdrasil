@@ -1,9 +1,9 @@
 // Path: packages/api-services/planning-service/src/index.ts
-import dotenv from 'dotenv';
-import path from 'path';
+import { config } from 'dotenv';
+import { resolve } from 'path';
 
 // Load environment variables from the root .env file
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+config({ path: resolve(__dirname, '../../../../.env') });
 
 import express from 'express';
 import cors from 'cors';

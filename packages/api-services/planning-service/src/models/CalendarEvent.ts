@@ -109,17 +109,14 @@ const CalendarEventSchema = new Schema<CalendarEvent>({
     maxlength: [500, 'Location cannot exceed 500 characters']
   },
   attendees: [{
-    type: String,
-    ref: 'User'
+    type: String
   }],
   organizer: {
     type: String,
-    required: true,
-    ref: 'User'
+    required: true
   },
   courseId: {
-    type: String,
-    ref: 'Course'
+    type: String
   },
   visibility: {
     type: String,
