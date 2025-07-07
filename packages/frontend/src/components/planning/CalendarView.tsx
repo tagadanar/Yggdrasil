@@ -17,6 +17,7 @@ interface CalendarEvent {
   startDate: string;
   endDate: string;
   type: 'class' | 'exam' | 'meeting' | 'event';
+  category?: 'academic' | 'administrative' | 'social' | 'personal' | 'system';
   location?: string;
   instructor?: string;
   course?: {
@@ -91,6 +92,7 @@ export function CalendarView() {
         startDate: event.startDate,
         endDate: event.endDate,
         type: event.type,
+        category: event.category,
         location: event.location,
         instructor: event.organizer || event.instructor,
         course: event.courseId ? {
@@ -163,6 +165,13 @@ export function CalendarView() {
       
       const method = selectedEvent ? 'PUT' : 'POST';
 
+      console.log('Sending event data:', {
+        url,
+        method,
+        eventData,
+        token: token ? 'present' : 'missing'
+      });
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -173,7 +182,13 @@ export function CalendarView() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save event');
+        const errorData = await response.text();
+        console.error('API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorData
+        });
+        throw new Error(`Failed to save event: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();

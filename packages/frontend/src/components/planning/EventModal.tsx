@@ -11,6 +11,7 @@ interface CalendarEvent {
   startDate: string;
   endDate: string;
   type: 'class' | 'exam' | 'meeting' | 'event';
+  category?: 'academic' | 'administrative' | 'social' | 'personal' | 'system';
   location?: string;
   instructor?: string;
   course?: {
@@ -38,6 +39,7 @@ export function EventModal({ event, onSave, onCancel, onDelete }: EventModalProp
     endDate: '',
     endTime: '',
     type: 'class' as const,
+    category: 'academic' as const,
     location: '',
     instructor: '',
     courseId: '',
@@ -61,6 +63,7 @@ export function EventModal({ event, onSave, onCancel, onDelete }: EventModalProp
         endDate: endDate.toISOString().split('T')[0],
         endTime: endDate.toTimeString().slice(0, 5),
         type: event.type,
+        category: event.category || 'academic',
         location: event.location || '',
         instructor: event.instructor || '',
         courseId: event.course?.id || '',
@@ -80,6 +83,7 @@ export function EventModal({ event, onSave, onCancel, onDelete }: EventModalProp
         endDate: now.toISOString().split('T')[0],
         endTime: oneHourLater.toTimeString().slice(0, 5),
         type: 'class',
+        category: 'academic',
         location: '',
         instructor: '',
         courseId: '',
@@ -142,6 +146,7 @@ export function EventModal({ event, onSave, onCancel, onDelete }: EventModalProp
         startDate: new Date(`${formData.startDate}T${formData.startTime}`).toISOString(),
         endDate: new Date(`${formData.endDate}T${formData.endTime}`).toISOString(),
         type: formData.type,
+        category: formData.category,
         location: formData.location.trim() || undefined,
         instructor: formData.instructor.trim() || undefined,
         course: formData.courseId ? { id: formData.courseId } : undefined,
@@ -227,6 +232,24 @@ export function EventModal({ event, onSave, onCancel, onDelete }: EventModalProp
                 <option value="exam">Exam</option>
                 <option value="meeting">Meeting</option>
                 <option value="event">Event</option>
+              </select>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category *
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="academic">Academic</option>
+                <option value="administrative">Administrative</option>
+                <option value="social">Social</option>
+                <option value="personal">Personal</option>
+                <option value="system">System</option>
               </select>
             </div>
 
