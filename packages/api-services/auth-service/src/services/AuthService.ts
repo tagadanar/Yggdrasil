@@ -1,5 +1,5 @@
 // Path: packages/api-services/auth-service/src/services/AuthService.ts
-import { UserModel, User } from '../../../../database-schemas/src';
+import { UserModel, User } from '@101-school/database-schemas';
 import { 
   AuthHelper, 
   ValidationHelper, 
@@ -7,7 +7,7 @@ import {
   AuthTokens,
   createUserSchema,
   loginSchema
-} from '../../../../shared-utilities/src';
+} from '@101-school/shared-utilities';
 
 export interface RegisterData {
   email: string;

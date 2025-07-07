@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import { AuthController } from './controllers/AuthController';
-import { DatabaseConnection } from '../../../database-schemas/src';
+import { DatabaseConnection } from '@101-school/database-schemas';
 
 // Load environment variables from the root .env file
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });

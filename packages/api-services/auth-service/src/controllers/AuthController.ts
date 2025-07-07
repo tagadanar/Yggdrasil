@@ -1,7 +1,7 @@
 // Path: packages/api-services/auth-service/src/controllers/AuthController.ts
 import { Request, Response } from 'express';
 import { AuthService } from '../services/AuthService';
-import { ResponseHelper, HTTP_STATUS } from '../../../../shared-utilities/src';
+import { ResponseHelper, HTTP_STATUS } from '@101-school/shared-utilities';
 
 export class AuthController {
   /**
