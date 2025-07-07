@@ -222,28 +222,28 @@ export default function LoginForm() {
           <div className="mt-4 grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setDemoCredentials('admin@101school.com', 'Admin123!')}
+              onClick={() => setDemoCredentials('admin@yggdrasil.edu', 'Admin123!')}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >
               Admin
             </button>
             <button
               type="button"
-              onClick={() => setDemoCredentials('staff@101school.com', 'Admin123!')}
+              onClick={() => setDemoCredentials('staff@yggdrasil.edu', 'Admin123!')}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >
               Staff
             </button>
             <button
               type="button"
-              onClick={() => setDemoCredentials('teacher@101school.com', 'Admin123!')}
+              onClick={() => setDemoCredentials('teacher@yggdrasil.edu', 'Admin123!')}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >
               Enseignant
             </button>
             <button
               type="button"
-              onClick={() => setDemoCredentials('student@101school.com', 'Admin123!')}
+              onClick={() => setDemoCredentials('student@yggdrasil.edu', 'Admin123!')}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >
               Étudiant

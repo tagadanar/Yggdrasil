@@ -3,10 +3,10 @@
 // Create the main database
 db = db.getSiblingDB('yggdrasil-dev');
 
-// Create application user - use environment variables for credentials
+// Create application user - Docker environment variables are passed via entrypoint
 db.createUser({
-  user: process.env.MONGO_APP_USER || 'yggdrasil_app',
-  pwd: process.env.MONGO_APP_PASSWORD || 'please-change-in-production',
+  user: 'yggdrasil_app',
+  pwd: 'app_password_2024',
   roles: [
     {
       role: 'readWrite',
@@ -75,7 +75,7 @@ db.analytics.createIndex({ "sessionId": 1 });
 // Insert sample data for development
 print('Creating sample admin user...');
 db.users.insertOne({
-  email: 'admin@101school.com',
+  email: 'admin@yggdrasil.edu',
   password: '$2b$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password: Admin123!
   role: 'admin',
   profile: {
@@ -107,7 +107,7 @@ db.users.insertOne({
 
 print('Creating sample teacher user...');
 db.users.insertOne({
-  email: 'teacher@101school.com',
+  email: 'teacher@yggdrasil.edu',
   password: '$2b$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password: Admin123!
   role: 'teacher',
   profile: {
@@ -141,7 +141,7 @@ db.users.insertOne({
 
 print('Creating sample staff user...');
 db.users.insertOne({
-  email: 'staff@101school.com',
+  email: 'staff@yggdrasil.edu',
   password: '$2b$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password: Admin123!
   role: 'staff',
   profile: {
@@ -175,7 +175,7 @@ db.users.insertOne({
 
 print('Creating sample student user...');
 db.users.insertOne({
-  email: 'student@101school.com',
+  email: 'student@yggdrasil.edu',
   password: '$2b$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password: Admin123!
   role: 'student',
   profile: {
@@ -216,8 +216,8 @@ db.users.insertOne({
 
 print('Database initialization completed successfully!');
 print('Default users created:');
-print('- admin@101school.com (Admin)');
-print('- staff@101school.com (Staff)');
-print('- teacher@101school.com (Teacher)');
-print('- student@101school.com (Student)');
+print('- admin@yggdrasil.edu (Admin)');
+print('- staff@yggdrasil.edu (Staff)');
+print('- teacher@yggdrasil.edu (Teacher)');
+print('- student@yggdrasil.edu (Student)');
 print('Default password for all users: Admin123!');

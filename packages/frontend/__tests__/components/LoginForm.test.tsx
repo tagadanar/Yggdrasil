@@ -198,7 +198,7 @@ describe('LoginForm', () => {
       const emailInput = screen.getByPlaceholderText('votre@email.com') as HTMLInputElement;
       const passwordInput = screen.getByPlaceholderText('Votre mot de passe') as HTMLInputElement;
 
-      expect(emailInput.value).toBe('admin@101school.com');
+      expect(emailInput.value).toBe('admin@yggdrasil.edu');
       expect(passwordInput.value).toBe('Admin123!');
     });
 
@@ -211,7 +211,7 @@ describe('LoginForm', () => {
       const emailInput = screen.getByPlaceholderText('votre@email.com') as HTMLInputElement;
       const passwordInput = screen.getByPlaceholderText('Votre mot de passe') as HTMLInputElement;
 
-      expect(emailInput.value).toBe('staff@101school.com');
+      expect(emailInput.value).toBe('staff@yggdrasil.edu');
       expect(passwordInput.value).toBe('Admin123!');
     });
 
@@ -224,7 +224,7 @@ describe('LoginForm', () => {
       const emailInput = screen.getByPlaceholderText('votre@email.com') as HTMLInputElement;
       const passwordInput = screen.getByPlaceholderText('Votre mot de passe') as HTMLInputElement;
 
-      expect(emailInput.value).toBe('teacher@101school.com');
+      expect(emailInput.value).toBe('teacher@yggdrasil.edu');
       expect(passwordInput.value).toBe('Admin123!');
     });
 
@@ -237,7 +237,7 @@ describe('LoginForm', () => {
       const emailInput = screen.getByPlaceholderText('votre@email.com') as HTMLInputElement;
       const passwordInput = screen.getByPlaceholderText('Votre mot de passe') as HTMLInputElement;
 
-      expect(emailInput.value).toBe('student@101school.com');
+      expect(emailInput.value).toBe('student@yggdrasil.edu');
       expect(passwordInput.value).toBe('Admin123!');
     });
   });
