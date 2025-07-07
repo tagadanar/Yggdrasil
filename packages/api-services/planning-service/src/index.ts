@@ -1,12 +1,31 @@
 // Path: packages/api-services/planning-service/src/index.ts
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables from the root .env file
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
+import mongoose from 'mongoose';
 import calendarRoutes from './routes/calendarRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3004;
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/yggdrasil-dev';
+
+// Database connection - MongoDB is required
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    console.log('✅ Planning Service connected to MongoDB');
+  })
+  .catch((error) => {
+    console.error('❌ MongoDB connection failed:', error);
+    console.error('🚨 Planning Service requires MongoDB to function');
+    process.exit(1);
+  });
 
 // Security middleware
 app.use(helmet());
