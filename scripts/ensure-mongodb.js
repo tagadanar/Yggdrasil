@@ -55,7 +55,14 @@ const log = {
  * Check if MongoDB is accessible
  */
 async function checkMongoDBConnection() {
-  const uri = `mongodb://${CONFIG.MONGO_USER}:${CONFIG.MONGO_PASSWORD}@${CONFIG.MONGO_HOST}:${CONFIG.MONGO_PORT}/${CONFIG.MONGO_DATABASE}?authSource=admin`;
+  // Read environment variables at runtime to support test environment changes
+  const mongoHost = process.env.MONGO_HOST || CONFIG.MONGO_HOST;
+  const mongoPort = process.env.MONGO_PORT || CONFIG.MONGO_PORT;
+  const mongoUser = process.env.MONGO_USER || CONFIG.MONGO_USER;
+  const mongoPassword = process.env.MONGO_PASSWORD || CONFIG.MONGO_PASSWORD;
+  const mongoDatabase = process.env.MONGO_DATABASE || CONFIG.MONGO_DATABASE;
+  
+  const uri = `mongodb://${mongoUser}:${mongoPassword}@${mongoHost}:${mongoPort}/${mongoDatabase}?authSource=admin`;
   
   try {
     const client = new MongoClient(uri, {
@@ -65,7 +72,7 @@ async function checkMongoDBConnection() {
     });
     
     await client.connect();
-    await client.db(CONFIG.MONGO_DATABASE).admin().ping();
+    await client.db(mongoDatabase).admin().ping();
     await client.close();
     
     return true;
@@ -166,7 +173,14 @@ async function waitForMongoDB() {
  * Get MongoDB status information
  */
 async function getMongoDBStatus() {
-  const uri = `mongodb://${CONFIG.MONGO_USER}:${CONFIG.MONGO_PASSWORD}@${CONFIG.MONGO_HOST}:${CONFIG.MONGO_PORT}/${CONFIG.MONGO_DATABASE}?authSource=admin`;
+  // Read environment variables at runtime to support test environment changes
+  const mongoHost = process.env.MONGO_HOST || CONFIG.MONGO_HOST;
+  const mongoPort = process.env.MONGO_PORT || CONFIG.MONGO_PORT;
+  const mongoUser = process.env.MONGO_USER || CONFIG.MONGO_USER;
+  const mongoPassword = process.env.MONGO_PASSWORD || CONFIG.MONGO_PASSWORD;
+  const mongoDatabase = process.env.MONGO_DATABASE || CONFIG.MONGO_DATABASE;
+  
+  const uri = `mongodb://${mongoUser}:${mongoPassword}@${mongoHost}:${mongoPort}/${mongoDatabase}?authSource=admin`;
   
   try {
     const client = new MongoClient(uri, {
@@ -182,8 +196,8 @@ async function getMongoDBStatus() {
     
     log.info(`MongoDB Status:`);
     console.log(`  📊 Version: ${buildInfo.version}`);
-    console.log(`  🌐 Host: ${CONFIG.MONGO_HOST}:${CONFIG.MONGO_PORT}`);
-    console.log(`  🗄️  Database: ${CONFIG.MONGO_DATABASE}`);
+    console.log(`  🌐 Host: ${mongoHost}:${mongoPort}`);
+    console.log(`  🗄️  Database: ${mongoDatabase}`);
     console.log(`  📚 Available Databases:`);
     
     listDatabases.databases.forEach(db => {
