@@ -64,8 +64,9 @@ export function StatisticsDashboard() {
         throw new Error('Failed to fetch statistics');
       }
 
-      const data = await response.json();
-      setStats(data);
+      const result = await response.json();
+      // Handle the API response structure
+      setStats(result.success ? result.data : result);
     } catch (error) {
       console.error('Error fetching statistics:', error);
       setError('Failed to load statistics');
@@ -158,25 +159,31 @@ export function StatisticsDashboard() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatisticsCard
-          title="Attendance Rate"
-          value={`${stats.attendance.rate}%`}
-          trend={stats.attendance.trend}
-          icon="attendance"
-        />
-        <StatisticsCard
-          title="Average Grade"
-          value={stats.grades.average.toFixed(1)}
-          trend={stats.grades.trend}
-          icon="grade"
-        />
-        <StatisticsCard
-          title="Engagement Score"
-          value={`${stats.engagement.score}%`}
-          trend={stats.engagement.trend}
-          icon="engagement"
-        />
-        {stats.overview.totalStudents && (
+        {stats.attendance && typeof stats.attendance.rate === 'number' && (
+          <StatisticsCard
+            title="Attendance Rate"
+            value={`${stats.attendance.rate}%`}
+            trend={stats.attendance.trend}
+            icon="attendance"
+          />
+        )}
+        {stats.grades && typeof stats.grades.average === 'number' && (
+          <StatisticsCard
+            title="Average Grade"
+            value={stats.grades.average.toFixed(1)}
+            trend={stats.grades.trend}
+            icon="grade"
+          />
+        )}
+        {stats.engagement && typeof stats.engagement.score === 'number' && (
+          <StatisticsCard
+            title="Engagement Score"
+            value={`${stats.engagement.score}%`}
+            trend={stats.engagement.trend}
+            icon="engagement"
+          />
+        )}
+        {stats.overview?.totalStudents && (
           <StatisticsCard
             title="Total Students"
             value={stats.overview.totalStudents.toString()}
@@ -187,22 +194,28 @@ export function StatisticsDashboard() {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Attendance Trends</h3>
-          <AttendanceChart data={stats.attendance.data} />
-        </div>
+        {stats.attendance?.data && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">Attendance Trends</h3>
+            <AttendanceChart data={stats.attendance.data} />
+          </div>
+        )}
         
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Grade Distribution</h3>
-          <GradeChart data={stats.grades.distribution} />
-        </div>
+        {stats.grades?.distribution && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">Grade Distribution</h3>
+            <GradeChart data={stats.grades.distribution} />
+          </div>
+        )}
       </div>
 
       {/* Engagement Details */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">Engagement Breakdown</h3>
-        <EngagementChart data={stats.engagement.activities} />
-      </div>
+      {stats.engagement?.activities && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Engagement Breakdown</h3>
+          <EngagementChart data={stats.engagement.activities} />
+        </div>
+      )}
 
       {/* Role-specific sections */}
       {user?.role === 'teacher' && (
@@ -214,34 +227,42 @@ export function StatisticsDashboard() {
         </div>
       )}
 
-      {(user?.role === 'admin' || user?.role === 'staff') && (
+      {(user?.role === 'admin' || user?.role === 'staff') && stats.overview && (
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold mb-4">School-wide Statistics</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-blue-600">
-                {stats.overview.totalStudents}
+            {stats.overview.totalStudents && (
+              <div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {stats.overview.totalStudents}
+                </div>
+                <div className="text-gray-600">Total Students</div>
               </div>
-              <div className="text-gray-600">Total Students</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-600">
-                {stats.overview.totalCourses}
+            )}
+            {stats.overview.totalCourses && (
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  {stats.overview.totalCourses}
+                </div>
+                <div className="text-gray-600">Active Courses</div>
               </div>
-              <div className="text-gray-600">Active Courses</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600">
-                {stats.overview.completionRate}%
+            )}
+            {stats.overview.completionRate && (
+              <div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {stats.overview.completionRate}%
+                </div>
+                <div className="text-gray-600">Completion Rate</div>
               </div>
-              <div className="text-gray-600">Completion Rate</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-orange-600">
-                {stats.overview.averageGrade?.toFixed(1)}
+            )}
+            {stats.overview.averageGrade && typeof stats.overview.averageGrade === 'number' && (
+              <div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {stats.overview.averageGrade.toFixed(1)}
+                </div>
+                <div className="text-gray-600">School Average</div>
               </div>
-              <div className="text-gray-600">School Average</div>
-            </div>
+            )}
           </div>
         </div>
       )}
