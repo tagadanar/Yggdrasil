@@ -83,7 +83,7 @@ async function startServer() {
 
     // Try to connect to database (don't fail if it's not available)
     try {
-      const mongoUri = process.env.MONGODB_URI || 'mongodb://admin:password123@localhost:27017/school_platform?authSource=admin';
+      const mongoUri = process.env.MONGODB_URI || 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-dev?authSource=admin';
       await DatabaseConnection.connect(mongoUri);
       console.log('✅ Database connected');
     } catch (dbError: any) {

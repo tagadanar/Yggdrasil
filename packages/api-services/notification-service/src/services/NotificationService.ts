@@ -27,13 +27,21 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'moment';
 
+// In-memory storage for development/demo purposes
+let notificationStorage: Notification[] = [];
+let templateStorage: NotificationTemplate[] = [];
+let preferenceStorage: NotificationPreference[] = [];
+let queueStorage: NotificationQueue[] = [];
+let notificationIdCounter = 1;
+let templateIdCounter = 1;
+let queueIdCounter = 1;
+let preferenceIdCounter = 1;
 
 export class NotificationService {
   /**
    * Create a new notification
    */
   static async createNotification(data: CreateNotificationData, senderId?: string): Promise<NotificationResult> {
-    return { success: false, error: 'MongoDB implementation required for NotificationService' };
     try {
       // Validate required fields
       if (!data.title || !data.message || !data.recipients || data.recipients.length === 0) {
@@ -79,7 +87,7 @@ export class NotificationService {
           status: 'pending',
           attempts: 0
         })),
-        scheduledFor: data.scheduledFor,
+        scheduledFor: data.scheduledFor || undefined,
         expiresAt: data.expiresAt,
         isRead: false,
         readBy: [],
@@ -87,7 +95,8 @@ export class NotificationService {
         updatedAt: new Date()
       };
 
-      // MongoDB save needed
+      // Save to storage (in-memory for demo)
+      notificationStorage.push(notification);
 
       // Queue for delivery if not scheduled for future
       if (!data.scheduledFor || data.scheduledFor <= new Date()) {
@@ -104,9 +113,8 @@ export class NotificationService {
    * Get notification by ID
    */
   static async getNotification(notificationId: string, userId?: string): Promise<NotificationResult> {
-    return { success: false, error: 'MongoDB implementation required for NotificationService' };
     try {
-      const notification = null; // MongoDB query needed
+      const notification = notificationStorage.find(n => n._id === notificationId) || null;
 
       if (!notification) {
         return { success: false, error: 'Notification not found' };
@@ -181,6 +189,26 @@ export class NotificationService {
       return { success: true, message: 'Notification deleted successfully' };
     } catch (error: any) {
       return { success: false, error: `Failed to delete notification: ${error.message}` };
+    }
+  }
+
+  /**
+   * Get all notifications for a user
+   */
+  static async getAllNotifications(userId?: string): Promise<NotificationResult> {
+    try {
+      let notifications = notificationStorage;
+
+      // Apply user-specific filtering if userId provided
+      if (userId) {
+        notifications = notifications.filter(notification => 
+          this.canUserViewNotification(notification, userId)
+        );
+      }
+
+      return { success: true, notifications };
+    } catch (error: any) {
+      return { success: false, error: `Failed to get notifications: ${error.message}` };
     }
   }
 

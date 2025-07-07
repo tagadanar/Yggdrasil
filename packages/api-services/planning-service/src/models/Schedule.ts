@@ -18,6 +18,12 @@ export interface Schedule extends Omit<ISchedule, '_id'>, Document {
   isWithinWorkingHours(date: Date): boolean;
 }
 
+export interface ScheduleModel extends mongoose.Model<Schedule> {
+  findByUser(userId: string): any;
+  findByType(type: ScheduleType): any;
+  findPublic(): any;
+}
+
 const BreakSchema = new Schema<Break>({
   startTime: {
     type: String,
@@ -328,4 +334,4 @@ ScheduleSchema.pre('save', function(this: any, next) {
   next();
 });
 
-export const ScheduleModel = mongoose.model<Schedule>('Schedule', ScheduleSchema);
+export const ScheduleModel = mongoose.model<Schedule, ScheduleModel>('Schedule', ScheduleSchema);

@@ -22,6 +22,12 @@ export interface CalendarEvent extends Omit<ICalendarEvent, '_id'>, Document {
   canUserEdit(userId: string): boolean;
 }
 
+export interface CalendarEventModel extends mongoose.Model<CalendarEvent> {
+  findByDateRange(startDate: Date, endDate: Date): any;
+  findByUser(userId: string): any;
+  findUpcoming(userId?: string, limit?: number): any;
+}
+
 const ReminderSchema = new Schema<Reminder>({
   type: {
     type: String,
@@ -170,7 +176,7 @@ CalendarEventSchema.virtual('isUpcoming').get(function(this: any) {
   return this.startDate > new Date() && this.status !== 'cancelled';
 });
 
-CalendarEventSchema.virtual('isActive').get(function(this: any) {
+CalendarEventSchema.virtual('isCurrentlyActive').get(function(this: any) {
   const now = new Date();
   return this.startDate <= now && this.endDate >= now && this.status === 'in-progress';
 });
@@ -222,7 +228,7 @@ CalendarEventSchema.methods.canUserEdit = function(userId: string): boolean {
 
 CalendarEventSchema.methods.generateRecurrences = function(endDate: Date): CalendarEvent[] {
   if (!this.isRecurring || !this.recurringPattern) {
-    return [this];
+    return [this as any];
   }
 
   const recurrences: CalendarEvent[] = [];
@@ -234,7 +240,7 @@ CalendarEventSchema.methods.generateRecurrences = function(endDate: Date): Calen
 
   while (currentDate <= patternEndDate && count < maxOccurrences) {
     // Skip exceptions
-    if (!pattern.exceptions?.some(exception => 
+    if (!pattern.exceptions?.some((exception: Date) => 
       exception.toDateString() === currentDate.toDateString()
     )) {
       const eventEnd = new Date(currentDate);
@@ -372,4 +378,4 @@ CalendarEventSchema.statics.findUpcoming = function(userId?: string, limit: numb
     .limit(limit);
 };
 
-export const CalendarEventModel = mongoose.model<CalendarEvent>('CalendarEvent', CalendarEventSchema);
+export const CalendarEventModel = mongoose.model<CalendarEvent, CalendarEventModel>('CalendarEvent', CalendarEventSchema);
