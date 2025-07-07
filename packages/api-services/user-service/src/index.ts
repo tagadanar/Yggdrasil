@@ -4,11 +4,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import path from 'path';
 import userRoutes from './routes/userRoutes';
 import { DatabaseConnection } from '../../../database-schemas/src';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from the root .env file
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3002;
@@ -77,7 +78,7 @@ async function startServer() {
 
     // Try to connect to database
     try {
-      const mongoUri = process.env.MONGODB_URI || 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-dev?authSource=admin';
+      const mongoUri = process.env.MONGODB_URI || 'mongodb://yggdrasil_app:app_password_2024@localhost:27017/yggdrasil-dev';
       await DatabaseConnection.connect(mongoUri);
       console.log('✅ Database connected');
     } catch (dbError: any) {

@@ -1,4 +1,10 @@
 // Path: packages/api-services/news-service/src/index.ts
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables from the root .env file
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -9,7 +15,7 @@ import newsRoutes from './routes/newsRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3005;
-const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/yggdrasil-news';
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/yggdrasil-dev';
 
 // Database connection - MongoDB is required
 mongoose.connect(MONGO_URI)
