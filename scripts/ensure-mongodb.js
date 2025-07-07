@@ -253,10 +253,22 @@ async function ensureMongoDB() {
     
   } catch (error) {
     log.error(`Failed to start MongoDB: ${error.message}`);
-    log.error('Manual steps to resolve:');
-    log.error('1. Check Docker is running: docker ps');
-    log.error('2. Try manual start: docker-compose -f docker-compose.dev.yml up -d mongodb');
-    log.error('3. Check logs: docker-compose -f docker-compose.dev.yml logs mongodb');
+    
+    // Check if it's a permission error
+    if (error.message.includes('Permission denied') || error.message.includes('permission denied')) {
+      log.error('🔐 Docker permission error detected!');
+      log.error('Run this command to fix Docker permissions:');
+      log.error('    npm run setup-docker');
+      log.error('');
+      log.error('Or manually run:');
+      log.error('    sudo usermod -aG docker $USER');
+      log.error('    newgrp docker');
+    } else {
+      log.error('Manual steps to resolve:');
+      log.error('1. Check Docker is running: docker ps');
+      log.error('2. Try manual start: docker-compose -f docker-compose.dev.yml up -d mongodb');
+      log.error('3. Check logs: docker-compose -f docker-compose.dev.yml logs mongodb');
+    }
     process.exit(1);
   }
 }

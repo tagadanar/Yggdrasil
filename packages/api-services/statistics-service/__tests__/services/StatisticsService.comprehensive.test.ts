@@ -15,8 +15,8 @@ import {
 } from '../../src/types/statistics';
 
 describe('StatisticsService - Comprehensive Tests', () => {
-  beforeEach(() => {
-    StatisticsService.clearStorage();
+  beforeEach(async () => {
+    await StatisticsService.clearStorage();
   });
 
   describe('System Statistics', () => {

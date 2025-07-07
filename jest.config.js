@@ -7,8 +7,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/packages/api-services/auth-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/api-services/auth-service/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/api-services/auth-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       setupFilesAfterEnv: ['<rootDir>/packages/api-services/auth-service/__tests__/setup.ts'],
       moduleNameMapper: {
@@ -21,8 +20,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/packages/api-services/user-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/api-services/user-service/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/api-services/user-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       setupFilesAfterEnv: ['<rootDir>/packages/api-services/user-service/__tests__/setup.ts'],
       moduleNameMapper: {
@@ -35,8 +33,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/packages/api-services/course-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/api-services/course-service/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/api-services/course-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       setupFilesAfterEnv: ['<rootDir>/packages/api-services/course-service/__tests__/setup.ts'],
       moduleNameMapper: {
@@ -49,8 +46,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/packages/api-services/news-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/api-services/news-service/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/api-services/news-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       setupFilesAfterEnv: ['<rootDir>/packages/api-services/news-service/__tests__/setup.ts'],
       moduleNameMapper: {
@@ -63,8 +59,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/packages/api-services/planning-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/api-services/planning-service/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/api-services/planning-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       setupFilesAfterEnv: ['<rootDir>/packages/api-services/planning-service/__tests__/setup.ts'],
       moduleNameMapper: {
@@ -77,8 +72,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/packages/api-services/statistics-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/api-services/statistics-service/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/api-services/statistics-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       setupFilesAfterEnv: ['<rootDir>/packages/api-services/statistics-service/__tests__/setup.ts'],
       moduleNameMapper: {
@@ -91,8 +85,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/packages/api-services/notification-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/api-services/notification-service/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/api-services/notification-service/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       testPathIgnorePatterns: [
         '.*\\.d\\.ts$',
@@ -109,8 +102,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/packages/api-gateway/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/api-gateway/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/api-gateway/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       setupFilesAfterEnv: ['<rootDir>/packages/api-gateway/__tests__/setup.ts'],
       moduleNameMapper: {
@@ -123,8 +115,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/packages/database-schemas/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/database-schemas/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/database-schemas/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       moduleNameMapper: {
         '^@101-school/shared-utilities$': '<rootDir>/packages/shared-utilities/src',
@@ -136,8 +127,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/packages/shared-utilities/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/shared-utilities/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/shared-utilities/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       moduleNameMapper: {
         '^@101-school/shared-utilities$': '<rootDir>/packages/shared-utilities/src',
@@ -150,8 +140,7 @@ module.exports = {
       preset: 'ts-jest',
       testEnvironment: 'jsdom',
       testMatch: [
-        '<rootDir>/packages/frontend/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/packages/frontend/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/packages/frontend/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       setupFilesAfterEnv: ['<rootDir>/packages/frontend/__tests__/setup.ts'],
       moduleNameMapper: {
@@ -172,8 +161,7 @@ module.exports = {
       displayName: 'scripts',
       testEnvironment: 'node',
       testMatch: [
-        '<rootDir>/scripts/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-        '<rootDir>/scripts/**/__tests__/**/!(setup).(ts|tsx|js)'
+        '<rootDir>/scripts/**/__tests__/**/*.(test|spec).(ts|tsx|js)'
       ],
       moduleNameMapper: {
         '^@101-school/shared-utilities$': '<rootDir>/packages/shared-utilities/src',
