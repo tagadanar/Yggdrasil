@@ -72,11 +72,30 @@ export function NewsList() {
       }
 
       const data = await response.json();
-      setArticles(data.articles);
+      
+      // Map backend article data to frontend format
+      const mappedArticles = data.data?.map((article: any) => ({
+        id: article._id,
+        title: article.title,
+        content: article.content,
+        excerpt: article.summary || article.excerpt,
+        category: article.category,
+        tags: article.tags || [],
+        author: {
+          id: article.author,
+          name: article.authorName || 'Unknown Author'
+        },
+        publishedAt: article.publishedAt || article.createdAt,
+        isPublished: article.status === 'published',
+        isPinned: article.isPinned || false,
+        viewCount: article.viewCount || 0,
+      })) || [];
+
+      setArticles(mappedArticles);
       setPagination(prev => ({
         ...prev,
-        total: data.total,
-        totalPages: Math.ceil(data.total / prev.limit),
+        total: data.pagination?.total || 0,
+        totalPages: Math.ceil((data.pagination?.total || 0) / prev.limit),
       }));
     } catch (error) {
       console.error('Error fetching articles:', error);

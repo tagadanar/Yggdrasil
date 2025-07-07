@@ -6,9 +6,24 @@
 
 import request from 'supertest';
 import app from '../../src/index';
+import { NewsModel } from '@101-school/database-schemas/src/models/News';
 
 describe('Article API Integration', () => {
   let createdArticleId: string;
+
+  beforeEach(async () => {
+    // Clean up any existing test data before each test
+    await NewsModel.deleteMany({
+      title: { $in: ['Integration Test Article', 'Updated Integration Test Article', 'Database Connectivity Test'] }
+    });
+  });
+
+  afterEach(async () => {
+    // Clean up test data after each test
+    await NewsModel.deleteMany({
+      title: { $in: ['Integration Test Article', 'Updated Integration Test Article', 'Database Connectivity Test'] }
+    });
+  });
 
   it('should create a new article', async () => {
     const articleData = {
