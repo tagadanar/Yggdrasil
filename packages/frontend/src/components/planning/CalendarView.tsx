@@ -82,7 +82,27 @@ export function CalendarView() {
       }
 
       const data = await response.json();
-      setEvents(data);
+      
+      // Map backend event data to frontend format
+      const mappedEvents = data.data?.map((event: any) => ({
+        id: event._id,
+        title: event.title,
+        description: event.description,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        type: event.type,
+        location: event.location,
+        instructor: event.organizer || event.instructor,
+        course: event.courseId ? {
+          id: event.courseId,
+          title: event.courseName || 'Unknown Course'
+        } : undefined,
+        participants: event.attendees || [],
+        isRecurring: event.isRecurring || false,
+        recurrencePattern: event.recurrencePattern,
+      })) || [];
+
+      setEvents(mappedEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
       setError('Failed to load calendar events');
