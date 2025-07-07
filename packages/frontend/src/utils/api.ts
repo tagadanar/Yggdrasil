@@ -33,6 +33,15 @@ const apiClient: AxiosInstance = axios.create({
   timeout: 10000,
 });
 
+// Create frontend API client for internal Next.js API routes
+const frontendClient: AxiosInstance = axios.create({
+  baseURL: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000,
+});
+
 // Request interceptor to add auth token to all clients
 const addAuthInterceptor = (client: AxiosInstance) => {
   client.interceptors.request.use(
@@ -52,6 +61,7 @@ const addAuthInterceptor = (client: AxiosInstance) => {
 addAuthInterceptor(authClient);
 addAuthInterceptor(userClient);
 addAuthInterceptor(apiClient);
+addAuthInterceptor(frontendClient);
 
 // Response interceptor to handle token refresh for all clients
 const addRefreshInterceptor = (client: AxiosInstance) => {
@@ -103,6 +113,7 @@ const addRefreshInterceptor = (client: AxiosInstance) => {
 addRefreshInterceptor(authClient);
 addRefreshInterceptor(userClient);
 addRefreshInterceptor(apiClient);
+addRefreshInterceptor(frontendClient);
 
 // API response wrapper
 interface ApiResponse<T = any> {
@@ -231,15 +242,30 @@ export const courseAPI = {
   },
 };
 
-// Planning API (placeholder for future implementation)
+// Planning API - Uses frontend API routes (proxy to planning service)
 export const planningAPI = {
   getEvents: async (params?: any): Promise<ApiResponse<any[]>> => {
-    const response: AxiosResponse = await apiClient.get('/api/planning/events', { params });
+    const response: AxiosResponse = await frontendClient.get('/api/planning/events', { params });
     return response.data;
   },
 
   createEvent: async (eventData: any): Promise<ApiResponse<any>> => {
-    const response: AxiosResponse = await apiClient.post('/api/planning/events', eventData);
+    const response: AxiosResponse = await frontendClient.post('/api/planning/events', eventData);
+    return response.data;
+  },
+
+  getEvent: async (eventId: string): Promise<ApiResponse<any>> => {
+    const response: AxiosResponse = await frontendClient.get(`/api/planning/events/${eventId}`);
+    return response.data;
+  },
+
+  updateEvent: async (eventId: string, eventData: any): Promise<ApiResponse<any>> => {
+    const response: AxiosResponse = await frontendClient.put(`/api/planning/events/${eventId}`, eventData);
+    return response.data;
+  },
+
+  deleteEvent: async (eventId: string): Promise<ApiResponse<any>> => {
+    const response: AxiosResponse = await frontendClient.delete(`/api/planning/events/${eventId}`);
     return response.data;
   },
 };
