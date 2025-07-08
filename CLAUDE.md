@@ -350,6 +350,394 @@ npm run test:integration
 npm run test:e2e
 ```
 
+## 🎯 Advanced TDD Methodology & Best Practices
+
+### Core TDD Principles
+
+#### 1. **Always Follow Red-Green-Refactor**
+Never write production code without a failing test first. This ensures:
+- Complete test coverage by design
+- Clear understanding of requirements before implementation
+- Confidence that tests actually validate functionality
+
+```typescript
+// ❌ BAD: Writing code first
+export function calculateDiscount(price: number, percentage: number): number {
+  return price * (percentage / 100);
+}
+
+// ✅ GOOD: Test first
+describe('calculateDiscount', () => {
+  it('should calculate 10% discount correctly', () => {
+    // RED: This test fails because function doesn't exist yet
+    expect(calculateDiscount(100, 10)).toBe(10);
+  });
+});
+```
+
+#### 2. **Write Minimal Code to Pass Tests**
+In the GREEN phase, write only enough code to make the test pass:
+
+```typescript
+// GREEN: Minimal implementation
+export function calculateDiscount(price: number, percentage: number): number {
+  if (price === 100 && percentage === 10) return 10; // Minimal!
+  throw new Error('Not implemented');
+}
+
+// Add more tests to drive better implementation
+it('should calculate 20% discount correctly', () => {
+  expect(calculateDiscount(100, 20)).toBe(20);
+});
+
+// REFACTOR: Now implement properly
+export function calculateDiscount(price: number, percentage: number): number {
+  return price * (percentage / 100);
+}
+```
+
+### Critical Test Quality Guidelines
+
+#### 1. **Test Isolation - Fix Common Issues**
+
+**❌ Problem: Shared State Between Tests**
+```typescript
+// BAD: Tests depend on each other
+describe('UserService', () => {
+  let userId: string;
+  
+  it('should create user', async () => {
+    const user = await UserService.create(userData);
+    userId = user._id; // Sharing state!
+  });
+  
+  it('should update user', async () => {
+    // Fails if previous test didn't run!
+    await UserService.update(userId, updateData);
+  });
+});
+```
+
+**✅ Solution: Independent Test Setup**
+```typescript
+// GOOD: Each test is independent
+describe('UserService', () => {
+  let testUserId: string;
+  
+  beforeEach(async () => {
+    // Create fresh data for each test
+    const user = await UserService.create({
+      email: `test-${Date.now()}@example.com`,
+      name: 'Test User'
+    });
+    testUserId = user._id;
+  });
+  
+  afterEach(async () => {
+    // Clean up after each test
+    await UserService.delete(testUserId);
+  });
+  
+  it('should update user successfully', async () => {
+    const result = await UserService.update(testUserId, { name: 'Updated' });
+    expect(result.success).toBe(true);
+  });
+  
+  it('should delete user successfully', async () => {
+    const result = await UserService.delete(testUserId);
+    expect(result.success).toBe(true);
+  });
+});
+```
+
+#### 2. **Proper Mock Implementation**
+
+**❌ Problem: TypeScript Mock Interface Errors**
+```typescript
+// BAD: Mock missing required methods
+jest.mock('@/models/User', () => ({
+  findById: jest.fn(), // Missing other methods!
+}));
+
+// Tests fail with: Property 'create' does not exist
+```
+
+**✅ Solution: Complete Mock Interfaces**
+```typescript
+// GOOD: Complete mock implementation
+const mockUserModel = {
+  create: jest.fn(),
+  findById: jest.fn(),
+  findByIdAndUpdate: jest.fn(),
+  findByIdAndDelete: jest.fn(),
+  find: jest.fn(),
+  deleteMany: jest.fn(),
+  // Add all methods used in tests
+};
+
+jest.mock('@/models/User', () => ({
+  UserModel: mockUserModel,
+}));
+
+// Proper mock setup in beforeEach
+beforeEach(() => {
+  jest.clearAllMocks();
+  
+  mockUserModel.create.mockImplementation((data) => {
+    return Promise.resolve({
+      _id: `mock-id-${Date.now()}`,
+      ...data,
+      save: jest.fn(),
+    } as any);
+  });
+  
+  mockUserModel.findById.mockResolvedValue(null);
+});
+```
+
+#### 3. **Meaningful Test Names & Structure**
+
+**❌ Bad Test Organization**
+```typescript
+// BAD: Unclear test names
+describe('UserService', () => {
+  it('works', async () => { ... });
+  it('test user creation', async () => { ... });
+  it('error case', async () => { ... });
+});
+```
+
+**✅ Good Test Organization**
+```typescript
+// GOOD: Clear, descriptive structure
+describe('UserService', () => {
+  describe('createUser', () => {
+    it('should create user with valid data', async () => {
+      // Test happy path
+    });
+    
+    it('should reject invalid email format', async () => {
+      // Test validation
+    });
+    
+    it('should handle database connection errors', async () => {
+      // Test error handling
+    });
+  });
+  
+  describe('updateUser', () => {
+    it('should update existing user profile', async () => {
+      // Test update logic
+    });
+    
+    it('should return error for non-existent user', async () => {
+      // Test edge case
+    });
+  });
+});
+```
+
+### Advanced Testing Patterns
+
+#### 1. **Test Data Builders**
+```typescript
+// Create reusable test data builders
+class UserTestBuilder {
+  private userData = {
+    email: 'test@example.com',
+    role: 'student',
+    profile: { firstName: 'Test', lastName: 'User' },
+    isActive: true
+  };
+  
+  withEmail(email: string) {
+    this.userData.email = email;
+    return this;
+  }
+  
+  withRole(role: string) {
+    this.userData.role = role;
+    return this;
+  }
+  
+  asInactive() {
+    this.userData.isActive = false;
+    return this;
+  }
+  
+  build() {
+    return { ...this.userData };
+  }
+}
+
+// Usage in tests
+it('should reject inactive users', async () => {
+  const inactiveUser = new UserTestBuilder()
+    .withEmail('inactive@test.com')
+    .asInactive()
+    .build();
+    
+  const result = await AuthService.login(inactiveUser);
+  expect(result.success).toBe(false);
+});
+```
+
+#### 2. **Test-Specific Database Cleanup**
+```typescript
+// Advanced cleanup strategy
+describe('Integration Tests', () => {
+  const testEntities: { model: any; ids: string[] }[] = [];
+  
+  const trackForCleanup = (model: any, id: string) => {
+    const existing = testEntities.find(e => e.model === model);
+    if (existing) {
+      existing.ids.push(id);
+    } else {
+      testEntities.push({ model, ids: [id] });
+    }
+  };
+  
+  afterEach(async () => {
+    // Clean up all tracked entities
+    for (const entity of testEntities) {
+      await entity.model.deleteMany({ _id: { $in: entity.ids } });
+    }
+    testEntities.length = 0; // Clear tracking
+  });
+  
+  it('should handle complex workflow', async () => {
+    const user = await UserModel.create(userData);
+    trackForCleanup(UserModel, user._id);
+    
+    const course = await CourseModel.create(courseData);
+    trackForCleanup(CourseModel, course._id);
+    
+    // Test logic here
+  });
+});
+```
+
+### Test Quality Anti-Patterns to Avoid
+
+#### 1. **Testing Implementation Instead of Behavior**
+```typescript
+// ❌ BAD: Testing internal implementation
+it('should call UserModel.findById', async () => {
+  const spy = jest.spyOn(UserModel, 'findById');
+  await UserService.getUser('123');
+  expect(spy).toHaveBeenCalledWith('123');
+});
+
+// ✅ GOOD: Testing actual behavior
+it('should return user data for valid ID', async () => {
+  const mockUser = { _id: '123', name: 'Test User' };
+  UserModel.findById.mockResolvedValue(mockUser);
+  
+  const result = await UserService.getUser('123');
+  expect(result.success).toBe(true);
+  expect(result.user.name).toBe('Test User');
+});
+```
+
+#### 2. **Overly Complex Test Setup**
+```typescript
+// ❌ BAD: Complex, hard-to-understand setup
+beforeEach(async () => {
+  // 50 lines of complex setup
+  const admin = await createUser('admin');
+  const course1 = await createCourse(admin);
+  const course2 = await createCourse(admin);
+  await enrollUser(student1, course1);
+  await enrollUser(student2, course2);
+  // ... more complexity
+});
+
+// ✅ GOOD: Simple, focused setup
+beforeEach(async () => {
+  // Only create what this specific test suite needs
+  testUser = await createTestUser();
+});
+
+it('should enroll user in course', async () => {
+  // Create test-specific data
+  const course = await createTestCourse();
+  
+  const result = await CourseService.enroll(testUser._id, course._id);
+  expect(result.success).toBe(true);
+});
+```
+
+### TDD for Different Layers
+
+#### 1. **Service Layer TDD**
+```typescript
+// Service tests focus on business logic
+describe('CourseEnrollmentService', () => {
+  it('should prevent enrollment when course is full', async () => {
+    const fullCourse = await createTestCourse({ capacity: 1, enrolled: 1 });
+    const student = await createTestUser();
+    
+    const result = await CourseEnrollmentService.enroll(student._id, fullCourse._id);
+    
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Course is full');
+  });
+});
+```
+
+#### 2. **Controller Layer TDD**
+```typescript
+// Controller tests focus on HTTP handling
+describe('CourseController', () => {
+  it('should return 400 for invalid course ID format', async () => {
+    const response = await request(app)
+      .post('/api/courses/invalid-id/enroll')
+      .send({ studentId: 'valid-student-id' })
+      .expect(400);
+      
+    expect(response.body.success).toBe(false);
+    expect(response.body.error).toContain('Invalid course ID');
+  });
+});
+```
+
+### Continuous Test Improvement
+
+#### 1. **Regular Test Review Sessions**
+- Schedule monthly test review sessions
+- Identify slow, flaky, or unclear tests
+- Refactor tests to improve clarity and maintainability
+
+#### 2. **Test Metrics Monitoring**
+```bash
+# Monitor test performance
+npm run test:performance
+
+# Check for flaky tests
+npm run test:flaky-detection
+
+# Analyze test coverage gaps
+npm run test:coverage -- --report-missing
+```
+
+#### 3. **Test Documentation Standards**
+```typescript
+// Document complex test scenarios
+describe('Payment Processing Integration', () => {
+  /**
+   * This test verifies the complete payment workflow:
+   * 1. User initiates payment for course enrollment
+   * 2. Payment gateway processes the transaction
+   * 3. On success, user is enrolled in course
+   * 4. Confirmation email is sent
+   * 5. Analytics event is tracked
+   */
+  it('should complete full payment-to-enrollment workflow', async () => {
+    // Test implementation
+  });
+});
+```
+
 ## 🔧 Development Workflow
 
 ### Setting Up Development Environment

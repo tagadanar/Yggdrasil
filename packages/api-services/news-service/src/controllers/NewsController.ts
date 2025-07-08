@@ -70,8 +70,17 @@ export class NewsController {
    */
   static async getArticle(req: Request, res: Response): Promise<void> {
     try {
-      const { identifier } = req.params; // Can be ID or slug
+      // Handle both 'id' and 'identifier' parameter names for different routes
+      const identifier = req.params.id || req.params.identifier;
       const userId = getMockUser(req).id;
+
+      if (!identifier) {
+        res.status(400).json({
+          success: false,
+          error: 'Article ID or identifier is required'
+        });
+        return;
+      }
 
       const result = await NewsService.getArticle(identifier, userId);
 

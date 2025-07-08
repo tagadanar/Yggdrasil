@@ -50,8 +50,15 @@ export class CalendarService {
    */
   static async createEvent(eventData: CreateEventData, organizerId: string): Promise<EventResult> {
     try {
+      // Convert date strings to Date objects if needed (for HTTP API compatibility)
+      const processedEventData = {
+        ...eventData,
+        startDate: typeof eventData.startDate === 'string' ? new Date(eventData.startDate) : eventData.startDate,
+        endDate: typeof eventData.endDate === 'string' ? new Date(eventData.endDate) : eventData.endDate
+      };
+
       // Validate date range
-      if (eventData.endDate <= eventData.startDate) {
+      if (processedEventData.endDate <= processedEventData.startDate) {
         return { success: false, error: 'End date must be after start date' };
       }
 
@@ -62,13 +69,13 @@ export class CalendarService {
         status: { $ne: 'cancelled' },
         $or: [
           {
-            startDate: { $lt: eventData.endDate },
-            endDate: { $gt: eventData.startDate }
+            startDate: { $lt: processedEventData.endDate },
+            endDate: { $gt: processedEventData.startDate }
           }
         ]
       });
 
-      if (conflicts.length > 0 && eventData.type === 'meeting') {
+      if (conflicts.length > 0 && processedEventData.type === 'meeting') {
         return { 
           success: false, 
           error: 'Scheduling conflict detected. Please choose a different time.' 
@@ -77,14 +84,18 @@ export class CalendarService {
 
       // Create the event
       const event = await CalendarEventModel.create({
-        ...eventData,
+        ...processedEventData,
         organizer: organizerId,
-        attendees: eventData.attendees || []
+        attendees: processedEventData.attendees || [],
+        visibility: processedEventData.visibility || 'public',
+        status: 'scheduled',
+        isActive: true,
+        reminders: processedEventData.reminders || []
       });
 
       // Generate recurring events if needed
-      if (eventData.isRecurring && eventData.recurringPattern) {
-        const endDate = eventData.recurringPattern.endDate || 
+      if (processedEventData.isRecurring && processedEventData.recurringPattern) {
+        const endDate = processedEventData.recurringPattern.endDate || 
           new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
         
         const recurrences = event.generateRecurrences(endDate);

@@ -14,18 +14,10 @@ describe('Article API Integration', () => {
   beforeEach(async () => {
     // Clean up any existing test data before each test
     await NewsModel.deleteMany({
-      title: { $in: ['Integration Test Article', 'Updated Integration Test Article', 'Database Connectivity Test'] }
+      title: { $in: ['Integration Test Article', 'Another Integration Test Article', 'Updated Integration Test Article', 'Database Connectivity Test'] }
     });
-  });
 
-  afterEach(async () => {
-    // Clean up test data after each test
-    await NewsModel.deleteMany({
-      title: { $in: ['Integration Test Article', 'Updated Integration Test Article', 'Database Connectivity Test'] }
-    });
-  });
-
-  it('should create a new article', async () => {
+    // Create a test article for each test to ensure isolation
     const articleData = {
       title: 'Integration Test Article',
       content: 'This is a test article content for integration testing',
@@ -40,13 +32,36 @@ describe('Article API Integration', () => {
       .send(articleData)
       .expect(201);
 
+    createdArticleId = response.body.data._id;
+  });
+
+  afterEach(async () => {
+    // Clean up test data after each test
+    await NewsModel.deleteMany({
+      title: { $in: ['Integration Test Article', 'Another Integration Test Article', 'Updated Integration Test Article', 'Database Connectivity Test'] }
+    });
+  });
+
+  it('should create a new article with unique title', async () => {
+    const articleData = {
+      title: 'Another Integration Test Article',
+      content: 'This is another test article content for integration testing',
+      excerpt: 'Another integration test excerpt',
+      category: 'general',
+      tags: ['integration', 'test'],
+      isPublished: true
+    };
+
+    const response = await request(app)
+      .post('/api/news')
+      .send(articleData)
+      .expect(201);
+
     expect(response.body.success).toBe(true);
     expect(response.body.data).toBeDefined();
-    expect(response.body.data.title).toBe('Integration Test Article');
+    expect(response.body.data.title).toBe('Another Integration Test Article');
     expect(response.body.data.status).toBe('published');
-    
-    createdArticleId = response.body.data._id;
-    expect(createdArticleId).toBeDefined();
+    expect(response.body.data._id).toBeDefined();
   });
 
   it('should retrieve all articles', async () => {
@@ -61,6 +76,9 @@ describe('Article API Integration', () => {
   });
 
   it('should retrieve a specific article by ID', async () => {
+    // Use the article ID that was definitely created in beforeEach
+    expect(createdArticleId).toBeDefined();
+    
     const response = await request(app)
       .get(`/api/news/${createdArticleId}`)
       .expect(200);
@@ -88,22 +106,22 @@ describe('Article API Integration', () => {
     expect(response.body.data.content).toBe('Updated content for integration testing');
   });
 
-  it('should delete an article', async () => {
-    const response = await request(app)
+  it('should delete an article and return 404 when trying to retrieve it', async () => {
+    // First, delete the article
+    const deleteResponse = await request(app)
       .delete(`/api/news/${createdArticleId}`)
       .expect(200);
 
-    expect(response.body.success).toBe(true);
-    expect(response.body.message).toBe('Article deleted successfully');
-  });
+    expect(deleteResponse.body.success).toBe(true);
+    expect(deleteResponse.body.message).toBe('Article deleted successfully');
 
-  it('should return 404 for deleted article', async () => {
-    const response = await request(app)
+    // Then verify it's gone by trying to retrieve it
+    const getResponse = await request(app)
       .get(`/api/news/${createdArticleId}`)
       .expect(404);
 
-    expect(response.body.success).toBe(false);
-    expect(response.body.error).toBe('Article not found');
+    expect(getResponse.body.success).toBe(false);
+    expect(getResponse.body.error).toBe('Article not found');
   });
 
   it('should handle validation errors properly', async () => {
@@ -123,11 +141,12 @@ describe('Article API Integration', () => {
     expect(response.body.error).toContain('Title and content are required');
   });
 
-  it('should check database connectivity', async () => {
+  it('should check database connectivity with create-read-delete cycle', async () => {
     // This test ensures that the database is properly connected
-    // by attempting to create and immediately delete an article
+    // by creating a unique article, reading it back, and deleting it
+    const uniqueTitle = `Database Connectivity Test ${Date.now()}`;
     const testArticle = {
-      title: 'Database Connectivity Test',
+      title: uniqueTitle,
       content: 'Testing database connection',
       excerpt: 'DB test',
       category: 'general',
@@ -142,18 +161,22 @@ describe('Article API Integration', () => {
 
     expect(createResponse.body.success).toBe(true);
     const testArticleId = createResponse.body.data._id;
+    expect(testArticleId).toBeDefined();
 
-    // Verify it was saved to database by retrieving it
+    // Verify it was saved to database by retrieving it with the specific ID
     const getResponse = await request(app)
       .get(`/api/news/${testArticleId}`)
       .expect(200);
 
     expect(getResponse.body.success).toBe(true);
-    expect(getResponse.body.data.title).toBe('Database Connectivity Test');
+    expect(getResponse.body.data._id).toBe(testArticleId);
+    expect(getResponse.body.data.title).toBe(uniqueTitle);
 
-    // Clean up
-    await request(app)
+    // Clean up - delete the test article
+    const deleteResponse = await request(app)
       .delete(`/api/news/${testArticleId}`)
       .expect(200);
+      
+    expect(deleteResponse.body.success).toBe(true);
   });
 });

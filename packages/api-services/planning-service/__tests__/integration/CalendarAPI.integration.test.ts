@@ -45,7 +45,8 @@ describe('Calendar API Integration', () => {
         endDate: '2025-07-08T11:00:00Z',
         type: 'meeting',
         category: 'academic',
-        location: 'Room 101'
+        location: 'Room 101',
+        visibility: 'public'
       };
 
       const response = await request(app)
@@ -85,7 +86,8 @@ describe('Calendar API Integration', () => {
         startDate: '2025-07-08T11:00:00Z',
         endDate: '2025-07-08T10:00:00Z', // End before start
         type: 'meeting',
-        category: 'academic'
+        category: 'academic',
+        visibility: 'public'
       };
 
       const response = await request(app)
@@ -125,7 +127,8 @@ describe('Calendar API Integration', () => {
         startDate: '2025-07-08T10:00:00Z',
         endDate: '2025-07-08T11:00:00Z',
         type: 'meeting',
-        category: 'academic'
+        category: 'academic',
+        visibility: 'public'
       };
 
       const response = await request(app)
@@ -204,7 +207,8 @@ describe('Calendar API Integration', () => {
         startDate: '2025-07-08T10:00:00Z',
         endDate: '2025-07-08T11:00:00Z',
         type: 'meeting',
-        category: 'academic'
+        category: 'academic',
+        visibility: 'public'
       };
 
       const response = await request(app)
@@ -257,7 +261,8 @@ describe('Calendar API Integration', () => {
         startDate: '2025-07-08T10:00:00Z',
         endDate: '2025-07-08T11:00:00Z',
         type: 'meeting',
-        category: 'academic'
+        category: 'academic',
+        visibility: 'public'
       };
 
       const response = await request(app)
@@ -301,7 +306,8 @@ describe('Calendar API Integration', () => {
         startDate: '2025-07-08T10:00:00Z',
         endDate: '2025-07-08T11:00:00Z',
         type: 'meeting',
-        category: 'academic'
+        category: 'academic',
+        visibility: 'public'
       };
 
       const response = await request(app)
@@ -350,7 +356,8 @@ describe('Calendar API Integration', () => {
           startDate: `2025-07-09T${String(8 + i).padStart(2, '0')}:00:00Z`,
           endDate: `2025-07-09T${String(9 + i).padStart(2, '0')}:00:00Z`,
           type: 'class', // Use different type to avoid meeting conflicts
-          category: 'academic'
+          category: 'academic',
+          visibility: 'public'
         };
 
         const response = await request(app)

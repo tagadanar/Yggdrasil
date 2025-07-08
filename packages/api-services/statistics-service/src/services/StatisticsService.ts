@@ -51,16 +51,16 @@ export class StatisticsService {
   static async getSystemStatistics(timeframe: TimeFrame = 'last_30_days'): Promise<StatisticsResult> {
     try {
       // Generate mock system statistics with logical constraints
-      const totalUsers = this.generateRandomValue(500, 2000);
-      const activeUsers = this.generateRandomValue(200, Math.min(800, totalUsers));
-      const totalCourses = this.generateRandomValue(50, 200);
-      const activeCourses = this.generateRandomValue(30, Math.min(150, totalCourses));
-      const totalEnrollments = this.generateRandomValue(1000, 5000);
-      const completedCourses = this.generateRandomValue(500, Math.min(2500, totalEnrollments));
-      const totalNewsArticles = this.generateRandomValue(200, 1000);
-      const publishedArticles = this.generateRandomValue(150, Math.min(800, totalNewsArticles));
-      const totalEvents = this.generateRandomValue(100, 500);
-      const upcomingEvents = this.generateRandomValue(10, Math.min(50, totalEvents));
+      const totalUsers = StatisticsService.generateRandomValue(500, 2000);
+      const activeUsers = StatisticsService.generateRandomValue(200, Math.min(800, totalUsers));
+      const totalCourses = StatisticsService.generateRandomValue(50, 200);
+      const activeCourses = StatisticsService.generateRandomValue(30, Math.min(150, totalCourses));
+      const totalEnrollments = StatisticsService.generateRandomValue(1000, 5000);
+      const completedCourses = StatisticsService.generateRandomValue(500, Math.min(2500, totalEnrollments));
+      const totalNewsArticles = StatisticsService.generateRandomValue(200, 1000);
+      const publishedArticles = StatisticsService.generateRandomValue(150, Math.min(800, totalNewsArticles));
+      const totalEvents = StatisticsService.generateRandomValue(100, 500);
+      const upcomingEvents = StatisticsService.generateRandomValue(10, Math.min(50, totalEvents));
 
       const stats: SystemStatistics = {
         _id: `system_${Date.now()}`,
@@ -382,7 +382,7 @@ export class StatisticsService {
   /**
    * Helper methods for generating mock data
    */
-  private static generateRandomValue(min: number, max: number): number {
+  static generateRandomValue(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
