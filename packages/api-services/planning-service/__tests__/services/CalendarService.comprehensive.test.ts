@@ -31,11 +31,6 @@ describe('CalendarService - Comprehensive Tests', () => {
     await CalendarService.clearStorage();
   });
 
-  afterEach(async () => {
-    // Clean up after each test
-    await CalendarService.clearStorage();
-  });
-
   afterAll(async () => {
     await DatabaseConnection.disconnect();
   });

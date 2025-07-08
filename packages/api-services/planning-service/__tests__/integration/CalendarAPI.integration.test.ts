@@ -28,7 +28,7 @@ describe('Calendar API Integration', () => {
   });
 
   afterEach(async () => {
-    // Clean up all test data after each test
+    // Clean up all test data after each test to avoid conflicts
     await CalendarEventModel.deleteMany({});
   });
 
@@ -129,8 +129,8 @@ describe('Calendar API Integration', () => {
       const eventData = {
         title: 'Integration Test Event',
         description: 'Test event for retrieval',
-        startDate: '2025-07-08T10:00:00Z',
-        endDate: '2025-07-08T11:00:00Z',
+        startDate: '2025-07-08T14:00:00Z',
+        endDate: '2025-07-08T15:00:00Z',
         type: 'meeting',
         category: 'academic',
         visibility: 'public'
