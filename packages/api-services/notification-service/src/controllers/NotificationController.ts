@@ -1,18 +1,6 @@
 // Path: packages/api-services/notification-service/src/controllers/NotificationController.ts
 import { Request, Response } from 'express';
 
-// Extend Request interface to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        email: string;
-        role: string;
-      };
-    }
-  }
-}
 import { NotificationService } from '../services/NotificationService';
 import {
   CreateNotificationData,

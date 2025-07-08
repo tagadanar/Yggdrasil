@@ -51,8 +51,13 @@ describe('Calendar API Integration', () => {
 
       const response = await request(app)
         .post('/api/planning/events')
-        .send(eventData)
-        .expect(201);
+        .send(eventData);
+      
+      if (response.status !== 201) {
+        console.error('Event creation failed:', response.status, response.body);
+      }
+      
+      expect(response.status).toBe(201);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();

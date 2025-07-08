@@ -1,18 +1,6 @@
 // Path: packages/api-services/statistics-service/src/controllers/StatisticsController.ts
 import { Request, Response } from 'express';
 
-// Extend Request interface to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        email: string;
-        role: string;
-      };
-    }
-  }
-}
 import { StatisticsService } from '../services/StatisticsService';
 import {
   StatisticsQuery,

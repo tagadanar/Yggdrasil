@@ -1,18 +1,6 @@
 // Path: packages/api-services/planning-service/src/controllers/CalendarController.ts
 import { Request, Response } from 'express';
 
-// Extend Request interface to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        email: string;
-        role: string;
-      };
-    }
-  }
-}
 
 // Mock user interface for development
 interface MockUser {

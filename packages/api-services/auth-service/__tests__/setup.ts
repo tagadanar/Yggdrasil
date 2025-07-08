@@ -28,7 +28,7 @@ afterEach(async () => {
 });
 
 // Set environment variables for testing
-process.env.NODE_ENV = 'test';
+// NODE_ENV is automatically set by Jest
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
 

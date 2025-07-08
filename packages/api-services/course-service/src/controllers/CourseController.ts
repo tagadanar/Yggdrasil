@@ -1,18 +1,6 @@
 // Path: packages/api-services/course-service/src/controllers/CourseController.ts
 import { Request, Response } from 'express';
 
-// Extend Request interface to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        email: string;
-        role: string;
-      };
-    }
-  }
-}
 import { CourseService } from '../services/CourseService';
 import { CreateCourseData, UpdateCourseData, CourseSearchFilters } from '@101-school/shared-utilities';
 
