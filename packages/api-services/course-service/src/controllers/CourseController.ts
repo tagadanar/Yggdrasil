@@ -3,12 +3,13 @@ import { Request, Response } from 'express';
 
 import { CourseService } from '../services/CourseService';
 import { CreateCourseData, UpdateCourseData, CourseSearchFilters } from '@101-school/shared-utilities';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 export class CourseController {
   /**
    * Create a new course
    */
-  static async createCourse(req: Request, res: Response): Promise<void> {
+  static async createCourse(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const courseData: CreateCourseData = req.body;
       const instructorId = req.user?.id;

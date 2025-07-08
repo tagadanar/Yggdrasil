@@ -9,6 +9,7 @@
     "isolatedModules": false,
     "module": "commonjs"
   },
-  "include": ["src/**/*", "src/types/express.d.ts"],
+  "include": ["src/**/*"],
+  "typeRoots": ["./src/types", "../../../node_modules/@types"],
   "exclude": ["**/*.test.ts", "dist"]
 }

@@ -3,14 +3,15 @@ import { Request, Response } from 'express';
 
 import { UserService } from '../services/UserService';
 import { ResponseHelper, HTTP_STATUS } from '../../../../shared-utilities/src';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 export class UserController {
   /**
    * Get user profile
    */
-  static async getProfile(req: Request, res: Response): Promise<void> {
+  static async getProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.params.id || req.user?._id;
+      const userId = req.params.id || req.user?.id;
       
       if (!userId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
@@ -38,9 +39,9 @@ export class UserController {
   /**
    * Update user profile
    */
-  static async updateProfile(req: Request, res: Response): Promise<void> {
+  static async updateProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.params.id || req.user?._id;
+      const userId = req.params.id || req.user?.id;
       const updateData = req.body;
 
       if (!userId) {
@@ -69,9 +70,9 @@ export class UserController {
   /**
    * Update user preferences
    */
-  static async updatePreferences(req: Request, res: Response): Promise<void> {
+  static async updatePreferences(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       const preferences = req.body;
 
       if (!userId) {
@@ -99,9 +100,9 @@ export class UserController {
   /**
    * Upload profile photo
    */
-  static async uploadPhoto(req: Request, res: Response): Promise<void> {
+  static async uploadPhoto(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       const file = req.file;
 
       if (!userId) {
@@ -145,7 +146,7 @@ export class UserController {
   /**
    * Search users
    */
-  static async searchUsers(req: Request, res: Response): Promise<void> {
+  static async searchUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { q: query = '', role, isActive, limit = 20, offset = 0 } = req.query;
 
@@ -182,9 +183,9 @@ export class UserController {
   /**
    * Get user activity log
    */
-  static async getActivity(req: Request, res: Response): Promise<void> {
+  static async getActivity(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.params.id || req.user?._id;
+      const userId = req.params.id || req.user?.id;
       const { action, startDate, endDate, limit = 20, offset = 0 } = req.query;
 
       if (!userId) {
@@ -233,10 +234,10 @@ export class UserController {
   /**
    * Deactivate user (admin only)
    */
-  static async deactivateUser(req: Request, res: Response): Promise<void> {
+  static async deactivateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const targetUserId = req.params.id;
-      const adminUserId = req.user?._id;
+      const adminUserId = req.user?.id;
 
       if (!targetUserId || !adminUserId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
@@ -266,10 +267,10 @@ export class UserController {
   /**
    * Reactivate user (admin only)
    */
-  static async reactivateUser(req: Request, res: Response): Promise<void> {
+  static async reactivateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const targetUserId = req.params.id;
-      const adminUserId = req.user?._id;
+      const adminUserId = req.user?.id;
 
       if (!targetUserId || !adminUserId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(

@@ -1,35 +1,17 @@
 // Path: packages/api-services/planning-service/src/controllers/CalendarController.ts
 import { Request, Response } from 'express';
-
-
-// Mock user interface for development
-interface MockUser {
-  id: string;
-  email: string;
-  role: string;
-}
-
-// Mock user function for development
-const getMockUser = (req: Request): MockUser => {
-  return {
-    id: 'test-user-id',
-    email: 'test@example.com',
-    role: 'teacher'
-  };
-};
 import { CalendarService } from '../services/CalendarService';
 import { CreateEventData, UpdateEventData, EventSearchFilters, CalendarViewType } from '../types/calendar';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 export class CalendarController {
   /**
    * Create a new calendar event
    */
-  static async createEvent(req: Request, res: Response): Promise<void> {
+  static async createEvent(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const eventData: CreateEventData = req.body;
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const organizerId = user.id;
+      const organizerId = req.user?.id;
 
       const result = await CalendarService.createEvent(eventData, organizerId);
 

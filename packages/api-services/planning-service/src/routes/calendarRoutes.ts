@@ -1,30 +1,31 @@
 // Path: packages/api-services/planning-service/src/routes/calendarRoutes.ts
 import express from 'express';
 import { CalendarController } from '../controllers/CalendarController';
+import { authMiddleware, requireRole, optionalAuth } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-// Event management routes
-router.post('/events', CalendarController.createEvent);
-router.get('/events', CalendarController.searchEvents);
-router.get('/events/upcoming', CalendarController.getUpcomingEvents);
-router.get('/events/today', CalendarController.getTodayEvents);
-router.get('/events/week', CalendarController.getWeekEvents);
-router.get('/events/:eventId', CalendarController.getEvent);
-router.put('/events/:eventId', CalendarController.updateEvent);
-router.delete('/events/:eventId', CalendarController.deleteEvent);
+// Event management routes (authenticated users)
+router.post('/events', authMiddleware, CalendarController.createEvent);
+router.get('/events', authMiddleware, CalendarController.searchEvents);
+router.get('/events/upcoming', authMiddleware, CalendarController.getUpcomingEvents);
+router.get('/events/today', authMiddleware, CalendarController.getTodayEvents);
+router.get('/events/week', authMiddleware, CalendarController.getWeekEvents);
+router.get('/events/:eventId', optionalAuth, CalendarController.getEvent);
+router.put('/events/:eventId', authMiddleware, CalendarController.updateEvent);
+router.delete('/events/:eventId', authMiddleware, CalendarController.deleteEvent);
 
-// Event attendance
-router.post('/events/:eventId/attendance', CalendarController.toggleEventAttendance);
+// Event attendance (authenticated users)
+router.post('/events/:eventId/attendance', authMiddleware, CalendarController.toggleEventAttendance);
 
-// Calendar views
-router.get('/view/:viewType', CalendarController.getCalendarView);
+// Calendar views (authenticated users)
+router.get('/view/:viewType', authMiddleware, CalendarController.getCalendarView);
 
-// Availability and booking
-router.get('/availability/:userId?', CalendarController.getAvailability);
-router.post('/book', CalendarController.bookSlot);
+// Availability and booking (authenticated users)
+router.get('/availability/:userId?', authMiddleware, CalendarController.getAvailability);
+router.post('/book', authMiddleware, CalendarController.bookSlot);
 
-// Statistics
-router.get('/stats', CalendarController.getCalendarStats);
+// Statistics (admin/staff only)
+router.get('/stats', authMiddleware, requireRole(['admin', 'staff']), CalendarController.getCalendarStats);
 
 export default router;

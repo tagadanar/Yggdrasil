@@ -1,0 +1,61 @@
+{
+  "name": "@101-school/functional-tests",
+  "version": "1.0.0",
+  "description": "Functional test suite for Yggdrasil Educational Platform",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:auth": "jest --testPathPattern=auth",
+    "test:user": "jest --testPathPattern=user",
+    "test:course": "jest --testPathPattern=course",
+    "test:planning": "jest --testPathPattern=planning",
+    "test:news": "jest --testPathPattern=news",
+    "test:statistics": "jest --testPathPattern=statistics",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:e2e": "jest --testPathPattern=e2e",
+    "test:all": "npm run test:auth && npm run test:user && npm run test:course && npm run test:planning && npm run test:news && npm run test:statistics && npm run test:integration && npm run test:e2e",
+    "test:smoke": "jest --testPathPattern=smoke",
+    "test:critical": "jest --testPathPattern=critical",
+    "build": "tsc",
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@types/supertest": "^2.0.16",
+    "supertest": "^6.3.3",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "@faker-js/faker": "^8.0.0",
+    "mongoose": "^7.5.0",
+    "mongodb-memory-server": "^9.1.1",
+    "playwright": "^1.40.0",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.8.10",
+    "@types/ws": "^8.5.9",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "eslint": "^8.53.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  },
+  "keywords": [
+    "functional-tests",
+    "integration-tests",
+    "e2e-tests",
+    "yggdrasil",
+    "education-platform",
+    "testing"
+  ],
+  "author": "Yggdrasil Development Team",
+  "license": "MIT"
+}

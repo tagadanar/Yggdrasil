@@ -2,6 +2,7 @@
 import express from 'express';
 import multer from 'multer';
 import { UserController } from '../controllers/UserController';
+import { authMiddleware, requireRole, optionalAuth } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -21,20 +22,26 @@ const upload = multer({
 });
 
 // User profile routes
-router.get('/profile', UserController.getProfile);
-router.get('/search', UserController.searchUsers);
-router.put('/preferences', UserController.updatePreferences);
-router.get('/:id', UserController.getProfile);
-router.put('/:id', UserController.updateProfile);
+router.get('/profile', authMiddleware, UserController.getProfile);
+router.get('/search', authMiddleware, UserController.searchUsers);
+router.put('/profile', authMiddleware, UserController.updateProfile);
+router.put('/preferences', authMiddleware, UserController.updatePreferences);
+
+// Public user profile (with optional auth for additional info)
+router.get('/:id', optionalAuth, UserController.getProfile);
+
+// Admin-only profile updates
+router.put('/:id', authMiddleware, requireRole(['admin']), UserController.updateProfile);
 
 // File upload
-router.post('/upload-photo', upload.single('photo') as any, UserController.uploadPhoto);
+router.post('/photo', authMiddleware, upload.single('photo') as any, UserController.uploadPhoto);
 
 // User activity
-router.get('/:id/activity', UserController.getActivity);
+router.get('/activity', authMiddleware, UserController.getActivity);
+router.get('/:id/activity', authMiddleware, UserController.getActivity);
 
 // Admin operations
-router.post('/:id/deactivate', UserController.deactivateUser);
-router.post('/:id/reactivate', UserController.reactivateUser);
+router.put('/:id/deactivate', authMiddleware, requireRole(['admin']), UserController.deactivateUser);
+router.put('/:id/reactivate', authMiddleware, requireRole(['admin']), UserController.reactivateUser);
 
 export default router;

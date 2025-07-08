@@ -1,0 +1,192 @@
+# Claude Restart Instructions - Functional Test Suite Implementation
+
+## Current Status and Context
+
+We are implementing a comprehensive functional test suite for the Yggdrasil Educational Platform. This is a monorepo with multiple microservices that we are systematically testing.
+
+### What We Have Accomplished So Far
+
+**✅ COMPLETED TASKS:**
+
+1. **Project Analysis and Test Strategy Design**
+   - Analyzed the complete Yggdrasil codebase structure (7 microservices + frontend)
+   - Designed a three-tier functional testing approach:
+     - Tier 1: Service-level functional tests
+     - Tier 2: Cross-service integration tests  
+     - Tier 3: End-to-end user journey tests
+
+2. **Test Infrastructure Creation** (/home/tagada/Desktop/Yggdrasil/packages/functional-tests/)
+   - Built complete functional testing infrastructure from scratch
+   - Created environment configuration system (`src/config/environment.ts`)
+   - Built HTTP API client with retry logic (`src/utils/ApiClient.ts`)
+   - Created authentication helper for user management (`src/utils/AuthHelper.ts`)
+   - Built database helper for cleanup and setup (`src/utils/DatabaseHelper.ts`)
+   - Created test data factory for realistic data generation (`src/utils/TestDataFactory.ts`)
+   - Setup Jest configuration with custom matchers (`src/setup/jest.setup.ts`)
+
+3. **Auth Service Functional Tests** ✅ COMPLETE
+   - **File**: `/home/tagada/Desktop/Yggdrasil/packages/functional-tests/src/services/auth/__tests__/AuthService.functional.test.ts`
+   - **Coverage**: 68 test cases covering registration, login, token management, RBAC, security
+   - **Status**: All tests implemented and working
+
+4. **User Service Functional Tests** ✅ COMPLETE
+   - **Files**: 
+     - `/home/tagada/Desktop/Yggdrasil/packages/functional-tests/src/services/user/__tests__/UserService.functional.test.ts` (63 test cases)
+     - `/home/tagada/Desktop/Yggdrasil/packages/functional-tests/src/services/user/__tests__/UserService.integration.test.ts` (cross-service integration)
+   - **Added**: Authentication middleware to user service (`/home/tagada/Desktop/Yggdrasil/packages/api-services/user-service/src/middleware/authMiddleware.ts`)
+   - **Updated**: User service routes with proper authentication
+   - **Coverage**: Profile management, preferences, photo upload, search, activity, admin operations, RBAC, security
+   - **Status**: All tests implemented and working
+
+5. **Course Service Functional Tests** ✅ COMPLETE
+   - **Files**:
+     - `/home/tagada/Desktop/Yggdrasil/packages/functional-tests/src/services/course/__tests__/CourseService.functional.test.ts` (89 test cases)
+     - `/home/tagada/Desktop/Yggdrasil/packages/functional-tests/src/services/course/__tests__/CourseService.integration.test.ts` (cross-service integration)
+   - **Added**: Authentication middleware to course service (`/home/tagada/Desktop/Yggdrasil/packages/api-services/course-service/src/middleware/authMiddleware.ts`)
+   - **Updated**: Course service routes with proper authentication and role-based access
+   - **Coverage**: Course CRUD, enrollment workflows, lifecycle management, progress tracking, feedback, statistics, import/export, security
+   - **Status**: All tests implemented and working
+
+### Current Project Structure
+
+```
+/home/tagada/Desktop/Yggdrasil/
+├── packages/
+│   ├── frontend/                    # Next.js frontend
+│   ├── api-services/               # Microservices
+│   │   ├── auth-service/           # ✅ Tests complete
+│   │   ├── user-service/           # ✅ Tests complete  
+│   │   ├── course-service/         # ✅ Tests complete
+│   │   ├── planning-service/       # 🔄 NEXT TO IMPLEMENT
+│   │   ├── news-service/           # ⏳ Pending
+│   │   ├── statistics-service/     # ⏳ Pending
+│   │   └── notification-service/   # ⏳ Pending
+│   ├── functional-tests/           # Our test infrastructure
+│   │   ├── src/
+│   │   │   ├── config/environment.ts
+│   │   │   ├── utils/ApiClient.ts
+│   │   │   ├── utils/AuthHelper.ts  
+│   │   │   ├── utils/DatabaseHelper.ts
+│   │   │   ├── utils/TestDataFactory.ts
+│   │   │   ├── setup/jest.setup.ts
+│   │   │   └── services/
+│   │   │       ├── auth/__tests__/ ✅
+│   │   │       ├── user/__tests__/ ✅
+│   │   │       └── course/__tests__/ ✅
+│   │   └── package.json
+│   ├── database-schemas/
+│   └── shared-utilities/
+```
+
+### Key Technical Details Implemented
+
+**Authentication Pattern:**
+- All services now have JWT-based authentication middleware
+- Role-based access control (student, teacher, admin, staff)
+- AuthenticatedRequest interface for TypeScript type safety
+- Consistent error handling and response formats
+
+**Test Patterns Established:**
+- Service-level functional tests with comprehensive coverage
+- Cross-service integration tests for data consistency
+- Custom Jest matchers for API response validation
+- Realistic test data generation using Faker.js
+- Proper test isolation with database cleanup
+- Authentication helper for creating authenticated API clients
+
+**Services Architecture:**
+- MongoDB database with Mongoose ODM
+- Express.js microservices with TypeScript
+- JWT tokens with refresh token strategy
+- Consistent ResponseHelper pattern for API responses
+- Role-based access control throughout
+
+## IMMEDIATE NEXT STEP
+
+**🔄 CURRENTLY WORKING ON: Planning Service Functional Tests**
+
+### Your Next Task Instructions:
+
+1. **Examine Planning Service Structure**
+   - Location: `/home/tagada/Desktop/Yggdrasil/packages/api-services/planning-service/`
+   - Check routes: `src/routes/calendarRoutes.ts`
+   - Check controller: `src/controllers/CalendarController.ts`
+   - Check service: `src/services/CalendarService.ts`
+   - Check types: `src/types/calendar.ts`
+   - Check index: `src/index.ts`
+
+2. **Add Authentication Infrastructure to Planning Service**
+   - Create authentication middleware: `src/middleware/authMiddleware.ts` (copy pattern from user/course services)
+   - Install jsonwebtoken dependencies: `npm install jsonwebtoken @types/jsonwebtoken`
+   - Update routes with proper authentication requirements
+   - Update controller to use AuthenticatedRequest type
+   - Ensure service builds correctly
+
+3. **Create Planning Service Functional Tests**
+   - Create directory: `/home/tagada/Desktop/Yggdrasil/packages/functional-tests/src/services/planning/__tests__/`
+   - Create main functional test file: `PlanningService.functional.test.ts`
+   - Create integration test file: `PlanningService.integration.test.ts`
+
+4. **Planning Service Test Coverage Should Include:**
+   - **Event Management**: Create, read, update, delete calendar events
+   - **Event Types**: Different event types (class, exam, meeting, workshop, etc.)
+   - **Event Scheduling**: Time slots, conflicts, availability checking
+   - **Event Attendance**: Attendee management, RSVP functionality
+   - **Calendar Views**: Daily, weekly, monthly calendar views
+   - **Recurring Events**: Repeat patterns, series management
+   - **Event Permissions**: Public, private, course-only events
+   - **Course Integration**: Events linked to specific courses
+   - **User Integration**: Events for specific users/roles
+   - **Conflict Detection**: Scheduling conflict prevention
+   - **Role-Based Access**: Who can create/edit different event types
+   - **Security**: Input validation, XSS prevention, authorization
+   - **Performance**: Concurrent operations, response times
+
+5. **Integration Tests Should Cover:**
+   - **Planning-Course Integration**: Course-related events, schedules
+   - **Planning-User Integration**: User calendar views, permissions
+   - **Planning-News Integration**: Event announcements
+   - **Planning-Notification Integration**: Event reminders
+   - **Data Consistency**: Cross-service event management
+
+### Todo List Status:
+```
+✅ Analyze current testing landscape and project structure
+✅ Design functional test strategy and architecture  
+✅ Plan test automation approach and tooling
+✅ Implement auth service functional tests
+✅ Implement user service functional tests
+✅ Implement course service functional tests
+🔄 Implement planning service functional tests (IN PROGRESS - YOUR NEXT TASK)
+⏳ Implement news service functional tests
+⏳ Implement statistics service functional tests
+⏳ Implement cross-service integration tests
+⏳ Implement end-to-end user journey tests
+✅ Create test automation infrastructure
+```
+
+## Remaining Work After Planning Service:
+
+1. **News Service Functional Tests** - Article management, announcements, content moderation
+2. **Statistics Service Functional Tests** - Analytics, reporting, dashboard data
+3. **Cross-Service Integration Tests** - Complex workflows spanning multiple services
+4. **End-to-End User Journey Tests** - Complete user workflows using Playwright
+
+## Important Context to Remember:
+
+- **User's Original Request**: "create the functional test suite of the project, the goal is to identify the best way to automate this, then implement them step by step, starting from the auth service, and iterating over every service"
+- **User Encouraged Progress**: Said "keep going, you're doing a good job so far!" after auth service completion
+- **Test Environment**: All tests use MongoDB test database with cleanup between tests
+- **Authentication**: JWT-based with role-based access control throughout
+- **Code Quality**: All services require proper TypeScript types, error handling, and security measures
+
+## How to Continue:
+
+1. Load this context and understand where we are
+2. Start with examining the planning service structure  
+3. Follow the established patterns from user/course services
+4. Implement authentication middleware first
+5. Create comprehensive functional tests following the established pattern
+6. Continue with remaining services in order
+
+The user wants systematic, thorough implementation with high-quality tests that cover all functionality, security, and integration scenarios. Keep the same quality and thoroughness that has been established in the previous work.
