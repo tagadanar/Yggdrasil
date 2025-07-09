@@ -30,9 +30,11 @@ const SERVICES: ServiceConfig[] = [
     env: {
       NODE_ENV: 'functional-test', // Use different env to enable server startup
       PORT: '3101',
-      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
+      MONGODB_URI: 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-test?authSource=admin',
       JWT_SECRET: 'test-secret-key-for-functional-tests',
-      BCRYPT_ROUNDS: '8' // Faster for tests
+      BCRYPT_ROUNDS: '8', // Faster for tests
+      DB_TIMEOUT: '30000', // Increase timeout for tests
+      MONGOOSE_BUFFER_TIMEOUT: '30000'
     }
   },
   {
@@ -43,8 +45,10 @@ const SERVICES: ServiceConfig[] = [
     env: {
       NODE_ENV: 'functional-test', // Use different env to enable server startup
       PORT: '3102',
-      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
-      JWT_SECRET: 'test-secret-key-for-functional-tests'
+      MONGODB_URI: 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-test?authSource=admin',
+      JWT_SECRET: 'test-secret-key-for-functional-tests',
+      DB_TIMEOUT: '30000',
+      MONGOOSE_BUFFER_TIMEOUT: '30000'
     }
   },
   {
@@ -55,9 +59,11 @@ const SERVICES: ServiceConfig[] = [
     env: {
       NODE_ENV: 'functional-test', // Use different env to enable server startup
       PORT: '3104',
-      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
+      MONGODB_URI: 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-test?authSource=admin',
       JWT_SECRET: 'test-secret-key-for-functional-tests',
-      START_SERVER: 'true'
+      START_SERVER: 'true',
+      DB_TIMEOUT: '30000',
+      MONGOOSE_BUFFER_TIMEOUT: '30000'
     }
   },
   {
@@ -68,8 +74,10 @@ const SERVICES: ServiceConfig[] = [
     env: {
       NODE_ENV: 'functional-test',
       PORT: '3103',
-      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
-      JWT_SECRET: 'test-secret-key-for-functional-tests'
+      MONGODB_URI: 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-test?authSource=admin',
+      JWT_SECRET: 'test-secret-key-for-functional-tests',
+      DB_TIMEOUT: '30000',
+      MONGOOSE_BUFFER_TIMEOUT: '30000'
     }
   },
   {
@@ -80,8 +88,10 @@ const SERVICES: ServiceConfig[] = [
     env: {
       NODE_ENV: 'functional-test',
       PORT: '3105',
-      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
-      JWT_SECRET: 'test-secret-key-for-functional-tests'
+      MONGODB_URI: 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-test?authSource=admin',
+      JWT_SECRET: 'test-secret-key-for-functional-tests',
+      DB_TIMEOUT: '30000',
+      MONGOOSE_BUFFER_TIMEOUT: '30000'
     }
   },
   {
@@ -92,8 +102,10 @@ const SERVICES: ServiceConfig[] = [
     env: {
       NODE_ENV: 'functional-test',
       PORT: '3106',
-      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
-      JWT_SECRET: 'test-secret-key-for-functional-tests'
+      MONGODB_URI: 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-test?authSource=admin',
+      JWT_SECRET: 'test-secret-key-for-functional-tests',
+      DB_TIMEOUT: '30000',
+      MONGOOSE_BUFFER_TIMEOUT: '30000'
     }
   },
   {
@@ -104,8 +116,10 @@ const SERVICES: ServiceConfig[] = [
     env: {
       NODE_ENV: 'functional-test',
       PORT: '3107',
-      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
-      JWT_SECRET: 'test-secret-key-for-functional-tests'
+      MONGODB_URI: 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-test?authSource=admin',
+      JWT_SECRET: 'test-secret-key-for-functional-tests',
+      DB_TIMEOUT: '30000',
+      MONGOOSE_BUFFER_TIMEOUT: '30000'
     }
   }
 ];
