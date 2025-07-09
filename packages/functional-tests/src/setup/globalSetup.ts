@@ -59,8 +59,55 @@ const SERVICES: ServiceConfig[] = [
       JWT_SECRET: 'test-secret-key-for-functional-tests',
       START_SERVER: 'true'
     }
+  },
+  {
+    name: 'course-service',
+    path: '../../../api-services/course-service',
+    port: 3103,
+    healthEndpoint: '/health',
+    env: {
+      NODE_ENV: 'functional-test',
+      PORT: '3103',
+      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
+      JWT_SECRET: 'test-secret-key-for-functional-tests'
+    }
+  },
+  {
+    name: 'news-service',
+    path: '../../../api-services/news-service',
+    port: 3105,
+    healthEndpoint: '/health',
+    env: {
+      NODE_ENV: 'functional-test',
+      PORT: '3105',
+      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
+      JWT_SECRET: 'test-secret-key-for-functional-tests'
+    }
+  },
+  {
+    name: 'statistics-service',
+    path: '../../../api-services/statistics-service',
+    port: 3106,
+    healthEndpoint: '/health',
+    env: {
+      NODE_ENV: 'functional-test',
+      PORT: '3106',
+      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
+      JWT_SECRET: 'test-secret-key-for-functional-tests'
+    }
+  },
+  {
+    name: 'notification-service',
+    path: '../../../api-services/notification-service',
+    port: 3107,
+    healthEndpoint: '/health',
+    env: {
+      NODE_ENV: 'functional-test',
+      PORT: '3107',
+      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
+      JWT_SECRET: 'test-secret-key-for-functional-tests'
+    }
   }
-  // Other services temporarily disabled until they're fixed to work in functional tests
 ];
 
 /**
