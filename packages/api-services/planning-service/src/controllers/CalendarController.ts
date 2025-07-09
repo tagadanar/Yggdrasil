@@ -13,6 +13,14 @@ export class CalendarController {
       const eventData: CreateEventData = req.body;
       const organizerId = req.user?.id;
 
+      if (!organizerId) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required - user ID not found'
+        });
+        return;
+      }
+
       const result = await CalendarService.createEvent(eventData, organizerId);
 
       if (result.success) {
@@ -42,9 +50,8 @@ export class CalendarController {
   static async getEvent(req: Request, res: Response): Promise<void> {
     try {
       const { eventId } = req.params;
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const userId = user.id;
+      // Get user from auth middleware
+      const userId = (req as any).user?.id || 'anonymous-user';
 
       const result = await CalendarService.getEvent(eventId, userId);
 
@@ -75,9 +82,8 @@ export class CalendarController {
     try {
       const { eventId } = req.params;
       const updateData: UpdateEventData = req.body;
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const userId = user.id;
+      // Get user from auth middleware
+      const userId = (req as any).user?.id || 'anonymous-user';
 
       const result = await CalendarService.updateEvent(eventId, updateData, userId);
 
@@ -108,9 +114,8 @@ export class CalendarController {
   static async deleteEvent(req: Request, res: Response): Promise<void> {
     try {
       const { eventId } = req.params;
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const userId = user.id;
+      // Get user from auth middleware
+      const userId = (req as any).user?.id || 'anonymous-user';
 
       const result = await CalendarService.deleteEvent(eventId, userId);
 
@@ -139,8 +144,8 @@ export class CalendarController {
    */
   static async searchEvents(req: Request, res: Response): Promise<void> {
     try {
-      // Optional auth - use mock user for development or undefined for anonymous access
-      const userId = getMockUser(req).id;
+      // Optional auth - get user from auth middleware or undefined for anonymous access
+      const userId = (req as any).user?.id;
       const filters: EventSearchFilters = {
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
@@ -188,9 +193,8 @@ export class CalendarController {
     try {
       const { viewType } = req.params;
       const startDate = new Date(req.query.startDate as string || Date.now());
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const userId = user.id;
+      // Get user from auth middleware
+      const userId = (req as any).user?.id || 'anonymous-user';
 
       const result = await CalendarService.getCalendarView(
         viewType as CalendarViewType,
@@ -223,9 +227,8 @@ export class CalendarController {
    */
   static async getUpcomingEvents(req: Request, res: Response): Promise<void> {
     try {
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const userId = user.id;
+      // Get user from auth middleware
+      const userId = (req as any).user?.id || 'anonymous-user';
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
 
       const result = await CalendarService.getUpcomingEvents(userId, limit);
@@ -256,9 +259,8 @@ export class CalendarController {
   static async toggleEventAttendance(req: Request, res: Response): Promise<void> {
     try {
       const { eventId } = req.params;
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const userId = user.id;
+      // Get user from auth middleware
+      const userId = (req as any).user?.id || 'anonymous-user';
 
       const result = await CalendarService.toggleEventAttendance(eventId, userId);
 
@@ -288,9 +290,8 @@ export class CalendarController {
    */
   static async getAvailability(req: Request, res: Response): Promise<void> {
     try {
-      // Use mock user for development or from params - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const userId = user.id || req.params.userId;
+      // Get user from auth middleware or from params
+      const userId = (req as any).user?.id || req.params.userId;
       const startDate = new Date(req.query.startDate as string);
       const endDate = new Date(req.query.endDate as string);
       const duration = req.query.duration ? parseInt(req.query.duration as string) : 60;
@@ -330,10 +331,17 @@ export class CalendarController {
    */
   static async bookSlot(req: Request, res: Response): Promise<void> {
     try {
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const organizerId = user.id;
+      // Get user from auth middleware
+      const organizerId = (req as any).user?.id;
       const bookingRequest = req.body;
+
+      if (!organizerId) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required - user ID not found'
+        });
+        return;
+      }
 
       // Validate booking request
       if (!bookingRequest.requestedSlot || !bookingRequest.requestedBy || !bookingRequest.purpose) {
@@ -372,9 +380,8 @@ export class CalendarController {
    */
   static async getCalendarStats(req: Request, res: Response): Promise<void> {
     try {
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const userId = user.id;
+      // Get user from auth middleware
+      const userId = (req as any).user?.id || 'anonymous-user';
 
       const result = await CalendarService.getCalendarStats(userId);
 
@@ -403,9 +410,8 @@ export class CalendarController {
    */
   static async getTodayEvents(req: Request, res: Response): Promise<void> {
     try {
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const userId = user.id;
+      // Get user from auth middleware
+      const userId = (req as any).user?.id || 'anonymous-user';
       const today = new Date();
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -444,9 +450,8 @@ export class CalendarController {
    */
   static async getWeekEvents(req: Request, res: Response): Promise<void> {
     try {
-      // Use mock user for development - replace with proper auth middleware in production
-      const user = getMockUser(req);
-      const userId = user.id;
+      // Get user from auth middleware
+      const userId = (req as any).user?.id || 'anonymous-user';
       const today = new Date();
       const weekStart = new Date(today);
       weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)

@@ -1,8 +1,45 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import app from '../../src/index';
 import { NewsModel } from '@101-school/database-schemas';
+
+// Mock the authentication middleware before importing the app
+jest.mock('../../src/middleware/authMiddleware', () => ({
+  authMiddleware: jest.fn((req: any, res: any, next: any) => {
+    req.user = {
+      id: 'test-user-id',
+      role: 'admin',
+      email: 'test@example.com'
+    };
+    next();
+  }),
+  requireRole: jest.fn((roles: string[]) => (req: any, res: any, next: any) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Insufficient permissions'
+      });
+    }
+    next();
+  }),
+  optionalAuth: jest.fn((req: any, res: any, next: any) => {
+    // For tests, we'll provide user info even for optional auth
+    req.user = {
+      id: 'test-user-id',
+      role: 'admin',
+      email: 'test@example.com'
+    };
+    next();
+  })
+}));
+
+import app from '../../src/index';
 
 describe('NewsController Integration Tests', () => {
   let mongoServer: MongoMemoryServer;

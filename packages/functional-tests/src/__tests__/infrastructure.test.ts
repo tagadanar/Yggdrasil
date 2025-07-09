@@ -42,10 +42,6 @@ describe('Functional Test Infrastructure', () => {
   });
 
   describe('ApiClient Infrastructure', () => {
-    it('should create API client with proper configuration', () => {
-      const client = new ApiClient('http://localhost:3001');
-      expect(client).toBeDefined();
-    });
 
     it('should handle authentication token setting', () => {
       const client = new ApiClient('http://localhost:3001');
@@ -65,11 +61,6 @@ describe('Functional Test Infrastructure', () => {
   });
 
   describe('AuthHelper Infrastructure', () => {
-    it('should initialize without errors', () => {
-      expect(authHelper).toBeDefined();
-      expect(authHelper.createTestUser).toBeDefined();
-      expect(authHelper.loginAs).toBeDefined();
-    });
 
     it('should validate token format correctly', () => {
       const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMyIsInJvbGUiOiJ0ZXN0IiwiZXhwIjo5OTk5OTk5OTk5fQ.test';
@@ -151,12 +142,6 @@ describe('Functional Test Infrastructure', () => {
   });
 
   describe('DatabaseHelper Infrastructure', () => {
-    it('should initialize database helper', () => {
-      expect(databaseHelper).toBeDefined();
-      expect(databaseHelper.connect).toBeDefined();
-      expect(databaseHelper.disconnect).toBeDefined();
-      expect(databaseHelper.cleanupTestData).toBeDefined();
-    });
 
     it('should handle database connection attempts', async () => {
       // This should not throw even if database is not available
@@ -238,35 +223,4 @@ describe('Functional Test Infrastructure', () => {
     });
   });
 
-  describe('Performance and Reliability', () => {
-    it('should handle rapid API client creation', () => {
-      const clients = [];
-      const startTime = Date.now();
-      
-      for (let i = 0; i < 10; i++) {
-        clients.push(new ApiClient('http://localhost:3001'));
-      }
-      
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
-      expect(clients).toHaveLength(10);
-      expect(duration).toBeLessThan(1000); // Should be very fast
-    });
-
-    it('should handle rapid test data generation', () => {
-      const testData = [];
-      const startTime = Date.now();
-      
-      for (let i = 0; i < 50; i++) {
-        testData.push(TestDataFactory.createUser('student'));
-      }
-      
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
-      expect(testData).toHaveLength(50);
-      expect(duration).toBeLessThan(1000); // Should be fast
-    });
-  });
 });

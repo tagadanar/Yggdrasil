@@ -278,11 +278,6 @@ describe('Authentication Service - Functional Tests', () => {
       expect(response.data.error).toContain('required');
     });
 
-    it('should reject refresh with expired refresh token', async () => {
-      // This test would require a way to create expired tokens
-      // For now, we'll skip this test or implement it if token expiry is configurable
-      expect(true).toBe(true);
-    });
   });
 
   describe('Password Reset Flow', () => {
@@ -520,11 +515,6 @@ describe('Authentication Service - Functional Tests', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle database connection errors gracefully', async () => {
-      // This test would require database connection to be temporarily unavailable
-      // For now, we'll test a generic error scenario
-      expect(true).toBe(true);
-    });
 
     it('should handle malformed JSON requests', async () => {
       try {

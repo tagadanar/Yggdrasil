@@ -8,6 +8,39 @@ import app from '../../src/index';
 import { CalendarEventModel } from '../../src/models/CalendarEvent';
 import { DatabaseConnection } from '@101-school/database-schemas';
 
+// Mock the authentication middleware for integration tests
+jest.mock('../../src/middleware/authMiddleware', () => ({
+  authMiddleware: (req: any, res: any, next: any) => {
+    // Mock authenticated user for all tests
+    req.user = {
+      id: 'test-user-id',
+      email: 'test@example.com',
+      role: 'student'
+    };
+    next();
+  },
+  requireRole: (roles: string[]) => (req: any, res: any, next: any) => {
+    // Mock role-based access control
+    if (!req.user) {
+      req.user = {
+        id: 'test-user-id',
+        email: 'test@example.com',
+        role: 'admin' // Give admin role to pass all role checks
+      };
+    }
+    next();
+  },
+  optionalAuth: (req: any, res: any, next: any) => {
+    // Mock optional authentication
+    req.user = {
+      id: 'test-user-id',
+      email: 'test@example.com',
+      role: 'student'
+    };
+    next();
+  }
+}));
+
 describe('Calendar API Integration', () => {
   let createdEventId: string;
 

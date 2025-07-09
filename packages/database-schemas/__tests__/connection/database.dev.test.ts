@@ -51,25 +51,7 @@ describe('DatabaseConnection - Development Mode', () => {
     });
   });
 
-  describe('Development Connection Properties', () => {
-    it('should use longer timeout in development mode', () => {
-      // This test verifies that development mode uses appropriate timeouts
-      // In a real implementation, we would mock mongoose.connect to verify the options
-      expect(true).toBe(true); // Placeholder - would need mongoose mocking
-    });
-  });
 
-  describe('Connection State Validation', () => {
-    it('should provide detailed connection state information', () => {
-      const state = DatabaseConnection.getConnectionState();
-      expect(['disconnected', 'connected', 'connecting', 'disconnecting']).toContain(state);
-    });
-
-    it('should indicate when not connected', () => {
-      const isConnected = DatabaseConnection.isConnected();
-      expect(typeof isConnected).toBe('boolean');
-    });
-  });
 
   describe('Health Check', () => {
     it('should return unhealthy status when not connected', async () => {

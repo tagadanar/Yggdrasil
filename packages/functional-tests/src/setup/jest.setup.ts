@@ -17,7 +17,10 @@ jest.setTimeout(30000);
 // Global setup before all tests
 beforeAll(async () => {
   try {
-    console.log('🚀 Starting functional test suite setup...');
+    // Only show setup messages in verbose mode
+    if (testEnvironment.logging.level === 'debug') {
+      console.log('🚀 Starting functional test suite setup...');
+    }
     
     // Validate environment
     validateEnvironment();
@@ -28,12 +31,14 @@ beforeAll(async () => {
     // Create test indexes
     await databaseHelper.createTestIndexes();
     
-    // Initial cleanup
+    // Initial cleanup (silent)
     if (testEnvironment.database.cleanup) {
-      await databaseHelper.cleanupTestData();
+      await databaseHelper.cleanupTestData(true);
     }
     
-    console.log('✅ Functional test suite setup completed');
+    if (testEnvironment.logging.level === 'debug') {
+      console.log('✅ Functional test suite setup completed');
+    }
   } catch (error: any) {
     console.error('❌ Functional test suite setup failed:', error.message);
     throw error;
@@ -43,20 +48,24 @@ beforeAll(async () => {
 // Global cleanup after all tests
 afterAll(async () => {
   try {
-    console.log('🧹 Starting functional test suite cleanup...');
+    if (testEnvironment.logging.level === 'debug') {
+      console.log('🧹 Starting functional test suite cleanup...');
+    }
     
     // Clean up auth helper
     await authHelper.cleanup();
     
-    // Clean up database
+    // Clean up database (silent)
     if (testEnvironment.database.cleanup) {
-      await databaseHelper.cleanupTestData();
+      await databaseHelper.cleanupTestData(true);
     }
     
     // Disconnect from database
     await databaseHelper.disconnect();
     
-    console.log('✅ Functional test suite cleanup completed');
+    if (testEnvironment.logging.level === 'debug') {
+      console.log('✅ Functional test suite cleanup completed');
+    }
   } catch (error: any) {
     console.error('❌ Functional test suite cleanup failed:', error.message);
     // Don't throw error in cleanup to avoid hiding original test failures
@@ -65,9 +74,9 @@ afterAll(async () => {
 
 // Setup before each test
 beforeEach(async () => {
-  // Clean up test data before each test to ensure isolation
+  // Clean up test data before each test to ensure isolation (silent to reduce noise)
   if (testEnvironment.database.cleanup) {
-    await databaseHelper.cleanupTestData();
+    await databaseHelper.cleanupTestData(true); // Silent cleanup
   }
 });
 
@@ -194,20 +203,25 @@ expect.extend({
   },
 });
 
-// Test environment info
-console.log('🧪 Functional Test Environment Configuration:');
-console.log(`  Database: ${testEnvironment.database.uri}`);
-console.log(`  Auth Service: ${testEnvironment.services.auth}`);
-console.log(`  User Service: ${testEnvironment.services.user}`);
-console.log(`  Course Service: ${testEnvironment.services.course}`);
-console.log(`  Planning Service: ${testEnvironment.services.planning}`);
-console.log(`  News Service: ${testEnvironment.services.news}`);
-console.log(`  Statistics Service: ${testEnvironment.services.statistics}`);
-console.log(`  Notification Service: ${testEnvironment.services.notification}`);
-console.log(`  Frontend: ${testEnvironment.services.frontend}`);
-console.log(`  Cleanup: ${testEnvironment.database.cleanup ? 'enabled' : 'disabled'}`);
-console.log(`  Logging: ${testEnvironment.logging.level}`);
-console.log('');
+// Test environment info - only show once and only in debug mode
+if (typeof global !== 'undefined' && testEnvironment.logging.level === 'debug' && !(global as any).__YGGDRASIL_TEST_ENV_LOGGED) {
+  console.log('🧪 Functional Test Environment Configuration:');
+  console.log(`  Database: ${testEnvironment.database.uri}`);
+  console.log(`  Auth Service: ${testEnvironment.services.auth}`);
+  console.log(`  User Service: ${testEnvironment.services.user}`);
+  console.log(`  Course Service: ${testEnvironment.services.course}`);
+  console.log(`  Planning Service: ${testEnvironment.services.planning}`);
+  console.log(`  News Service: ${testEnvironment.services.news}`);
+  console.log(`  Statistics Service: ${testEnvironment.services.statistics}`);
+  console.log(`  Notification Service: ${testEnvironment.services.notification}`);
+  console.log(`  Frontend: ${testEnvironment.services.frontend}`);
+  console.log(`  Cleanup: ${testEnvironment.database.cleanup ? 'enabled' : 'disabled'}`);
+  console.log(`  Logging: ${testEnvironment.logging.level}`);
+  console.log('');
+  
+  // Mark as logged to prevent duplicate output
+  (global as any).__YGGDRASIL_TEST_ENV_LOGGED = true;
+}
 
 export {
   databaseHelper,

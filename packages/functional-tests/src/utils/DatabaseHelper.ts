@@ -42,7 +42,9 @@ export class DatabaseHelper {
       });
 
       this.isConnected = true;
-      console.log('✅ Test database connected successfully');
+      if (process.env.LOG_LEVEL === 'debug') {
+        console.log('✅ Test database connected successfully');
+      }
     } catch (error: any) {
       console.error('❌ Test database connection failed:', error.message);
       throw error;
@@ -60,7 +62,9 @@ export class DatabaseHelper {
     try {
       await mongoose.disconnect();
       this.isConnected = false;
-      console.log('🔌 Test database disconnected');
+      if (process.env.LOG_LEVEL === 'debug') {
+        console.log('🔌 Test database disconnected');
+      }
     } catch (error: any) {
       console.error('❌ Test database disconnection failed:', error.message);
       throw error;
@@ -70,13 +74,14 @@ export class DatabaseHelper {
   /**
    * Clean up all test data
    */
-  async cleanupTestData(): Promise<void> {
+  async cleanupTestData(silent = false): Promise<void> {
     if (!this.isConnected) {
       await this.connect();
     }
 
     try {
       const collections = await mongoose.connection.db.listCollections().toArray();
+      const cleanedCollections: string[] = [];
       
       for (const collection of collections) {
         const collectionName = collection.name;
@@ -86,8 +91,10 @@ export class DatabaseHelper {
           continue;
         }
 
-        await mongoose.connection.db.collection(collectionName).deleteMany({});
-        console.log(`🧹 Cleaned collection: ${collectionName}`);
+        const result = await mongoose.connection.db.collection(collectionName).deleteMany({});
+        if (result.deletedCount > 0) {
+          cleanedCollections.push(collectionName);
+        }
       }
 
       this.cleanupTasks.push({
@@ -95,7 +102,10 @@ export class DatabaseHelper {
         timestamp: new Date(),
       });
 
-      console.log('✅ Test data cleanup completed');
+      // Only log if not silent and there was actual data to clean
+      if (!silent && cleanedCollections.length > 0) {
+        console.log(`🧹 Cleaned ${cleanedCollections.length} collections: ${cleanedCollections.join(', ')}`);
+      }
     } catch (error: any) {
       console.error('❌ Test data cleanup failed:', error.message);
       throw error;

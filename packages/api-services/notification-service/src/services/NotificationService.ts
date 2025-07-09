@@ -720,7 +720,16 @@ export class NotificationService {
   }
 
   static async clearStorage(): Promise<void> {
-    // MongoDB cleanup for testing - implement when models are available
-    console.log('NotificationService: MongoDB cleanup not yet implemented');
+    // Clear in-memory storage for testing
+    notificationStorage.length = 0;
+    templateStorage.length = 0;
+    preferenceStorage.length = 0;
+    queueStorage.length = 0;
+    
+    // Reset counters
+    notificationIdCounter = 1;
+    templateIdCounter = 1;
+    queueIdCounter = 1;
+    preferenceIdCounter = 1;
   }
 }

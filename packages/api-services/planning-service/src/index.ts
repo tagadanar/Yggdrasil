@@ -78,7 +78,7 @@ app.use('*', (req, res) => {
 });
 
 // Start server
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' || process.env.START_SERVER === 'true') {
   app.listen(PORT, () => {
     console.log(`Planning Service running on port ${PORT}`);
     console.log(`Health check available at http://localhost:${PORT}/health`);

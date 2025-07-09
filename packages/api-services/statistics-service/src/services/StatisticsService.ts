@@ -357,10 +357,13 @@ export class StatisticsService {
    */
   static async getLearningAnalytics(filters: StatisticsSearchFilters): Promise<StatisticsResult> {
     try {
+      const totalLearners = this.generateRandomValue(500, 2000);
+      const activeLearners = this.generateRandomValue(200, Math.min(800, totalLearners));
+      
       const analytics = {
         overview: {
-          totalLearners: this.generateRandomValue(500, 2000),
-          activeLearners: this.generateRandomValue(200, 800),
+          totalLearners,
+          activeLearners,
           completionRate: this.generateRandomValue(60, 85),
           averageScore: this.generateRandomValue(75, 90),
           engagementRate: this.generateRandomValue(70, 95)

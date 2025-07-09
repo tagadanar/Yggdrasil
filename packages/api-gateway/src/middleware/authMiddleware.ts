@@ -189,9 +189,13 @@ function extractToken(req: Request, tokenHeader: string): string | null {
 export function isPathBypassed(path: string, bypassPaths: string[]): boolean {
   return bypassPaths.some(bypassPath => {
     // Support wildcard matching
-    if (bypassPath.endsWith('*')) {
-      const basePath = bypassPath.slice(0, -1);
-      return path.startsWith(basePath);
+    if (bypassPath.includes('*')) {
+      // Convert wildcard pattern to regex
+      const regexPattern = bypassPath
+        .replace(/\*/g, '.*'); // * matches any characters
+      
+      const regex = new RegExp(`^${regexPattern}`);
+      return regex.test(path);
     }
     
     // Exact match

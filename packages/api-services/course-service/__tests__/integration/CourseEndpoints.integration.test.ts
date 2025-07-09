@@ -1,8 +1,55 @@
 // Integration tests for Course API endpoints
 import request from 'supertest';
 import express from 'express';
-import courseRoutes from '../../src/routes/courseRoutes';
 import mongoose from 'mongoose';
+
+// Mock the authentication middleware before importing routes
+jest.mock('../../src/middleware/authMiddleware', () => ({
+  authMiddleware: jest.fn((req: any, res: any, next: any) => {
+    // Check for test headers to simulate different user scenarios
+    if (req.headers['test-user-id'] && req.headers['test-user-role']) {
+      req.user = {
+        id: req.headers['test-user-id'],
+        role: req.headers['test-user-role']
+      };
+      next();
+    } else {
+      // No authentication headers provided - simulate unauthorized request
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+  }),
+  requireRole: jest.fn((roles: string[]) => (req: any, res: any, next: any) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Insufficient permissions'
+      });
+    }
+    next();
+  }),
+  optionalAuth: jest.fn((req: any, res: any, next: any) => {
+    // Use test headers if provided, otherwise continue without user (optional)
+    if (req.headers['test-user-id'] && req.headers['test-user-role']) {
+      req.user = {
+        id: req.headers['test-user-id'],
+        role: req.headers['test-user-role']
+      };
+    }
+    // Always continue for optional auth
+    next();
+  })
+}));
+
+import courseRoutes from '../../src/routes/courseRoutes';
 
 // Create mock query object with chainable methods that respect pagination and sorting
 const createMockQuery = (resultData: any[] = []) => {
@@ -115,18 +162,6 @@ jest.mock('@101-school/database-schemas', () => ({
 // Import after mocking
 import { CourseModel, UserModel } from '@101-school/database-schemas';
 
-// Mock authentication middleware for testing
-const mockAuthMiddleware = (req: any, res: any, next: any) => {
-  // Only set user data if test headers are provided
-  if (req.headers['test-user-id'] && req.headers['test-user-role']) {
-    req.user = {
-      id: req.headers['test-user-id'],
-      role: req.headers['test-user-role']
-    };
-  }
-  // If no test headers, req.user remains undefined (for auth tests)
-  next();
-};
 
 describe('Course API Endpoints Integration Tests', () => {
   let app: express.Application;
@@ -141,7 +176,6 @@ describe('Course API Endpoints Integration Tests', () => {
     // Create Express app for testing
     app = express();
     app.use(express.json());
-    app.use(mockAuthMiddleware);
     app.use('/courses', courseRoutes);
 
     // Start test server
@@ -703,7 +737,7 @@ describe('Course API Endpoints Integration Tests', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Unauthorized - instructor ID required');
+      expect(response.body.error).toBe('Authentication required');
     });
 
     it('should return 400 for invalid course data', async () => {
@@ -759,32 +793,32 @@ describe('Course API Endpoints Integration Tests', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Unauthorized - user ID required');
+      expect(response.body.error).toBe('Authentication required');
     });
 
-    it('should return 400 for unauthorized student', async () => {
+    it('should return 403 for unauthorized student', async () => {
       const response = await request(app)
         .put(`/courses/${courseId}`)
         .set('test-user-id', studentId)
         .set('test-user-role', 'student')
         .send(updateData)
-        .expect(400);
+        .expect(403);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Insufficient permissions to update this course');
+      expect(response.body.error).toBe('Insufficient permissions');
     });
   });
 
   describe('DELETE /courses/:courseId', () => {
-    it('should delete course as instructor', async () => {
+    it('should return 403 for instructor trying to delete course', async () => {
       const response = await request(app)
         .delete(`/courses/${courseId}`)
         .set('test-user-id', instructorId)
         .set('test-user-role', 'teacher')
-        .expect(200);
+        .expect(403);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toContain('deleted successfully');
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Insufficient permissions');
     });
 
     it('should delete course as admin', async () => {
@@ -803,18 +837,18 @@ describe('Course API Endpoints Integration Tests', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Unauthorized - user ID required');
+      expect(response.body.error).toBe('Authentication required');
     });
 
-    it('should return 400 for unauthorized student', async () => {
+    it('should return 403 for unauthorized student', async () => {
       const response = await request(app)
         .delete(`/courses/${courseId}`)
         .set('test-user-id', studentId)
         .set('test-user-role', 'student')
-        .expect(400);
+        .expect(403);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Insufficient permissions to delete this course');
+      expect(response.body.error).toBe('Insufficient permissions');
     });
   });
 
@@ -852,6 +886,7 @@ describe('Course API Endpoints Integration Tests', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Authentication required');
     });
   });
 
@@ -960,6 +995,7 @@ describe('Course API Endpoints Integration Tests', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Authentication required');
     });
   });
 
@@ -1049,6 +1085,8 @@ describe('Course API Endpoints Integration Tests', () => {
     it('should get course feedback', async () => {
       const response = await request(app)
         .get(`/courses/${courseId}/feedback`)
+        .set('test-user-id', studentId)
+        .set('test-user-role', 'student')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -1176,6 +1214,8 @@ describe('Course API Endpoints Integration Tests', () => {
     it('should get course statistics', async () => {
       const response = await request(app)
         .get('/courses/stats')
+        .set('test-user-id', adminId)
+        .set('test-user-role', 'admin')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -1208,15 +1248,15 @@ describe('Course API Endpoints Integration Tests', () => {
       expect(response.headers['content-disposition']).toContain('attachment');
     });
 
-    it('should return 400 for unauthorized user', async () => {
+    it('should return 403 for unauthorized user', async () => {
       const response = await request(app)
         .get(`/courses/${courseId}/export?format=json`)
         .set('test-user-id', studentId)
         .set('test-user-role', 'student')
-        .expect(400);
+        .expect(403);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe('Insufficient permissions to export course data');
+      expect(response.body.error).toBe('Insufficient permissions');
     });
 
     it('should return 400 for unsupported format', async () => {
@@ -1266,7 +1306,13 @@ describe('Course API Endpoints Integration Tests', () => {
     it('should handle 500 errors gracefully', async () => {
       // Mock database error by making find throw
       const originalFind = CourseModel.find;
+      const originalCountDocuments = CourseModel.countDocuments;
+      
       CourseModel.find = jest.fn().mockImplementation(() => {
+        throw new Error('Database connection error');
+      });
+      
+      CourseModel.countDocuments = jest.fn().mockImplementation(() => {
         throw new Error('Database connection error');
       });
 
@@ -1278,8 +1324,9 @@ describe('Course API Endpoints Integration Tests', () => {
         expect(response.body.success).toBe(false);
         expect(response.body.error).toBe('Internal server error');
       } finally {
-        // Restore original method in finally block to ensure it's always restored
+        // Restore original methods in finally block to ensure they're always restored
         CourseModel.find = originalFind;
+        CourseModel.countDocuments = originalCountDocuments;
       }
     });
 

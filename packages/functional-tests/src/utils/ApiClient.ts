@@ -66,7 +66,20 @@ export class ApiClient {
         return response;
       },
       (error) => {
-        console.error(`[API] Response error: ${error.response?.status} ${error.config?.url}`, error.response?.data);
+        // Better error handling with more context
+        const status = error.response?.status || 'Network Error';
+        const url = error.config?.url || 'Unknown URL';
+        const method = error.config?.method?.toUpperCase() || 'REQUEST';
+        
+        if (testEnvironment.logging.level === 'debug') {
+          console.error(`[API] ${method} ${status} ${url}`, error.response?.data || error.message);
+        } else if (testEnvironment.logging.level === 'error') {
+          // Only show network/connection errors in non-debug mode
+          if (!error.response) {
+            console.error(`[API] Network error: ${method} ${url} - ${error.message}`);
+          }
+        }
+        
         return Promise.reject(error);
       }
     );

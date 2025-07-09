@@ -369,22 +369,6 @@ describe('CourseService', () => {
       expect(result.message).toBe('Student enrolled successfully');
     });
 
-    it('should prevent duplicate enrollment', async () => {
-      // The mock setup handles this scenario
-      // Since this is a unit test with mocks, we test the service logic
-      const result = await CourseService.enrollStudent(courseId, studentId);
-      expect(result.success).toBe(true); // First enrollment should succeed
-      
-      // For testing duplicate enrollment, we'd need to modify the mock
-      // but this is covered in the unit test file
-    });
-
-    it('should handle capacity limits', async () => {
-      // This test is better handled in the unit test file where we can control mocks
-      // For now, just test that the service method runs without error
-      const result = await CourseService.enrollStudent(courseId, studentId);
-      expect(result.success).toBe(true);
-    });
   });
 
   describe('unenrollStudent', () => {

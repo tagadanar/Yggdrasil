@@ -5,19 +5,44 @@ import express from 'express';
 import statisticsRoutes from '../../src/routes/statisticsRoutes';
 import { StatisticsService } from '../../src/services/StatisticsService';
 
+// Mock the authentication middleware before importing routes
+jest.mock('../../src/middleware/authMiddleware', () => ({
+  authMiddleware: jest.fn((req: any, res: any, next: any) => {
+    req.user = {
+      id: 'test-user-123',
+      role: 'admin',
+      email: 'test@example.com'
+    };
+    next();
+  }),
+  requireRole: jest.fn((roles: string[]) => (req: any, res: any, next: any) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Insufficient permissions'
+      });
+    }
+    next();
+  }),
+  optionalAuth: jest.fn((req: any, res: any, next: any) => {
+    req.user = {
+      id: 'test-user-123',
+      role: 'admin',
+      email: 'test@example.com'
+    };
+    next();
+  })
+}));
+
 // Create Express app for testing
 const app = express();
 app.use(express.json());
-
-// Mock authentication middleware
-app.use((req, res, next) => {
-  req.user = {
-    id: 'test-user-123',
-    role: 'admin',
-    email: 'test@example.com'
-  };
-  next();
-});
 
 app.use('/api/statistics', statisticsRoutes);
 
@@ -96,21 +121,30 @@ describe('Statistics API Integration Tests', () => {
       });
 
       it('should reject access to other user data for non-admin', async () => {
-        // Mock non-admin user
-        const appNonAdmin = express();
-        appNonAdmin.use(express.json());
-        appNonAdmin.use((req, res, next) => {
+        // Mock non-admin user by updating the middleware implementation
+        const { authMiddleware, requireRole } = require('../../src/middleware/authMiddleware');
+        
+        authMiddleware.mockImplementation((req: any, res: any, next: any) => {
           req.user = { id: 'different-user', role: 'student' };
           next();
         });
-        appNonAdmin.use('/api/statistics', statisticsRoutes);
 
-        const response = await request(appNonAdmin)
+        const response = await request(app)
           .get('/api/statistics/users/test-user-123')
           .expect(403);
 
         expect(response.body.success).toBe(false);
         expect(response.body.error).toContain('Insufficient permissions');
+        
+        // Restore original mock
+        authMiddleware.mockImplementation((req: any, res: any, next: any) => {
+          req.user = {
+            id: 'test-user-123',
+            role: 'admin',
+            email: 'test@example.com'
+          };
+          next();
+        });
       });
 
       it('should allow admin to access any user data', async () => {
@@ -242,11 +276,17 @@ describe('Statistics API Integration Tests', () => {
       });
 
       it('should require authentication', async () => {
-        const appNoAuth = express();
-        appNoAuth.use(express.json());
-        appNoAuth.use('/api/statistics', statisticsRoutes);
+        // Mock unauthenticated user
+        const { authMiddleware } = require('../../src/middleware/authMiddleware');
+        
+        authMiddleware.mockImplementation((req: any, res: any, next: any) => {
+          res.status(401).json({
+            success: false,
+            error: 'Authentication required'
+          });
+        });
 
-        const response = await request(appNoAuth)
+        const response = await request(app)
           .post('/api/statistics/reports')
           .send({
             type: 'system_overview',
@@ -257,6 +297,16 @@ describe('Statistics API Integration Tests', () => {
 
         expect(response.body.success).toBe(false);
         expect(response.body.error).toContain('Authentication required');
+        
+        // Restore original mock
+        authMiddleware.mockImplementation((req: any, res: any, next: any) => {
+          req.user = {
+            id: 'test-user-123',
+            role: 'admin',
+            email: 'test@example.com'
+          };
+          next();
+        });
       });
     });
 
@@ -460,21 +510,31 @@ describe('Statistics API Integration Tests', () => {
       });
 
       it('should return empty array for new user', async () => {
-        const appNewUser = express();
-        appNewUser.use(express.json());
-        appNewUser.use((req, res, next) => {
+        // Mock new user
+        const { authMiddleware } = require('../../src/middleware/authMiddleware');
+        
+        authMiddleware.mockImplementation((req: any, res: any, next: any) => {
           req.user = { id: 'new-user', role: 'student' };
           next();
         });
-        appNewUser.use('/api/statistics', statisticsRoutes);
 
-        const response = await request(appNewUser)
+        const response = await request(app)
           .get('/api/statistics/widgets')
           .expect(200);
 
         expect(response.body.success).toBe(true);
         expect(Array.isArray(response.body.data)).toBe(true);
         expect(response.body.data.length).toBe(0);
+        
+        // Restore original mock
+        authMiddleware.mockImplementation((req: any, res: any, next: any) => {
+          req.user = {
+            id: 'test-user-123',
+            role: 'admin',
+            email: 'test@example.com'
+          };
+          next();
+        });
       });
     });
   });
@@ -660,11 +720,17 @@ describe('Statistics API Integration Tests', () => {
     });
 
     it('should handle missing authentication', async () => {
-      const appNoAuth = express();
-      appNoAuth.use(express.json());
-      appNoAuth.use('/api/statistics', statisticsRoutes);
+      // Mock unauthenticated request
+      const { authMiddleware } = require('../../src/middleware/authMiddleware');
+      
+      authMiddleware.mockImplementation((req: any, res: any, next: any) => {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      });
 
-      const response = await request(appNoAuth)
+      const response = await request(app)
         .post('/api/statistics/widgets')
         .send({
           type: 'metric_card',
@@ -676,6 +742,16 @@ describe('Statistics API Integration Tests', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
+      
+      // Restore original mock
+      authMiddleware.mockImplementation((req: any, res: any, next: any) => {
+        req.user = {
+          id: 'test-user-123',
+          role: 'admin',
+          email: 'test@example.com'
+        };
+        next();
+      });
     });
   });
 
