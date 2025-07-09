@@ -140,10 +140,17 @@ describe('User Service - Functional Tests', () => {
           }
         };
 
-        const response = await userClient.put('/api/users/profile', invalidData);
-
-        expect(response.status).toBe(400);
-        expect(response.data).toBeErrorResponse();
+        try {
+          const response = await userClient.put('/api/users/profile', invalidData);
+          
+          // If request succeeds, it should be a 400 with error response
+          expect(response.status).toBe(400);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          // If request throws, it should be a 400 axios error
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should not allow updating email directly', async () => {
@@ -631,11 +638,16 @@ describe('User Service - Functional Tests', () => {
           email: 'invalid-email-format'
         };
 
-        const response = await userClient.put('/api/users/profile', invalidData);
-
-        // Email updates might not be allowed through profile endpoint
-        expect(response.status).toBeOneOf([400, 403]);
-        expect(response.data).toBeErrorResponse();
+        try {
+          const response = await userClient.put('/api/users/profile', invalidData);
+          
+          // Email updates might not be allowed through profile endpoint
+          expect(response.status).toBeOneOf([400, 403]);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBeOneOf([400, 403]);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should validate required fields', async () => {
@@ -646,10 +658,15 @@ describe('User Service - Functional Tests', () => {
           }
         };
 
-        const response = await userClient.put('/api/users/profile', incompleteData);
-
-        expect(response.status).toBe(400);
-        expect(response.data).toBeErrorResponse();
+        try {
+          const response = await userClient.put('/api/users/profile', incompleteData);
+          
+          expect(response.status).toBe(400);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should validate field length limits', async () => {
@@ -660,11 +677,17 @@ describe('User Service - Functional Tests', () => {
           }
         };
 
-        const response = await userClient.put('/api/users/profile', longData);
-
-        expect(response.status).toBe(400);
-        expect(response.data).toBeErrorResponse();
-        expect(response.data.error).toContain('length');
+        try {
+          const response = await userClient.put('/api/users/profile', longData);
+          
+          expect(response.status).toBe(400);
+          expect(response.data).toBeErrorResponse();
+          expect(response.data.error).toContain('length');
+        } catch (error: any) {
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
+          expect(error.response?.data.error).toContain('length');
+        }
       });
     });
   });
