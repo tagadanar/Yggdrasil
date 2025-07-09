@@ -683,9 +683,15 @@ describe('User Service - Functional Tests', () => {
       const nonAdminClients = [studentClient, teacherClient, staffClient];
       
       for (const client of nonAdminClients) {
-        const response = await client.put(`/api/users/${testUsers.student.id}/deactivate`);
-        expect(response.status).toBeOneOf([403, 401]);
-        expect(response.data).toBeErrorResponse();
+        try {
+          const response = await client.put(`/api/users/${testUsers.student.id}/deactivate`);
+          
+          expect(response.status).toBeOneOf([403, 401]);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBeOneOf([403, 401]);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       }
     });
 
@@ -697,8 +703,15 @@ describe('User Service - Functional Tests', () => {
       expect(ownProfileResponse.status).toBe(200);
       
       // User should not be able to update another user's profile
-      const otherProfileResponse = await studentClient.put(`/api/users/${testUsers.teacher.id}`, updateData);
-      expect(otherProfileResponse.status).toBeOneOf([403, 401]);
+      try {
+        const otherProfileResponse = await studentClient.put(`/api/users/${testUsers.teacher.id}`, updateData);
+        
+        expect(otherProfileResponse.status).toBeOneOf([403, 401]);
+        expect(otherProfileResponse.data).toBeErrorResponse();
+      } catch (error: any) {
+        expect(error.response?.status).toBeOneOf([403, 401]);
+        expect(error.response?.data).toBeErrorResponse();
+      }
     });
   });
 
@@ -716,10 +729,16 @@ describe('User Service - Functional Tests', () => {
 
       it('should prevent SQL injection in user ID parameters', async () => {
         const maliciousId = "1' OR '1'='1";
-        const response = await userClient.get(`/api/users/${encodeURIComponent(maliciousId)}`);
+        
+        try {
+          const response = await userClient.get(`/api/users/${encodeURIComponent(maliciousId)}`);
 
-        expect(response.status).toBe(400);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBe(400);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
     });
 
@@ -733,17 +752,23 @@ describe('User Service - Functional Tests', () => {
           }
         };
 
-        const response = await userClient.put('/api/users/profile', maliciousData);
+        try {
+          const response = await userClient.put('/api/users/profile', maliciousData);
 
-        if (response.status === 200) {
-          // If update succeeds, ensure scripts are sanitized
-          expect(response.data.data.profile.firstName).not.toContain('<script>');
-          expect(response.data.data.profile.lastName).not.toContain('onerror');
-          expect(response.data.data.profile.bio).not.toContain('<script>');
-        } else {
-          // Or update should be rejected
-          expect(response.status).toBe(400);
-          expect(response.data).toBeErrorResponse();
+          if (response.status === 200) {
+            // If update succeeds, ensure scripts are sanitized
+            expect(response.data.data.profile.firstName).not.toContain('<script>');
+            expect(response.data.data.profile.lastName).not.toContain('onerror');
+            expect(response.data.data.profile.bio).not.toContain('<script>');
+          } else {
+            // Or update should be rejected
+            expect(response.status).toBe(400);
+            expect(response.data).toBeErrorResponse();
+          }
+        } catch (error: any) {
+          // If request fails, should be with validation error
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
         }
       });
     });
@@ -837,28 +862,47 @@ describe('User Service - Functional Tests', () => {
     it('should handle database connection errors gracefully', async () => {
       // This test would require temporarily disconnecting the database
       // For now, we'll test with invalid operations that might cause DB errors
-      const response = await userClient.get('/api/users/000000000000000000000000');
+      try {
+        const response = await userClient.get('/api/users/000000000000000000000000');
 
-      expect(response.status).toBeOneOf([404, 400]);
-      expect(response.data).toBeErrorResponse();
+        expect(response.status).toBeOneOf([404, 400]);
+        expect(response.data).toBeErrorResponse();
+      } catch (error: any) {
+        expect(error.response?.status).toBeOneOf([404, 400]);
+        expect(error.response?.data).toBeErrorResponse();
+      }
     });
 
     it('should provide meaningful error messages', async () => {
-      const response = await userClient.get('/api/users/invalid-id');
+      try {
+        const response = await userClient.get('/api/users/invalid-id');
 
-      expect(response.status).toBe(400);
-      expect(response.data).toBeErrorResponse();
-      expect(response.data.error).toBeDefined();
-      expect(response.data.error).not.toBe('');
-      expect(typeof response.data.error).toBe('string');
+        expect(response.status).toBe(400);
+        expect(response.data).toBeErrorResponse();
+        expect(response.data.error).toBeDefined();
+        expect(response.data.error).not.toBe('');
+        expect(typeof response.data.error).toBe('string');
+      } catch (error: any) {
+        expect(error.response?.status).toBe(400);
+        expect(error.response?.data).toBeErrorResponse();
+        expect(error.response?.data.error).toBeDefined();
+        expect(error.response?.data.error).not.toBe('');
+        expect(typeof error.response?.data.error).toBe('string');
+      }
     });
 
     it('should handle missing request data', async () => {
-      const response = await userClient.put('/api/users/profile', {});
+      try {
+        const response = await userClient.put('/api/users/profile', {});
 
-      // Should either accept empty update or provide validation error
-      expect(response.status).toBeOneOf([200, 400]);
-      expect(response.data).toBeValidApiResponse();
+        // Should either accept empty update or provide validation error
+        expect(response.status).toBeOneOf([200, 400]);
+        expect(response.data).toBeValidApiResponse();
+      } catch (error: any) {
+        // If request fails, should handle gracefully
+        expect(error.response?.status).toBeOneOf([200, 400]);
+        expect(error.response?.data).toBeValidApiResponse();
+      }
     });
   });
 });

@@ -1,0 +1,501 @@
+
+> @101-school/functional-tests@1.0.0 test:functional:clean
+> LOG_LEVEL=warn AUTH_SERVICE_URL=http://localhost:3101 USER_SERVICE_URL=http://localhost:3102 COURSE_SERVICE_URL=http://localhost:3103 PLANNING_SERVICE_URL=http://localhost:3104 NEWS_SERVICE_URL=http://localhost:3105 STATISTICS_SERVICE_URL=http://localhost:3106 NOTIFICATION_SERVICE_URL=http://localhost:3107 jest --testPathPattern=functional --runInBand --reporters=./src/utils/FunctionalTestReporter.js
+
+🔧 Setting up functional test environment...
+🌳 Starting Yggdrasil services for functional tests...
+🚀 Starting auth-service on port 3101...
+🚀 Starting user-service on port 3102...
+🚀 Starting planning-service on port 3104...
+⏳ Waiting for all services to be ready...
+⏳ Waiting for auth-service to be ready...
+⏳ Waiting for user-service to be ready...
+⏳ Waiting for planning-service to be ready...
+📡 planning-service: ✅ Planning Service connected to MongoDB
+✅ planning-service is ready (3/30)
+📡 user-service: ✅ Database connected successfully
+✅ Database connected
+📡 auth-service: ✅ Database connected successfully
+✅ Database connected
+✅ auth-service is ready (5/30)
+✅ user-service is ready (5/30)
+🎉 All services are ready for functional tests!
+✅ Functional test environment setup complete!
+
+🌳 ====================================================================
+🌳 YGGDRASIL FUNCTIONAL TEST SUITE
+🌳 ====================================================================
+
+🧪 Running: UserService.functional.test.ts
+🚨 user-service error: Failed to update user profile: Error: Validation failed: profile.firstName: First name is required
+    at ValidationError.inspect (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/error/validation.js:52:26)
+    at formatValue (node:internal/util/inspect:850:19)
+    at inspect (node:internal/util/inspect:387:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2366:40)
+    at formatWithOptions (node:internal/util/inspect:2228:10)
+    at console.value (node:internal/console/constructor:345:14)
+    at console.error (node:internal/console/constructor:412:61)
+    at Function.handleServiceError (/home/tagada/Desktop/Yggdrasil/packages/shared-utilities/src/helpers/error.js:10:17)
+    at Function.updateUserProfile (/home/tagada/Desktop/Yggdrasil/packages/api-services/user-service/src/services/UserService.ts:147:26)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  errors: {
+    'profile.firstName': ValidatorError: First name is required
+        at validate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/schemaType.js:1404:13)
+        at SchemaString.SchemaType.doValidate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/schemaType.js:1388:7)
+        at /home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/helpers/updateValidators.js:154:22
+        at module.exports (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/helpers/updateValidators.js:205:7)
+        at /home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:4092:7
+        at new Promise (<anonymous>)
+        at model.Query.validate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:4091:11)
+        at processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async model.Query._findOneAndUpdate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:3506:5)
+        at async model.Query.exec (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:4604:63) {
+      properties: [Object],
+      kind: 'required',
+      path: 'profile.firstName',
+      value: '',
+      reason: undefined,
+      [Symbol(mongoose#validatorError)]: true
+    }
+  },
+  _message: 'Validation failed'
+}
+🚨 user-service error: Failed to update user profile: Error: Validation failed: profile.firstName: First name is required, profile.lastName: Last name is required
+    at ValidationError.inspect (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/error/validation.js:52:26)
+    at formatValue (node:internal/util/inspect:850:19)
+    at inspect (node:internal/util/inspect:387:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2366:40)
+    at formatWithOptions (node:internal/util/inspect:2228:10)
+    at console.value (node:internal/console/constructor:345:14)
+    at console.error (node:internal/console/constructor:412:61)
+    at Function.handleServiceError (/home/tagada/Desktop/Yggdrasil/packages/shared-utilities/src/helpers/error.js:10:17)
+    at Function.updateUserProfile (/home/tagada/Desktop/Yggdrasil/packages/api-services/user-service/src/services/UserService.ts:147:26)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  errors: {
+    'profile.firstName': ValidatorError: First name is required
+        at validate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/schemaType.js:1404:13)
+        at SchemaString.SchemaType.doValidate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/schemaType.js:1388:7)
+        at /home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/helpers/updateValidators.js:154:22
+        at module.exports (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/helpers/updateValidators.js:205:7)
+        at /home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:4092:7
+        at new Promise (<anonymous>)
+        at model.Query.validate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:4091:11)
+        at processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async model.Query._findOneAndUpdate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:3506:5)
+        at async model.Query.exec (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:4604:63) {
+      properties: [Object],
+      kind: 'required',
+      path: 'profile.firstName',
+      value: '',
+      reason: undefined,
+      [Symbol(mongoose#validatorError)]: true
+    },
+    'profile.lastName': ValidatorError: Last name is required
+        at validate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/schemaType.js:1404:13)
+        at SchemaString.SchemaType.doValidate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/schemaType.js:1388:7)
+        at /home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/helpers/updateValidators.js:154:22
+        at module.exports (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/helpers/updateValidators.js:205:7)
+        at /home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:4092:7
+        at new Promise (<anonymous>)
+        at model.Query.validate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:4091:11)
+        at processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async model.Query._findOneAndUpdate (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:3506:5)
+        at async model.Query.exec (/home/tagada/Desktop/Yggdrasil/node_modules/mongoose/lib/query.js:4604:63) {
+      properties: [Object],
+      kind: 'required',
+      path: 'profile.lastName',
+      value: null,
+      reason: undefined,
+      [Symbol(mongoose#validatorError)]: true
+    }
+  },
+  _message: 'Validation failed'
+}
+❌ UserService.functional.test.ts: 29 failed, 22 passed (7982ms)
+   ❌ should reject unauthenticated requests
+      Error: AxiosError: Request failed with status code 401
+   ❌ should return 404 for non-existent user
+      Error: AxiosError: Request failed with status code 404
+   ❌ should handle invalid user ID format
+      Error: AxiosError: Request failed with status code 400
+   ❌ should validate profile data
+      Error: AxiosError: Request failed with status code 400
+   ❌ should not allow updating email directly
+      Error: Error: expected 200 to be one of 400, 403
+   ❌ should prevent non-admin users from updating other users
+      Error: AxiosError: Request failed with status code 403
+   ❌ should update user preferences
+      Error: Error: expect(received).toMatchObject(expected)
+   ❌ should validate preference values
+      Error: AxiosError: Request failed with status code 400
+   ❌ should upload profile photo
+      Error: AxiosError: Request failed with status code 400
+   ❌ should reject invalid file types
+      Error: AxiosError: Request failed with status code 400
+   ❌ should reject files that are too large
+      Error: AxiosError: Request failed with status code 400
+   ❌ should require authentication
+      Error: AxiosError: Request failed with status code 401
+   ❌ should handle invalid date formats
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should require valid user ID
+      Error: AxiosError: Request failed with status code 400
+   ❌ should get current user activity
+      Error: AxiosError: Request failed with status code 400
+   ❌ should prevent non-admin users from deactivating users
+      Error: AxiosError: Request failed with status code 403
+   ❌ should prevent admin from deactivating themselves
+      Error: AxiosError: Request failed with status code 400
+   ❌ should handle non-existent user
+      Error: AxiosError: Request failed with status code 400
+   ❌ should prevent non-admin users from reactivating users
+      Error: AxiosError: Request failed with status code 403
+   ❌ should handle already active user
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should restrict sensitive operations to appropriate roles
+      Error: AxiosError: Request failed with status code 403
+   ❌ should allow users to update their own profiles only
+      Error: AxiosError: Request failed with status code 403
+   ❌ should prevent SQL injection in user ID parameters
+      Error: AxiosError: Request failed with status code 400
+   ❌ should sanitize HTML in profile updates
+      Error: Error: expect(received).not.toContain(expected) // indexOf
+   ❌ should validate email format in profile updates
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should validate required fields
+      Error: AxiosError: Request failed with status code 400
+   ❌ should validate field length limits
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should handle database connection errors gracefully
+      Error: AxiosError: Request failed with status code 404
+   ❌ should provide meaningful error messages
+      Error: AxiosError: Request failed with status code 400
+🧪 Running: complete-user-workflow.functional.test.ts
+❌ complete-user-workflow.functional.test.ts: 4 failed, 0 passed (1912ms)
+   ❌ should complete a full educational platform workflow
+      Error: Error: No client found for service: course-service
+   ❌ should enforce proper role-based access controls
+      Error: AxiosError: Request failed with status code 401
+   ❌ should handle service failures gracefully
+      Error: AxiosError: Request failed with status code 401
+   ❌ should handle concurrent user operations
+      Error: AxiosError: Request failed with status code 409
+🧪 Running: auth-workflow.functional.test.ts
+❌ auth-workflow.functional.test.ts: 11 failed, 5 passed (1334ms)
+   ❌ should login user with valid credentials
+      Error: AxiosError: Request failed with status code 401
+   ❌ should access user service with valid token
+      Error: AxiosError: Request failed with status code 401
+   ❌ should access course service with valid token
+      Error: AxiosError: Request failed with status code 401
+   ❌ should access planning service with valid token
+      Error: AxiosError: Request failed with status code 401
+   ❌ should access news service with valid token
+      Error: AxiosError: Request failed with status code 401
+   ❌ should access statistics service with valid token
+      Error: AxiosError: Request failed with status code 401
+   ❌ should refresh access token with valid refresh token
+      Error: AxiosError: Request failed with status code 401
+   ❌ should reject refresh with invalid refresh token
+      Error: AxiosError: Request failed with status code 401
+   ❌ should logout user successfully
+      Error: AxiosError: Request failed with status code 401
+   ❌ should reject access to protected routes without token
+      Error: Error: expect(received).toContain(expected) // indexOf
+   ❌ should reject access with expired token
+      Error: Error: expect(received).toContain(expected) // indexOf
+🧪 Running: auth-basic.functional.test.ts
+❌ auth-basic.functional.test.ts: 3 failed, 3 passed (953ms)
+   ❌ should login user with valid credentials
+      Error: AxiosError: Request failed with status code 401
+   ❌ should access user service with valid token
+      Error: AxiosError: Request failed with status code 401
+   ❌ should reject access to user service without token
+      Error: AxiosError: Request failed with status code 401
+🧪 Running: PlanningService.functional.test.ts
+❌ PlanningService.functional.test.ts: 59 failed, 20 passed (6887ms)
+   ❌ should validate required event fields
+      Error: AxiosError: Request failed with status code 400
+   ❌ should validate date consistency
+      Error: AxiosError: Request failed with status code 400
+   ❌ should require authentication
+      Error: AxiosError: Request failed with status code 401
+   ❌ should return 404 for non-existent event
+      Error: AxiosError: Request failed with status code 404
+   ❌ should handle invalid event ID format
+      Error: AxiosError: Request failed with status code 404
+   ❌ should allow admin to update any event
+      Error: AxiosError: Request failed with status code 400
+   ❌ should prevent non-organizer users from updating events
+      Error: AxiosError: Request failed with status code 400
+   ❌ should validate update data
+      Error: AxiosError: Request failed with status code 400
+   ❌ should prevent updating past events
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should allow organizer to delete their event
+      Error: Error: expected {"success":true,"message":"Event deleted successfully"} to be a success response wit...
+   ❌ should allow admin to delete any event
+      Error: AxiosError: Request failed with status code 400
+   ❌ should prevent students from deleting events
+      Error: AxiosError: Request failed with status code 400
+   ❌ should get all events for authenticated user
+      Error: Error: expect(received).toBeInstanceOf(expected)
+   ❌ should filter events by type
+      Error: AxiosError: Request failed with status code 400
+   ❌ should filter events by category
+      Error: AxiosError: Request failed with status code 400
+   ❌ should filter events by date range
+      Error: AxiosError: Request failed with status code 400
+   ❌ should filter events by organizer
+      Error: AxiosError: Request failed with status code 400
+   ❌ should support pagination
+      Error: AxiosError: Request failed with status code 400
+   ❌ should sort events by different criteria
+      Error: AxiosError: Request failed with status code 400
+   ❌ should handle multiple filters
+      Error: AxiosError: Request failed with status code 400
+   ❌ should get upcoming events for user
+      Error: AxiosError: Request failed with status code 400
+   ❌ should limit upcoming events
+      Error: AxiosError: Request failed with status code 400
+   ❌ should get today's events
+      Error: AxiosError: Request failed with status code 400
+   ❌ should get this week's events
+      Error: AxiosError: Request failed with status code 400
+   ❌ should allow attendee to mark attendance
+      Error: Error: expect(received).toContain(expected) // indexOf
+   ❌ should prevent non-attendees from marking attendance
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should require authentication
+      Error: AxiosError: Request failed with status code 401
+   ❌ should get day view
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should get week view
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should get month view
+      Error: AxiosError: Request failed with status code 400
+   ❌ should get agenda view
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should handle invalid view type
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should require authentication
+      Error: AxiosError: Request failed with status code 401
+   ❌ should validate recurring pattern data
+      Error: AxiosError: Request failed with status code 400
+   ❌ should delete single occurrence
+      Error: Error: expect(received).toContain(expected) // indexOf
+   ❌ should delete entire series
+      Error: Error: expect(received).toContain(expected) // indexOf
+   ❌ should get availability for current user
+      Error: AxiosError: Request failed with status code 400
+   ❌ should get availability for specific user
+      Error: AxiosError: Request failed with status code 400
+   ❌ should filter availability by date range
+      Error: AxiosError: Request failed with status code 400
+   ❌ should respect working hours
+      Error: AxiosError: Request failed with status code 400
+   ❌ should book available time slot
+      Error: AxiosError: Request failed with status code 400
+   ❌ should prevent booking overlapping slots
+      Error: AxiosError: Request failed with status code 400
+   ❌ should validate booking request data
+      Error: AxiosError: Request failed with status code 400
+   ❌ should handle high priority bookings
+      Error: AxiosError: Request failed with status code 400
+   ❌ should detect scheduling conflicts
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should detect conflicts across different attendees
+      Error: Error: expect(received).toBe(expected) // Object.is equality
+   ❌ should prevent students from accessing statistics
+      Error: AxiosError: Request failed with status code 403
+   ❌ should prevent teachers from accessing global statistics
+      Error: AxiosError: Request failed with status code 403
+   ❌ should include event type breakdown
+      Error: Error: expect(received).toBeGreaterThanOrEqual(expected)
+   ❌ should include category breakdown
+      Error: Error: expect(received).toBeGreaterThanOrEqual(expected)
+   ❌ should sanitize event title and description
+      Error: Error: expect(received).not.toContain(expected) // indexOf
+   ❌ should prevent SQL injection in search queries
+      Error: Error: expect(received).toBeInstanceOf(expected)
+   ❌ should prevent unauthorized event modifications
+      Error: AxiosError: Request failed with status code 400
+   ❌ should respect event visibility settings
+      Error: TypeError: Cannot read properties of undefined (reading 'find')
+   ❌ should handle large calendar views efficiently
+      Error: AxiosError: Request failed with status code 400
+   ❌ should efficiently handle recurring event queries
+      Error: TypeError: Cannot read properties of undefined (reading 'forEach')
+   ❌ should handle database connection errors gracefully
+      Error: AxiosError: Request failed with status code 404
+   ❌ should provide meaningful error messages
+      Error: AxiosError: Request failed with status code 404
+   ❌ should handle malformed request data
+      Error: AxiosError: Request failed with status code 400
+🧪 Running: NewsService.functional.test.ts
+❌ NewsService.functional.test.ts: 82 failed, 0 passed (251301ms)
+   ❌ should create a new article with valid data
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow teachers to create articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow staff to create articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent students from creating articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should validate required article fields
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should generate slug from title
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should set default values for optional fields
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should require authentication
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should get published article without authentication
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should increment view count when accessing article
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should get article by slug
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should return 404 for non-existent article
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should handle invalid article ID format
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should not show draft articles to unauthorized users
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow author to update their article
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow admin to update any article
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent non-author from updating articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should validate update data
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should update slug when title changes
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow admin to delete articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent non-admin users from deleting articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent students from deleting articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should soft delete articles (maintain data integrity)
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should get all published articles without authentication
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should filter articles by category
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should filter articles by status
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should filter articles by priority
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should filter articles by tags
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should support pagination
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should sort articles by different criteria
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should handle text search in title and content
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should handle multiple filters
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should get featured articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should work without authentication
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should get articles by category
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should handle invalid categories gracefully
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should get articles by specific author
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should return empty array for author with no articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow admin to publish articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow staff to publish articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent teachers from publishing articles directly
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent students from publishing articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should validate article content before publishing
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow admin to archive published articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow staff to archive articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent teachers from archiving articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow admin to pin/unpin articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow staff to pin articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent teachers from pinning articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow authenticated users to mark article as read
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should track reading analytics
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should require authentication
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow authenticated users to like articles
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should toggle like status
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent duplicate likes from same user
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should require authentication
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should get analytics for admin
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should get analytics for staff
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent teachers from accessing global analytics
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent students from accessing analytics
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should include category breakdown
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should include author statistics
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should sanitize article title and content
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should sanitize article tags
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent SQL injection in search queries
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent SQL injection in category filters
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should prevent unauthorized article modifications
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should respect article visibility settings
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should allow role-based article creation
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should validate required fields
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should validate field length limits
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should validate category values
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should validate priority values
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should handle multiple concurrent requests
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should respond within acceptable time limits
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should handle large article lists efficiently
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should efficiently handle search queries
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should handle database connection errors gracefully
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should provide meaningful error messages
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should handle malformed request data
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should handle missing request data
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+   ❌ should handle duplicate slug conflicts
+      Error: Error: connect ECONNREFUSED 127.0.0.1:3105
+🧪 Running: CourseService.functional.test.ts
