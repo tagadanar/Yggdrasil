@@ -51,8 +51,10 @@ describe('User Service - Functional Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clean up test data before each test for isolation
-    await databaseHelper.cleanupTestData();
+    // Clean up test data before each test for isolation, but preserve test users
+    // Only clean up transient data that tests might create
+    // The test users created in beforeAll should persist across tests
+    // await databaseHelper.cleanupTestData(); // Commented out - too aggressive
   });
 
   describe('User Profile Management', () => {

@@ -75,9 +75,11 @@ afterAll(async () => {
 // Setup before each test
 beforeEach(async () => {
   // Clean up test data before each test to ensure isolation (silent to reduce noise)
-  if (testEnvironment.database.cleanup) {
-    await databaseHelper.cleanupTestData(true); // Silent cleanup
-  }
+  // NOTE: This is too aggressive and interferes with test setup in beforeAll
+  // Individual test files should handle their own cleanup as needed
+  // if (testEnvironment.database.cleanup) {
+  //   await databaseHelper.cleanupTestData(true); // Silent cleanup
+  // }
 });
 
 // Global error handling
