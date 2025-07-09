@@ -112,9 +112,9 @@ export class AuthHelper {
       }
 
       const tokens: AuthTokens = {
-        accessToken: response.data.data.accessToken,
-        refreshToken: response.data.data.refreshToken,
-        expiresIn: response.data.data.expiresIn,
+        accessToken: response.data.data.tokens.accessToken,
+        refreshToken: response.data.data.tokens.refreshToken,
+        expiresIn: response.data.data.tokens.expiresIn || 3600,
       };
 
       this.userTokens.set(user.id, tokens);
@@ -161,9 +161,9 @@ export class AuthHelper {
       }
 
       return {
-        accessToken: response.data.data.accessToken,
-        refreshToken: response.data.data.refreshToken,
-        expiresIn: response.data.data.expiresIn,
+        accessToken: response.data.data.tokens.accessToken,
+        refreshToken: response.data.data.tokens.refreshToken,
+        expiresIn: response.data.data.tokens.expiresIn || 3600,
       };
     } catch (error: any) {
       throw new Error(`Token refresh failed: ${error.message}`);
