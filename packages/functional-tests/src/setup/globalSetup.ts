@@ -1,0 +1,223 @@
+import { spawn, ChildProcess } from 'child_process';
+import { promisify } from 'util';
+import axios from 'axios';
+import path from 'path';
+import fs from 'fs';
+
+const sleep = promisify(setTimeout);
+
+// Store process references globally
+declare global {
+  var __YGGDRASIL_SERVICES__: ChildProcess[];
+  var __YGGDRASIL_SETUP_DONE__: boolean;
+}
+
+interface ServiceConfig {
+  name: string;
+  path: string;
+  port: number;
+  healthEndpoint: string;
+  env?: Record<string, string>;
+}
+
+// Start with working services only - can be expanded as services are fixed
+const SERVICES: ServiceConfig[] = [
+  {
+    name: 'auth-service',
+    path: '../../../api-services/auth-service',
+    port: 3101,
+    healthEndpoint: '/health',
+    env: {
+      NODE_ENV: 'functional-test', // Use different env to enable server startup
+      PORT: '3101',
+      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
+      JWT_SECRET: 'test-secret-key-for-functional-tests',
+      BCRYPT_ROUNDS: '8' // Faster for tests
+    }
+  },
+  {
+    name: 'user-service',
+    path: '../../../api-services/user-service',
+    port: 3102,
+    healthEndpoint: '/health',
+    env: {
+      NODE_ENV: 'functional-test', // Use different env to enable server startup
+      PORT: '3102',
+      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
+      JWT_SECRET: 'test-secret-key-for-functional-tests'
+    }
+  },
+  {
+    name: 'planning-service',
+    path: '../../../api-services/planning-service',
+    port: 3104,
+    healthEndpoint: '/health',
+    env: {
+      NODE_ENV: 'functional-test', // Use different env to enable server startup
+      PORT: '3104',
+      MONGODB_URL: 'mongodb://localhost:27017/yggdrasil-test',
+      JWT_SECRET: 'test-secret-key-for-functional-tests',
+      START_SERVER: 'true'
+    }
+  }
+  // Other services temporarily disabled until they're fixed to work in functional tests
+];
+
+/**
+ * Check if a service is healthy
+ */
+async function checkServiceHealth(service: ServiceConfig): Promise<boolean> {
+  try {
+    const response = await axios.get(`http://localhost:${service.port}${service.healthEndpoint}`, {
+      timeout: 5000
+    });
+    return response.status === 200;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Wait for a service to be ready
+ */
+async function waitForService(service: ServiceConfig, maxAttempts = 30): Promise<boolean> {
+  console.log(`⏳ Waiting for ${service.name} to be ready...`);
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const isHealthy = await checkServiceHealth(service);
+    
+    if (isHealthy) {
+      console.log(`✅ ${service.name} is ready (${attempt}/${maxAttempts})`);
+      return true;
+    }
+    
+    if (attempt === maxAttempts) {
+      console.log(`❌ ${service.name} failed to start after ${maxAttempts} attempts`);
+      return false;
+    }
+    
+    await sleep(2000); // Wait 2 seconds between attempts
+  }
+  
+  return false;
+}
+
+/**
+ * Start a service process
+ */
+async function startService(service: ServiceConfig): Promise<ChildProcess> {
+  const servicePath = path.resolve(__dirname, service.path);
+  
+  // Check if service directory exists
+  if (!fs.existsSync(servicePath)) {
+    throw new Error(`Service directory not found: ${servicePath}`);
+  }
+  
+  console.log(`🚀 Starting ${service.name} on port ${service.port}...`);
+  
+  const serviceProcess = spawn('npm', ['run', 'dev'], {
+    cwd: servicePath,
+    env: { ...process.env, ...service.env },
+    stdio: ['pipe', 'pipe', 'pipe'],
+    detached: false
+  });
+  
+  // Handle process output
+  serviceProcess.stdout?.on('data', (data) => {
+    const output = data.toString();
+    if (output.includes('listening') || output.includes('ready') || output.includes('connected')) {
+      console.log(`📡 ${service.name}: ${output.trim()}`);
+    }
+  });
+  
+  serviceProcess.stderr?.on('data', (data) => {
+    const error = data.toString();
+    if (!error.includes('DeprecationWarning')) {
+      console.error(`🚨 ${service.name} error: ${error.trim()}`);
+    }
+  });
+  
+  serviceProcess.on('exit', (code) => {
+    if (code !== 0) {
+      console.error(`💥 ${service.name} exited with code ${code}`);
+    }
+  });
+  
+  return serviceProcess;
+}
+
+/**
+ * Start all services and wait for them to be ready
+ */
+async function startAllServices(): Promise<ChildProcess[]> {
+  const processes: ChildProcess[] = [];
+  
+  console.log('🌳 Starting Yggdrasil services for functional tests...');
+  
+  // Start all services
+  for (const service of SERVICES) {
+    try {
+      const process = await startService(service);
+      processes.push(process);
+    } catch (error) {
+      console.error(`❌ Failed to start ${service.name}:`, error);
+      throw error;
+    }
+  }
+  
+  // Wait for all services to be ready
+  console.log('⏳ Waiting for all services to be ready...');
+  const healthChecks = SERVICES.map(service => waitForService(service));
+  const results = await Promise.all(healthChecks);
+  
+  const failedServices = SERVICES.filter((_, index) => !results[index]);
+  
+  if (failedServices.length > 0) {
+    console.error(`❌ Failed to start services: ${failedServices.map(s => s.name).join(', ')}`);
+    throw new Error(`Services failed to start: ${failedServices.map(s => s.name).join(', ')}`);
+  }
+  
+  console.log('🎉 All services are ready for functional tests!');
+  return processes;
+}
+
+/**
+ * Global setup function - runs once before all tests
+ */
+export default async function globalSetup(): Promise<void> {
+  if (global.__YGGDRASIL_SETUP_DONE__) {
+    console.log('✅ Services already started, skipping setup');
+    return;
+  }
+  
+  try {
+    console.log('🔧 Setting up functional test environment...');
+    
+    // Start all services
+    const processes = await startAllServices();
+    
+    // Store process references globally
+    global.__YGGDRASIL_SERVICES__ = processes;
+    global.__YGGDRASIL_SETUP_DONE__ = true;
+    
+    console.log('✅ Functional test environment setup complete!');
+    
+  } catch (error) {
+    console.error('❌ Failed to setup functional test environment:', error);
+    
+    // Clean up any started processes
+    if (global.__YGGDRASIL_SERVICES__) {
+      console.log('🧹 Cleaning up started services...');
+      global.__YGGDRASIL_SERVICES__.forEach(process => {
+        if (process.pid && !process.killed) {
+          process.kill('SIGTERM');
+        }
+      });
+    }
+    
+    throw error;
+  }
+}
+
+// Export service configurations for use in tests
+export { SERVICES, ServiceConfig };

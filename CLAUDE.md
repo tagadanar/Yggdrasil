@@ -126,6 +126,7 @@ export class AuthController {
 ### Testing Strategy
 - **Unit Tests**: Test individual functions and methods in isolation
 - **Integration Tests**: Test service interactions and API endpoints
+- **Functional Tests**: Test complete business workflows across services
 - **End-to-End Tests**: Test complete user workflows
 - **Target Coverage**: 90%+ for services, 80%+ for controllers
 
@@ -135,6 +136,7 @@ export class AuthController {
 1. **Red**: Write a failing test for the desired functionality
 2. **Green**: Write minimal code to make the test pass
 3. **Refactor**: Improve code quality while keeping tests green
+4. **Functional**: Run functional tests to verify end-to-end workflows
 
 #### TDD Example - AuthService
 ```typescript
@@ -346,9 +348,67 @@ cd packages/api-services/auth-service && npm test
 # Run integration tests
 npm run test:integration
 
+# Run functional tests (RECOMMENDED for workflow validation)
+npm run test:functional:clean
+
 # Run e2e tests
 npm run test:e2e
 ```
+
+#### 🧪 Functional Testing Commands
+For testing complete business workflows across services with improved timeout-resistant infrastructure:
+
+```bash
+# 🎯 RECOMMENDED: Run all working functional tests
+npm run test:functional:all-working
+
+# Clean functional test output (RECOMMENDED for individual suites)
+npm run test:functional:clean
+
+# 🔧 Individual Test Suites (timeout-resistant)
+npm run test:functional:basic        # Basic auth functionality
+npm run test:functional:auth-only    # Full auth workflow tests  
+npm run test:functional:user-only    # User service tests
+npm run test:functional:course-only  # Course service tests
+
+# 🎯 Advanced Test Management
+npm run test:functional:suites       # Run tests in separated manageable suites
+npm run test:functional:single <pattern>  # Run specific test with timeout protection
+
+# 🔍 Different Output Levels
+npm run test:functional:clean        # Clean, readable output (RECOMMENDED)
+npm run test:functional:verbose      # Full verbose output (debugging)
+npm run test:functional:quiet        # Minimal output (CI/CD)
+
+# 📝 Examples of Specific Test Patterns
+npm run test:functional:single "should register a new user successfully"
+npm run test:functional:clean -- --testNamePattern="User Registration Flow"
+```
+
+#### 🛠️ Functional Test Infrastructure Improvements
+
+The functional test suite has been significantly improved to address timeout issues and provide better test management:
+
+**✅ Key Improvements:**
+- **Timeout-Resistant**: Custom reporter prevents output timeouts
+- **Manageable Suites**: Tests separated into individual, runnable suites
+- **Clean Output**: Readable, formatted output without overwhelming logs
+- **Better Error Handling**: Truncated error messages and proper cleanup
+- **Service Management**: Robust service startup and health checking
+- **Individual Test Execution**: Run specific tests with timeout protection
+
+**🔧 Test Infrastructure Features:**
+- **Custom Reporter**: `FunctionalTestReporter.js` provides clean, readable output
+- **Service Health Checks**: Automatic service startup verification
+- **Unique Test Data**: Timestamp-based test data to prevent conflicts
+- **Timeout Protection**: Built-in timeouts for all test execution
+- **Comprehensive Scripts**: Multiple utility scripts for different testing needs
+
+**📊 Test Execution Levels:**
+1. **Basic Tests**: Core authentication functionality
+2. **Service Tests**: Individual service functional testing
+3. **Integration Tests**: Cross-service workflow validation
+4. **Full Suite**: Complete end-to-end business workflows
 
 ## 🎯 Advanced TDD Methodology & Best Practices
 
@@ -1001,12 +1061,12 @@ node scripts/wait-for-services.js [timeout_seconds]
 
 #### Service Health Endpoints
 All API services expose health check endpoints:
-- **Auth Service**: `http://localhost:3001/health`
-- **Course Service**: `http://localhost:3003/health`
-- **Planning Service**: `http://localhost:3004/health`
-- **News Service**: `http://localhost:3005/health`
-- **Statistics Service**: `http://localhost:3006/health`
-- **Notification Service**: `http://localhost:3007/health`
+- **Auth Service**: `http://localhost:3001/health` *(development)* / `http://localhost:3101/health` *(functional tests)*
+- **Course Service**: `http://localhost:3003/health` *(development)* / `http://localhost:3103/health` *(functional tests)*
+- **Planning Service**: `http://localhost:3004/health` *(development)* / `http://localhost:3104/health` *(functional tests)*
+- **News Service**: `http://localhost:3005/health` *(development)* / `http://localhost:3105/health` *(functional tests)*
+- **Statistics Service**: `http://localhost:3006/health` *(development)* / `http://localhost:3106/health` *(functional tests)*
+- **Notification Service**: `http://localhost:3007/health` *(development)* / `http://localhost:3107/health` *(functional tests)*
 - **Frontend**: `http://localhost:3000/` (Next.js built-in)
 
 #### Integrated Development Workflow
@@ -1106,6 +1166,17 @@ npm test                    # Run all tests (verbose - use sparingly)
 npm run test:unit           # Unit tests only
 npm run test:integration    # Integration tests
 npm run test:e2e           # End-to-end tests
+
+# Functional Testing (Improved Infrastructure)
+npm run test:functional:all-working    # All working functional tests (RECOMMENDED)
+npm run test:functional:basic          # Basic auth functionality
+npm run test:functional:auth-only      # Auth workflow tests
+npm run test:functional:user-only      # User service tests
+npm run test:functional:suites         # Run in separated suites
+npm run test:functional:single <pattern>  # Run specific test
+npm run test:functional:clean          # Clean output format
+npm run test:functional:verbose        # Full debug output
+npm run test:functional:quiet          # Minimal output
 
 # Code Quality
 npm run lint                # Check code style
