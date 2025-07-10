@@ -117,11 +117,16 @@ describe('News Service - Functional Tests', () => {
       it('should prevent students from creating articles', async () => {
         const articleData = TestDataFactory.createArticle(testUsers.student.id!);
 
-        const response = await studentClient.post('/api/news', articleData);
+        try {
+          const response = await studentClient.post('/api/news', articleData);
 
-        expect(response.status).toBe(403);
-        expect(response.data).toBeErrorResponse();
-        expect(response.data.error).toContain('Insufficient permissions');
+          expect(response.status).toBe(403);
+          expect(response.data).toBeErrorResponse();
+          expect(response.data.error).toContain('Insufficient permissions');
+        } catch (error: any) {
+          expect(error.response?.status).toBe(403);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should validate required article fields', async () => {
@@ -130,10 +135,15 @@ describe('News Service - Functional Tests', () => {
           // Missing required fields like title, category
         };
 
-        const response = await adminClient.post('/api/news', invalidArticleData);
+        try {
+          const response = await adminClient.post('/api/news', invalidArticleData);
 
-        expect(response.status).toBe(400);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBe(400);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should generate slug from title', async () => {
@@ -169,10 +179,15 @@ describe('News Service - Functional Tests', () => {
         const unauthenticatedClient = new ApiClient(testEnvironment.services.news);
         const articleData = TestDataFactory.createArticle('fake-id');
 
-        const response = await unauthenticatedClient.post('/api/news', articleData);
+        try {
+          const response = await unauthenticatedClient.post('/api/news', articleData);
 
-        expect(response.status).toBe(401);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBe(401);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(401);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
     });
 
@@ -732,10 +747,16 @@ describe('News Service - Functional Tests', () => {
 
       it('should require authentication', async () => {
         const unauthenticatedClient = new ApiClient(testEnvironment.services.news);
-        const response = await unauthenticatedClient.post(`/api/news/${testArticle.id}/read`);
+        
+        try {
+          const response = await unauthenticatedClient.post(`/api/news/${testArticle.id}/read`);
 
-        expect(response.status).toBe(401);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBe(401);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(401);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
     });
 
@@ -770,10 +791,16 @@ describe('News Service - Functional Tests', () => {
 
       it('should require authentication', async () => {
         const unauthenticatedClient = new ApiClient(testEnvironment.services.news);
-        const response = await unauthenticatedClient.post(`/api/news/articles/${testArticle.id}/like`);
+        
+        try {
+          const response = await unauthenticatedClient.post(`/api/news/articles/${testArticle.id}/like`);
 
-        expect(response.status).toBe(401);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBe(401);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(401);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
     });
   });

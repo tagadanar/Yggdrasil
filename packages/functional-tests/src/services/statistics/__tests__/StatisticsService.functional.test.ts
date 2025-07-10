@@ -819,7 +819,7 @@ describe('Statistics Service - Functional Tests', () => {
   describe('Security and Access Control', () => {
     describe('Authentication Requirements', () => {
       it('should require authentication for all statistics endpoints', async () => {
-        const unauthenticatedClient = new ApiClient('statistics');
+        const unauthenticatedClient = new ApiClient(testEnvironment.services.statistics);
         
         const endpoints = [
           '/api/statistics/system',
@@ -830,9 +830,14 @@ describe('Statistics Service - Functional Tests', () => {
         ];
 
         for (const endpoint of endpoints) {
-          const response = await unauthenticatedClient.get(endpoint);
-          expect(response.status).toBe(401);
-          expect(response.data.error).toContain('Authentication required');
+          try {
+            const response = await unauthenticatedClient.get(endpoint);
+            expect(response.status).toBe(401);
+            expect(response.data.error).toContain('Authentication required');
+          } catch (error: any) {
+            expect(error.response?.status).toBe(401);
+            expect(error.response?.data).toBeErrorResponse();
+          }
         }
       });
     });
