@@ -3,7 +3,13 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
+import dotenv from 'dotenv';
+import path from 'path';
 import courseRoutes from './routes/courseRoutes';
+import { DatabaseConnection } from '../../../database-schemas/src';
+
+// Load environment variables from the root .env file
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -59,11 +65,44 @@ app.use('*', (req, res) => {
 });
 
 // Start server
+async function startServer() {
+  try {
+    if (process.env.NODE_ENV !== 'test') {
+      app.listen(PORT, () => {
+        console.log(`🚀 Course Service running on port ${PORT}`);
+        console.log(`📍 Health check available at http://localhost:${PORT}/health`);
+      });
+    }
+
+    // Try to connect to database
+    try {
+      const mongoUri = process.env.MONGODB_URI || 'mongodb://yggdrasil_app:app_password_2024@localhost:27017/yggdrasil-dev';
+      await DatabaseConnection.connect(mongoUri);
+      console.log('✅ Database connected');
+    } catch (dbError: any) {
+      console.warn('⚠️ Database connection failed, but server is still running:', dbError.message);
+    }
+  } catch (error) {
+    console.error('❌ Failed to start course service:', error);
+    process.exit(1);
+  }
+}
+
+// Handle graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('🔄 Shutting down course service...');
+  await DatabaseConnection.disconnect();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('🔄 Shutting down course service...');
+  await DatabaseConnection.disconnect();
+  process.exit(0);
+});
+
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`Course Service running on port ${PORT}`);
-    console.log(`Health check available at http://localhost:${PORT}/health`);
-  });
+  startServer();
 }
 
 export default app;
