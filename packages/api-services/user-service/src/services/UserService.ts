@@ -119,16 +119,29 @@ export class UserService {
       const updateFields: any = { updatedAt: new Date() };
       
       if (updateData.profile) {
+        // Check for empty required fields first
+        for (const [key, value] of Object.entries(updateData.profile)) {
+          if (typeof value === 'string' && value.trim() === '') {
+            if (key === 'firstName' || key === 'lastName') {
+              return { success: false, error: `${key === 'firstName' ? 'First name' : 'Last name'} cannot be empty` };
+            }
+          }
+        }
+        
         // Merge profile fields instead of replacing the entire profile
         Object.keys(updateData.profile).forEach(key => {
           let value = updateData.profile![key as keyof UserProfile];
           
-          // Handle empty studentId - convert empty strings to undefined to avoid duplicate key errors
-          if (key === 'studentId' && typeof value === 'string' && value.trim() === '') {
+          // Handle empty strings - convert empty strings to undefined to avoid validation errors
+          if (typeof value === 'string' && value.trim() === '') {
+            // For optional fields, convert empty strings to undefined
             value = undefined;
           }
           
-          updateFields[`profile.${key}`] = value;
+          // Only set the field if value is not undefined
+          if (value !== undefined) {
+            updateFields[`profile.${key}`] = value;
+          }
         });
       }
 
