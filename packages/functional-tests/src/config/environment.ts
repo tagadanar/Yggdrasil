@@ -43,13 +43,13 @@ export interface TestEnvironment {
 
 export const testEnvironment: TestEnvironment = {
   services: {
-    auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
-    user: process.env.USER_SERVICE_URL || 'http://localhost:3002',
-    course: process.env.COURSE_SERVICE_URL || 'http://localhost:3003',
-    planning: process.env.PLANNING_SERVICE_URL || 'http://localhost:3004',
-    news: process.env.NEWS_SERVICE_URL || 'http://localhost:3005',
-    statistics: process.env.STATISTICS_SERVICE_URL || 'http://localhost:3006',
-    notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3007',
+    auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3101',
+    user: process.env.USER_SERVICE_URL || 'http://localhost:3102',
+    course: process.env.COURSE_SERVICE_URL || 'http://localhost:3103',
+    planning: process.env.PLANNING_SERVICE_URL || 'http://localhost:3104',
+    news: process.env.NEWS_SERVICE_URL || 'http://localhost:3105',
+    statistics: process.env.STATISTICS_SERVICE_URL || 'http://localhost:3106',
+    notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3107',
     frontend: process.env.FRONTEND_URL || 'http://localhost:3000',
     gateway: process.env.GATEWAY_URL || undefined,
   },
