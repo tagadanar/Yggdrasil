@@ -14,6 +14,18 @@ export interface TestCourse {
   instructor: string;
   instructorId?: string; // For compatibility
   credits: number;
+  duration: {
+    weeks: number;
+    hoursPerWeek: number;
+    totalHours: number;
+  }; // Required field for CourseService validation
+  schedule: Array<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    location?: string;
+    type: 'lecture' | 'practical' | 'exam' | 'project';
+  }>; // Required field for CourseService validation
   level: 'beginner' | 'intermediate' | 'advanced';
   category: 'programming' | 'design' | 'business' | 'science' | 'mathematics' | 'languages';
   capacity: number;
@@ -118,6 +130,8 @@ export class TestDataFactory {
     ]);
 
     const courseCode = overrides.code || faker.string.alphanumeric({ length: 6, casing: 'upper' });
+    const startDate = overrides.startDate || faker.date.future();
+    const endDate = overrides.endDate || new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days after start
 
     return {
       id: overrides.id || faker.database.mongodbObjectId(),
@@ -127,13 +141,34 @@ export class TestDataFactory {
       instructorId: instructorId,
       instructor: instructorId, // Keep both for compatibility
       credits: overrides.credits || faker.number.int({ min: 1, max: 6 }),
+      duration: overrides.duration || {
+        weeks: faker.number.int({ min: 4, max: 16 }),
+        hoursPerWeek: faker.number.int({ min: 2, max: 8 }),
+        totalHours: 0 // Will be calculated automatically
+      },
+      schedule: overrides.schedule || [
+        {
+          dayOfWeek: 1, // Monday
+          startTime: '09:00',
+          endTime: '11:00',
+          location: 'Room ' + faker.number.int({ min: 100, max: 999 }),
+          type: 'lecture'
+        },
+        {
+          dayOfWeek: 3, // Wednesday
+          startTime: '14:00',
+          endTime: '16:00',
+          location: 'Lab ' + faker.number.int({ min: 1, max: 20 }),
+          type: 'practical'
+        }
+      ],
       level: overrides.level || faker.helpers.arrayElement(['beginner', 'intermediate', 'advanced']),
       category: overrides.category || faker.helpers.arrayElement(['programming', 'design', 'business', 'science', 'mathematics', 'languages']),
       capacity: overrides.capacity || faker.number.int({ min: 10, max: 50 }),
       enrolledStudents: overrides.enrolledStudents || [],
       status: overrides.status || 'published',
-      startDate: overrides.startDate || faker.date.future(),
-      endDate: overrides.endDate || faker.date.future(),
+      startDate,
+      endDate,
       prerequisites: overrides.prerequisites || [],
       resources: overrides.resources || [],
       visibility: overrides.visibility || 'public',
