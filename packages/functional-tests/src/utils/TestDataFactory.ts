@@ -130,8 +130,8 @@ export class TestDataFactory {
     ]);
 
     const courseCode = overrides.code || faker.string.alphanumeric({ length: 6, casing: 'upper' });
-    const startDate = overrides.startDate || faker.date.future();
-    const endDate = overrides.endDate || new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days after start
+    const startDate = overrides.startDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Start in 7 days
+    const endDate = overrides.endDate || new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days after start
 
     return {
       id: overrides.id || faker.database.mongodbObjectId(),
@@ -141,11 +141,15 @@ export class TestDataFactory {
       instructorId: instructorId,
       instructor: instructorId, // Keep both for compatibility
       credits: overrides.credits || faker.number.int({ min: 1, max: 6 }),
-      duration: overrides.duration || {
-        weeks: faker.number.int({ min: 4, max: 16 }),
-        hoursPerWeek: faker.number.int({ min: 2, max: 8 }),
-        totalHours: 0 // Will be calculated automatically
-      },
+      duration: overrides.duration || (() => {
+        const weeks = faker.number.int({ min: 4, max: 16 });
+        const hoursPerWeek = faker.number.int({ min: 2, max: 8 });
+        return {
+          weeks,
+          hoursPerWeek,
+          totalHours: weeks * hoursPerWeek // Calculate properly
+        };
+      })(),
       schedule: overrides.schedule || [
         {
           dayOfWeek: 1, // Monday
@@ -162,8 +166,8 @@ export class TestDataFactory {
           type: 'practical'
         }
       ],
-      level: overrides.level || faker.helpers.arrayElement(['beginner', 'intermediate', 'advanced']),
-      category: overrides.category || faker.helpers.arrayElement(['programming', 'design', 'business', 'science', 'mathematics', 'languages']),
+      level: overrides.level || faker.helpers.arrayElement(['beginner', 'intermediate', 'advanced', 'expert']),
+      category: overrides.category || faker.helpers.arrayElement(['programming', 'web-development', 'mobile-development', 'data-science', 'artificial-intelligence', 'cybersecurity', 'cloud-computing', 'devops', 'database', 'design', 'project-management', 'soft-skills', 'other']),
       capacity: overrides.capacity || faker.number.int({ min: 10, max: 50 }),
       enrolledStudents: overrides.enrolledStudents || [],
       status: overrides.status || 'published',
