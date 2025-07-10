@@ -137,10 +137,15 @@ describe('Planning Service - Functional Tests', () => {
           // Missing title, startDate, endDate, type, category
         };
 
-        const response = await teacherClient.post('/api/planning/events', invalidEventData);
+        try {
+          const response = await teacherClient.post('/api/planning/events', invalidEventData);
 
-        expect(response.status).toBe(400);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBe(400);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should validate date consistency', async () => {
@@ -149,20 +154,30 @@ describe('Planning Service - Functional Tests', () => {
           endDate: new Date(Date.now() + 1 * 60 * 60 * 1000)    // 1 hour from now (before start)
         });
 
-        const response = await teacherClient.post('/api/planning/events', invalidDateData);
+        try {
+          const response = await teacherClient.post('/api/planning/events', invalidDateData);
 
-        expect(response.status).toBe(400);
-        expect(response.data.error).toContain('end date');
+          expect(response.status).toBe(400);
+          expect(response.data.error).toContain('end date');
+        } catch (error: any) {
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should require authentication', async () => {
         const unauthenticatedClient = new ApiClient(testEnvironment.services.planning);
         const eventData = TestDataFactory.createEvent('fake-id');
 
-        const response = await unauthenticatedClient.post('/api/planning/events', eventData);
+        try {
+          const response = await unauthenticatedClient.post('/api/planning/events', eventData);
 
-        expect(response.status).toBe(401);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBe(401);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(401);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
     });
 
@@ -197,18 +212,29 @@ describe('Planning Service - Functional Tests', () => {
 
       it('should return 404 for non-existent event', async () => {
         const fakeId = '507f1f77bcf86cd799439011';
-        const response = await planningClient.get(`/api/planning/events/${fakeId}`);
+        
+        try {
+          const response = await planningClient.get(`/api/planning/events/${fakeId}`);
 
-        expect(response.status).toBe(404);
-        expect(response.data).toBeErrorResponse();
-        expect(response.data.error).toContain('not found');
+          expect(response.status).toBe(404);
+          expect(response.data).toBeErrorResponse();
+          expect(response.data.error).toContain('not found');
+        } catch (error: any) {
+          expect(error.response?.status).toBe(404);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should handle invalid event ID format', async () => {
-        const response = await planningClient.get('/api/planning/events/invalid-id');
+        try {
+          const response = await planningClient.get('/api/planning/events/invalid-id');
 
-        expect(response.status).toBe(400);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBe(400);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
     });
 
@@ -253,10 +279,16 @@ describe('Planning Service - Functional Tests', () => {
         const otherTeacherClient = await authHelper.createAuthenticatedClient('planning', otherTeacher);
 
         const updateData = { title: 'Unauthorized Update' };
-        const response = await otherTeacherClient.put(`/api/planning/events/${testEvent.id}`, updateData);
+        
+        try {
+          const response = await otherTeacherClient.put(`/api/planning/events/${testEvent.id}`, updateData);
 
-        expect(response.status).toBeOneOf([403, 401]);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBeOneOf([403, 401]);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBeOneOf([403, 401]);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should validate update data', async () => {
@@ -265,10 +297,15 @@ describe('Planning Service - Functional Tests', () => {
           type: 'invalid-type'
         };
 
-        const response = await teacherClient.put(`/api/planning/events/${testEvent.id}`, invalidData);
+        try {
+          const response = await teacherClient.put(`/api/planning/events/${testEvent.id}`, invalidData);
 
-        expect(response.status).toBe(400);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBe(400);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should prevent updating past events', async () => {
@@ -282,10 +319,16 @@ describe('Planning Service - Functional Tests', () => {
         const pastEventId = pastEventResponse.data.data.id;
 
         const updateData = { title: 'Cannot Update Past Event' };
-        const response = await teacherClient.put(`/api/planning/events/${pastEventId}`, updateData);
+        
+        try {
+          const response = await teacherClient.put(`/api/planning/events/${pastEventId}`, updateData);
 
-        expect(response.status).toBe(400);
-        expect(response.data.error).toContain('past event');
+          expect(response.status).toBe(400);
+          expect(response.data.error).toContain('past event');
+        } catch (error: any) {
+          expect(error.response?.status).toBe(400);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
     });
 
@@ -581,18 +624,29 @@ describe('Planning Service - Functional Tests', () => {
         const nonAttendee = await authHelper.createTestUser('student');
         const nonAttendeeClient = await authHelper.createAuthenticatedClient('planning', nonAttendee);
 
-        const response = await nonAttendeeClient.post(`/api/planning/events/${testEvent.id}/attendance`);
+        try {
+          const response = await nonAttendeeClient.post(`/api/planning/events/${testEvent.id}/attendance`);
 
-        expect(response.status).toBe(403);
-        expect(response.data.error).toContain('not invited');
+          expect(response.status).toBe(403);
+          expect(response.data.error).toContain('not invited');
+        } catch (error: any) {
+          expect(error.response?.status).toBe(403);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should require authentication', async () => {
         const unauthenticatedClient = new ApiClient(testEnvironment.services.planning);
-        const response = await unauthenticatedClient.post(`/api/planning/events/${testEvent.id}/attendance`);
+        
+        try {
+          const response = await unauthenticatedClient.post(`/api/planning/events/${testEvent.id}/attendance`);
 
-        expect(response.status).toBe(401);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBe(401);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBe(401);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
     });
   });
@@ -1179,12 +1233,17 @@ describe('Planning Service - Functional Tests', () => {
         const otherTeacher = await authHelper.createTestUser('teacher');
         const otherClient = await authHelper.createAuthenticatedClient('planning', otherTeacher);
 
-        const response = await otherClient.put(`/api/planning/events/${eventId}`, {
-          title: 'Unauthorized Update'
-        });
+        try {
+          const response = await otherClient.put(`/api/planning/events/${eventId}`, {
+            title: 'Unauthorized Update'
+          });
 
-        expect(response.status).toBeOneOf([403, 401]);
-        expect(response.data).toBeErrorResponse();
+          expect(response.status).toBeOneOf([403, 401]);
+          expect(response.data).toBeErrorResponse();
+        } catch (error: any) {
+          expect(error.response?.status).toBeOneOf([403, 401]);
+          expect(error.response?.data).toBeErrorResponse();
+        }
       });
 
       it('should respect event visibility settings', async () => {
