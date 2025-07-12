@@ -12,6 +12,33 @@ declare global {
   var __YGGDRASIL_SETUP_DONE__: boolean;
 }
 
+/**
+ * Kill any processes using the test ports (310X) to ensure clean startup
+ */
+async function cleanupTestPorts(): Promise<void> {
+  const testPorts = [3101, 3102, 3103, 3104, 3105, 3106, 3107];
+  
+  console.log('🧹 Cleaning up any processes using test ports...');
+  
+  for (const port of testPorts) {
+    try {
+      const { exec } = require('child_process');
+      await new Promise<void>((resolve) => {
+        exec(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, (error: any) => {
+          // Ignore errors - ports may not be in use
+          resolve();
+        });
+      });
+    } catch (error) {
+      // Ignore cleanup errors
+    }
+  }
+  
+  // Wait a moment for ports to be fully released
+  await sleep(2000);
+  console.log('✅ Port cleanup complete');
+}
+
 interface ServiceConfig {
   name: string;
   path: string;
@@ -176,7 +203,8 @@ async function startService(service: ServiceConfig): Promise<ChildProcess> {
   
   console.log(`🚀 Starting ${service.name} on port ${service.port}...`);
   
-  const serviceProcess = spawn('npm', ['run', 'dev'], {
+  // Use ts-node directly for testing to avoid nodemon's file watching (EMFILE issue)
+  const serviceProcess = spawn('npx', ['ts-node', '--files', 'src/index.ts'], {
     cwd: servicePath,
     env: { ...process.env, ...service.env },
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -253,6 +281,9 @@ export default async function globalSetup(): Promise<void> {
   
   try {
     console.log('🔧 Setting up functional test environment...');
+    
+    // Clean up any processes using test ports first
+    await cleanupTestPorts();
     
     // Start all services
     const processes = await startAllServices();

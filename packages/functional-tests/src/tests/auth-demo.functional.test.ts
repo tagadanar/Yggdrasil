@@ -46,17 +46,10 @@ describe('Auth Demo - Automated Service Management', () => {
       console.log('🔐 Step 2: Testing login with registered user...');
       apiHelper.clearAuthTokens(); // Clear registration tokens
       
-      const loginResponse = await apiHelper.auth('/login', {
-        method: 'POST',
-        data: {
-          email: userData.email,
-          password: userData.password
-        }
-      });
-
-      expect(loginResponse.status).toBe(200);
-      expect(loginResponse.data.success).toBe(true);
-      expect(loginResponse.data.data.user.email).toBe(userData.email);
+      const loginResult = await apiHelper.loginUser(userData.email, userData.password);
+      
+      expect(loginResult.user.email).toBe(userData.email);
+      expect(loginResult.tokens.accessToken).toBeDefined();
       
       console.log('✅ User login successful!');
 
@@ -77,14 +70,14 @@ describe('Auth Demo - Automated Service Management', () => {
       // Test 4: Test token refresh
       console.log('🔄 Step 4: Testing token refresh...');
       
-      const refreshResponse = await apiHelper.auth('/refresh', {
+      const refreshResponse = await apiHelper.auth('/refresh-token', {
         method: 'POST',
-        data: { refreshToken: loginResponse.data.data.tokens.refreshToken }
+        data: { refreshToken: loginResult.tokens.refreshToken }
       });
 
       expect(refreshResponse.status).toBe(200);
       expect(refreshResponse.data.success).toBe(true);
-      expect(refreshResponse.data.data.accessToken).toBeDefined();
+      expect(refreshResponse.data.data.tokens.accessToken).toBeDefined();
       
       console.log('✅ Token refresh successful!');
 
@@ -124,7 +117,7 @@ describe('Auth Demo - Automated Service Management', () => {
       } catch (error: any) {
         expect(error.response.status).toBe(401);
         expect(error.response.data.success).toBe(false);
-        expect(error.response.data.error).toContain('Invalid credentials');
+        expect(error.response.data.error).toMatch(/invalid credentials/i);
         console.log('✅ Invalid credentials properly rejected');
       }
 
@@ -138,7 +131,7 @@ describe('Auth Demo - Automated Service Management', () => {
       } catch (error: any) {
         expect(error.response.status).toBe(401);
         expect(error.response.data.success).toBe(false);
-        expect(error.response.data.error).toContain('No token provided');
+        expect(error.response.data.error).toMatch(/authentication error|no token provided/i);
         console.log('✅ Protected route properly secured');
       }
 

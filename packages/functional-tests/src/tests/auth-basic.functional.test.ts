@@ -60,11 +60,12 @@ describe('Basic Auth Service - Functional Tests', () => {
 
   describe('User Login', () => {
     let testUser: any;
+    let testUserData: any;
 
     beforeEach(async () => {
       // Register a user for login tests
-      const userData = apiHelper.createTestData().user.teacher;
-      const registerResponse = await apiHelper.registerUser(userData);
+      testUserData = apiHelper.createTestData().user.teacher;
+      const registerResponse = await apiHelper.registerUser(testUserData);
       testUser = registerResponse.user;
       
       // Clear tokens after registration
@@ -72,19 +73,18 @@ describe('Basic Auth Service - Functional Tests', () => {
     });
 
     it('should login user with valid credentials', async () => {
-      const userData = apiHelper.createTestData().user.teacher;
-      
+      // Use the same user data that was registered
       const response = await apiHelper.auth('/login', {
         method: 'POST',
         data: {
-          email: userData.email,
-          password: userData.password
+          email: testUserData.email,
+          password: testUserData.password
         }
       });
 
       expect(response.status).toBe(200);
       expect(response.data.success).toBe(true);
-      expect(response.data.data.user.email).toBe(userData.email);
+      expect(response.data.data.user.email).toBe(testUserData.email);
       expect(response.data.data.tokens.accessToken).toBeDefined();
       expect(response.data.data.tokens.refreshToken).toBeDefined();
     });
@@ -109,11 +109,14 @@ describe('Basic Auth Service - Functional Tests', () => {
 
   describe('User Service Cross-Authentication', () => {
     let testUser: any;
+    let testUserData: any;
 
     beforeEach(async () => {
-      // Register and login user
-      const userData = apiHelper.createTestData().user.admin;
-      const loginResponse = await apiHelper.loginUser(userData.email, userData.password);
+      // Register user first, then login
+      testUserData = apiHelper.createTestData().user.admin;
+      await apiHelper.registerUser(testUserData);
+      apiHelper.clearAuthTokens();
+      const loginResponse = await apiHelper.loginUser(testUserData.email, testUserData.password);
       testUser = loginResponse.user;
     });
 
@@ -139,7 +142,7 @@ describe('Basic Auth Service - Functional Tests', () => {
       } catch (error: any) {
         expect(error.response.status).toBe(401);
         expect(error.response.data.success).toBe(false);
-        expect(error.response.data.error).toContain('No token provided');
+        expect(error.response.data.message).toContain('No token provided');
       }
     });
   });

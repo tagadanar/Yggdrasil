@@ -204,6 +204,9 @@ export class ApiTestHelper {
       SERVICES.forEach(service => {
         this.setAuthToken(service.name, tokens.accessToken);
       });
+      console.log('✅ Auth tokens set for all services:', tokens.accessToken.substring(0, 20) + '...');
+    } else {
+      console.error('❌ No access token found in login response:', response.data);
     }
 
     return { user, tokens };
@@ -285,17 +288,32 @@ export class ApiTestHelper {
       },
       course: {
         title: 'Test Course',
+        code: 'TEST101',
         description: 'A test course for functional testing',
-        category: 'Programming',
+        category: 'programming',
         level: 'beginner',
-        maxStudents: 30,
+        credits: 3,
+        capacity: 30,
+        duration: {
+          weeks: 12,
+          hoursPerWeek: 3,
+          totalHours: 36
+        },
+        schedule: [
+          {
+            dayOfWeek: 1, // Monday
+            startTime: '09:00',
+            endTime: '11:00',
+            location: 'Room A101',
+            type: 'lecture'
+          }
+        ],
+        prerequisites: [],
+        tags: [],
+        visibility: 'public',
+        status: 'published',
         startDate: new Date(Date.now() + 86400000), // Tomorrow
         endDate: new Date(Date.now() + 86400000 * 30), // 30 days from now
-        schedule: {
-          dayOfWeek: 1, // Monday
-          startTime: '09:00',
-          endTime: '11:00'
-        }
       },
       event: {
         title: 'Test Event',
@@ -309,9 +327,11 @@ export class ApiTestHelper {
       article: {
         title: 'Test Article',
         content: 'This is a test article for functional testing',
-        category: 'announcement',
+        category: 'general',
         tags: ['test', 'functional'],
-        isPublished: true
+        status: 'published',
+        priority: 'normal',
+        visibility: 'public'
       }
     };
   }

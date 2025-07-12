@@ -4,7 +4,7 @@
  */
 
 import { ApiClient, createApiClient } from './ApiClient';
-import { testEnvironment } from '../config/environment';
+import { testEnvironment, integrationEnvironment, isIntegrationTest } from '../config/environment';
 
 export interface AuthTokens {
   accessToken: string;
@@ -40,8 +40,11 @@ export class AuthHelper {
   private userTokens: Map<string, AuthTokens> = new Map();
 
   constructor() {
-    this.authClient = createApiClient('auth');
-    this.userClient = createApiClient('user');
+    // Use integration environment for integration tests, functional environment otherwise
+    const environment = isIntegrationTest ? integrationEnvironment : testEnvironment;
+    
+    this.authClient = new ApiClient(environment.services.auth);
+    this.userClient = new ApiClient(environment.services.user);
   }
 
   /**
@@ -49,9 +52,10 @@ export class AuthHelper {
    */
   async createTestUser(role: UserRole, customData?: Partial<TestUser>): Promise<TestUser> {
     const timestamp = Date.now();
+    const plainPassword = customData?.password || 'TestPassword123!';
     const userData = {
       email: customData?.email || `${role}-${timestamp}@yggdrasil.test`,
-      password: customData?.password || 'TestPassword123!',
+      password: plainPassword,
       role,
       profile: {
         firstName: customData?.profile?.firstName || `Test${role.charAt(0).toUpperCase()}${role.slice(1)}`,
@@ -72,7 +76,7 @@ export class AuthHelper {
         email: userData.email,
         role,
         profile: userData.profile,
-        password: userData.password,
+        password: plainPassword, // Store the plain text password for subsequent logins
         isActive: userData.isActive,
       };
 
@@ -175,7 +179,8 @@ export class AuthHelper {
    */
   async logout(accessToken: string): Promise<void> {
     try {
-      const client = new ApiClient(testEnvironment.services.auth, accessToken);
+      const environment = isIntegrationTest ? integrationEnvironment : testEnvironment;
+      const client = new ApiClient(environment.services.auth, accessToken);
       await client.post('/api/auth/logout');
     } catch (error: any) {
       // Logout failure is not critical for tests
@@ -193,7 +198,8 @@ export class AuthHelper {
       throw new Error(`Failed to authenticate user: ${authResult.error}`);
     }
 
-    return createApiClient(service, authResult.tokens.accessToken);
+    const environment = isIntegrationTest ? integrationEnvironment : testEnvironment;
+    return new ApiClient(environment.services[service], authResult.tokens.accessToken);
   }
 
   /**

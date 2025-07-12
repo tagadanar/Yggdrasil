@@ -50,6 +50,21 @@ describe('End-to-End User Journey Tests', () => {
   beforeEach(async () => {
     // Light cleanup - preserve some data between tests for realistic scenarios
     await databaseHelper.cleanupTestData();
+    
+    // Recreate test users after cleanup to ensure they exist
+    testUsers = {
+      students: [
+        await authHelper.createTestUser('student'),
+        await authHelper.createTestUser('student'),
+        await authHelper.createTestUser('student')
+      ],
+      teachers: [
+        await authHelper.createTestUser('teacher'),
+        await authHelper.createTestUser('teacher')
+      ],
+      admin: await authHelper.createTestUser('admin'),
+      staff: await authHelper.createTestUser('staff')
+    };
   });
 
   describe('Complete Student Academic Journey', () => {
@@ -68,23 +83,18 @@ describe('End-to-End User Journey Tests', () => {
 
       // Update student profile for the semester
       const profileUpdate = {
-        profile: {
-          firstName: 'Alice',
-          lastName: 'Johnson',
-          major: 'Computer Science',
-          yearOfStudy: 2,
-          academicGoals: ['Complete CS requirements', 'Maintain GPA above 3.5'],
-          preferences: {
-            learningStyle: 'visual',
-            studySchedule: 'morning',
-            notifications: { email: true, push: true }
-          }
-        }
+        firstName: 'Alice',
+        lastName: 'Johnson',
+        bio: 'Computer Science student focused on algorithms and data structures',
+        promotion: 'Year 2',
+        studentId: 'CS2024001',
+        phone: '+1-555-0123'
       };
 
-      const profileResponse = await studentUserClient.put(`/api/users/${student.id}`, profileUpdate);
+      const profileResponse = await studentUserClient.put('/api/users/profile', profileUpdate);
       expect(profileResponse.status).toBe(200);
-      expect(profileResponse.data.data.profile.major).toBe('Computer Science');
+      expect(profileResponse.data.data.profile.firstName).toBe('Alice');
+      expect(profileResponse.data.data.profile.promotion).toBe('Year 2');
 
       // Step 2: Browse and research available courses
       const courseBrowseResponse = await studentCourseClient.get('/api/courses', {
@@ -217,7 +227,7 @@ describe('End-to-End User Journey Tests', () => {
             }
           });
 
-          const eventResponse = await teacherPlanningClient.post('/api/calendar/events', eventData);
+          const eventResponse = await teacherPlanningClient.post('/api/planning/events', eventData);
           expect(eventResponse.status).toBe(201);
         }
       }
@@ -244,7 +254,7 @@ describe('End-to-End User Journey Tests', () => {
       }
 
       // Check academic calendar
-      const calendarResponse = await studentPlanningClient.get('/api/calendar/events', {
+      const calendarResponse = await studentPlanningClient.get('/api/planning/events', {
         params: {
           startDate: '2024-02-01',
           endDate: '2024-05-31',
@@ -471,7 +481,7 @@ describe('End-to-End User Journey Tests', () => {
           }
         });
 
-        const eventResponse = await teacher1Clients.planning.post('/api/calendar/events', eventData);
+        const eventResponse = await teacher1Clients.planning.post('/api/planning/events', eventData);
         expect(eventResponse.status).toBe(201);
       }
 
@@ -494,7 +504,7 @@ describe('End-to-End User Journey Tests', () => {
 
       // Students check collaborative schedule
       for (const { planning } of studentClients) {
-        const scheduleResponse = await planning.get('/api/calendar/events', {
+        const scheduleResponse = await planning.get('/api/planning/events', {
           params: {
             relatedCourse: courseId,
             startDate: '2024-02-01',
@@ -741,7 +751,7 @@ describe('End-to-End User Journey Tests', () => {
           }
         });
 
-        const eventResponse = await adminClients.planning.post('/api/calendar/events', eventData);
+        const eventResponse = await adminClients.planning.post('/api/planning/events', eventData);
         expect(eventResponse.status).toBe(201);
       }
 
@@ -866,7 +876,7 @@ describe('End-to-End User Journey Tests', () => {
       expect(finalSystemCheck.status).toBe(200);
       expect(finalSystemCheck.data.data.users.total).toBeGreaterThan(8); // Original users + new faculty + 5 students
 
-      const finalCalendarCheck = await adminClients.planning.get('/api/calendar/events', {
+      const finalCalendarCheck = await adminClients.planning.get('/api/planning/events', {
         params: {
           startDate: '2024-02-01',
           endDate: '2024-05-31',
@@ -1024,7 +1034,7 @@ describe('End-to-End User Journey Tests', () => {
       expect(finalVerification.statistics.status).toBe(200);
 
       // Verify analytics reflect the load test activity
-      expect(finalVerification.statistics.data.data.courses.total).toBeGreaterThan(0);
+      expect(finalVerification.statistics.data.data.totalCourses).toBeGreaterThan(0);
       expect(finalVerification.statistics.data.data.content).toBeDefined();
     });
   });

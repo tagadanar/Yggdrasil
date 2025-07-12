@@ -168,6 +168,13 @@ export class ApiClient {
   }
 
   /**
+   * Make raw request with custom config
+   */
+  async raw<T = any>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.retryRequest(() => this.client.request<T>(config));
+  }
+
+  /**
    * Build axios config from options
    */
   private buildConfig(options?: RequestOptions): AxiosRequestConfig {

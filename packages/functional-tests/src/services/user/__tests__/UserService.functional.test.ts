@@ -75,8 +75,7 @@ describe('User Service - Functional Tests', () => {
         try {
           const response = await unauthenticatedClient.get('/api/users/profile');
           
-          expect(response.status).toBe(401);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 401 Unauthorized');
           expect(response.data.error).toContain('authentication');
         } catch (error: any) {
           expect(error.response?.status).toBe(401);
@@ -102,8 +101,7 @@ describe('User Service - Functional Tests', () => {
         try {
           const response = await userClient.get(`/api/users/${fakeId}`);
           
-          expect(response.status).toBe(404);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 404 Not Found');
           expect(response.data.error).toContain('not found');
         } catch (error: any) {
           expect(error.response?.status).toBe(404);
@@ -115,8 +113,7 @@ describe('User Service - Functional Tests', () => {
         try {
           const response = await userClient.get('/api/users/invalid-id');
           
-          expect(response.status).toBe(400);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 400 Bad Request');
         } catch (error: any) {
           expect(error.response?.status).toBe(400);
           expect(error.response?.data).toBeErrorResponse();
@@ -161,8 +158,7 @@ describe('User Service - Functional Tests', () => {
           const response = await userClient.put('/api/users/profile', invalidData);
           
           // If request succeeds, it should be a 400 with error response
-          expect(response.status).toBe(400);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 400 Bad Request');
         } catch (error: any) {
           // If request throws, it should be a 400 axios error
           expect(error.response?.status).toBe(400);
@@ -268,8 +264,7 @@ describe('User Service - Functional Tests', () => {
         try {
           const response = await userClient.put('/api/users/preferences', invalidPreferences);
           
-          expect(response.status).toBe(400);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 400 Bad Request');
         } catch (error: any) {
           expect(error.response?.status).toBe(400);
           expect(error.response?.data).toBeErrorResponse();
@@ -339,8 +334,7 @@ describe('User Service - Functional Tests', () => {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
 
-          expect(response.status).toBe(400);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 400 Bad Request');
           expect(response.data.error).toContain('file type');
         } catch (error: any) {
           expect(error.response?.status).toBe(400);
@@ -364,8 +358,7 @@ describe('User Service - Functional Tests', () => {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
 
-          expect(response.status).toBe(400);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 400 Bad Request');
           expect(response.data.error).toContain('file size');
         } catch (error: any) {
           expect(error.response?.status).toBe(400);
@@ -380,8 +373,7 @@ describe('User Service - Functional Tests', () => {
         try {
           const response = await unauthenticatedClient.post('/api/users/photo', formData);
 
-          expect(response.status).toBe(401);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 401 Unauthorized');
         } catch (error: any) {
           expect(error.response?.status).toBe(401);
           expect(error.response?.data).toBeErrorResponse();
@@ -537,8 +529,7 @@ describe('User Service - Functional Tests', () => {
         try {
           const response = await userClient.get('/api/users/invalid-id/activity');
 
-          expect(response.status).toBe(400);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 400 Bad Request');
         } catch (error: any) {
           expect(error.response?.status).toBe(400);
           expect(error.response?.data).toBeErrorResponse();
@@ -589,8 +580,7 @@ describe('User Service - Functional Tests', () => {
         try {
           const response = await adminClient.put(`/api/users/${testUsers.admin.id}/deactivate`);
 
-          expect(response.status).toBe(400);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 400 Bad Request');
           expect(response.data.error).toContain('yourself');
         } catch (error: any) {
           expect(error.response?.status).toBe(400);
@@ -742,8 +732,7 @@ describe('User Service - Functional Tests', () => {
         try {
           const response = await userClient.get(`/api/users/${encodeURIComponent(maliciousId)}`);
 
-          expect(response.status).toBe(400);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 400 Bad Request');
         } catch (error: any) {
           expect(error.response?.status).toBe(400);
           expect(error.response?.data).toBeErrorResponse();
@@ -778,7 +767,7 @@ describe('User Service - Functional Tests', () => {
             }
           } else {
             // Or update should be rejected
-            expect(response.status).toBe(400);
+            fail('Expected AxiosError to be thrown for 400 Bad Request');
             expect(response.data).toBeErrorResponse();
           }
         } catch (error: any) {
@@ -822,8 +811,7 @@ describe('User Service - Functional Tests', () => {
         try {
           const response = await userClient.put('/api/users/profile', incompleteData);
           
-          expect(response.status).toBe(400);
-          expect(response.data).toBeErrorResponse();
+          fail('Expected AxiosError to be thrown for 400 Bad Request');
         } catch (error: any) {
           expect(error.response?.status).toBe(400);
           expect(error.response?.data).toBeErrorResponse();
@@ -900,7 +888,7 @@ describe('User Service - Functional Tests', () => {
       try {
         const response = await userClient.get('/api/users/invalid-id');
 
-        expect(response.status).toBe(400);
+        fail('Expected AxiosError to be thrown for 400 Bad Request');
         expect(response.data).toBeErrorResponse();
         expect(response.data.error).toBeDefined();
         expect(response.data.error).not.toBe('');

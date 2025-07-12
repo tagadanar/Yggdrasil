@@ -51,7 +51,7 @@ export const testEnvironment: TestEnvironment = {
     statistics: process.env.STATISTICS_SERVICE_URL || 'http://localhost:3106',
     notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3107',
     frontend: process.env.FRONTEND_URL || 'http://localhost:3000',
-    gateway: process.env.GATEWAY_URL || undefined,
+    gateway: process.env.GATEWAY_URL,
   },
   database: {
     uri: process.env.MONGODB_URI || 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-test?authSource=admin',
@@ -59,7 +59,49 @@ export const testEnvironment: TestEnvironment = {
     cleanup: process.env.TEST_DB_CLEANUP !== 'false',
   },
   authentication: {
-    jwtSecret: process.env.JWT_SECRET || 'yggdrasil-test-secret-key',
+    jwtSecret: process.env.JWT_SECRET || 'test-secret-key-for-functional-tests',
+    testTokenExpiry: process.env.TEST_TOKEN_EXPIRY || '24h',
+    refreshTokenExpiry: process.env.REFRESH_TOKEN_EXPIRY || '7d',
+  },
+  timeouts: {
+    api: parseInt(process.env.API_TIMEOUT || '10000'),
+    database: parseInt(process.env.DB_TIMEOUT || '5000'),
+    browser: parseInt(process.env.BROWSER_TIMEOUT || '30000'),
+  },
+  retry: {
+    attempts: parseInt(process.env.RETRY_ATTEMPTS || '3'),
+    delay: parseInt(process.env.RETRY_DELAY || '1000'),
+  },
+  logging: {
+    level: (process.env.LOG_LEVEL as any) || 'info',
+    enableConsole: process.env.LOG_CONSOLE !== 'false',
+    enableFile: process.env.LOG_FILE === 'true',
+  },
+};
+
+/**
+ * Integration test environment - uses functional test service ports
+ * Modified to use the same infrastructure as functional tests for reliability
+ */
+export const integrationEnvironment: TestEnvironment = {
+  services: {
+    auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3101',
+    user: process.env.USER_SERVICE_URL || 'http://localhost:3102',
+    course: process.env.COURSE_SERVICE_URL || 'http://localhost:3103',
+    planning: process.env.PLANNING_SERVICE_URL || 'http://localhost:3104',
+    news: process.env.NEWS_SERVICE_URL || 'http://localhost:3105',
+    statistics: process.env.STATISTICS_SERVICE_URL || 'http://localhost:3106',
+    notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3107',
+    frontend: process.env.FRONTEND_URL || 'http://localhost:3000',
+    gateway: process.env.GATEWAY_URL,
+  },
+  database: {
+    uri: process.env.MONGODB_URI || 'mongodb://admin:dev_password_2024@localhost:27017/yggdrasil-dev?authSource=admin',
+    testDbName: process.env.TEST_DB_NAME || 'yggdrasil-dev',
+    cleanup: process.env.TEST_DB_CLEANUP !== 'false',
+  },
+  authentication: {
+    jwtSecret: process.env.JWT_SECRET || 'test-secret-key-for-functional-tests',
     testTokenExpiry: process.env.TEST_TOKEN_EXPIRY || '24h',
     refreshTokenExpiry: process.env.REFRESH_TOKEN_EXPIRY || '7d',
   },
@@ -82,6 +124,7 @@ export const testEnvironment: TestEnvironment = {
 export const isTestEnvironment = process.env.NODE_ENV === 'test';
 export const isCI = process.env.CI === 'true';
 export const isDebugMode = process.env.DEBUG === 'true';
+export const isIntegrationTest = process.env.TEST_TYPE === 'integration';
 
 /**
  * Validates that all required environment variables are set

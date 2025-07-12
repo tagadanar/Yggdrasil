@@ -374,8 +374,7 @@ describe('Statistics Service - Functional Tests', () => {
         try {
           const response = await studentClient.get(`/api/statistics/users/${testUsers.teacher.id}`);
           
-          expect(response.status).toBe(403);
-          expect(response.data.error).toContain('Insufficient permissions');
+          fail('Expected AxiosError to be thrown for 403 Forbidden');
         } catch (error: any) {
           if (error.response) {
             expect(error.response.status).toBeOneOf([403, 400, 401, 404]);

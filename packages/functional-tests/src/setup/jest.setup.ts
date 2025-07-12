@@ -100,6 +100,7 @@ declare global {
       toBeErrorResponse(): R;
       toHaveValidToken(): R;
       toHaveValidUser(): R;
+      toBeOneOf(expected: any[]): R;
     }
   }
 }
@@ -199,6 +200,22 @@ expect.extend({
     } else {
       return {
         message: () => `expected ${JSON.stringify(received)} to have valid user structure`,
+        pass: false,
+      };
+    }
+  },
+  
+  toBeOneOf(received: any, expected: any[]) {
+    const pass = expected.includes(received);
+    
+    if (pass) {
+      return {
+        message: () => `expected ${received} not to be one of ${JSON.stringify(expected)}`,
+        pass: true,
+      };
+    } else {
+      return {
+        message: () => `expected ${received} to be one of ${JSON.stringify(expected)}`,
         pass: false,
       };
     }

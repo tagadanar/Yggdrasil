@@ -60,17 +60,24 @@ export interface TestArticle {
   id?: string;
   title: string;
   content: string;
-  summary: string;
+  excerpt?: string; // Changed from summary to excerpt
   author: string;
   authorId?: string; // For compatibility
-  category: 'announcement' | 'news' | 'academic' | 'administrative' | 'social' | 'technical' | 'other';
+  category: 'announcement' | 'academic' | 'administrative' | 'events' | 'achievement' | 'sports' | 'technology' | 'scholarship' | 'admission' | 'emergency' | 'general';
   tags: string[];
-  status: 'draft' | 'published' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'draft' | 'review' | 'scheduled' | 'published' | 'archived' | 'rejected';
+  priority: 'low' | 'normal' | 'high' | 'urgent' | 'emergency';
+  visibility?: 'public' | 'students' | 'faculty' | 'staff' | 'admin' | 'custom';
+  isFeatured?: boolean;
+  isPinned?: boolean;
   publishedAt?: Date;
-  targetAudience: UserRole[];
-  readBy: string[];
-  notificationSent: boolean;
+  scheduledAt?: Date;
+  expiresAt?: Date;
+  metadata?: Record<string, any>;
+  // Legacy fields for backwards compatibility
+  targetAudience?: UserRole[];
+  readBy?: string[];
+  notificationSent?: boolean;
 }
 
 export interface TestNotification {
@@ -133,23 +140,24 @@ export class TestDataFactory {
     const startDate = overrides.startDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Start in 7 days
     const endDate = overrides.endDate || new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days after start
 
+    // Generate duration data
+    const weeks = faker.number.int({ min: 4, max: 16 });
+    const hoursPerWeek = faker.number.int({ min: 2, max: 8 });
+    const duration = overrides.duration || {
+      weeks,
+      hoursPerWeek,
+      totalHours: weeks * hoursPerWeek
+    };
+
     return {
-      id: overrides.id || faker.database.mongodbObjectId(),
+      // CreateCourseData fields only (for API requests)
       title: overrides.title || courseTitle,
       code: courseCode,
       description: overrides.description || faker.lorem.paragraph(3),
-      instructorId: instructorId,
-      instructor: instructorId, // Keep both for compatibility
       credits: overrides.credits || faker.number.int({ min: 1, max: 6 }),
-      duration: overrides.duration || (() => {
-        const weeks = faker.number.int({ min: 4, max: 16 });
-        const hoursPerWeek = faker.number.int({ min: 2, max: 8 });
-        return {
-          weeks,
-          hoursPerWeek,
-          totalHours: weeks * hoursPerWeek // Calculate properly
-        };
-      })(),
+      level: overrides.level || faker.helpers.arrayElement(['beginner', 'intermediate', 'advanced']),
+      category: overrides.category || faker.helpers.arrayElement(['programming', 'web-development', 'mobile-development', 'data-science', 'artificial-intelligence', 'cybersecurity', 'cloud-computing', 'devops', 'database', 'design', 'project-management', 'soft-skills', 'other']),
+      duration,
       schedule: overrides.schedule || [
         {
           dayOfWeek: 1, // Monday
@@ -166,16 +174,20 @@ export class TestDataFactory {
           type: 'practical'
         }
       ],
-      level: overrides.level || faker.helpers.arrayElement(['beginner', 'intermediate', 'advanced', 'expert']),
-      category: overrides.category || faker.helpers.arrayElement(['programming', 'web-development', 'mobile-development', 'data-science', 'artificial-intelligence', 'cybersecurity', 'cloud-computing', 'devops', 'database', 'design', 'project-management', 'soft-skills', 'other']),
       capacity: overrides.capacity || faker.number.int({ min: 10, max: 50 }),
-      enrolledStudents: overrides.enrolledStudents || [],
-      status: overrides.status || 'published',
+      prerequisites: overrides.prerequisites || [],
+      tags: overrides.tags || [],
+      visibility: overrides.visibility || 'public',
       startDate,
       endDate,
-      prerequisites: overrides.prerequisites || [],
+      
+      // Additional fields for test compatibility (not sent in API requests)
+      id: overrides.id || faker.database.mongodbObjectId(),
+      instructorId: instructorId,
+      instructor: instructorId, // Keep both for compatibility
+      enrolledStudents: overrides.enrolledStudents || [],
+      status: overrides.status || 'draft',
       resources: overrides.resources || [],
-      visibility: overrides.visibility || 'public',
       ...overrides,
     };
   }
@@ -245,20 +257,27 @@ export class TestDataFactory {
     ]);
 
     const content = faker.lorem.paragraphs(5);
-    const summary = faker.lorem.paragraph(1);
+    const excerpt = faker.lorem.paragraph(1);
 
     return {
       id: overrides.id || faker.database.mongodbObjectId(),
       title: overrides.title || articleTitle,
       content: overrides.content || content,
-      summary: overrides.summary || summary,
+      excerpt: overrides.excerpt || excerpt, // Changed from summary to excerpt
       authorId: authorId,
       author: authorId, // Keep both for compatibility
-      category: overrides.category || faker.helpers.arrayElement(['announcement', 'news', 'academic', 'administrative', 'social', 'technical']),
+      category: overrides.category || faker.helpers.arrayElement(['announcement', 'academic', 'administrative', 'events', 'general']),
       tags: overrides.tags || faker.helpers.arrayElements(['important', 'urgent', 'deadline', 'event', 'course', 'system'], { min: 1, max: 3 }),
       status: overrides.status || 'published',
-      priority: overrides.priority || faker.helpers.arrayElement(['low', 'medium', 'high', 'urgent']),
+      priority: overrides.priority || faker.helpers.arrayElement(['low', 'normal', 'high', 'urgent']),
+      visibility: overrides.visibility || 'public',
+      isFeatured: overrides.isFeatured !== undefined ? overrides.isFeatured : false,
+      isPinned: overrides.isPinned !== undefined ? overrides.isPinned : false,
       publishedAt: overrides.publishedAt || faker.date.recent(),
+      scheduledAt: overrides.scheduledAt,
+      expiresAt: overrides.expiresAt,
+      metadata: overrides.metadata || {},
+      // Legacy fields for backwards compatibility
       targetAudience: overrides.targetAudience || ['student', 'teacher'],
       readBy: overrides.readBy || [],
       notificationSent: overrides.notificationSent !== undefined ? overrides.notificationSent : false,
