@@ -1,0 +1,495 @@
+name: 🛡️ Security Scanning & Compliance
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scans daily at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # ===== CODE SECURITY SCANNING =====
+  code-security:
+    name: 🔍 Code Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci
+        
+      - name: 🔍 Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          queries: security-extended,security-and-quality
+          
+      - name: 🔍 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript"
+
+  # ===== DEPENDENCY VULNERABILITY SCANNING =====
+  dependency-security:
+    name: 📦 Dependency Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci
+        
+      - name: 🔍 Run npm audit
+        run: |
+          npm audit --audit-level=moderate --json > audit-results.json || true
+          
+          CRITICAL=$(cat audit-results.json | jq '.metadata.vulnerabilities.critical // 0')
+          HIGH=$(cat audit-results.json | jq '.metadata.vulnerabilities.high // 0')
+          
+          echo "🔍 Security Audit Results:"
+          echo "Critical vulnerabilities: $CRITICAL"
+          echo "High vulnerabilities: $HIGH"
+          
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::Found $CRITICAL critical vulnerabilities"
+            exit 1
+          elif [ "$HIGH" -gt 5 ]; then
+            echo "::warning::Found $HIGH high vulnerabilities (threshold: 5)"
+          fi
+          
+      - name: 📊 Generate Security Report
+        run: |
+          echo "## 🛡️ Dependency Security Report" > security-report.md
+          echo "" >> security-report.md
+          echo "Generated: $(date -u)" >> security-report.md
+          echo "" >> security-report.md
+          
+          if [ -f audit-results.json ]; then
+            CRITICAL=$(cat audit-results.json | jq '.metadata.vulnerabilities.critical // 0')
+            HIGH=$(cat audit-results.json | jq '.metadata.vulnerabilities.high // 0')
+            MODERATE=$(cat audit-results.json | jq '.metadata.vulnerabilities.moderate // 0')
+            LOW=$(cat audit-results.json | jq '.metadata.vulnerabilities.low // 0')
+            
+            echo "### 📊 Vulnerability Summary" >> security-report.md
+            echo "| Severity | Count |" >> security-report.md
+            echo "|----------|--------|" >> security-report.md
+            echo "| 🔴 Critical | $CRITICAL |" >> security-report.md
+            echo "| 🟠 High | $HIGH |" >> security-report.md
+            echo "| 🟡 Moderate | $MODERATE |" >> security-report.md
+            echo "| 🟢 Low | $LOW |" >> security-report.md
+            echo "" >> security-report.md
+            
+            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+              echo "### 🚨 Critical Actions Required" >> security-report.md
+              echo "- Immediate review and patching required for critical/high vulnerabilities" >> security-report.md
+              echo "- Consider blocking deployment until resolved" >> security-report.md
+            else
+              echo "### ✅ No Critical Issues Found" >> security-report.md
+            fi
+          fi
+          
+      - name: 📤 Upload Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-security-report
+          path: security-report.md
+          retention-days: 30
+
+  # ===== SECRET SCANNING =====
+  secret-scanning:
+    name: 🔒 Secret Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: 🔒 Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+          
+      - name: 🔍 Custom Secret Patterns
+        run: |
+          echo "🔍 Scanning for custom secret patterns..."
+          
+          # Check for common secret patterns
+          SECRETS_FOUND=false
+          
+          # Database URLs
+          if grep -r "mongodb://.*:.*@" . --exclude-dir=.git --exclude-dir=node_modules; then
+            echo "::warning::Found potential MongoDB connection strings with credentials"
+            SECRETS_FOUND=true
+          fi
+          
+          # API Keys
+          if grep -r "api[_-]key.*=.*['\"][a-zA-Z0-9]{20,}['\"]" . --exclude-dir=.git --exclude-dir=node_modules; then
+            echo "::warning::Found potential API keys"
+            SECRETS_FOUND=true
+          fi
+          
+          # JWT Secrets in non-test files
+          if grep -r "jwt[_-]secret.*=.*['\"][^'\"]*['\"]" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*test*" --exclude="*spec*"; then
+            echo "::warning::Found potential JWT secrets in non-test files"
+            SECRETS_FOUND=true
+          fi
+          
+          # Private keys
+          if grep -r "BEGIN.*PRIVATE KEY" . --exclude-dir=.git --exclude-dir=node_modules; then
+            echo "::error::Found potential private keys"
+            SECRETS_FOUND=true
+          fi
+          
+          if [ "$SECRETS_FOUND" = true ]; then
+            echo "::error::Potential secrets detected. Please review and remove them."
+            exit 1
+          else
+            echo "✅ No obvious secrets detected"
+          fi
+
+  # ===== DOCKER SECURITY SCANNING =====
+  docker-security:
+    name: 🐳 Docker Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    
+    strategy:
+      matrix:
+        service: [
+          'auth-service',
+          'user-service',
+          'course-service'
+        ]
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🐳 Build Docker Image
+        run: |
+          cd packages/api-services/${{ matrix.service }}
+          docker build -t yggdrasil/${{ matrix.service }}:security-scan .
+          
+      - name: 🔍 Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'yggdrasil/${{ matrix.service }}:security-scan'
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.service }}.sarif'
+          
+      - name: 📤 Upload Trivy Scan Results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results-${{ matrix.service }}.sarif'
+          category: 'docker-${{ matrix.service }}'
+
+  # ===== SECURITY BENCHMARKING =====
+  security-benchmark:
+    name: 📏 Security Benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci
+        
+      - name: 📏 Security Configuration Review
+        run: |
+          echo "## 🛡️ Security Configuration Review" > security-benchmark.md
+          echo "" >> security-benchmark.md
+          echo "Generated: $(date -u)" >> security-benchmark.md
+          echo "" >> security-benchmark.md
+          
+          # Check for security headers configuration
+          echo "### 🔒 Security Headers Check" >> security-benchmark.md
+          
+          SECURITY_HEADERS_FOUND=false
+          
+          if grep -r "helmet" packages/ --include="*.js" --include="*.ts"; then
+            echo "✅ Helmet middleware found" >> security-benchmark.md
+            SECURITY_HEADERS_FOUND=true
+          fi
+          
+          if grep -r "cors" packages/ --include="*.js" --include="*.ts"; then
+            echo "✅ CORS configuration found" >> security-benchmark.md
+          else
+            echo "⚠️ No CORS configuration detected" >> security-benchmark.md
+          fi
+          
+          if grep -r "rate.*limit" packages/ --include="*.js" --include="*.ts"; then
+            echo "✅ Rate limiting found" >> security-benchmark.md
+          else
+            echo "⚠️ No rate limiting detected" >> security-benchmark.md
+          fi
+          
+          # Check for environment variable usage
+          echo "" >> security-benchmark.md
+          echo "### 🔧 Environment Configuration" >> security-benchmark.md
+          
+          if grep -r "process\.env\." packages/ --include="*.js" --include="*.ts" | grep -v "NODE_ENV" | head -5; then
+            echo "✅ Environment variables in use" >> security-benchmark.md
+          fi
+          
+          # Check for input validation
+          echo "" >> security-benchmark.md
+          echo "### ✅ Input Validation" >> security-benchmark.md
+          
+          if grep -r "joi\|zod\|validator" packages/ --include="*.js" --include="*.ts"; then
+            echo "✅ Input validation libraries found" >> security-benchmark.md
+          else
+            echo "⚠️ No input validation libraries detected" >> security-benchmark.md
+          fi
+          
+          # Check for authentication middleware
+          echo "" >> security-benchmark.md
+          echo "### 🔐 Authentication" >> security-benchmark.md
+          
+          if find packages/ -name "*auth*middleware*" -o -name "*Auth*middleware*"; then
+            echo "✅ Authentication middleware found" >> security-benchmark.md
+          else
+            echo "⚠️ No authentication middleware detected" >> security-benchmark.md
+          fi
+          
+      - name: 📤 Upload Benchmark Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-benchmark-report
+          path: security-benchmark.md
+          retention-days: 30
+
+  # ===== COMPLIANCE CHECKING =====
+  compliance-check:
+    name: ⚖️ Compliance Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: ⚖️ GDPR Compliance Check
+        run: |
+          echo "## ⚖️ GDPR Compliance Review" > compliance-report.md
+          echo "" >> compliance-report.md
+          echo "Generated: $(date -u)" >> compliance-report.md
+          echo "" >> compliance-report.md
+          
+          # Check for data handling patterns
+          echo "### 📊 Data Handling Patterns" >> compliance-report.md
+          
+          # Look for personal data fields
+          if grep -r "email\|phone\|address\|firstName\|lastName" packages/ --include="*.js" --include="*.ts" | head -3; then
+            echo "⚠️ Personal data fields detected - ensure GDPR compliance" >> compliance-report.md
+          fi
+          
+          # Check for encryption/hashing
+          if grep -r "bcrypt\|crypto\|encrypt" packages/ --include="*.js" --include="*.ts"; then
+            echo "✅ Encryption/hashing mechanisms found" >> compliance-report.md
+          else
+            echo "⚠️ No encryption mechanisms detected" >> compliance-report.md
+          fi
+          
+          # Check for data retention policies
+          if grep -r "delete\|remove\|retention" packages/ --include="*.js" --include="*.ts"; then
+            echo "✅ Data deletion/retention patterns found" >> compliance-report.md
+          else
+            echo "⚠️ No data retention policies detected" >> compliance-report.md
+          fi
+          
+          echo "" >> compliance-report.md
+          echo "### 📝 Recommendations" >> compliance-report.md
+          echo "- Implement data anonymization for analytics" >> compliance-report.md
+          echo "- Add consent management for data collection" >> compliance-report.md
+          echo "- Implement right-to-be-forgotten functionality" >> compliance-report.md
+          echo "- Add audit logs for data access" >> compliance-report.md
+          
+      - name: 📤 Upload Compliance Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-report
+          path: compliance-report.md
+          retention-days: 30
+
+  # ===== SECURITY SUMMARY =====
+  security-summary:
+    name: 📋 Security Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [
+      code-security,
+      dependency-security,
+      secret-scanning,
+      security-benchmark,
+      compliance-check
+    ]
+    if: always()
+    
+    steps:
+      - name: 📥 Download All Reports
+        uses: actions/download-artifact@v4
+        with:
+          path: security-reports/
+          
+      - name: 📋 Generate Security Summary
+        run: |
+          echo "## 🛡️ Yggdrasil Security Assessment Summary" > security-summary.md
+          echo "" >> security-summary.md
+          echo "**Assessment Date:** $(date -u)" >> security-summary.md
+          echo "**Commit:** ${{ github.sha }}" >> security-summary.md
+          echo "**Branch:** ${{ github.ref_name }}" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          echo "### 📊 Security Scan Results" >> security-summary.md
+          echo "" >> security-summary.md
+          echo "| Component | Status | Details |" >> security-summary.md
+          echo "|-----------|---------|---------|" >> security-summary.md
+          
+          # Check each job status
+          if [ "${{ needs.code-security.result }}" == "success" ]; then
+            echo "| Code Security (CodeQL) | ✅ Passed | No security issues detected |" >> security-summary.md
+          else
+            echo "| Code Security (CodeQL) | ❌ Failed | Security issues found |" >> security-summary.md
+          fi
+          
+          if [ "${{ needs.dependency-security.result }}" == "success" ]; then
+            echo "| Dependency Security | ✅ Passed | No critical vulnerabilities |" >> security-summary.md
+          else
+            echo "| Dependency Security | ❌ Failed | Critical vulnerabilities found |" >> security-summary.md
+          fi
+          
+          if [ "${{ needs.secret-scanning.result }}" == "success" ]; then
+            echo "| Secret Scanning | ✅ Passed | No secrets detected |" >> security-summary.md
+          else
+            echo "| Secret Scanning | ❌ Failed | Potential secrets found |" >> security-summary.md
+          fi
+          
+          if [ "${{ needs.security-benchmark.result }}" == "success" ]; then
+            echo "| Security Benchmark | ✅ Passed | Configuration reviewed |" >> security-summary.md
+          else
+            echo "| Security Benchmark | ⚠️ Warning | Review recommendations |" >> security-summary.md
+          fi
+          
+          if [ "${{ needs.compliance-check.result }}" == "success" ]; then
+            echo "| Compliance Check | ✅ Passed | GDPR patterns reviewed |" >> security-summary.md
+          else
+            echo "| Compliance Check | ⚠️ Warning | Review compliance requirements |" >> security-summary.md
+          fi
+          
+          echo "" >> security-summary.md
+          echo "### 🔧 Next Actions" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          # Determine overall security status
+          if [ "${{ needs.code-security.result }}" == "success" ] && [ "${{ needs.dependency-security.result }}" == "success" ] && [ "${{ needs.secret-scanning.result }}" == "success" ]; then
+            echo "🟢 **Overall Status: SECURE** - No critical security issues detected" >> security-summary.md
+            echo "" >> security-summary.md
+            echo "- Continue regular security monitoring" >> security-summary.md
+            echo "- Review compliance recommendations" >> security-summary.md
+          else
+            echo "🔴 **Overall Status: REQUIRES ATTENTION** - Security issues detected" >> security-summary.md
+            echo "" >> security-summary.md
+            echo "- **PRIORITY**: Address critical vulnerabilities immediately" >> security-summary.md
+            echo "- Review and remediate detected secrets" >> security-summary.md
+            echo "- Update dependencies with security patches" >> security-summary.md
+          fi
+          
+          echo "" >> security-summary.md
+          echo "---" >> security-summary.md
+          echo "*Generated by Yggdrasil Security Pipeline*" >> security-summary.md
+          
+      - name: 📤 Upload Security Summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-summary
+          path: security-summary.md
+          retention-days: 90
+          
+      - name: 📊 Update Security Dashboard
+        uses: actions/github-script@v7
+        if: github.event_name == 'schedule' || github.event_name == 'push'
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let body = '';
+            try {
+              body = fs.readFileSync('security-summary.md', 'utf8');
+            } catch (e) {
+              body = '# Security Summary\n\nFailed to generate summary report.';
+            }
+            
+            // Check for existing security issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['security', 'monitoring'],
+              state: 'open'
+            });
+            
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes('Security Assessment Summary')
+            );
+            
+            if (existingIssue) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: body
+              });
+            } else {
+              // Create new security issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🛡️ Security Assessment Summary - ${new Date().toISOString().split('T')[0]}`,
+                body: body,
+                labels: ['security', 'monitoring', 'dashboard']
+              });
+            }

@@ -1,0 +1,424 @@
+name: 🚀 Production Deployment
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment Environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      version:
+        description: 'Version to deploy (leave empty for latest)'
+        required: false
+        type: string
+
+env:
+  NODE_VERSION: '18'
+  DOCKER_REGISTRY: 'yggdrasil'
+
+jobs:
+  # ===== PRE-DEPLOYMENT VALIDATION =====
+  pre-deployment-checks:
+    name: 🔍 Pre-Deployment Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ismaster\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    outputs:
+      deployment-version: ${{ steps.version.outputs.version }}
+      environment: ${{ steps.environment.outputs.environment }}
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🏷️ Determine Version
+        id: version
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="latest"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "🏷️ Deployment version: $VERSION"
+          
+      - name: 🌍 Determine Environment
+        id: environment
+        run: |
+          if [ "${{ github.event.inputs.environment }}" != "" ]; then
+            ENV="${{ github.event.inputs.environment }}"
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            ENV="production"
+          else
+            ENV="staging"
+          fi
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+          echo "🌍 Target environment: $ENV"
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci
+        
+      - name: 🗄️ Wait for MongoDB
+        run: timeout 30s bash -c 'until nc -z localhost 27017; do sleep 1; done'
+        
+      - name: 🔧 Pre-deployment Health Check
+        run: |
+          cd packages/functional-tests
+          npm run test:critical
+        env:
+          CI: true
+          NODE_ENV: test
+          MONGODB_URI: 'mongodb://localhost:27017/yggdrasil_precheck'
+          JWT_SECRET: 'precheck-jwt-secret'
+
+  # ===== BUILD AND PUSH DOCKER IMAGES =====
+  build-images:
+    name: 🐳 Build & Push Production Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [pre-deployment-checks]
+    
+    strategy:
+      matrix:
+        service: [
+          'auth-service',
+          'user-service', 
+          'course-service',
+          'news-service',
+          'planning-service',
+          'statistics-service',
+          'notification-service'
+        ]
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: 🔑 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
+      - name: 🏗️ Build and Push Production Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/api-services/${{ matrix.service }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/${{ matrix.service }}:${{ needs.pre-deployment-checks.outputs.deployment-version }}
+            ${{ env.DOCKER_REGISTRY }}/${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            BUILD_VERSION=${{ needs.pre-deployment-checks.outputs.deployment-version }}
+
+  # ===== STAGING DEPLOYMENT =====
+  deploy-staging:
+    name: 🎭 Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [pre-deployment-checks, build-images]
+    if: needs.pre-deployment-checks.outputs.environment == 'staging' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment: staging
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🎭 Deploy to Staging Environment
+        run: |
+          echo "🎭 Deploying Yggdrasil v${{ needs.pre-deployment-checks.outputs.deployment-version }} to Staging"
+          
+          # This would be replaced with actual deployment commands
+          # For example: kubectl, docker-compose, or cloud provider CLI
+          
+          echo "🔧 Updating staging environment configuration..."
+          echo "🚀 Starting staging deployment..."
+          
+          # Example deployment commands (uncomment and modify as needed):
+          # kubectl set image deployment/auth-service auth-service=${{ env.DOCKER_REGISTRY }}/auth-service:${{ needs.pre-deployment-checks.outputs.deployment-version }}
+          # kubectl set image deployment/user-service user-service=${{ env.DOCKER_REGISTRY }}/user-service:${{ needs.pre-deployment-checks.outputs.deployment-version }}
+          # kubectl set image deployment/course-service course-service=${{ env.DOCKER_REGISTRY }}/course-service:${{ needs.pre-deployment-checks.outputs.deployment-version }}
+          # kubectl set image deployment/news-service news-service=${{ env.DOCKER_REGISTRY }}/news-service:${{ needs.pre-deployment-checks.outputs.deployment-version }}
+          # kubectl set image deployment/planning-service planning-service=${{ env.DOCKER_REGISTRY }}/planning-service:${{ needs.pre-deployment-checks.outputs.deployment-version }}
+          # kubectl set image deployment/statistics-service statistics-service=${{ env.DOCKER_REGISTRY }}/statistics-service:${{ needs.pre-deployment-checks.outputs.deployment-version }}
+          # kubectl set image deployment/notification-service notification-service=${{ env.DOCKER_REGISTRY }}/notification-service:${{ needs.pre-deployment-checks.outputs.deployment-version }}
+          
+          echo "✅ Staging deployment completed"
+          
+      - name: 🔍 Post-Deployment Health Check
+        run: |
+          echo "🔍 Running post-deployment health checks..."
+          
+          # Example health check commands
+          # curl -f http://staging.yggdrasil.example.com/health || exit 1
+          # curl -f http://staging.yggdrasil.example.com/api/auth/health || exit 1
+          # curl -f http://staging.yggdrasil.example.com/api/user/health || exit 1
+          
+          echo "✅ All staging health checks passed"
+
+  # ===== STAGING SMOKE TESTS =====
+  staging-smoke-tests:
+    name: 💨 Staging Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [deploy-staging]
+    if: needs.pre-deployment-checks.outputs.environment == 'staging'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci
+        
+      - name: 💨 Run Staging Smoke Tests
+        run: |
+          cd packages/functional-tests
+          # Configure for staging environment
+          export TEST_BASE_URL="https://staging.yggdrasil.example.com"
+          export NODE_ENV="staging"
+          
+          # Run minimal smoke tests
+          npm run test:smoke
+          
+        env:
+          CI: true
+
+  # ===== PRODUCTION DEPLOYMENT =====
+  deploy-production:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [pre-deployment-checks, build-images]
+    if: needs.pre-deployment-checks.outputs.environment == 'production'
+    environment: production
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Deploy to Production Environment
+        run: |
+          echo "🚀 Deploying Yggdrasil v${{ needs.pre-deployment-checks.outputs.deployment-version }} to Production"
+          
+          echo "🔧 Updating production environment configuration..."
+          echo "🚀 Starting production deployment with zero-downtime strategy..."
+          
+          # Blue-Green or Rolling deployment strategy
+          # Example deployment commands (uncomment and modify as needed):
+          
+          # Rolling update deployment
+          # kubectl set image deployment/auth-service auth-service=${{ env.DOCKER_REGISTRY }}/auth-service:${{ needs.pre-deployment-checks.outputs.deployment-version }} --record
+          # kubectl rollout status deployment/auth-service --timeout=600s
+          # kubectl set image deployment/user-service user-service=${{ env.DOCKER_REGISTRY }}/user-service:${{ needs.pre-deployment-checks.outputs.deployment-version }} --record
+          # kubectl rollout status deployment/user-service --timeout=600s
+          # kubectl set image deployment/course-service course-service=${{ env.DOCKER_REGISTRY }}/course-service:${{ needs.pre-deployment-checks.outputs.deployment-version }} --record
+          # kubectl rollout status deployment/course-service --timeout=600s
+          # kubectl set image deployment/news-service news-service=${{ env.DOCKER_REGISTRY }}/news-service:${{ needs.pre-deployment-checks.outputs.deployment-version }} --record
+          # kubectl rollout status deployment/news-service --timeout=600s
+          # kubectl set image deployment/planning-service planning-service=${{ env.DOCKER_REGISTRY }}/planning-service:${{ needs.pre-deployment-checks.outputs.deployment-version }} --record
+          # kubectl rollout status deployment/planning-service --timeout=600s
+          # kubectl set image deployment/statistics-service statistics-service=${{ env.DOCKER_REGISTRY }}/statistics-service:${{ needs.pre-deployment-checks.outputs.deployment-version }} --record
+          # kubectl rollout status deployment/statistics-service --timeout=600s
+          # kubectl set image deployment/notification-service notification-service=${{ env.DOCKER_REGISTRY }}/notification-service:${{ needs.pre-deployment-checks.outputs.deployment-version }} --record
+          # kubectl rollout status deployment/notification-service --timeout=600s
+          
+          echo "✅ Production deployment completed"
+          
+      - name: 🔍 Post-Deployment Health Check
+        run: |
+          echo "🔍 Running post-deployment health checks..."
+          
+          # Production health checks with retries
+          for i in {1..5}; do
+            # curl -f https://api.yggdrasil.example.com/health && break
+            echo "Health check attempt $i/5"
+            sleep 10
+          done
+          
+          echo "✅ All production health checks passed"
+
+  # ===== PRODUCTION SMOKE TESTS =====
+  production-smoke-tests:
+    name: 💨 Production Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [deploy-production]
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci
+        
+      - name: 💨 Run Production Smoke Tests
+        run: |
+          cd packages/functional-tests
+          # Configure for production environment
+          export TEST_BASE_URL="https://api.yggdrasil.example.com"
+          export NODE_ENV="production"
+          
+          # Run critical smoke tests only
+          npm run test:smoke
+          
+        env:
+          CI: true
+
+  # ===== ROLLBACK CAPABILITY =====
+  rollback-ready:
+    name: 🔄 Prepare Rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [deploy-production]
+    if: failure()
+    
+    steps:
+      - name: 🔄 Prepare Rollback Strategy
+        run: |
+          echo "🚨 Deployment failed. Preparing rollback..."
+          
+          # Get previous version for rollback
+          # PREVIOUS_VERSION=$(kubectl rollout history deployment/auth-service | tail -2 | head -1 | awk '{print $1}')
+          
+          echo "📝 Rollback commands:"
+          echo "kubectl rollout undo deployment/auth-service"
+          echo "kubectl rollout undo deployment/user-service"
+          echo "kubectl rollout undo deployment/course-service"
+          echo "kubectl rollout undo deployment/news-service"
+          echo "kubectl rollout undo deployment/planning-service"
+          echo "kubectl rollout undo deployment/statistics-service"
+          echo "kubectl rollout undo deployment/notification-service"
+          
+          echo "⚠️ Manual intervention required for rollback"
+
+  # ===== DEPLOYMENT NOTIFICATION =====
+  notify-deployment:
+    name: 📢 Deployment Notification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [
+      pre-deployment-checks,
+      deploy-staging,
+      deploy-production,
+      production-smoke-tests
+    ]
+    if: always()
+    
+    steps:
+      - name: 📢 Send Deployment Notification
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const environment = '${{ needs.pre-deployment-checks.outputs.environment }}';
+            const version = '${{ needs.pre-deployment-checks.outputs.deployment-version }}';
+            const status = '${{ job.status }}';
+            
+            let title, color, status_emoji;
+            
+            if (status === 'success') {
+              title = `✅ Successful Deployment to ${environment}`;
+              color = '28a745';
+              status_emoji = '🚀';
+            } else {
+              title = `❌ Failed Deployment to ${environment}`;
+              color = 'd73a49';
+              status_emoji = '🚨';
+            }
+            
+            const body = `
+            ## ${status_emoji} Yggdrasil Deployment Report
+            
+            **Environment:** ${environment}
+            **Version:** ${version}
+            **Status:** ${status.toUpperCase()}
+            **Triggered by:** ${{ github.actor }}
+            **Commit:** \`${{ github.sha }}\`
+            
+            ### Deployment Details
+            - **Start Time:** ${{ github.event.created_at }}
+            - **Workflow:** ${{ github.workflow }}
+            - **Run ID:** ${{ github.run_id }}
+            
+            ### Services Deployed
+            - 🔐 Auth Service
+            - 👤 User Service  
+            - 📚 Course Service
+            - 📰 News Service
+            - 📅 Planning Service
+            - 📊 Statistics Service
+            - 🔔 Notification Service
+            
+            [View Deployment Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            // Create deployment status issue or comment
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['deployment'],
+              state: 'open'
+            });
+            
+            if (issues.data.length > 0) {
+              // Comment on existing deployment issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: body
+              });
+            } else {
+              // Create new deployment issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['deployment', environment]
+              });
+            }

@@ -1,0 +1,276 @@
+name: 📦 Dependency Updates & Security Monitoring
+
+on:
+  schedule:
+    # Run every Monday at 09:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # ===== DEPENDENCY AUDIT =====
+  dependency-audit:
+    name: 🔍 Dependency Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci
+        
+      - name: 🔍 Run npm audit
+        run: |
+          echo "## 🔍 NPM Security Audit Results" >> audit-report.md
+          echo "" >> audit-report.md
+          npm audit --json > audit.json || true
+          
+          # Parse audit results
+          CRITICAL=$(cat audit.json | jq '.metadata.vulnerabilities.critical // 0')
+          HIGH=$(cat audit.json | jq '.metadata.vulnerabilities.high // 0')
+          MODERATE=$(cat audit.json | jq '.metadata.vulnerabilities.moderate // 0')
+          LOW=$(cat audit.json | jq '.metadata.vulnerabilities.low // 0')
+          
+          echo "| Severity | Count |" >> audit-report.md
+          echo "|----------|--------|" >> audit-report.md
+          echo "| 🔴 Critical | $CRITICAL |" >> audit-report.md
+          echo "| 🟠 High | $HIGH |" >> audit-report.md
+          echo "| 🟡 Moderate | $MODERATE |" >> audit-report.md
+          echo "| 🟢 Low | $LOW |" >> audit-report.md
+          
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "::warning::Found $CRITICAL critical and $HIGH high severity vulnerabilities"
+          fi
+          
+      - name: 📤 Upload Audit Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-report
+          path: audit-report.md
+          retention-days: 30
+
+  # ===== OUTDATED DEPENDENCIES =====
+  outdated-check:
+    name: 📊 Check Outdated Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci
+        
+      - name: 📊 Check Outdated Dependencies
+        run: |
+          echo "## 📊 Outdated Dependencies Report" >> outdated-report.md
+          echo "" >> outdated-report.md
+          
+          # Root dependencies
+          echo "### 🌳 Root Package Dependencies" >> outdated-report.md
+          npm outdated --json > outdated.json || true
+          
+          if [ -s outdated.json ]; then
+            echo "| Package | Current | Wanted | Latest |" >> outdated-report.md
+            echo "|---------|---------|---------|--------|" >> outdated-report.md
+            cat outdated.json | jq -r 'to_entries[] | "| \(.key) | \(.value.current) | \(.value.wanted) | \(.value.latest) |"' >> outdated-report.md
+          else
+            echo "✅ All dependencies are up to date!" >> outdated-report.md
+          fi
+          
+          echo "" >> outdated-report.md
+          
+          # Check service-specific dependencies
+          echo "### 🔧 Service Dependencies" >> outdated-report.md
+          for service in packages/api-services/*/package.json; do
+            if [ -f "$service" ]; then
+              service_name=$(basename $(dirname "$service"))
+              echo "#### $service_name" >> outdated-report.md
+              cd $(dirname "$service")
+              npm outdated --json > outdated_service.json 2>/dev/null || echo "{}" > outdated_service.json
+              
+              if [ -s outdated_service.json ] && [ "$(cat outdated_service.json)" != "{}" ]; then
+                echo "| Package | Current | Wanted | Latest |" >> ../../../outdated-report.md
+                echo "|---------|---------|---------|--------|" >> ../../../outdated-report.md
+                cat outdated_service.json | jq -r 'to_entries[] | "| \(.key) | \(.value.current) | \(.value.wanted) | \(.value.latest) |"' >> ../../../outdated-report.md
+              else
+                echo "✅ All dependencies up to date" >> ../../../outdated-report.md
+              fi
+              echo "" >> ../../../outdated-report.md
+              cd - > /dev/null
+            fi
+          done
+          
+      - name: 📤 Upload Outdated Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-dependencies-report
+          path: outdated-report.md
+          retention-days: 30
+
+  # ===== LICENSE COMPLIANCE =====
+  license-check:
+    name: ⚖️ License Compliance Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install license-checker
+        run: npm install -g license-checker
+        
+      - name: 📦 Install Dependencies
+        run: npm ci
+        
+      - name: ⚖️ Check Licenses
+        run: |
+          echo "## ⚖️ License Compliance Report" >> license-report.md
+          echo "" >> license-report.md
+          
+          license-checker --json > licenses.json
+          
+          echo "### 📊 License Summary" >> license-report.md
+          echo "| License | Count |" >> license-report.md
+          echo "|---------|--------|" >> license-report.md
+          
+          cat licenses.json | jq -r 'to_entries | group_by(.value.licenses) | .[] | "\(.[0].value.licenses // "Unknown") | \(length)"' | sort | uniq -c | awk '{print "| " $2 " | " $1 " |"}' >> license-report.md
+          
+          echo "" >> license-report.md
+          echo "### 🚨 Potential License Issues" >> license-report.md
+          
+          # Check for restrictive licenses
+          RESTRICTIVE=$(cat licenses.json | jq -r 'to_entries[] | select(.value.licenses and (.value.licenses | contains("GPL") or contains("AGPL") or contains("LGPL"))) | .key')
+          
+          if [ -n "$RESTRICTIVE" ]; then
+            echo "⚠️ Found packages with potentially restrictive licenses:" >> license-report.md
+            echo "$RESTRICTIVE" | while read package; do
+              echo "- $package" >> license-report.md
+            done
+          else
+            echo "✅ No restrictive licenses detected" >> license-report.md
+          fi
+          
+      - name: 📤 Upload License Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-compliance-report
+          path: license-report.md
+          retention-days: 30
+
+  # ===== CREATE ISSUE FOR UPDATES =====
+  create-update-issue:
+    name: 📝 Create Update Issue
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [dependency-audit, outdated-check, license-check]
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 📥 Download Reports
+        uses: actions/download-artifact@v4
+        with:
+          path: reports/
+          
+      - name: 📝 Create or Update Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read reports
+            let body = '# 📦 Weekly Dependency & Security Report\n\n';
+            body += `Generated on: ${new Date().toISOString()}\n\n`;
+            
+            // Add audit report
+            try {
+              const auditReport = fs.readFileSync('reports/dependency-audit-report/audit-report.md', 'utf8');
+              body += auditReport + '\n\n';
+            } catch (e) {
+              body += '## 🔍 Security Audit\n❌ Report not available\n\n';
+            }
+            
+            // Add outdated report
+            try {
+              const outdatedReport = fs.readFileSync('reports/outdated-dependencies-report/outdated-report.md', 'utf8');
+              body += outdatedReport + '\n\n';
+            } catch (e) {
+              body += '## 📊 Outdated Dependencies\n❌ Report not available\n\n';
+            }
+            
+            // Add license report
+            try {
+              const licenseReport = fs.readFileSync('reports/license-compliance-report/license-report.md', 'utf8');
+              body += licenseReport + '\n\n';
+            } catch (e) {
+              body += '## ⚖️ License Compliance\n❌ Report not available\n\n';
+            }
+            
+            body += '\n---\n\n';
+            body += '## 🔧 Recommended Actions\n\n';
+            body += '1. **Review Security Vulnerabilities**: Address any critical or high-severity issues\n';
+            body += '2. **Update Dependencies**: Consider updating outdated packages\n';
+            body += '3. **License Review**: Ensure all licenses are compatible with project requirements\n';
+            body += '4. **Testing**: Run full test suite after any updates\n\n';
+            body += '**Auto-generated by:** Weekly Dependency Monitor\n';
+            
+            // Check for existing issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['dependencies', 'security'],
+              state: 'open'
+            });
+            
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes('Weekly Dependency & Security Report')
+            );
+            
+            if (existingIssue) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: body
+              });
+              console.log(`Updated existing issue #${existingIssue.number}`);
+            } else {
+              // Create new issue
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `📦 Weekly Dependency & Security Report - ${new Date().toISOString().split('T')[0]}`,
+                body: body,
+                labels: ['dependencies', 'security', 'maintenance']
+              });
+              console.log(`Created new issue #${issue.data.number}`);
+            }
