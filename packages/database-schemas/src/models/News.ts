@@ -16,6 +16,17 @@ export interface NewsArticle extends Document {
   notificationSent: boolean;
   readBy: string[];
   isActive: boolean;
+  metadata?: {
+    readTime: number;
+    wordCount: number;
+    characterCount: number;
+    language: string;
+    seoTitle?: string;
+    seoDescription?: string;
+    seoKeywords?: string[];
+    customFields?: Record<string, any>;
+  };
+  visibility?: 'public' | 'students' | 'faculty' | 'staff' | 'admin' | 'custom';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +38,7 @@ export interface NewsModel extends Model<NewsArticle> {
   findForAudience(audience: string[]): Promise<NewsArticle[]>;
   markAsRead(articleId: string, userId: string): Promise<boolean>;
   searchArticles(query: string): Promise<NewsArticle[]>;
+  ensureLatestSchema(): Promise<void>;
 }
 
 const NewsSchema = new Schema<NewsArticle>({
@@ -79,6 +91,21 @@ const NewsSchema = new Schema<NewsArticle>({
   isActive: {
     type: Boolean,
     default: true
+  },
+  metadata: {
+    readTime: { type: Number, default: 0 },
+    wordCount: { type: Number, default: 0 },
+    characterCount: { type: Number, default: 0 },
+    language: { type: String, default: 'en' },
+    seoTitle: String,
+    seoDescription: String,
+    seoKeywords: [String],
+    customFields: { type: Schema.Types.Mixed, default: {} }
+  },
+  visibility: {
+    type: String,
+    enum: ['public', 'students', 'faculty', 'staff', 'admin', 'custom'],
+    default: 'public'
   }
 }, {
   timestamps: true,
@@ -98,6 +125,26 @@ NewsSchema.statics.findPublished = function() {
     status: 'published', 
     isActive: true 
   }).sort({ publishedAt: -1 });
+};
+
+// Method to ensure collection uses latest schema
+NewsSchema.statics.ensureLatestSchema = async function() {
+  try {
+    // Check if collection exists
+    const collections = await mongoose.connection.db.listCollections({ name: 'news' }).toArray();
+    
+    if (collections.length > 0) {
+      // Drop existing collection to force recreation with new schema
+      await mongoose.connection.db.collection('news').drop();
+      console.log('✅ Dropped existing news collection to apply schema updates');
+    }
+    
+    // Create indexes for the new collection
+    await this.createIndexes();
+    console.log('✅ Created indexes for news collection');
+  } catch (error: any) {
+    console.log('ℹ️  News collection schema update:', error.message);
+  }
 };
 
 NewsSchema.statics.findByCategory = function(category: string) {

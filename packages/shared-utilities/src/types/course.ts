@@ -190,6 +190,7 @@ export interface CreateCourseData {
   prerequisites?: string[];
   tags?: string[];
   visibility: CourseVisibility;
+  status?: CourseStatus;
   startDate: Date;
   endDate: Date;
 }

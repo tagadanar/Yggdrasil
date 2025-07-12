@@ -1,11 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+// import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import { AuthController } from './controllers/AuthController';
 import { DatabaseConnection } from '@101-school/database-schemas';
+import { authMiddleware, requireRole } from './middleware/authMiddleware';
 
 // Load environment variables from the root .env file
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
@@ -30,13 +31,24 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Rate limiting (temporarily disabled for development)
-// const limiter = rateLimit({
+// Rate limiting for login attempts (temporarily disabled due to TypeScript issues)
+// const loginLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 5, // limit each IP to 5 login attempts per windowMs
+//   message: { error: 'Too many login attempts, please try again later' },
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
+
+// General rate limiting (temporarily disabled due to TypeScript issues)
+// const generalLimiter = rateLimit({
 //   windowMs: 15 * 60 * 1000, // 15 minutes
 //   max: 100, // limit each IP to 100 requests per windowMs
 //   message: { error: 'Too many requests from this IP, please try again later' }
 // });
-// app.use(limiter);
+
+// Apply general rate limiting to all routes (temporarily disabled)
+// app.use(generalLimiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -47,18 +59,63 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', service: 'auth-service', timestamp: new Date().toISOString() });
 });
 
-// Auth routes
+// Auth routes (no authentication required)
 app.post('/api/auth/register', AuthController.register);
 app.post('/api/auth/login', AuthController.login);
 app.post('/api/auth/refresh-token', AuthController.refreshToken);
 app.post('/api/auth/forgot-password', AuthController.forgotPassword);
 app.post('/api/auth/reset-password', AuthController.resetPassword);
-app.post('/api/auth/logout', AuthController.logout);
-app.post('/api/auth/change-password', AuthController.changePassword);
+app.post('/api/auth/logout', authMiddleware, AuthController.logout);
+
+// Protected routes (require authentication)
+app.post('/api/auth/change-password', authMiddleware, AuthController.changePassword);
+
+// User profile routes (require authentication)
+app.get('/api/auth/profile', authMiddleware, AuthController.getProfile);
+app.put('/api/auth/profile', authMiddleware, AuthController.updateProfile);
+
+// User management routes (require admin/staff role)
+app.get('/api/auth/users', authMiddleware, requireRole(['admin', 'staff']), AuthController.getUsers);
+app.get('/api/auth/users/students', authMiddleware, requireRole(['admin', 'staff', 'teacher']), AuthController.getStudents);
+app.get('/api/auth/users/:userId', authMiddleware, AuthController.getUserById);
+
+// Admin routes (require admin role)
+app.post('/api/auth/admin/create-user', authMiddleware, requireRole(['admin']), AuthController.adminCreateUser);
+app.get('/api/auth/admin/users', authMiddleware, requireRole(['admin']), AuthController.getAdminUsers);
+app.put('/api/auth/admin/users/:userId', authMiddleware, requireRole(['admin']), AuthController.adminUpdateUser);
+app.post('/api/auth/admin/users/:userId/deactivate', authMiddleware, requireRole(['admin']), AuthController.adminDeactivateUser);
+app.get('/api/auth/admin/stats', authMiddleware, requireRole(['admin']), AuthController.getAdminStats);
+app.get('/api/auth/admin/audit-logs', authMiddleware, requireRole(['admin']), AuthController.getAuditLogs);
+app.post('/api/auth/admin/reset-user-password', authMiddleware, requireRole(['admin']), AuthController.adminResetPassword);
+
+// Staff routes (require admin/staff role)
+app.post('/api/auth/staff/create-student', authMiddleware, requireRole(['admin', 'staff']), AuthController.staffCreateStudent);
+app.post('/api/auth/staff/create-user', authMiddleware, requireRole(['admin', 'staff']), AuthController.staffCreateUser);
+app.post('/api/auth/staff/reset-password', authMiddleware, requireRole(['admin', 'staff']), AuthController.staffResetPassword);
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction): void => {
   console.error('Error:', err);
+  
+  // Handle JSON parsing errors
+  if (err.type === 'entity.parse.failed') {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid JSON format'
+    });
+    return;
+  }
+  
+  // Handle other client errors
+  if (err.status >= 400 && err.status < 500) {
+    res.status(err.status).json({
+      success: false,
+      error: err.message || 'Bad request'
+    });
+    return;
+  }
+  
+  // Handle server errors
   res.status(500).json({
     success: false,
     error: 'Internal server error'

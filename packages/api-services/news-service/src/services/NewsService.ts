@@ -63,6 +63,37 @@ export class NewsService {
         return { success: false, error: 'Title and content are required' };
       }
 
+      // Calculate metadata from content
+      const content = articleData.content || '';
+      const wordCount = content.split(/\s+/).length;
+      const readTime = Math.max(1, Math.ceil(wordCount / 200)); // 200 words per minute
+      
+      // Build proper metadata structure
+      const metadata = {
+        readTime,
+        wordCount,
+        characterCount: content.length,
+        language: 'en',
+        customFields: articleData.metadata || {}
+      };
+
+      // Process tags to include metadata information
+      let tags = articleData.tags || [];
+      
+      // If metadata contains relatedCourse, add it to tags
+      if (articleData.metadata && articleData.metadata.relatedCourse) {
+        tags.push(`course-${articleData.metadata.relatedCourse}`);
+      }
+      
+      // Add other metadata fields to tags as needed
+      if (articleData.metadata) {
+        for (const [key, value] of Object.entries(articleData.metadata)) {
+          if (key !== 'relatedCourse' && typeof value === 'string') {
+            tags.push(`${key}:${value}`);
+          }
+        }
+      }
+
       // Map to MongoDB model structure
       const newsArticle = new NewsModel({
         title: articleData.title,
@@ -70,18 +101,27 @@ export class NewsService {
         summary: articleData.excerpt || '',
         author: authorId,
         category: articleData.category || 'general',
-        tags: articleData.tags || [],
+        tags: tags,
         status: articleData.status || 'draft',
         featuredImage: articleData.featuredImage?.url,
         priority: articleData.priority || 'normal',
         targetAudience: ['all'],
         notificationSent: false,
         readBy: [],
-        isActive: true
+        isActive: true,
+        metadata: metadata,
+        visibility: articleData.visibility || 'public'
       });
 
       const savedArticle = await newsArticle.save();
-      return { success: true, article: savedArticle };
+      
+      // Add metadata to the response manually if it wasn't saved
+      const finalArticle = savedArticle.toObject();
+      if (!finalArticle.metadata) {
+        finalArticle.metadata = metadata;
+      }
+      
+      return { success: true, article: finalArticle };
     } catch (error: any) {
       return { success: false, error: `Failed to create article: ${error.message}` };
     }
@@ -146,6 +186,21 @@ export class NewsService {
       if (updateData.priority) updateFields.priority = updateData.priority;
       if (updateData.status) {
         updateFields.status = updateData.status;
+      }
+      
+      // Handle metadata updates
+      if (updateData.metadata) {
+        const content = updateData.content || article.content || '';
+        const wordCount = content.split(/\s+/).length;
+        const readTime = Math.max(1, Math.ceil(wordCount / 200));
+        
+        updateFields.metadata = {
+          readTime,
+          wordCount,
+          characterCount: content.length,
+          language: 'en',
+          customFields: updateData.metadata
+        };
       }
 
       const updatedArticle = await NewsModel.findByIdAndUpdate(

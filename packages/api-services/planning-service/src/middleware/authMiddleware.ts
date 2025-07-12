@@ -1,81 +1,73 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { ResponseHelper, HTTP_STATUS, AuthHelper } from '../../../../shared-utilities/src';
+import mongoose from 'mongoose';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
+    _id?: string;
     email: string;
     role: string;
+    isActive?: boolean;
   };
 }
 
-export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+/**
+ * SECURE Authentication middleware that validates JWT tokens against the database
+ * This ensures deactivated and deleted users cannot access the system
+ */
+export const authMiddleware = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     
     if (!token) {
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required - no token provided'
-      });
+      res.status(HTTP_STATUS.UNAUTHORIZED).json(
+        ResponseHelper.authError('No token provided')
+      );
       return;
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('JWT_SECRET not configured');
-      res.status(500).json({
-        success: false,
-        error: 'Authentication configuration error'
-      });
-      return;
-    }
-
-    const decoded = jwt.verify(token, jwtSecret) as any;
+    // Use shared secure validation method
+    const validationResult = await AuthHelper.validateAccessTokenWithDatabase(token);
     
+    if (!validationResult.success) {
+      res.status(HTTP_STATUS.UNAUTHORIZED).json(
+        ResponseHelper.authError(validationResult.error!)
+      );
+      return;
+    }
+
+    // Attach validated user to request object
     req.user = {
-      id: decoded.id || decoded.userId || decoded._id,
-      email: decoded.email,
-      role: decoded.role
+      id: validationResult.user!._id.toString(),
+      _id: validationResult.user!._id.toString(),
+      email: validationResult.user!.email,
+      role: validationResult.user!.role,
+      isActive: validationResult.user!.isActive
     };
 
     next();
   } catch (error: any) {
-    if (error.name === 'TokenExpiredError') {
-      res.status(401).json({
-        success: false,
-        error: 'Token expired'
-      });
-    } else if (error.name === 'JsonWebTokenError') {
-      res.status(401).json({
-        success: false,
-        error: 'Invalid token'
-      });
-    } else {
-      console.error('Auth middleware error:', error);
-      res.status(401).json({
-        success: false,
-        error: 'Authentication failed'
-      });
-    }
+    console.error('Auth middleware error:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
+      ResponseHelper.internalError('Authentication failed')
+    );
   }
 };
 
 export const requireRole = (roles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
+      res.status(HTTP_STATUS.UNAUTHORIZED).json(
+        ResponseHelper.authError('Authentication required')
+      );
       return;
     }
 
     if (!roles.includes(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        error: 'Insufficient permissions'
-      });
+      res.status(HTTP_STATUS.FORBIDDEN).json(
+        ResponseHelper.authorizationError('Insufficient permissions')
+      );
       return;
     }
 
@@ -83,34 +75,46 @@ export const requireRole = (roles: string[]) => {
   };
 };
 
-export const optionalAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+/**
+ * Optional authentication middleware - doesn't fail if no token provided
+ * Useful for routes that work with or without authentication
+ * SECURITY: Rejects deleted/invalid users even in optional mode
+ */
+export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     
     if (!token) {
-      // No token provided, continue without authentication
+      // No token provided, continue without user
       next();
       return;
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('JWT_SECRET not configured');
-      next();
-      return;
-    }
-
-    const decoded = jwt.verify(token, jwtSecret) as any;
+    // Use shared secure validation method
+    const validationResult = await AuthHelper.validateAccessTokenWithDatabase(token);
     
-    req.user = {
-      id: decoded.id || decoded.userId || decoded._id,
-      email: decoded.email,
-      role: decoded.role
-    };
-
-    next();
+    if (validationResult.success && validationResult.user) {
+      // Valid user with valid token
+      req.user = {
+        id: validationResult.user._id.toString(),
+        _id: validationResult.user._id.toString(),
+        email: validationResult.user.email,
+        role: validationResult.user.role,
+        isActive: validationResult.user.isActive
+      };
+      next();
+    } else {
+      // Invalid token or deleted/inactive user - REJECT completely
+      res.status(HTTP_STATUS.UNAUTHORIZED).json(
+        ResponseHelper.authError(validationResult.error || 'Authentication failed')
+      );
+      return;
+    }
   } catch (error: any) {
-    // Authentication failed, but continue without user info
-    next();
+    // Token validation failed - REJECT completely  
+    res.status(HTTP_STATUS.UNAUTHORIZED).json(
+      ResponseHelper.authError('Token validation failed')
+    );
+    return;
   }
 };

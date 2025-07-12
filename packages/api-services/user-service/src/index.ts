@@ -52,8 +52,28 @@ app.get('/health', (req, res) => {
 app.use('/api/users', userRoutes);
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction): void => {
   console.error('Error:', err);
+  
+  // Handle JSON parsing errors
+  if (err.type === 'entity.parse.failed') {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid JSON format'
+    });
+    return;
+  }
+  
+  // Handle other client errors
+  if (err.status >= 400 && err.status < 500) {
+    res.status(err.status).json({
+      success: false,
+      error: err.message || 'Bad request'
+    });
+    return;
+  }
+  
+  // Handle server errors
   res.status(500).json({
     success: false,
     error: 'Internal server error'

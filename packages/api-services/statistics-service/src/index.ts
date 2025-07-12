@@ -1,12 +1,31 @@
 // Path: packages/api-services/statistics-service/src/index.ts
+// CRITICAL: Load environment variables FIRST, before any other imports
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+
+// Now import everything else
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
+import mongoose from 'mongoose';
 import statisticsRoutes from './routes/statisticsRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3006;
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://yggdrasil_app:app_password_2024@localhost:27017/yggdrasil-dev';
+
+// Database connection - MongoDB is required
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    console.log('✅ Statistics Service connected to MongoDB');
+  })
+  .catch((error) => {
+    console.error('❌ MongoDB connection failed:', error);
+    console.error('🚨 Statistics Service requires MongoDB to function');
+    process.exit(1);
+  });
 
 // Security middleware
 app.use(helmet());
@@ -39,14 +58,32 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/statistics', statisticsRoutes);
 
-// Global error handler
-app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Global error handler:', error);
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction): void => {
+  console.error('Error:', err);
   
-  res.status(error.status || 500).json({
+  // Handle JSON parsing errors
+  if (err.type === 'entity.parse.failed') {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid JSON format'
+    });
+    return;
+  }
+  
+  // Handle other client errors
+  if (err.status >= 400 && err.status < 500) {
+    res.status(err.status).json({
+      success: false,
+      error: err.message || 'Bad request'
+    });
+    return;
+  }
+  
+  // Handle server errors
+  res.status(500).json({
     success: false,
-    error: error.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    error: 'Internal server error'
   });
 });
 

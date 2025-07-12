@@ -56,14 +56,32 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/notifications', notificationRoutes);
 
-// Global error handler
-app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Global error handler:', error);
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction): void => {
+  console.error('Error:', err);
   
-  res.status(error.status || 500).json({
+  // Handle JSON parsing errors
+  if (err.type === 'entity.parse.failed') {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid JSON format'
+    });
+    return;
+  }
+  
+  // Handle other client errors
+  if (err.status >= 400 && err.status < 500) {
+    res.status(err.status).json({
+      success: false,
+      error: err.message || 'Bad request'
+    });
+    return;
+  }
+  
+  // Handle server errors
+  res.status(500).json({
     success: false,
-    error: error.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    error: 'Internal server error'
   });
 });
 

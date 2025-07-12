@@ -1,10 +1,10 @@
 // Path: packages/api-services/planning-service/src/index.ts
-import { config } from 'dotenv';
-import { resolve } from 'path';
+// CRITICAL: Load environment variables FIRST, before any other imports
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
-// Load environment variables from the root .env file
-config({ path: resolve(__dirname, '../../../../.env') });
-
+// Now import everything else
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -14,7 +14,7 @@ import calendarRoutes from './routes/calendarRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3004;
-const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/yggdrasil-dev';
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://yggdrasil_app:app_password_2024@localhost:27017/yggdrasil-dev';
 
 // Database connection - MongoDB is required
 mongoose.connect(MONGO_URI)
@@ -55,17 +55,44 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Debug endpoint to check environment variables (DEVELOPMENT ONLY)
+app.get('/debug/env', (req, res) => {
+  res.json({
+    jwtSecretPreview: process.env.JWT_SECRET?.substring(0, 10) + '...',
+    mongoUri: process.env.MONGODB_URI?.replace(/:[^@]*@/, ':***@'),
+    nodeEnv: process.env.NODE_ENV
+  });
+});
+
 // API routes
 app.use('/api/planning', calendarRoutes);
 
-// Global error handler
-app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Global error handler:', error);
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction): void => {
+  console.error('Error:', err);
   
-  res.status(error.status || 500).json({
+  // Handle JSON parsing errors
+  if (err.type === 'entity.parse.failed') {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid JSON format'
+    });
+    return;
+  }
+  
+  // Handle other client errors
+  if (err.status >= 400 && err.status < 500) {
+    res.status(err.status).json({
+      success: false,
+      error: err.message || 'Bad request'
+    });
+    return;
+  }
+  
+  // Handle server errors
+  res.status(500).json({
     success: false,
-    error: error.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    error: 'Internal server error'
   });
 });
 

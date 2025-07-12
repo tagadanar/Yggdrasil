@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 
 import { StatisticsService } from '../services/StatisticsService';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import {
   StatisticsQuery,
   CreateReportData,
@@ -20,7 +21,7 @@ export class StatisticsController {
   /**
    * Get system statistics
    */
-  static async getSystemStats(req: Request, res: Response): Promise<void> {
+  static async getSystemStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { timeframe = 'last_30_days' } = req.query;
       
@@ -49,7 +50,7 @@ export class StatisticsController {
   /**
    * Get user statistics
    */
-  static async getUserStats(req: Request, res: Response): Promise<void> {
+  static async getUserStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
       const { timeframe = 'last_30_days' } = req.query;
@@ -88,7 +89,7 @@ export class StatisticsController {
   /**
    * Get course statistics
    */
-  static async getCourseStats(req: Request, res: Response): Promise<void> {
+  static async getCourseStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { courseId } = req.params;
       const { timeframe = 'last_30_days' } = req.query;
@@ -118,7 +119,7 @@ export class StatisticsController {
   /**
    * Generate analytics report
    */
-  static async generateReport(req: Request, res: Response): Promise<void> {
+  static async generateReport(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const reportData: CreateReportData = req.body;
       const userId = req.user?.id;
@@ -165,7 +166,7 @@ export class StatisticsController {
   /**
    * Get specific report
    */
-  static async getReport(req: Request, res: Response): Promise<void> {
+  static async getReport(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { reportId } = req.params;
       const userId = req.user?.id;
@@ -195,7 +196,7 @@ export class StatisticsController {
   /**
    * Search reports
    */
-  static async searchReports(req: Request, res: Response): Promise<void> {
+  static async searchReports(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const filters: ReportSearchFilters = {
         type: req.query.type as ReportType,
@@ -236,7 +237,7 @@ export class StatisticsController {
   /**
    * Create dashboard widget
    */
-  static async createWidget(req: Request, res: Response): Promise<void> {
+  static async createWidget(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const widgetData: CreateWidgetData = req.body;
       const userId = req.user?.id;
@@ -283,7 +284,7 @@ export class StatisticsController {
   /**
    * Get user's dashboard widgets
    */
-  static async getUserWidgets(req: Request, res: Response): Promise<void> {
+  static async getUserWidgets(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
 
@@ -320,7 +321,7 @@ export class StatisticsController {
   /**
    * Get learning analytics
    */
-  static async getLearningAnalytics(req: Request, res: Response): Promise<void> {
+  static async getLearningAnalytics(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const filters: StatisticsSearchFilters = {
         userId: req.query.userId as string,
@@ -360,7 +361,7 @@ export class StatisticsController {
   /**
    * Get real-time statistics dashboard
    */
-  static async getDashboardStats(req: Request, res: Response): Promise<void> {
+  static async getDashboardStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       const { period = 'month' } = req.query;
@@ -431,7 +432,7 @@ export class StatisticsController {
   /**
    * Export statistics data
    */
-  static async exportStatistics(req: Request, res: Response): Promise<void> {
+  static async exportStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { type = 'system', format = 'json', timeframe = 'last_30_days' } = req.query;
       
@@ -510,7 +511,7 @@ export class StatisticsController {
   /**
    * Export statistics data (POST method for frontend compatibility)
    */
-  static async exportStatisticsPost(req: Request, res: Response): Promise<void> {
+  static async exportStatisticsPost(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { type = 'overview', reportType, filters = {}, dateRange } = req.body;
       
@@ -681,7 +682,7 @@ export class StatisticsController {
   /**
    * Health check endpoint
    */
-  static async healthCheck(req: Request, res: Response): Promise<void> {
+  static async healthCheck(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       res.status(200).json({
         success: true,

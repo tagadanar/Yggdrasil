@@ -3,30 +3,40 @@ import { Request, Response } from 'express';
 import { NewsService } from '../services/NewsService';
 import { CreateArticleData, UpdateArticleData, ArticleSearchFilters } from '../types/news';
 
-// Mock user interface for development
-interface MockUser {
+// User interface for authenticated requests
+interface AuthenticatedUser {
   id: string;
   email: string;
   role: string;
 }
 
-// Mock user function for development
-const getMockUser = (req: Request): MockUser => {
-  return {
-    id: 'test-user-id',
-    email: 'test@example.com',
-    role: 'user'
-  };
+// Extended request interface to include user from auth middleware
+interface AuthenticatedRequest extends Request {
+  user?: AuthenticatedUser;
+}
+
+// Helper function to get authenticated user
+const getAuthenticatedUser = (req: AuthenticatedRequest): AuthenticatedUser | null => {
+  return req.user || null;
 };
 
 export class NewsController {
   /**
    * Create a new article
    */
-  static async createArticle(req: Request, res: Response): Promise<void> {
+  static async createArticle(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const frontendData = req.body;
-      const user = getMockUser(req);
+      const user = getAuthenticatedUser(req);
+      
+      if (!user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+        return;
+      }
+      
       const authorId = user.id;
 
       // Map frontend data to backend CreateArticleData interface
@@ -36,10 +46,12 @@ export class NewsController {
         excerpt: frontendData.excerpt,
         category: frontendData.category || 'general',
         tags: frontendData.tags || [],
-        status: frontendData.isPublished !== undefined ? (frontendData.isPublished ? 'published' : 'draft') : 'draft',
+        status: frontendData.status || (frontendData.isPublished !== undefined ? (frontendData.isPublished ? 'published' : 'draft') : 'draft'),
         priority: frontendData.priority || 'normal',
         isPinned: frontendData.isPinned || false,
-        isFeatured: frontendData.isFeatured || false
+        isFeatured: frontendData.isFeatured || false,
+        metadata: frontendData.metadata || {},
+        visibility: frontendData.visibility || 'public'
       };
 
       const result = await NewsService.createArticle(articleData, authorId);
@@ -68,11 +80,12 @@ export class NewsController {
   /**
    * Get article by ID or slug
    */
-  static async getArticle(req: Request, res: Response): Promise<void> {
+  static async getArticle(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       // Handle both 'id' and 'identifier' parameter names for different routes
       const identifier = req.params.id || req.params.identifier;
-      const userId = getMockUser(req).id;
+      const user = getAuthenticatedUser(req);
+      const userId = user?.id;
 
       if (!identifier) {
         res.status(400).json({
@@ -107,11 +120,21 @@ export class NewsController {
   /**
    * Update article
    */
-  static async updateArticle(req: Request, res: Response): Promise<void> {
+  static async updateArticle(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: articleId } = req.params;
       const frontendData = req.body;
-      const userId = getMockUser(req).id;
+      const user = getAuthenticatedUser(req);
+      
+      if (!user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+        return;
+      }
+      
+      const userId = user.id;
 
       // Map frontend data to backend UpdateArticleData interface
       const updateData: UpdateArticleData = {
@@ -152,12 +175,20 @@ export class NewsController {
   /**
    * Delete article
    */
-  static async deleteArticle(req: Request, res: Response): Promise<void> {
+  static async deleteArticle(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id: articleId } = req.params;
-      const userId = getMockUser(req).id;
-
-      // Authentication disabled for development
+      const user = getAuthenticatedUser(req);
+      
+      if (!user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+        return;
+      }
+      
+      const userId = user.id;
 
       const result = await NewsService.deleteArticle(articleId, userId);
 
@@ -184,10 +215,11 @@ export class NewsController {
   /**
    * Search articles with filters
    */
-  static async searchArticles(req: Request, res: Response): Promise<void> {
+  static async searchArticles(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // For tests, treat requests without explicit auth as anonymous
-      const userId = req.headers.authorization ? getMockUser(req).id : undefined;
+      // Get authenticated user (optional for search)
+      const user = getAuthenticatedUser(req);
+      const userId = user?.id;
       const filters: ArticleSearchFilters = {
         category: req.query.category as any,
         status: req.query.status as any,
@@ -290,12 +322,20 @@ export class NewsController {
   /**
    * Publish article
    */
-  static async publishArticle(req: Request, res: Response): Promise<void> {
+  static async publishArticle(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { articleId } = req.params;
-      const userId = getMockUser(req).id;
-
-      // Authentication disabled for development
+      const user = getAuthenticatedUser(req);
+      
+      if (!user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+        return;
+      }
+      
+      const userId = user.id;
 
       const result = await NewsService.publishArticle(articleId, userId);
 
@@ -323,12 +363,20 @@ export class NewsController {
   /**
    * Archive article
    */
-  static async archiveArticle(req: Request, res: Response): Promise<void> {
+  static async archiveArticle(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { articleId } = req.params;
-      const userId = getMockUser(req).id;
-
-      // Authentication disabled for development
+      const user = getAuthenticatedUser(req);
+      
+      if (!user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+        return;
+      }
+      
+      const userId = user.id;
 
       const result = await NewsService.archiveArticle(articleId, userId);
 
@@ -356,12 +404,20 @@ export class NewsController {
   /**
    * Toggle article like
    */
-  static async toggleLike(req: Request, res: Response): Promise<void> {
+  static async toggleLike(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { articleId } = req.params;
-      const userId = getMockUser(req).id;
-
-      // Authentication disabled for development
+      const user = getAuthenticatedUser(req);
+      
+      if (!user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+        return;
+      }
+      
+      const userId = user.id;
 
       const result = await NewsService.toggleArticleLike(articleId, userId);
 
@@ -391,9 +447,19 @@ export class NewsController {
   /**
    * Get news analytics
    */
-  static async getAnalytics(req: Request, res: Response): Promise<void> {
+  static async getAnalytics(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = getMockUser(req).id;
+      const user = getAuthenticatedUser(req);
+      
+      if (!user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+        return;
+      }
+      
+      const userId = user.id;
       const authorFilter = req.query.author as string;
 
       const result = await NewsService.getNewsAnalytics(authorFilter || userId);
@@ -421,10 +487,11 @@ export class NewsController {
   /**
    * Get articles by category
    */
-  static async getArticlesByCategory(req: Request, res: Response): Promise<void> {
+  static async getArticlesByCategory(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { category } = req.params;
-      const userId = getMockUser(req).id;
+      const user = getAuthenticatedUser(req);
+      const userId = user?.id;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
 
       const filters: ArticleSearchFilters = {
@@ -461,10 +528,11 @@ export class NewsController {
   /**
    * Get articles by author
    */
-  static async getArticlesByAuthor(req: Request, res: Response): Promise<void> {
+  static async getArticlesByAuthor(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { authorId } = req.params;
-      const userId = getMockUser(req).id;
+      const user = getAuthenticatedUser(req);
+      const userId = user?.id;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
 
       const filters: ArticleSearchFilters = {
@@ -501,10 +569,11 @@ export class NewsController {
   /**
    * Search articles by text query
    */
-  static async searchByText(req: Request, res: Response): Promise<void> {
+  static async searchByText(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { query } = req.query;
-      const userId = getMockUser(req).id;
+      const user = getAuthenticatedUser(req);
+      const userId = user?.id;
 
       if (!query || typeof query !== 'string') {
         res.status(400).json({
@@ -557,18 +626,20 @@ export class NewsController {
   /**
    * Toggle pin status of an article
    */
-  static async togglePin(req: Request, res: Response): Promise<void> {
+  static async togglePin(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const userId = getMockUser(req).id;
-
-      if (!userId) {
+      const user = getAuthenticatedUser(req);
+      
+      if (!user) {
         res.status(401).json({
           success: false,
-          error: 'Unauthorized'
+          error: 'Authentication required'
         });
         return;
       }
+      
+      const userId = user.id;
 
       const result = await NewsService.togglePin(id, userId);
 
@@ -596,18 +667,20 @@ export class NewsController {
   /**
    * Mark article as read by user
    */
-  static async markAsRead(req: Request, res: Response): Promise<void> {
+  static async markAsRead(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const userId = getMockUser(req).id;
-
-      if (!userId) {
+      const user = getAuthenticatedUser(req);
+      
+      if (!user) {
         res.status(401).json({
           success: false,
-          error: 'Unauthorized'
+          error: 'Authentication required'
         });
         return;
       }
+      
+      const userId = user.id;
 
       const result = await NewsService.markAsRead(id, userId);
 

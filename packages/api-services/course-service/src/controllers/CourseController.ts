@@ -22,6 +22,31 @@ export class CourseController {
         return;
       }
 
+      // Validate required fields and data types
+      if (!courseData.title || typeof courseData.title !== 'string') {
+        res.status(400).json({
+          success: false,
+          error: 'Title is required and must be a string'
+        });
+        return;
+      }
+
+      if (!courseData.credits || typeof courseData.credits !== 'number' || courseData.credits < 0) {
+        res.status(400).json({
+          success: false,
+          error: 'Credits must be a positive number'
+        });
+        return;
+      }
+
+      if (!courseData.capacity || typeof courseData.capacity !== 'number' || courseData.capacity < 0) {
+        res.status(400).json({
+          success: false,
+          error: 'Capacity must be a positive number'
+        });
+        return;
+      }
+
       const result = await CourseService.createCourse(courseData, instructorId);
 
       if (result.success) {
@@ -91,6 +116,23 @@ export class CourseController {
         return;
       }
 
+      // Validate input data before processing
+      if (updateData.credits !== undefined && (typeof updateData.credits !== 'number' || updateData.credits < 0)) {
+        res.status(400).json({
+          success: false,
+          error: 'Credits must be a positive number'
+        });
+        return;
+      }
+
+      if (updateData.capacity !== undefined && (typeof updateData.capacity !== 'number' || updateData.capacity < 0)) {
+        res.status(400).json({
+          success: false,
+          error: 'Capacity must be a positive number'
+        });
+        return;
+      }
+
       const result = await CourseService.updateCourse(courseId, updateData, userId);
 
       if (result.success) {
@@ -155,12 +197,17 @@ export class CourseController {
   /**
    * Enroll student in course
    */
-  static async enrollStudent(req: Request, res: Response): Promise<void> {
+  static async enrollStudent(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { courseId } = req.params;
       const { studentId } = req.body;
 
-      if (!studentId) {
+      // Support two modes:
+      // 1. Student self-enrollment (no studentId in body, use authenticated user)
+      // 2. Admin-managed enrollment (studentId in body, must be admin)
+      const targetStudentId = studentId || req.user?.id;
+
+      if (!targetStudentId) {
         res.status(400).json({
           success: false,
           error: 'Student ID is required'
@@ -168,7 +215,16 @@ export class CourseController {
         return;
       }
 
-      const result = await CourseService.enrollStudent(courseId, studentId);
+      // If studentId is provided in body, verify user has permission to enroll others
+      if (studentId && req.user?.role !== 'admin') {
+        res.status(403).json({
+          success: false,
+          error: 'Only admins can enroll other students'
+        });
+        return;
+      }
+
+      const result = await CourseService.enrollStudent(courseId, targetStudentId);
 
       if (result.success) {
         res.status(200).json({
@@ -199,12 +255,17 @@ export class CourseController {
   /**
    * Unenroll student from course
    */
-  static async unenrollStudent(req: Request, res: Response): Promise<void> {
+  static async unenrollStudent(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { courseId } = req.params;
       const { studentId } = req.body;
 
-      if (!studentId) {
+      // Support two modes:
+      // 1. Student self-unenrollment (no studentId in body, use authenticated user)
+      // 2. Admin-managed unenrollment (studentId in body, must be admin)
+      const targetStudentId = studentId || req.user?.id;
+
+      if (!targetStudentId) {
         res.status(400).json({
           success: false,
           error: 'Student ID is required'
@@ -212,7 +273,16 @@ export class CourseController {
         return;
       }
 
-      const result = await CourseService.unenrollStudent(courseId, studentId);
+      // If studentId is provided in body, verify user has permission to unenroll others
+      if (studentId && req.user?.role !== 'admin') {
+        res.status(403).json({
+          success: false,
+          error: 'Only admins can unenroll other students'
+        });
+        return;
+      }
+
+      const result = await CourseService.unenrollStudent(courseId, targetStudentId);
 
       if (result.success) {
         res.status(200).json({

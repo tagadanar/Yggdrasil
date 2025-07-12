@@ -201,6 +201,7 @@ export interface CreateArticleData {
   publishedAt?: Date;
   scheduledAt?: Date;
   expiresAt?: Date;
+  metadata?: Record<string, any>;
 }
 
 export interface UpdateArticleData {
@@ -222,6 +223,7 @@ export interface UpdateArticleData {
   publishedAt?: Date;
   scheduledAt?: Date;
   expiresAt?: Date;
+  metadata?: Record<string, any>;
 }
 
 export interface CreateCommentData {

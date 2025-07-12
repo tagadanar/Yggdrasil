@@ -116,6 +116,7 @@ const baseCourseSchema = z.object({
   prerequisites: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
   visibility: courseVisibilitySchema.default('public'),
+  status: courseStatusSchema.optional(),
   startDate: z.date(),
   endDate: z.date()
 });

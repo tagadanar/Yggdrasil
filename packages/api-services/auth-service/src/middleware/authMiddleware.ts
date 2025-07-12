@@ -1,7 +1,7 @@
 // Path: packages/api-services/auth-service/src/middleware/authMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/AuthService';
-import { ResponseHelper, HTTP_STATUS, UserRole } from '../../../../shared-utilities/src';
+import { ResponseHelper, HTTP_STATUS, UserRole, AuthHelper } from '../../../../shared-utilities/src';
 
 // Extend Request interface to include user
 declare global {
@@ -26,25 +26,32 @@ export const authMiddleware = async (
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(HTTP_STATUS.UNAUTHORIZED).json(
-        ResponseHelper.error('Access token required')
+        ResponseHelper.authError('No token provided')
       );
       return;
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-    // Validate token and get user
-    const result = await AuthService.validateAccessToken(token);
-
-    if (!result.success) {
+    // Use shared secure validation method (same as other services)
+    const validationResult = await AuthHelper.validateAccessTokenWithDatabase(token);
+    
+    if (!validationResult.success) {
       res.status(HTTP_STATUS.UNAUTHORIZED).json(
-        ResponseHelper.error(result.error!)
+        ResponseHelper.authError(validationResult.error!)
       );
       return;
     }
 
-    // Attach user to request object
-    req.user = result.user;
+    // Attach validated user to request object (same format as other services)
+    req.user = {
+      id: validationResult.user!._id.toString(),
+      _id: validationResult.user!._id.toString(),
+      email: validationResult.user!.email,
+      role: validationResult.user!.role,
+      isActive: validationResult.user!.isActive,
+      profile: validationResult.user!.profile
+    };
     next();
   } catch (error: any) {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
@@ -64,14 +71,14 @@ export const requireRole = (allowedRoles: UserRole[]) => {
 
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.error('User not authenticated')
+          ResponseHelper.authError('User not authenticated')
         );
         return;
       }
 
       if (!allowedRoles.includes(user.role)) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.error('Insufficient permissions')
+          ResponseHelper.authorizationError('Insufficient permissions')
         );
         return;
       }
@@ -104,10 +111,18 @@ export const optionalAuthMiddleware = async (
     }
 
     const token = authHeader.substring(7);
-    const result = await AuthService.validateAccessToken(token);
+    const validationResult = await AuthHelper.validateAccessTokenWithDatabase(token);
 
-    if (result.success) {
-      req.user = result.user;
+    if (validationResult.success && validationResult.user) {
+      // Valid user with valid token
+      req.user = {
+        id: validationResult.user._id.toString(),
+        _id: validationResult.user._id.toString(),
+        email: validationResult.user.email,
+        role: validationResult.user.role,
+        isActive: validationResult.user.isActive,
+        profile: validationResult.user.profile
+      };
     }
     // Continue regardless of token validation result
 
@@ -132,7 +147,7 @@ export const requireOwnershipOrAdmin = (
 
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.error('User not authenticated')
+          ResponseHelper.authError('User not authenticated')
         );
         return;
       }
@@ -144,7 +159,7 @@ export const requireOwnershipOrAdmin = (
       }
 
       res.status(HTTP_STATUS.FORBIDDEN).json(
-        ResponseHelper.error('Access denied')
+        ResponseHelper.authorizationError('Access denied')
       );
     } catch (error: any) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(

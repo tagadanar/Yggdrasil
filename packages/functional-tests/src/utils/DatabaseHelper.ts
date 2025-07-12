@@ -298,6 +298,60 @@ export class DatabaseHelper {
       return { valid: false, errors };
     }
   }
+
+  /**
+   * Update user data for testing purposes
+   */
+  async updateUser(userId: string, updateData: any): Promise<void> {
+    if (!this.isConnected) {
+      await this.connect();
+    }
+
+    try {
+      const userCollection = mongoose.connection.db.collection('users');
+      await userCollection.updateOne(
+        { _id: new mongoose.Types.ObjectId(userId) },
+        { $set: updateData }
+      );
+    } catch (error: any) {
+      console.error(`❌ Failed to update user ${userId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete user for testing purposes
+   */
+  async deleteUser(userId: string): Promise<void> {
+    if (!this.isConnected) {
+      await this.connect();
+    }
+
+    try {
+      const userCollection = mongoose.connection.db.collection('users');
+      await userCollection.deleteOne({ _id: new mongoose.Types.ObjectId(userId) });
+    } catch (error: any) {
+      console.error(`❌ Failed to delete user ${userId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user by ID for testing purposes
+   */
+  async getUser(userId: string): Promise<any> {
+    if (!this.isConnected) {
+      await this.connect();
+    }
+
+    try {
+      const userCollection = mongoose.connection.db.collection('users');
+      return await userCollection.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+    } catch (error: any) {
+      console.error(`❌ Failed to get user ${userId}:`, error.message);
+      throw error;
+    }
+  }
 }
 
 // Singleton instance for test use
