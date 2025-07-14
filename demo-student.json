@@ -1,0 +1,9 @@
+{
+  "email": "student@yggdrasil.edu",
+  "password": "Admin123!",
+  "profile": {
+    "firstName": "Student",
+    "lastName": "Demo"
+  },
+  "role": "student"
+}

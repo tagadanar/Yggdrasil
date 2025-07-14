@@ -1,0 +1,31 @@
+// packages/api-services/user-service/src/routes/userRoutes.ts
+// Protected routes with authentication and authorization
+
+import { Router } from 'express';
+import { UserController } from '../controllers/UserController';
+import { 
+  requireAuth, 
+  requireOwnershipOrTeacherRole, 
+  requireOwnershipForModification 
+} from '../middleware/auth';
+
+export const userRoutes = Router();
+
+// Apply authentication to all routes
+userRoutes.use(requireAuth);
+
+// GET /api/users/:id - View user profile
+// Students can only view their own profile
+// Teachers can view any student profile
+// Admins can view any profile
+userRoutes.get('/:id', requireOwnershipOrTeacherRole, UserController.getUserById);
+
+// PATCH /api/users/:id/profile - Update user profile
+// Only the user themselves or admins can modify profiles
+userRoutes.patch('/:id/profile', requireOwnershipForModification, UserController.updateUserProfile);
+
+// GET /api/users/:id/preferences - Get user preferences
+// Students can only view their own preferences
+// Teachers can view any student preferences
+// Admins can view any preferences
+userRoutes.get('/:id/preferences', requireOwnershipOrTeacherRole, UserController.getUserPreferences);

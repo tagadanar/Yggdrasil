@@ -268,541 +268,516 @@ export class AuthService {
 }
 ```
 
-## 🧪 Testing Philosophy & TDD Best Practices
+## 🧪 Testing Philosophy - Smart & Minimal
 
-### Test Output Philosophy - Keep It Clean
+### The Core Principle: Test What Can Actually Break
 
-#### The Golden Rules of Test Output
-1. **General test output should NOT be too verbose**
-2. **Use full test suite run to list issues and get overview**
-3. **Run individual tests to look at detailed error logs**
+**We only write tests for code that could realistically fail or has business logic complexity.**
 
-#### Practical Test Execution Strategy
+#### ✅ WHAT TO TEST (High Value)
 
-```bash
-# ✅ RECOMMENDED: Clean overview of all test results
-npm run test:summary         # Shows passed/failed count, lists only failures
-npm run test:quiet           # Minimal output, just pass/fail status
+1. **Business Logic & Complex Algorithms**
+   ```typescript
+   // ✅ TEST THIS: Authentication logic with multiple conditions
+   AuthService.login() // Has validation, database calls, token generation
+   
+   // ✅ TEST THIS: Password validation with complex rules
+   ValidationHelper.isValidPassword() // Multiple regex checks, error conditions
+   
+   // ✅ TEST THIS: JWT token operations
+   JWTHelper.verifyToken() // Complex verification, error handling
+   ```
 
-# ✅ GOOD: Quick check during development
-npm run test:unit --silent   # Unit tests only, minimal noise
-npm run test:changed         # Only test changed files
+2. **Data Transformations & Calculations**
+   ```typescript
+   // ✅ TEST THIS: User model transformations
+   UserDocument.toJSON() // Removes sensitive data, transforms IDs
+   
+   // ✅ TEST THIS: Complex validation logic
+   ValidationHelper.validate() // Schema validation with error mapping
+   ```
 
-# ❌ AVOID: Verbose output for full suite (information overload)
-npm test                     # Too much output for large codebases
-npm test --verbose           # Overwhelming amount of information
+3. **Edge Cases & Error Conditions**
+   ```typescript
+   // ✅ TEST THIS: What happens with invalid inputs?
+   AuthService.login({ email: "", password: "" })
+   
+   // ✅ TEST THIS: What happens when database fails?
+   AuthService.register() // Database constraint violations
+   
+   // ✅ TEST THIS: What happens with expired tokens?
+   JWTHelper.verifyAccessToken(expiredToken)
+   ```
 
-# ✅ PERFECT: Detailed output for specific failing tests
-npm test -- AuthService.test.ts --verbose    # Detailed logs for one test file
-npm test -- --testNamePattern="login"        # Focus on specific test
+#### ❌ WHAT NOT TO TEST (Low Value)
+
+1. **Framework & Library Code**
+   ```typescript
+   // ❌ DON'T TEST: Express route handlers (just call services)
+   app.post('/login', (req, res) => AuthService.login(req.body))
+   
+   // ❌ DON'T TEST: Mongoose schema definitions
+   const userSchema = new Schema({ email: String })
+   
+   // ❌ DON'T TEST: Simple getters/setters
+   getAccessToken() // Just returns a cookie value
+   ```
+
+2. **External API Calls**
+   ```typescript
+   // ❌ DON'T TEST: HTTP client wrappers
+   authApi.login() // Just calls axios.post()
+   
+   // ❌ DON'T TEST: Database queries without logic
+   UserModel.findById() // Mongoose built-in method
+   ```
+
+3. **Trivial Operations**
+   ```typescript
+   // ❌ DON'T TEST: Simple assignments
+   user.lastLogin = new Date()
+   
+   // ❌ DON'T TEST: Basic string operations
+   email.toLowerCase().trim()
+   ```
+
+### Testing Levels - Two Types Only
+
+#### 1. **Unit Tests** - Test Individual Functions in Isolation
+- **Purpose**: Verify business logic, edge cases, error handling
+- **Scope**: Single function/method with mocked dependencies
+- **Speed**: Very fast (< 100ms per test)
+- **Focus**: Pure functions, calculations, validations
+
+```typescript
+// Unit Test Example
+describe('JWTHelper.verifyAccessToken', () => {
+  it('should return success for valid token', () => {
+    const result = JWTHelper.verifyAccessToken(validToken);
+    expect(result.success).toBe(true);
+  });
+  
+  it('should return error for expired token', () => {
+    const result = JWTHelper.verifyAccessToken(expiredToken);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('expired');
+  });
+});
 ```
 
-#### Example Output Comparison
+#### 2. **Functional Tests** - Test Complete User Workflows
+- **Purpose**: Verify end-to-end business processes through browser automation
+- **Scope**: Full user journeys from frontend UI to backend APIs
+- **Speed**: Slower (5-30 seconds per test)
+- **Focus**: Real user scenarios, browser interactions, complete workflows
+- **Technology**: Playwright for browser automation
 
-**❌ BAD: Verbose full suite output (information overload)**
-```bash
-$ npm test
-PASS  src/auth/AuthService.test.ts (7.234s)
-  AuthService
-    ✓ should create user (234ms)
-    ✓ should validate email (12ms)
-    ✓ should hash password (156ms)
-    ... (50 more lines of passing tests)
-PASS  src/user/UserService.test.ts (5.123s)
-  UserService  
-    ✓ should update profile (89ms)
-    ... (another 40 lines)
-FAIL  src/course/CourseService.test.ts (2.456s)
-  CourseService
-    ✓ should create course (45ms)
-    ✗ should validate course data (23ms)
-      Expected: "valid"
-      Received: "invalid"
-    ... (buried among 200+ lines of output)
+```typescript
+// Functional Test Example - Browser automation
+test('User can login with demo account', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.click('button:has-text("Admin Account")');
+  await expect(page).toHaveURL('/dashboard');
+});
 ```
 
-**✅ GOOD: Clean summary output**
-```bash
-$ npm run test:summary
-🧪 Test Summary
-================
-✅ Passed: 147/150 tests
-❌ Failed: 3 tests
+**Functional Test Features:**
+- **Real Browser Testing**: Tests run against actual running dev servers
+- **Auto Server Startup**: Playwright automatically starts frontend (port 3000) and backend (port 3001)
+- **User Journey Testing**: Tests complete workflows like login → dashboard → logout
+- **Visual Validation**: Verifies UI elements, error messages, and user feedback
+- **Cross-Service Testing**: Validates frontend ↔ backend communication
 
-📋 Failed Tests:
-• CourseService › should validate course data
-• PaymentService › should process refund  
-• NotificationService › should send email
+### Test Quality Standards
 
-💡 Run individual tests with: npm test -- <TestName> --verbose
+#### Write Tests That Find Real Bugs
+
+```typescript
+// ❌ BAD: Tests implementation, not behavior
+it('should call bcrypt.hash', () => {
+  const spy = jest.spyOn(bcrypt, 'hash');
+  AuthService.register(userData);
+  expect(spy).toHaveBeenCalled(); // WHO CARES?
+});
+
+// ✅ GOOD: Tests actual requirement
+it('should never store plaintext passwords', async () => {
+  const userData = { password: 'plaintext123' };
+  await AuthService.register(userData);
+  
+  const user = await UserModel.findByEmail(userData.email);
+  expect(user.password).not.toBe('plaintext123'); // ACTUAL SECURITY REQUIREMENT
+  expect(user.password).toMatch(/^\$2[aby]\$/); // Verify bcrypt format
+});
 ```
 
-**✅ PERFECT: Detailed output for specific test**
-```bash
-$ npm test -- CourseService.test.ts --verbose
-FAIL  src/course/CourseService.test.ts
-  CourseService
-    ✗ should validate course data (23ms)
+#### Test Error Conditions (Most Important!)
+
+```typescript
+// ✅ EXCELLENT: Test what happens when things go wrong
+describe('AuthService.login - Error Conditions', () => {
+  it('should reject inactive users', async () => {
+    const user = await createUser({ isActive: false });
+    const result = await AuthService.login({ email: user.email, password: 'correct' });
     
-      ValidationError: Course title is required
-      
-      expect(received).toBe(expected) // Object.is equality
-      
-      Expected: "valid"
-      Received: "invalid"
-      
-        at Object.<anonymous> (CourseService.test.ts:45:23)
-        
-      Course data: { description: "test", duration: 120 }
-      Validation result: { valid: false, errors: ["title is required"] }
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('deactivated');
+  });
+  
+  it('should handle database connection failures', async () => {
+    jest.spyOn(UserModel, 'findByEmail').mockRejectedValue(new Error('DB Error'));
+    
+    const result = await AuthService.login(validLoginData);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(ERROR_MESSAGES.INTERNAL_ERROR);
+  });
+});
 ```
 
-#### Testing Workflow Best Practices
+### Test Organization & Naming
+
+#### File Structure
+```
+packages/
+├── auth-service/
+│   ├── src/
+│   │   ├── services/AuthService.ts
+│   │   └── utils/JWTHelper.ts
+│   └── __tests__/
+│       ├── unit/
+│       │   ├── AuthService.test.ts      # Unit tests
+│       │   └── JWTHelper.test.ts
+│       └── functional/
+│           └── auth-flow.test.ts        # End-to-end workflows
+```
+
+#### Test Naming Convention
+```typescript
+// Pattern: should [expected result] when [condition]
+describe('AuthService.login', () => {
+  it('should return user data when credentials are valid', () => {});
+  it('should reject login when user is inactive', () => {});
+  it('should reject login when password is incorrect', () => {});
+  it('should handle database errors gracefully', () => {});
+});
+```
+
+### Test Commands
 
 ```bash
-# 1. DEVELOPMENT WORKFLOW
-# Start with overview to see what's broken
+# Run all tests with summary output (recommended for quick feedback)
 npm run test:summary
 
-# Focus on specific failing area  
-npm test -- AuthService --watch
+# Run unit tests only (fast feedback)
+npm run test:unit
 
-# Check integration after fixes
-npm run test:integration
+# Run functional tests (browser automation against running dev servers)
+npm run test:functional
 
-# 2. DEBUGGING WORKFLOW
-# Identify failing tests
-npm run test:summary
-
-# Deep dive into specific failure
-npm test -- "should validate email format" --verbose
-
-# Run related tests to check side effects
-npm test -- Auth --verbose
-
-# 3. CI/CD WORKFLOW  
-# Quick feedback for PR
-npm run test:changed
-
-# Full validation before merge
-npm run test:ci
-
-# Performance check
-npm run test:perf
+# Run all tests (verbose output)
+npm test
 ```
 
-#### Custom Test Scripts Setup
+**Recommendation**: Use `npm run test:summary` for regular development to avoid verbose console output and focus on actual failures.
 
-Add these to your `package.json` for optimal workflow:
+**Functional Test Scenarios:**
+- **Login Success**: Demo account logins, manual form entry, UI validation
+- **Login Failure**: Invalid credentials, empty fields, form validation
+- **Account Creation**: New user registration, field validation, role selection
 
-```json
-{
-  "scripts": {
-    "test:summary": "jest --passWithNoTests --reporters=./test-summary-reporter.js",
-    "test:quiet": "jest --silent --passWithNoTests",
-    "test:changed": "jest --onlyChanged --silent",
-    "test:focus": "jest --watch --verbose",
-    "test:ci": "jest --ci --coverage --watchAll=false"
+**Prerequisites for Functional Tests:**
+- Functional tests automatically clear ports and start dev servers
+- Tests run against `localhost:3000` (frontend) and `localhost:3001` (auth service)
+- Demo accounts must exist: admin@yggdrasil.edu, teacher@yggdrasil.edu, student@yggdrasil.edu
+
+**Port Management:**
+- All dev commands automatically clear ports before starting (3000-3005)
+- Use `node scripts/kill-ports.js [port1] [port2]` to manually clear specific ports
+- Use `npm run dev:clean` if you need to force clear all ports
+
+## 🔴 Test-Driven Development (TDD) Best Practices
+
+### TDD Philosophy: Red → Green → Refactor
+
+**Test-Driven Development is the practice of writing tests BEFORE writing implementation code.**
+
+#### The TDD Cycle
+```
+🔴 RED: Write a failing test
+🟢 GREEN: Write minimal code to make it pass  
+🔵 REFACTOR: Clean up code while keeping tests green
+```
+
+### When to Use TDD
+
+#### ✅ **HIGHLY RECOMMENDED for TDD:**
+
+1. **Business Logic & Complex Algorithms**
+   ```typescript
+   // ✅ Perfect for TDD
+   describe('PasswordValidator', () => {
+     it('should reject passwords shorter than 8 characters', () => {
+       // Write this test FIRST, watch it fail
+       expect(PasswordValidator.isValid('short')).toBe(false);
+     });
+   });
+   
+   // Then implement the minimal code to make it pass
+   ```
+
+2. **API Endpoints & Controllers**
+   ```typescript
+   // ✅ TDD for new endpoints
+   describe('POST /api/auth/register', () => {
+     it('should return 400 for invalid email', async () => {
+       const response = await request(app)
+         .post('/api/auth/register')
+         .send({ email: 'invalid', password: 'Valid123!' });
+       
+       expect(response.status).toBe(400);
+     });
+   });
+   ```
+
+3. **Bug Fixes (Critical for TDD)**
+   ```typescript
+   // ✅ ALWAYS write failing test for bug first
+   it('should handle user logout when session expired', () => {
+     // Reproduce the bug in a test first
+     // Then fix the code to make test pass
+   });
+   ```
+
+4. **Utilities & Helper Functions**
+   ```typescript
+   // ✅ Perfect TDD candidate
+   describe('DateHelper.formatRelativeTime', () => {
+     it('should return "2 hours ago" for date 2 hours in past', () => {
+       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+       expect(DateHelper.formatRelativeTime(twoHoursAgo)).toBe('2 hours ago');
+     });
+   });
+   ```
+
+#### ⚠️ **OPTIONAL TDD (Use Judgment):**
+
+- **React Components**: TDD for complex logic, skip for simple UI
+- **Database Models**: TDD for validation logic, skip for basic CRUD
+- **Configuration**: Usually not worth TDD
+
+#### ❌ **SKIP TDD FOR:**
+
+- **Exploratory Code**: When you're not sure what you're building
+- **Prototype/Spike Work**: Quick experiments and proof of concepts  
+- **Simple CRUD Operations**: Basic database queries without logic
+- **Third-party Integrations**: Focus on integration tests instead
+
+### TDD Best Practices
+
+#### 1. **Write the Smallest Possible Failing Test**
+```typescript
+// ❌ BAD: Testing too much at once
+it('should register user, send email, log event, and return tokens', () => {
+  // Too many responsibilities in one test
+});
+
+// ✅ GOOD: One specific behavior
+it('should return validation error for missing email', () => {
+  const result = AuthService.register({ password: 'Valid123!' });
+  expect(result.success).toBe(false);
+  expect(result.error).toContain('email');
+});
+```
+
+#### 2. **Make Tests Pass with Minimal Code**
+```typescript
+// Test written first:
+it('should return true for valid email format', () => {
+  expect(EmailValidator.isValid('user@example.com')).toBe(true);
+});
+
+// ✅ GOOD: Minimal implementation
+export class EmailValidator {
+  static isValid(email: string): boolean {
+    return email.includes('@'); // Start simple!
+  }
+}
+
+// ❌ BAD: Over-engineering from the start
+export class EmailValidator {
+  static isValid(email: string): boolean {
+    // Complex regex, multiple validations, etc.
+    // Build complexity gradually through more tests!
   }
 }
 ```
 
-#### When to Use Each Command
-
-| Situation | Command | Why |
-|-----------|---------|-----|
-| Daily development check | `npm run test:summary` | Quick overview of project health |
-| Debugging specific failure | `npm test -- TestName --verbose` | Detailed error information |
-| Working on feature | `npm test -- Feature --watch` | Immediate feedback loop |
-| Before committing | `npm run test:changed` | Fast validation of your changes |
-| CI/CD pipeline | `npm run test:ci` | Complete validation with coverage |
-
-**Remember**: Verbose output is like a firehose - useful when you need it, overwhelming when you don't!
-
-### Test-Driven Development (TDD) - The Right Way
-
-#### The Sacred TDD Cycle: Red-Green-Refactor
-1. **Red**: Write a failing test that describes what you want
-2. **Green**: Write the MINIMUM code to make it pass (resist temptation!)
-3. **Refactor**: Clean up while keeping tests green
-
-#### TDD Anti-Patterns to Avoid
+#### 3. **Refactor Fearlessly with Test Safety Net**
 ```typescript
-// ❌ ANTI-PATTERN 1: Writing implementation before tests
-// This defeats the purpose of TDD
-class UserService {
-  async createUser(data: UserData) {
-    // Complex implementation written first
-    // Then tests written to match implementation
-    // This is NOT TDD!
+// After tests pass, refactor confidently
+export class EmailValidator {
+  static isValid(email: string): boolean {
+    // Now add proper email regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }
 }
+// Tests still pass ✅
+```
 
-// ❌ ANTI-PATTERN 2: Cheating to make tests pass
-describe('UserService', () => {
-  it('should create user', async () => {
-    const result = await UserService.createUser(userData);
-    expect(result).toBeDefined(); // Useless test!
+#### 4. **Test Behavior, Not Implementation**
+```typescript
+// ❌ BAD: Testing implementation details
+it('should call bcrypt.hash with salt rounds 12', () => {
+  // Don't test HOW, test WHAT
+});
+
+// ✅ GOOD: Testing behavior  
+it('should never store plain text passwords', async () => {
+  await AuthService.register({ email: 'test@example.com', password: 'plain123' });
+  const user = await UserModel.findByEmail('test@example.com');
+  expect(user.password).not.toBe('plain123');
+  expect(user.password).toMatch(/^\$2[aby]\$/); // Verify it's hashed
+});
+```
+
+### TDD for Different Layers
+
+#### **Backend TDD Workflow**
+```typescript
+// 1. Write failing controller test
+describe('AuthController.register', () => {
+  it('should return 201 for valid registration', async () => {
+    const response = await request(app)
+      .post('/api/auth/register')
+      .send(validUserData);
+    expect(response.status).toBe(201);
   });
 });
 
-// ✅ CORRECT TDD APPROACH
-// 1. Write the test FIRST
-describe('UserService', () => {
-  it('should create user with encrypted password', async () => {
-    const userData = {
-      email: 'test@example.com',
-      password: 'plaintext123'
-    };
-    
-    const result = await UserService.createUser(userData);
-    
-    expect(result.user.email).toBe(userData.email);
-    expect(result.user.password).not.toBe(userData.password); // Password must be hashed
-    expect(result.user.password).toMatch(/^\$2[aby]\$/); // bcrypt hash pattern
+// 2. Implement minimal controller
+// 3. Write failing service test  
+// 4. Implement minimal service
+// 5. Refactor both layers
+```
+
+#### **Frontend TDD Workflow**
+```typescript
+// 1. Write failing component test
+describe('LoginForm', () => {
+  it('should show error when password is empty', () => {
+    render(<LoginForm />);
+    fireEvent.click(screen.getByText('Login'));
+    expect(screen.getByText('Password is required')).toBeVisible();
   });
 });
 
-// 2. Write minimal code to pass
-class UserService {
-  static async createUser(data: UserData) {
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-    return {
-      user: {
-        email: data.email,
-        password: hashedPassword
-      }
-    };
-  }
-}
+// 2. Implement minimal component logic
+// 3. Add validation behavior
+// 4. Refactor component structure
+```
 
-// 3. Refactor with confidence
-class UserService {
-  static async createUser(data: UserData) {
-    // Validate input
-    const validation = await validateUserData(data);
-    if (!validation.valid) {
-      throw new ValidationError(validation.errors);
-    }
-    
-    // Hash password with proper salt rounds
-    const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
-    
-    // Create user with additional fields
-    const user = await UserModel.create({
-      ...data,
-      password: hashedPassword,
-      createdAt: new Date()
-    });
-    
-    return { user };
-  }
+### TDD Anti-Patterns to Avoid
+
+#### ❌ **Testing Everything (Analysis Paralysis)**
+```typescript
+// Don't TDD simple getters/setters
+class User {
+  getName() { return this.name; } // Skip TDD for this
 }
 ```
 
-### Test Suite Organization
-
-#### 1. Unit Tests
-Test individual functions/methods in complete isolation.
-
+#### ❌ **Writing Tests After Code (Not TDD)**
 ```typescript
-// packages/api-services/auth-service/__tests__/unit/AuthHelper.test.ts
-describe('AuthHelper - Unit Tests', () => {
-  describe('generateTokens', () => {
-    it('should generate valid JWT tokens', () => {
-      const user = { id: '123', email: 'test@example.com' };
-      const tokens = AuthHelper.generateTokens(user);
-      
-      expect(tokens.accessToken).toBeDefined();
-      expect(tokens.refreshToken).toBeDefined();
-      expect(jwt.verify(tokens.accessToken, JWT_SECRET)).toMatchObject({ id: '123' });
-    });
-    
-    it('should set correct expiration times', () => {
-      const user = { id: '123', email: 'test@example.com' };
-      const tokens = AuthHelper.generateTokens(user);
-      
-      const accessDecoded = jwt.decode(tokens.accessToken) as any;
-      const refreshDecoded = jwt.decode(tokens.refreshToken) as any;
-      
-      // Access token expires in 2 hours
-      expect(accessDecoded.exp - accessDecoded.iat).toBe(7200);
-      // Refresh token expires in 24 hours
-      expect(refreshDecoded.exp - refreshDecoded.iat).toBe(86400);
-    });
-  });
-});
+// This is just "adding tests", not TDD
+// TDD means test FIRST, then code
 ```
 
-#### 2. Integration Tests
-Test how different parts work together.
-
+#### ❌ **Overly Complex Test Setup**
 ```typescript
-// packages/api-services/auth-service/__tests__/integration/AuthService.test.ts
-describe('AuthService - Integration Tests', () => {
-  let dbConnection: MongoMemoryServer;
-  
-  beforeAll(async () => {
-    // Set up in-memory database
-    dbConnection = await MongoMemoryServer.create();
-    await mongoose.connect(dbConnection.getUri());
-  });
-  
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await dbConnection.stop();
-  });
-  
-  beforeEach(async () => {
-    // Clean database between tests
-    await UserModel.deleteMany({});
-  });
-  
-  describe('register', () => {
-    it('should create user in database with hashed password', async () => {
-      const userData = {
-        email: 'test@example.com',
-        password: 'Password123!',
-        role: 'student'
-      };
-      
-      const result = await AuthService.register(userData);
-      
-      // Verify user was created in database
-      const savedUser = await UserModel.findOne({ email: userData.email });
-      expect(savedUser).toBeDefined();
-      expect(savedUser!.email).toBe(userData.email);
-      
-      // Verify password was hashed
-      const isValidPassword = await bcrypt.compare(userData.password, savedUser!.password);
-      expect(isValidPassword).toBe(true);
-    });
-    
-    it('should prevent duplicate registrations', async () => {
-      const userData = {
-        email: 'test@example.com',
-        password: 'Password123!',
-        role: 'student'
-      };
-      
-      // First registration should succeed
-      await AuthService.register(userData);
-      
-      // Second registration should fail
-      const result = await AuthService.register(userData);
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('already exists');
-    });
-  });
-});
-```
-
-#### 3. Functional/E2E Tests
-Test complete user workflows from API to database.
-
-```typescript
-// packages/api-services/auth-service/__tests__/functional/auth.e2e.test.ts
-describe('Authentication API - E2E Tests', () => {
-  let app: Application;
-  let server: Server;
-  
-  beforeAll(async () => {
-    app = await createApp();
-    server = app.listen(0); // Random port
-  });
-  
-  afterAll(async () => {
-    await server.close();
-  });
-  
-  describe('POST /api/auth/register', () => {
-    it('should complete full registration flow', async () => {
-      const userData = {
-        email: 'newuser@example.com',
-        password: 'SecurePass123!',
-        role: 'student',
-        profile: {
-          firstName: 'John',
-          lastName: 'Doe'
-        }
-      };
-      
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
-      
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.user.email).toBe(userData.email);
-      expect(response.body.data.tokens).toBeDefined();
-      
-      // Verify we can login with the new account
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: userData.email,
-          password: userData.password
-        })
-        .expect(200);
-      
-      expect(loginResponse.body.success).toBe(true);
-    });
-  });
-});
-```
-
-### Writing Meaningful Tests - Not Useless Ones
-
-#### Understanding WHY You're Testing
-```typescript
-// ❌ USELESS TEST: Tests implementation details, not behavior
-describe('UserService', () => {
-  it('should call bcrypt.hash', async () => {
-    const bcryptSpy = jest.spyOn(bcrypt, 'hash');
-    await UserService.createUser(userData);
-    expect(bcryptSpy).toHaveBeenCalled(); // WHO CARES?
-  });
-});
-
-// ✅ MEANINGFUL TEST: Tests actual business requirement
-describe('UserService', () => {
-  it('should never store plaintext passwords', async () => {
-    const userData = {
-      email: 'test@example.com',
-      password: 'MySecretPassword123'
-    };
-    
-    const result = await UserService.createUser(userData);
-    const savedUser = await UserModel.findById(result.user.id);
-    
-    // This tests the REQUIREMENT, not the implementation
-    expect(savedUser.password).not.toBe(userData.password);
-    expect(savedUser.password.length).toBeGreaterThan(50); // Hashed passwords are long
-  });
-});
-
-// ❌ USELESS TEST: Tests framework functionality
-it('should render component', () => {
-  const { container } = render(<Button />);
-  expect(container).toBeDefined(); // React already guarantees this!
-});
-
-// ✅ MEANINGFUL TEST: Tests component behavior
-it('should disable submit button when form is invalid', () => {
-  render(<LoginForm />);
-  const submitButton = screen.getByRole('button', { name: /submit/i });
-  
-  // Initially disabled with empty form
-  expect(submitButton).toBeDisabled();
-  
-  // Still disabled with only email
-  fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: 'test@example.com' }
-  });
-  expect(submitButton).toBeDisabled();
-  
-  // Enabled when form is complete
-  fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: 'password123' }
-  });
-  expect(submitButton).toBeEnabled();
-});
-```
-
-### Test Troubleshooting & Root Cause Analysis
-
-#### When Tests Fail - Find the ROOT CAUSE
-```typescript
-// Test fails with: "Expected 200 but received 401"
-
-// ❌ WRONG: Blindly changing the test to expect 401
-it('should return user profile', async () => {
-  const response = await request(app)
-    .get('/api/users/profile')
-    .expect(401); // Just making the test pass!
-});
-
-// ✅ RIGHT: Investigate WHY it's returning 401
-it('should return user profile when authenticated', async () => {
-  // 1. Understand the requirement: endpoint needs authentication
-  // 2. Fix the test to include authentication
-  const loginResponse = await request(app)
-    .post('/api/auth/login')
-    .send({ email: 'test@example.com', password: 'password123' });
-  
-  const token = loginResponse.body.data.accessToken;
-  
-  // 3. Now test with proper authentication
-  const response = await request(app)
-    .get('/api/users/profile')
-    .set('Authorization', `Bearer ${token}`)
-    .expect(200); // Now it should work!
-  
-  expect(response.body.data.email).toBe('test@example.com');
-});
-```
-
-#### Debugging Failing Tests - Step by Step
-```typescript
-// When a test fails, follow this process:
-
-// 1. READ THE ERROR MESSAGE CAREFULLY
-// Error: Expected value to be 'admin' but received 'student'
-
-// 2. ADD DEBUGGING OUTPUT
-it('should assign correct role', async () => {
-  const userData = { email: 'admin@example.com', role: 'admin' };
-  
-  console.log('Input data:', userData); // Debug input
-  const result = await UserService.createUser(userData);
-  console.log('Result:', result); // Debug output
-  
-  expect(result.user.role).toBe('admin');
-});
-
-// 3. CHECK TEST SETUP
+// ❌ BAD: Complex setup obscures intent
 beforeEach(async () => {
-  // Is the database clean?
-  const existingUsers = await UserModel.find({});
-  console.log('Existing users:', existingUsers.length);
-  
-  // Are mocks set up correctly?
-  console.log('Mock config:', mockConfig);
+  // 50 lines of setup
 });
 
-// 4. ISOLATE THE PROBLEM
-it('should assign role - isolated test', async () => {
-  // Test ONLY the role assignment logic
-  const user = new UserModel({ email: 'test@example.com', role: 'admin' });
-  await user.save();
-  
-  const saved = await UserModel.findById(user._id);
-  expect(saved.role).toBe('admin'); // Does this work?
+// ✅ GOOD: Simple, focused setup
+it('should validate email format', () => {
+  // Simple, clear test
 });
-
-// 5. FIX THE ROOT CAUSE, NOT THE SYMPTOM
-// Found: Default role middleware was overriding the input
-// Solution: Fix the middleware, not the test!
 ```
 
-### Testing Commands
+### TDD Success Metrics
 
-#### 🎯 Test Execution Strategy
+#### ✅ **Good TDD Indicators:**
+- Tests written before implementation code
+- Small, frequent commits (Red → Green → Refactor)
+- High confidence in refactoring
+- Clear, focused test descriptions
+- Minimal code to make tests pass
+
+#### 🚩 **TDD Warning Signs:**
+- Writing all tests after implementation
+- Tests that are hard to understand
+- Over-engineered solutions from the start
+- Fear of changing existing code
+- Tests that break when refactoring
+
+### TDD Integration with CI/CD
+
 ```bash
-# During development - run specific tests
-npm test -- AuthService.test.ts --watch
+# TDD-friendly development workflow
+git checkout -b feature/user-password-reset
 
-# Before committing - run affected tests  
-npm run test:changed
+# 1. Write failing test
+git add test/ && git commit -m "red: add failing test for password reset"
 
-# CI/CD Pipeline - run all tests with coverage
-npm run test:ci
+# 2. Make test pass
+git add src/ && git commit -m "green: implement basic password reset"  
 
-# Test organization by type
-npm run test:unit         # Fast, isolated tests
-npm run test:integration  # Component interaction tests  
-npm run test:e2e         # Full workflow tests
+# 3. Refactor
+git add . && git commit -m "refactor: extract email validation logic"
+
+# 4. Repeat cycle
 ```
+
+### When to Write Tests
+
+#### ✅ WRITE TESTS FOR:
+- New business logic functions
+- Bug fixes (write failing test first)
+- Complex validations or transformations
+- Security-critical code (authentication, permissions)
+- Functions with multiple conditional branches
+
+#### ⏭️ SKIP TESTS FOR:
+- Simple CRUD operations
+- Straightforward API wrappers
+- Basic getters/setters
+- Configuration files
+- Type definitions
+
+### Red Flags: Tests That Waste Time
+
+```typescript
+// 🚩 RED FLAG: Testing framework functionality
+it('should render component', () => {
+  render(<LoginForm />);
+  expect(screen.getByText('Login')).toBeInTheDocument(); // React already guarantees this
+});
+
+// 🚩 RED FLAG: Testing dependencies
+it('should use bcrypt for hashing', () => {
+  // Testing that bcrypt works is bcrypt's responsibility
+});
+
+// 🚩 RED FLAG: Testing mocks
+it('should call mock function', () => {
+  mockFunction.mockReturnValue(true);
+  expect(mockFunction).toHaveBeenCalled(); // You're just testing your own mock
+});
+```
+
+**Remember**: Every test has a maintenance cost. Only write tests that provide real value by catching actual bugs that could happen in production.
 
 ## 🔧 Development Workflow
 
@@ -832,7 +807,6 @@ git checkout -b docs/update-api-documentation
 # Commit message format
 git commit -m "feat: add user registration with email verification"
 git commit -m "fix: resolve password validation edge case"
-git commit -m "test: add comprehensive auth service tests"
 git commit -m "docs: update API documentation for auth endpoints"
 ```
 
@@ -857,14 +831,21 @@ npm run build
 - [ ] All functions have proper TypeScript types
 - [ ] Error handling is implemented consistently
 - [ ] Input validation is performed at boundaries
-- [ ] Tests cover happy path and edge cases
-- [ ] Tests are meaningful and test actual requirements
 - [ ] No hardcoded secrets or sensitive data
 - [ ] Code follows DRY, KISS, and SOLID principles
 - [ ] **New dependencies are justified and minimal**
 - [ ] **Could vanilla JS/TS be used instead of new libraries?**
 - [ ] Comments explain WHY, not WHAT
 - [ ] Documentation is updated if needed
+
+#### TDD-Specific Review Checklist
+- [ ] **Tests written BEFORE implementation code (if using TDD)**
+- [ ] **Each test focuses on one specific behavior**
+- [ ] **Implementation is minimal code to make tests pass**
+- [ ] **Test names clearly describe expected behavior**
+- [ ] **Tests are independent and can run in any order**
+- [ ] **No over-engineering beyond current test requirements**
+- [ ] **Refactoring preserves all existing test behavior**
 
 ## 🚀 Performance Best Practices
 
@@ -898,41 +879,32 @@ npm run build
 
 ### The 10 Commandments of Yggdrasil Development
 
-1. **Follow TDD Religiously**: Red-Green-Refactor is sacred
-2. **Write Meaningful Tests**: Test requirements, not implementation
-3. **Keep It Simple**: KISS > clever code, minimize dependencies
-4. **Don't Repeat Yourself**: Extract common logic
-5. **Question Every Dependency**: Can we do this with vanilla JS/TS?
-6. **Type Everything**: TypeScript is your friend
-7. **Comment the WHY**: Code shows how, comments show why
-8. **Handle Errors Gracefully**: Users deserve good error messages
-9. **Secure by Default**: Never trust user input
-10. **Review Before Merge**: Four eyes are better than two
+1. **Type Everything**: TypeScript is your friend
+2. **Keep It Simple**: KISS > clever code, minimize dependencies
+3. **Don't Repeat Yourself**: Extract common logic
+4. **Question Every Dependency**: Can we do this with vanilla JS/TS?
+5. **Test First When Possible**: TDD for business logic and bug fixes
+6. **Comment the WHY**: Code shows how, comments show why
+7. **Handle Errors Gracefully**: Users deserve good error messages
+8. **Secure by Default**: Never trust user input
+9. **Review Before Merge**: Four eyes are better than two
+10. **Document Changes**: Update docs with code changes
 
 ## 🎯 Quick Reference Commands
 
 ```bash
 # Development
-npm run dev                 # Start all services with health monitoring
+npm run dev                 # Start all services (clears ports automatically)
+npm run dev:clean           # Force clear all ports, then start services
 npm run dev:frontend        # Frontend only
 npm run dev:services        # Backend services only
 
-# Testing (Smart Output Strategy)
-npm run test:summary        # Clean overview - lists only failures (RECOMMENDED)
-npm run test:quiet          # Minimal output for quick checks
-npm run test:changed        # Test only changed files (fast feedback)
-
-# Testing by Type
-npm run test:unit           # Fast unit tests
-npm run test:integration    # Integration tests
-npm run test:e2e           # End-to-end tests
-
-# Detailed Debugging (when you need verbose output)
-npm test -- TestName --verbose     # Deep dive into specific failing test
-npm test -- AuthService --watch    # Focus on specific area with watch mode
-
-# CI/CD Pipeline
-npm run test:ci            # Full suite with coverage (use sparingly)
+# Testing (TDD-Ready)
+npm run test:summary       # Run all tests (summary output - recommended for TDD)
+npm test                   # Run all tests (verbose output)
+npm run test:unit          # Fast unit tests only (perfect for TDD red-green-refactor)
+npm run test:functional    # Browser automation tests (for integration validation)
+npm run test:watch         # Continuous testing for TDD workflow
 
 # Code Quality
 npm run lint                # Check code style
@@ -956,5 +928,5 @@ npm run start              # Start production server
 **Remember**: 
 - This is a living document. Update it as the project evolves.
 - Always prioritize code quality over speed of delivery.
-- When in doubt, write a test first.
 - If you can't explain it simply, you don't understand it well enough.
+

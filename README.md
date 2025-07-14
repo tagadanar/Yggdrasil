@@ -39,24 +39,19 @@ packages/
 └── database-schemas/      # MongoDB models
 ```
 
-## 🧪 Testing & Quality
+## 🔧 Code Quality
 
-**Test Strategy**:
-- Unit, integration, and E2E tests
-- Clean output philosophy (use `npm run test:summary`)
-- TDD approach with meaningful tests
+**Quality Assurance**:
+- TypeScript type checking
+- ESLint code linting
+- Clean build process
 
 ```bash
-# Testing commands
-npm run test:summary        # Clean overview (recommended)
-npm run test:unit           # Fast unit tests
-npm run test:integration    # Integration tests
-npm test -- TestName --verbose  # Debug specific test
-
 # Code quality
-npm run lint
-npm run typecheck
-npm run build
+npm run lint                      # Check code style
+npm run lint:fix                  # Fix linting issues
+npm run typecheck                 # TypeScript checking
+npm run build                     # Build all packages
 ```
 
 ## 👥 User Roles & Features

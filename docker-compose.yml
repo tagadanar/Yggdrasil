@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: yggdrasil-mongodb
+    restart: unless-stopped
+    ports:
+      - "27018:27017"  # Use different port to avoid conflict
+    environment:
+      MONGO_INITDB_DATABASE: yggdrasil-dev
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    command: mongod --noauth --bind_ip_all
+
+volumes:
+  mongodb_data:

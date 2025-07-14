@@ -1,0 +1,125 @@
+// packages/shared-utilities/src/helpers/response.ts
+// Helper functions for creating consistent API responses
+
+import { ApiResponse, ErrorResponse, PaginatedResponse, HttpStatus } from '../types/api';
+
+export class ResponseHelper {
+  /**
+   * Create a successful API response
+   */
+  static success<T>(data: T, message?: string): ApiResponse<T> {
+    return {
+      success: true,
+      data,
+      message,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Create an error API response
+   */
+  static error(
+    error: string,
+    statusCode: number = HttpStatus.INTERNAL_SERVER_ERROR,
+    details?: Record<string, any>
+  ): ErrorResponse {
+    return {
+      success: false,
+      error,
+      message: error,
+      statusCode,
+      timestamp: new Date().toISOString(),
+      details,
+    };
+  }
+
+  /**
+   * Create a validation error response
+   */
+  static validationError(validationErrors: Array<{ field: string; message: string; value?: any }>): ErrorResponse {
+    // Use the first validation error message as the primary error
+    const primaryError = validationErrors.length > 0 
+      ? validationErrors[0].message 
+      : 'Validation failed';
+    
+    // If multiple errors, join them
+    const errorMessage = validationErrors.length > 1 
+      ? validationErrors.map(err => err.message).join(', ')
+      : primaryError;
+
+    return {
+      success: false,
+      error: errorMessage,
+      message: errorMessage,
+      statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      timestamp: new Date().toISOString(),
+      details: {
+        validationErrors,
+      },
+    };
+  }
+
+  /**
+   * Create a paginated response
+   */
+  static paginated<T>(
+    data: T[],
+    page: number,
+    limit: number,
+    total: number,
+    message?: string
+  ): PaginatedResponse<T> {
+    const totalPages = Math.ceil(total / limit);
+    
+    return {
+      success: true,
+      data,
+      message,
+      timestamp: new Date().toISOString(),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  /**
+   * Create a not found error response
+   */
+  static notFound(resource: string = 'Resource'): ErrorResponse {
+    return this.error(`${resource} not found`, HttpStatus.NOT_FOUND);
+  }
+
+  /**
+   * Create an unauthorized error response
+   */
+  static unauthorized(message: string = 'Unauthorized access'): ErrorResponse {
+    return this.error(message, HttpStatus.UNAUTHORIZED);
+  }
+
+  /**
+   * Create a forbidden error response
+   */
+  static forbidden(message: string = 'Insufficient permissions'): ErrorResponse {
+    return this.error(message, HttpStatus.FORBIDDEN);
+  }
+
+  /**
+   * Create a conflict error response
+   */
+  static conflict(message: string = 'Resource already exists'): ErrorResponse {
+    return this.error(message, HttpStatus.CONFLICT);
+  }
+
+  /**
+   * Create a bad request error response
+   */
+  static badRequest(message: string = 'Bad request'): ErrorResponse {
+    return this.error(message, HttpStatus.BAD_REQUEST);
+  }
+}

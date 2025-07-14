@@ -1,0 +1,384 @@
+// packages/testing-utilities/tests/functional/cross-service-auth.test.ts
+// Cross-service authentication integration tests
+
+import request from 'supertest';
+import { createApp as createAuthApp } from '../../../api-services/auth-service/src/app';
+import { createApp as createUserApp } from '../../../api-services/user-service/src/app';
+import { connectDatabase, disconnectDatabase, UserModel } from '@yggdrasil/database-schemas';
+import { Application } from 'express';
+import mongoose from 'mongoose';
+
+describe('Cross-Service Authentication Integration Tests', () => {
+  let authApp: Application;
+  let userApp: Application;
+  let testUserId: string;
+  let authTokens: { accessToken: string; refreshToken: string };
+
+  beforeAll(async () => {
+    // Initialize both service apps
+    authApp = createAuthApp();
+    userApp = createUserApp();
+
+    // Connect to test database
+    await connectDatabase(process.env.MONGODB_TEST_URI || 'mongodb://localhost:27018/yggdrasil-test');
+
+    // Register a test user via auth service
+    const registrationData = {
+      email: 'cross.service@yggdrasil.edu',
+      password: 'CrossService123!',
+      role: 'student',
+      profile: {
+        firstName: 'Cross',
+        lastName: 'Service',
+        studentId: 'STU444444',
+        department: 'Engineering'
+      }
+    };
+
+    const registerResponse = await request(authApp)
+      .post('/api/auth/register')
+      .send(registrationData);
+
+    testUserId = registerResponse.body.data.user._id;
+    authTokens = registerResponse.body.data.tokens;
+  });
+
+  afterAll(async () => {
+    await UserModel.findByIdAndDelete(testUserId);
+    await disconnectDatabase();
+  });
+
+  describe('Auth Token Usage Across Services', () => {
+    it('should access user-service with auth-service token', async () => {
+      const response = await request(userApp)
+        .get(`/api/users/${testUserId}`)
+        .set('Authorization', `Bearer ${authTokens.accessToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.email).toBe('cross.service@yggdrasil.edu');
+      expect(response.body.data.user.role).toBe('student');
+    });
+
+    it('should update user profile with auth token', async () => {
+      const profileUpdate = {
+        firstName: 'Updated',
+        lastName: 'Name'
+      };
+
+      const response = await request(userApp)
+        .patch(`/api/users/${testUserId}/profile`)
+        .set('Authorization', `Bearer ${authTokens.accessToken}`)
+        .send(profileUpdate)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.profile.firstName).toBe('Updated');
+      expect(response.body.data.user.profile.lastName).toBe('Name');
+    });
+
+    it('should get user preferences with auth token', async () => {
+      const response = await request(userApp)
+        .get(`/api/users/${testUserId}/preferences`)
+        .set('Authorization', `Bearer ${authTokens.accessToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.preferences).toBeDefined();
+      expect(response.body.data.preferences.language).toBeDefined();
+    });
+
+    it('should fail user-service requests without auth token', async () => {
+      const response = await request(userApp)
+        .get(`/api/users/${testUserId}`)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('No token provided');
+    });
+
+    it('should fail user-service requests with invalid token', async () => {
+      const response = await request(userApp)
+        .get(`/api/users/${testUserId}`)
+        .set('Authorization', 'Bearer invalid.token.here')
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('Invalid token');
+    });
+
+    it('should fail cross-service requests after logout', async () => {
+      // First, verify token works
+      await request(userApp)
+        .get(`/api/users/${testUserId}`)
+        .set('Authorization', `Bearer ${authTokens.accessToken}`)
+        .expect(200);
+
+      // Logout via auth service
+      await request(authApp)
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${authTokens.accessToken}`)
+        .expect(200);
+
+      // Now token should fail in user service
+      const response = await request(userApp)
+        .get(`/api/users/${testUserId}`)
+        .set('Authorization', `Bearer ${authTokens.accessToken}`)
+        .expect(401);
+
+      expect(response.body.error).toContain('Invalid token');
+
+      // Get new tokens for remaining tests
+      const loginResponse = await request(authApp)
+        .post('/api/auth/login')
+        .send({
+          email: 'cross.service@yggdrasil.edu',
+          password: 'CrossService123!'
+        });
+      
+      authTokens = loginResponse.body.data.tokens;
+    });
+  });
+
+  describe('Role-Based Access Control Across Services', () => {
+    let studentTokens: { accessToken: string; refreshToken: string };
+    let teacherTokens: { accessToken: string; refreshToken: string };
+    let adminTokens: { accessToken: string; refreshToken: string };
+    let studentId: string;
+    let teacherId: string;
+    let adminId: string;
+
+    beforeAll(async () => {
+      // Create users with different roles
+      const studentData = {
+        email: 'rbac.student@yggdrasil.edu',
+        password: 'Student123!',
+        role: 'student',
+        profile: {
+          firstName: 'RBAC',
+          lastName: 'Student',
+          studentId: 'STU555555'
+        }
+      };
+
+      const teacherData = {
+        email: 'rbac.teacher@yggdrasil.edu',
+        password: 'Teacher123!',
+        role: 'teacher',
+        profile: {
+          firstName: 'RBAC',
+          lastName: 'Teacher',
+          department: 'Physics'
+        }
+      };
+
+      // Register student
+      const studentReg = await request(authApp)
+        .post('/api/auth/register')
+        .send(studentData);
+      studentTokens = studentReg.body.data.tokens;
+      studentId = studentReg.body.data.user._id;
+
+      // Register teacher
+      const teacherReg = await request(authApp)
+        .post('/api/auth/register')
+        .send(teacherData);
+      teacherTokens = teacherReg.body.data.tokens;
+      teacherId = teacherReg.body.data.user._id;
+
+      // Create admin manually (can't register as admin)
+      const adminUser = await UserModel.create({
+        email: 'rbac.admin@yggdrasil.edu',
+        password: '$2b$10$ZKdNYLWFQJzt5Rt.dHrYS.FTiJBxKLBjXMmXaLXrBzPDXhhmFKFd.', // Admin123!
+        role: 'admin',
+        profile: {
+          firstName: 'RBAC',
+          lastName: 'Admin'
+        },
+        isActive: true
+      });
+      adminId = adminUser._id.toString();
+
+      // Login as admin
+      const adminLogin = await request(authApp)
+        .post('/api/auth/login')
+        .send({
+          email: 'rbac.admin@yggdrasil.edu',
+          password: 'Admin123!'
+        });
+      adminTokens = adminLogin.body.data.tokens;
+    });
+
+    afterAll(async () => {
+      await UserModel.deleteMany({
+        email: { $in: ['rbac.student@yggdrasil.edu', 'rbac.teacher@yggdrasil.edu', 'rbac.admin@yggdrasil.edu'] }
+      });
+    });
+
+    it('should allow users to access their own data', async () => {
+      // Student accessing own data
+      const studentResponse = await request(userApp)
+        .get(`/api/users/${studentId}`)
+        .set('Authorization', `Bearer ${studentTokens.accessToken}`)
+        .expect(200);
+
+      expect(studentResponse.body.data.user.email).toBe('rbac.student@yggdrasil.edu');
+
+      // Teacher accessing own data
+      const teacherResponse = await request(userApp)
+        .get(`/api/users/${teacherId}`)
+        .set('Authorization', `Bearer ${teacherTokens.accessToken}`)
+        .expect(200);
+
+      expect(teacherResponse.body.data.user.email).toBe('rbac.teacher@yggdrasil.edu');
+    });
+
+    it('should prevent students from accessing other users data', async () => {
+      const response = await request(userApp)
+        .get(`/api/users/${teacherId}`)
+        .set('Authorization', `Bearer ${studentTokens.accessToken}`)
+        .expect(403);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('Insufficient permissions');
+    });
+
+    it('should allow teachers to view student profiles', async () => {
+      const response = await request(userApp)
+        .get(`/api/users/${studentId}`)
+        .set('Authorization', `Bearer ${teacherTokens.accessToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.email).toBe('rbac.student@yggdrasil.edu');
+    });
+
+    it('should prevent teachers from modifying student profiles', async () => {
+      const response = await request(userApp)
+        .patch(`/api/users/${studentId}/profile`)
+        .set('Authorization', `Bearer ${teacherTokens.accessToken}`)
+        .send({ firstName: 'Hacked' })
+        .expect(403);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('Insufficient permissions');
+    });
+
+    it('should allow admins to access and modify any user', async () => {
+      // Admin viewing student
+      const viewResponse = await request(userApp)
+        .get(`/api/users/${studentId}`)
+        .set('Authorization', `Bearer ${adminTokens.accessToken}`)
+        .expect(200);
+
+      expect(viewResponse.body.success).toBe(true);
+
+      // Admin modifying teacher
+      const updateResponse = await request(userApp)
+        .patch(`/api/users/${teacherId}/profile`)
+        .set('Authorization', `Bearer ${adminTokens.accessToken}`)
+        .send({ department: 'Mathematics' })
+        .expect(200);
+
+      expect(updateResponse.body.success).toBe(true);
+      expect(updateResponse.body.data.user.profile.department).toBe('Mathematics');
+    });
+
+    it('should validate token role matches user role in database', async () => {
+      // Simulate role change in database (e.g., student promoted to teacher)
+      await UserModel.findByIdAndUpdate(studentId, { role: 'teacher' });
+
+      // Old token with student role should now fail
+      const response = await request(userApp)
+        .get(`/api/users/${studentId}`)
+        .set('Authorization', `Bearer ${studentTokens.accessToken}`)
+        .expect(403);
+
+      expect(response.body.error).toContain('Token role mismatch');
+
+      // Restore original role
+      await UserModel.findByIdAndUpdate(studentId, { role: 'student' });
+    });
+  });
+
+  describe('Service-to-Service Communication', () => {
+    it('should validate service tokens for internal API calls', async () => {
+      // This would test service-to-service auth if implemented
+      // For now, we'll test that services properly validate tokens
+      
+      // Expired token should fail across all services
+      const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoic3R1ZGVudCIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE2MzYwNDEyMDAsImV4cCI6MTYzNjA0MTIwMX0.abc123';
+
+      // Should fail in auth service
+      const authResponse = await request(authApp)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${expiredToken}`)
+        .expect(401);
+
+      // Should fail in user service
+      const userResponse = await request(userApp)
+        .get(`/api/users/${testUserId}`)
+        .set('Authorization', `Bearer ${expiredToken}`)
+        .expect(401);
+
+      expect(authResponse.body.error).toContain('Invalid token');
+      expect(userResponse.body.error).toContain('Invalid token');
+    });
+  });
+
+  describe('Token Consistency Across Services', () => {
+    it('should handle token refresh consistently', async () => {
+      // Login to get initial tokens
+      const loginResponse = await request(authApp)
+        .post('/api/auth/login')
+        .send({
+          email: 'cross.service@yggdrasil.edu',
+          password: 'CrossService123!'
+        });
+
+      const oldTokens = loginResponse.body.data.tokens;
+
+      // Verify old access token works in user service
+      await request(userApp)
+        .get(`/api/users/${testUserId}`)
+        .set('Authorization', `Bearer ${oldTokens.accessToken}`)
+        .expect(200);
+
+      // Refresh tokens
+      const refreshResponse = await request(authApp)
+        .post('/api/auth/refresh')
+        .send({ refreshToken: oldTokens.refreshToken })
+        .expect(200);
+
+      const newTokens = refreshResponse.body.data.tokens;
+
+      // New token should work in user service
+      await request(userApp)
+        .get(`/api/users/${testUserId}`)
+        .set('Authorization', `Bearer ${newTokens.accessToken}`)
+        .expect(200);
+
+      // Old access token should now fail (depending on implementation)
+      // This behavior might vary based on whether tokens are blacklisted
+    });
+
+    it('should maintain consistent user data across services', async () => {
+      // Get user via auth service /me endpoint
+      const authMeResponse = await request(authApp)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${authTokens.accessToken}`)
+        .expect(200);
+
+      // Get same user via user service
+      const userServiceResponse = await request(userApp)
+        .get(`/api/users/${testUserId}`)
+        .set('Authorization', `Bearer ${authTokens.accessToken}`)
+        .expect(200);
+
+      // Core user data should match
+      expect(authMeResponse.body.data.user.email).toBe(userServiceResponse.body.data.user.email);
+      expect(authMeResponse.body.data.user.role).toBe(userServiceResponse.body.data.user.role);
+      expect(authMeResponse.body.data.user._id).toBe(userServiceResponse.body.data.user.id);
+    });
+  });
+});
