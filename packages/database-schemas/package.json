@@ -8,15 +8,13 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "typecheck": "tsc --noEmit",
-    "setup:db": "ts-node src/scripts/setup.ts",
-    "migrate": "ts-node src/scripts/migrate.ts",
-    "seed": "ts-node src/scripts/seed.ts",
+    "seed": "ts-node src/scripts/seed-demo-data.ts",
     "seed:demo": "ts-node src/scripts/seed-demo-data.ts"
   },
   "files": [

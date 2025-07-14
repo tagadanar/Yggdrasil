@@ -90,6 +90,7 @@ describe('AuthService', () => {
         _id: mockUser._id.toString(),
         email: mockUser.email,
         role: mockUser.role,
+        tokenVersion: mockUser.tokenVersion,
       });
     });
 
@@ -146,7 +147,7 @@ describe('AuthService', () => {
     it('should successfully login with valid credentials', async () => {
       mockUserModel.findByEmail.mockResolvedValue(mockUser as any);
       mockUser.comparePassword.mockResolvedValue(true);
-      mockUser.save.mockResolvedValue(mockUser as any);
+      mockUserModel.findByIdAndUpdate = jest.fn().mockResolvedValue(mockUser);
 
       const result = await AuthService.login(validLoginData);
 
@@ -155,9 +156,11 @@ describe('AuthService', () => {
       expect(result.tokens).toBe(mockTokens);
       expect(result.error).toBeUndefined();
 
-      // Verify lastLogin was updated
-      expect(mockUser.lastLogin).toBeInstanceOf(Date);
-      expect(mockUser.save).toHaveBeenCalled();
+      // Verify lastLogin was updated using findByIdAndUpdate
+      expect(mockUserModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        mockUser._id,
+        { lastLogin: expect.any(Date) }
+      );
     });
 
     it('should reject login for non-existent user', async () => {
@@ -178,7 +181,7 @@ describe('AuthService', () => {
       const result = await AuthService.login(validLoginData);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Account has been deactivated');
+      expect(result.error).toBe(ERROR_MESSAGES.ACCOUNT_LOCKED);
       expect(result.user).toBeUndefined();
       expect(result.tokens).toBeUndefined();
     });
@@ -279,7 +282,7 @@ describe('AuthService', () => {
       const result = await AuthService.refreshTokens(validRefreshToken);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Account has been deactivated');
+      expect(result.error).toBe(ERROR_MESSAGES.ACCOUNT_LOCKED);
     });
 
     it('should reject refresh token with mismatched token version', async () => {
@@ -299,7 +302,7 @@ describe('AuthService', () => {
       const result = await AuthService.refreshTokens(validRefreshToken);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Invalid token version');
+      expect(result.error).toBe(ERROR_MESSAGES.TOKEN_INVALID);
     });
 
     it('should handle errors during token refresh', async () => {
@@ -424,7 +427,7 @@ describe('AuthService', () => {
       const result = await AuthService.verifyUser(validAccessToken);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Account has been deactivated');
+      expect(result.error).toBe(ERROR_MESSAGES.ACCOUNT_LOCKED);
     });
 
     it('should handle errors during user verification', async () => {

@@ -16,17 +16,18 @@ export default function RegisterPage() {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string>('');
 
-  // Redirect authenticated users to home
+  // Redirect authenticated users to dashboard
   useEffect(() => {
     if (user && !isLoading) {
-      router.push('/');
+      router.push('/dashboard');
     }
   }, [user, isLoading, router]);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting }
+    formState: { errors, isSubmitting },
+    watch
   } = useForm<RegisterRequestType>({
     resolver: zodResolver(RegisterRequestSchema),
     defaultValues: {
@@ -34,13 +35,25 @@ export default function RegisterPage() {
     },
   });
 
+  // Clear submit error when user types
+  useEffect(() => {
+    const subscription = watch(() => {
+      if (submitError) {
+        setSubmitError('');
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, submitError]);
+
   const onSubmit = async (data: RegisterRequestType) => {
     try {
       setSubmitError('');
+      // Small delay to show loading state (simulates network latency)
+      await new Promise(resolve => setTimeout(resolve, 100));
       const result = await registerUser(data);
       
       if (result.success) {
-        router.push('/');
+        router.push('/dashboard');
       } else {
         setSubmitError(result.error || 'Registration failed');
       }
@@ -83,7 +96,7 @@ export default function RegisterPage() {
 
         {/* Form */}
         <div className="card">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
             {/* First Name */}
             <div className="form-group">
               <label htmlFor="firstName" className="form-label">

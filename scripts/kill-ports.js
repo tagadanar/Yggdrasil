@@ -5,7 +5,7 @@ const util = require('util');
 const net = require('net');
 const execAsync = util.promisify(exec);
 
-const PORTS = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009];
+const PORTS = [3000, 3001, 3002, 3003, 3004, 3005]; // Only development ports
 const RETRY_DELAY = 1000; // 1 second
 const MAX_RETRIES = 5;
 
@@ -48,10 +48,29 @@ async function killPort(port, retries = MAX_RETRIES) {
       return true;
     }
     
-    // Kill all processes using the port
+    // Kill all processes using the port - but only development related processes
     for (const pid of pids) {
       if (pid.trim()) {
         try {
+          // Get process info to verify it's a development process
+          const { stdout: processInfo } = await execAsync(`ps -p ${pid.trim()} -o comm,args --no-headers 2>/dev/null || echo ""`);
+          const processDetails = processInfo.trim();
+          
+          // Only kill if it looks like a development process
+          const isDevelopmentProcess = processDetails.includes('node') || 
+                                     processDetails.includes('next') || 
+                                     processDetails.includes('ts-node') ||
+                                     processDetails.includes('npm') ||
+                                     processDetails.includes('dev') ||
+                                     processDetails.includes('auth-service') ||
+                                     processDetails.includes('user-service') ||
+                                     processDetails.includes('frontend');
+          
+          if (!isDevelopmentProcess && processDetails) {
+            console.log(`⚠️ Skipping non-development process ${pid.trim()} on port ${port}: ${processDetails}`);
+            continue;
+          }
+          
           // Try graceful shutdown first (SIGTERM)
           await execAsync(`kill -TERM ${pid.trim()}`);
           console.log(`📡 Sent SIGTERM to process ${pid.trim()} on port ${port}`);
@@ -98,10 +117,58 @@ async function killPort(port, retries = MAX_RETRIES) {
 }
 
 /**
+ * Kill all development Node.js processes
+ */
+async function killDevNodeProcesses() {
+  try {
+    console.log('🔍 Searching for development Node.js processes...');
+    
+    // Find all Node.js processes with development-related keywords
+    const { stdout } = await execAsync(`ps aux | grep -E "(node|npm)" | grep -E "(dev|next|ts-node|concurrently|yggdrasil)" | grep -v grep || true`);
+    
+    if (!stdout.trim()) {
+      console.log('✓ No development Node.js processes found');
+      return;
+    }
+    
+    const processes = stdout.trim().split('\n');
+    console.log(`📋 Found ${processes.length} development Node.js processes`);
+    
+    for (const processLine of processes) {
+      const parts = processLine.trim().split(/\s+/);
+      const pid = parts[1];
+      const command = parts.slice(10).join(' ');
+      
+      if (pid && !isNaN(parseInt(pid))) {
+        try {
+          console.log(`💀 Killing Node.js process ${pid}: ${command.substring(0, 60)}...`);
+          await execAsync(`kill -9 ${pid}`);
+        } catch (error) {
+          // Process might already be dead, that's fine
+          console.log(`✓ Process ${pid} already terminated`);
+        }
+      }
+    }
+    
+    // Wait a moment for processes to fully terminate
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('✅ Development Node.js processes cleared');
+    
+  } catch (error) {
+    console.log('✓ No development Node.js processes to clear');
+  }
+}
+
+/**
  * Kill multiple ports with proper error handling
  */
 async function killPorts(portList) {
-  console.log('🧹 Clearing ports...');
+  console.log('🧹 Clearing development environment...');
+  
+  // First kill all development Node.js processes
+  await killDevNodeProcesses();
+  
+  // Then clear specific ports
   console.log(`📋 Target ports: ${portList.join(', ')}`);
   
   const results = await Promise.allSettled(

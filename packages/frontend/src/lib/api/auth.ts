@@ -8,7 +8,11 @@ export const authApi = {
   async login(data: LoginRequestType): Promise<AuthResult> {
     try {
       const response = await apiClient.post('/auth/login', data);
-      return response.data.data;
+      return {
+        success: response.data.success,
+        user: response.data.data.user,
+        tokens: response.data.data.tokens,
+      };
     } catch (error: any) {
       return {
         success: false,
@@ -20,7 +24,11 @@ export const authApi = {
   async register(data: RegisterRequestType): Promise<AuthResult> {
     try {
       const response = await apiClient.post('/auth/register', data);
-      return response.data.data;
+      return {
+        success: response.data.success,
+        user: response.data.data.user,
+        tokens: response.data.data.tokens,
+      };
     } catch (error: any) {
       return {
         success: false,
@@ -32,7 +40,11 @@ export const authApi = {
   async refresh(refreshToken: string): Promise<AuthResult> {
     try {
       const response = await apiClient.post('/auth/refresh', { refreshToken });
-      return response.data.data;
+      return {
+        success: response.data.success,
+        user: response.data.data.user,
+        tokens: response.data.data.tokens,
+      };
     } catch (error: any) {
       return {
         success: false,

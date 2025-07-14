@@ -5,10 +5,10 @@ import dotenv from 'dotenv';
 import { createApp } from './app';
 import { connectDatabase } from '@yggdrasil/database-schemas';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from project root
+dotenv.config({ path: '../../../.env' });
 
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.USER_SERVICE_PORT || process.env.PORT || 3002;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/yggdrasil-dev';
 
 async function startServer() {

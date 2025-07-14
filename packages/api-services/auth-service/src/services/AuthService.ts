@@ -62,7 +62,6 @@ export class AuthService {
         tokens,
       };
     } catch (error) {
-      console.error('Registration error:', error);
       return {
         success: false,
         error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -88,7 +87,7 @@ export class AuthService {
       if (!user.isActive) {
         return {
           success: false,
-          error: 'Account has been deactivated',
+          error: ERROR_MESSAGES.ACCOUNT_LOCKED,
         };
       }
 
@@ -121,7 +120,6 @@ export class AuthService {
         tokens,
       };
     } catch (error) {
-      console.error('Login error:', error);
       return {
         success: false,
         error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -156,7 +154,7 @@ export class AuthService {
       if (!user.isActive) {
         return {
           success: false,
-          error: 'Account has been deactivated',
+          error: ERROR_MESSAGES.ACCOUNT_LOCKED,
         };
       }
 
@@ -164,7 +162,7 @@ export class AuthService {
       if (tokenResult.data.tokenVersion !== user.tokenVersion) {
         return {
           success: false,
-          error: 'Invalid token version',
+          error: ERROR_MESSAGES.TOKEN_INVALID,
         };
       }
 
@@ -185,7 +183,6 @@ export class AuthService {
         tokens,
       };
     } catch (error) {
-      console.error('Token refresh error:', error);
       return {
         success: false,
         error: ERROR_MESSAGES.TOKEN_INVALID,
@@ -213,7 +210,6 @@ export class AuthService {
         success: true,
       };
     } catch (error) {
-      console.error('Logout error:', error);
       return {
         success: false,
         error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -248,7 +244,7 @@ export class AuthService {
       if (!user.isActive) {
         return {
           success: false,
-          error: 'Account has been deactivated',
+          error: ERROR_MESSAGES.ACCOUNT_LOCKED,
         };
       }
 
@@ -268,7 +264,6 @@ export class AuthService {
         user: userResponse,
       };
     } catch (error) {
-      console.error('User verification error:', error);
       return {
         success: false,
         error: ERROR_MESSAGES.TOKEN_INVALID,

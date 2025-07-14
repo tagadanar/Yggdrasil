@@ -23,7 +23,6 @@ export class DatabaseConnection {
 
   async connect(config: DatabaseConfig): Promise<void> {
     if (this.isConnected) {
-      console.log('Database already connected');
       return;
     }
 
@@ -41,13 +40,11 @@ export class DatabaseConnection {
       await mongoose.connect(config.uri, options);
       
       this.isConnected = true;
-      console.log('✅ MongoDB connected successfully');
       
       // Handle connection events
       this.setupEventHandlers();
       
     } catch (error) {
-      console.error('❌ MongoDB connection failed:', error);
       throw error;
     }
   }
@@ -60,9 +57,7 @@ export class DatabaseConnection {
     try {
       await mongoose.disconnect();
       this.isConnected = false;
-      console.log('✅ MongoDB disconnected successfully');
     } catch (error) {
-      console.error('❌ MongoDB disconnection failed:', error);
       throw error;
     }
   }
@@ -76,30 +71,15 @@ export class DatabaseConnection {
   }
 
   private setupEventHandlers(): void {
-    mongoose.connection.on('connected', () => {
-      console.log('📦 Mongoose connected to MongoDB');
-    });
-
-    mongoose.connection.on('error', (err) => {
-      console.error('❌ Mongoose connection error:', err);
-    });
-
     mongoose.connection.on('disconnected', () => {
-      console.log('📦 Mongoose disconnected from MongoDB');
       this.isConnected = false;
-    });
-
-    // Handle application termination
-    process.on('SIGINT', async () => {
-      await this.disconnect();
-      process.exit(0);
     });
   }
 }
 
 // Utility functions for database operations
 export const connectDatabase = async (uri?: string): Promise<void> => {
-  const dbUri = uri || process.env.MONGODB_URI || 'mongodb://localhost:27017/yggdrasil-dev';
+  const dbUri = uri || process.env.MONGODB_URI || 'mongodb://localhost:27018/yggdrasil-dev';
   
   const config: DatabaseConfig = {
     uri: dbUri,

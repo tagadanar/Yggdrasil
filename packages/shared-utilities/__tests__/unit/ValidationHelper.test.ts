@@ -208,18 +208,42 @@ describe('ValidationHelper', () => {
       expect(ValidationHelper.sanitizeString('\ttest\n')).toBe('test');
     });
 
-    it('should remove angle brackets', () => {
-      expect(ValidationHelper.sanitizeString('<script>alert()</script>')).toBe('scriptalert()/script');
+    it('should remove angle brackets and escape dangerous characters', () => {
+      expect(ValidationHelper.sanitizeString('<script>alert()</script>')).toBe('scriptalert()&#x2F;script');
       expect(ValidationHelper.sanitizeString('Hello <world>')).toBe('Hello world');
     });
 
     it('should handle combined cleaning', () => {
-      expect(ValidationHelper.sanitizeString('  <tag>content</tag>  ')).toBe('tagcontent/tag');
+      expect(ValidationHelper.sanitizeString('  <tag>content</tag>  ')).toBe('tagcontent&#x2F;tag');
     });
 
     it('should handle empty strings', () => {
       expect(ValidationHelper.sanitizeString('')).toBe('');
       expect(ValidationHelper.sanitizeString('   ')).toBe('');
+    });
+
+    it('should remove XSS attack vectors', () => {
+      // Test javascript: protocol removal
+      expect(ValidationHelper.sanitizeString('javascript:alert("xss")')).toBe('alert(&quot;xss&quot;)');
+      
+      // Test event handler removal
+      expect(ValidationHelper.sanitizeString('onclick="alert(1)"')).toBe('&quot;alert(1)&quot;');
+      
+      // Test data: protocol removal
+      expect(ValidationHelper.sanitizeString('data:text/html,<script>alert(1)</script>')).toBe('text&#x2F;html,scriptalert(1)&#x2F;script');
+      
+      // Test quote escaping
+      expect(ValidationHelper.sanitizeString('Hello "world" and \'test\'')).toBe('Hello &quot;world&quot; and &#x27;test&#x27;');
+      
+      // Test ampersand escaping
+      expect(ValidationHelper.sanitizeString('Tom & Jerry')).toBe('Tom &amp; Jerry');
+    });
+
+    it('should handle non-string input', () => {
+      expect(ValidationHelper.sanitizeString(null as any)).toBe('');
+      expect(ValidationHelper.sanitizeString(undefined as any)).toBe('');
+      expect(ValidationHelper.sanitizeString(123 as any)).toBe('');
+      expect(ValidationHelper.sanitizeString({} as any)).toBe('');
     });
   });
 

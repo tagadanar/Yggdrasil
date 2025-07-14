@@ -19,14 +19,16 @@ export class AuthHelpers {
   }
 
   async fillRegisterForm(userData: {
-    firstName: string;
-    lastName: string;
     email: string;
     password: string;
     role?: string;
+    profile: {
+      firstName: string;
+      lastName: string;
+    };
   }) {
-    await this.page.fill('#firstName', userData.firstName);
-    await this.page.fill('#lastName', userData.lastName);
+    await this.page.fill('#firstName', userData.profile.firstName);
+    await this.page.fill('#lastName', userData.profile.lastName);
     await this.page.fill('#email', userData.email);
     await this.page.fill('#password', userData.password);
     
@@ -51,7 +53,7 @@ export class AuthHelpers {
 
   async expectLoginSuccess() {
     // After successful login, should redirect to home/dashboard
-    await expect(this.page).toHaveURL(/^\/(dashboard)?$/);
+    await expect(this.page).toHaveURL(/http:\/\/localhost:3000\/(dashboard)?$/);
   }
 
   async expectLoginError(errorMessage?: string) {
@@ -67,7 +69,7 @@ export class AuthHelpers {
 
   async expectRegisterSuccess() {
     // After successful registration, should redirect to home/dashboard
-    await expect(this.page).toHaveURL(/^\/(dashboard)?$/);
+    await expect(this.page).toHaveURL(/http:\/\/localhost:3000\/(dashboard)?$/);
   }
 
   async expectRegisterError(errorMessage?: string) {
@@ -100,5 +102,85 @@ export class AuthHelpers {
   async waitForLoadingToFinish() {
     // Wait for any loading spinners to disappear
     await this.page.waitForSelector('.animate-spin', { state: 'hidden' });
+  }
+
+  // Demo account login methods
+  async loginAsAdmin() {
+    await this.page.goto('/auth/login');
+    await this.page.fill('#email', 'admin@yggdrasil.edu');
+    await this.page.fill('#password', 'Admin123!');
+    await this.page.click('button[type="submit"]');
+    await expect(this.page).toHaveURL('/dashboard');
+  }
+
+  async loginAsTeacher() {
+    await this.page.goto('/auth/login');
+    await this.page.fill('#email', 'teacher@yggdrasil.edu');
+    await this.page.fill('#password', 'Admin123!');
+    await this.page.click('button[type="submit"]');
+    await expect(this.page).toHaveURL('/dashboard');
+  }
+
+  async loginAsStaff() {
+    await this.page.goto('/auth/login');
+    await this.page.fill('#email', 'staff@yggdrasil.edu');
+    await this.page.fill('#password', 'Admin123!');
+    await this.page.click('button[type="submit"]');
+    await expect(this.page).toHaveURL('/dashboard');
+  }
+
+  async loginAsStudent() {
+    await this.page.goto('/auth/login');
+    await this.page.fill('#email', 'student@yggdrasil.edu');
+    await this.page.fill('#password', 'Admin123!');
+    await this.page.click('button[type="submit"]');
+    await expect(this.page).toHaveURL('/dashboard');
+  }
+
+  async logout() {
+    // Look for logout button or menu
+    const logoutButton = this.page.locator('button:has-text("Logout"), button:has-text("Sign out"), a:has-text("Logout"), a:has-text("Sign out")');
+    
+    if (await logoutButton.isVisible()) {
+      await logoutButton.click();
+    } else {
+      // Check if there's a user menu to click first
+      const userMenu = this.page.locator('[data-testid="user-menu"], .user-menu, button:has-text("Profile")');
+      if (await userMenu.isVisible()) {
+        await userMenu.click();
+        await this.page.click('button:has-text("Logout"), a:has-text("Logout")');
+      }
+    }
+    
+    // Should redirect to login page
+    await expect(this.page).toHaveURL('/auth/login');
+  }
+
+  async getAccessToken(): Promise<string> {
+    // Get access token from localStorage or cookies
+    const token = await this.page.evaluate(() => {
+      return localStorage.getItem('accessToken') || 
+             document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1];
+    });
+    
+    if (!token) {
+      throw new Error('No access token found');
+    }
+    
+    return token;
+  }
+
+  async getRefreshToken(): Promise<string> {
+    // Get refresh token from localStorage or cookies
+    const token = await this.page.evaluate(() => {
+      return localStorage.getItem('refreshToken') || 
+             document.cookie.split('; ').find(row => row.startsWith('refreshToken='))?.split('=')[1];
+    });
+    
+    if (!token) {
+      throw new Error('No refresh token found');
+    }
+    
+    return token;
   }
 }

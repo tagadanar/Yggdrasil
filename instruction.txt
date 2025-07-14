@@ -1,0 +1,1213 @@
+# Comprehensive Guide to Building "101" IT School Website
+
+## Usage Instructions for Claude
+
+When this prompt is provided to you, follow these specific steps to guide the user through the development process:
+
+### Step 1: Project Initialization Tutorial
+1. **First Response**: Provide a detailed step-by-step tutorial for initializing the project, including:
+   - Prerequisites installation (Node.js, npm/yarn, MongoDB, Git)
+   - Monorepo setup with workspace configuration
+   - Initial folder structure creation
+   - Package.json configuration for each service
+   - Development environment setup
+   - Basic dependencies installation
+
+2. **Wait for User Confirmation**: After providing the initialization steps, ask the user to confirm they've completed the setup before proceeding.
+
+### Step 2: File-by-File Development Process
+After initialization confirmation, proceed with this iterative approach:
+
+1. **Present Next File**: 
+   - Announce which file you're about to create
+   - Explain the file's purpose and how it fits in the overall architecture
+   - Show the complete file content with proper file path comments
+
+2. **Testing Instructions**:
+   - Provide specific commands to test the file (unit tests, integration tests, or manual testing)
+   - Include expected outcomes
+   - Suggest ways to verify the implementation works correctly
+
+3. **Pause for Feedback**:
+   - Ask the user to copy the file, run the tests, and provide feedback
+   - Wait for user confirmation or questions before proceeding
+   - Be ready to modify the file based on user feedback or errors
+
+4. **Handle Issues**:
+   - If the user reports errors or issues, debug step by step
+   - Provide corrected versions
+   - Explain what was wrong and why the fix works
+
+### Step 3: Development Order Priority
+Follow this specific order when creating files:
+
+**Phase 1 - Foundation:**
+1. Root package.json and workspace configuration
+2. Shared utilities and types
+3. Database connection and basic models
+4. Authentication service core files
+5. Basic testing setup
+
+**Phase 2 - Core Services:**
+6. Complete authentication service
+7. User service foundation
+8. Basic frontend setup with Next.js
+9. Authentication components and pages
+
+**Phase 3 - Feature Modules:**
+10. News service and components
+11. Course service and management
+12. Planning/calendar system
+13. Statistics service
+
+**Remember**: After each file creation, ALWAYS pause and wait for user feedback before proceeding to the next file.
+
+### Step 4: Communication Guidelines
+- Always include the complete file path as a comment at the top of each file
+- Explain complex code sections with inline comments
+- Provide clear, actionable testing instructions
+- Be ready to adjust code based on user preferences or environment differences
+- Ask clarifying questions if any requirement is ambiguous
+
+### Step 5: Error Handling Approach
+- If tests fail, help debug systematically
+- Provide alternative implementations if needed
+- Explain error messages clearly
+- Guide the user through troubleshooting steps
+
+Start with the project initialization tutorial and wait for confirmation before proceeding with file creation.
+
+---
+
+## Project Overview
+Create a modern, high-performance website for "101" IT school with four distinct user roles (Admin, Staff, Teacher, Student). The website will feature a responsive design (mobile and desktop), intuitive UX, and a modular microservices architecture within a monorepo structure allowing for easy expansion. The system will track student progress, course materials, scheduling, and provide comprehensive statistics.
+
+## Technical Requirements
+
+### Stack
+- **Frontend**: Next.js (latest stable), React, TailwindCSS
+- **Backend**: Node.js with Express for microservices
+- **Database**: MongoDB
+- **Authentication**: JWT-based auth with access/refresh tokens (24h sessions)
+- **Architecture**: Microservices within monorepo structure
+- **Testing**: Jest for unit/integration tests + performance benchmarks
+- **API**: REST with Swagger documentation
+- **Deployment**: Vercel (with deployment instructions)
+- **Languages**: Multi-language support (French and English initially, extensible)
+
+### Development Principles
+- Test-Driven Development (TDD)
+- SOLID principles
+- DRY (Don't Repeat Yourself)
+- KISS (Keep It Simple, Stupid)
+- YAGNI (You Aren't Gonna Need It)
+- Module-based architecture for future extensibility
+- Comprehensive documentation with file path comments
+- Accessibility standards compliance
+- GDPR compliance for user data
+
+## Project File Organization
+
+```
+101-school-platform/
+├── packages/
+│   ├── frontend/                          # Next.js Frontend Application
+│   │   ├── src/
+│   │   │   ├── components/               # Reusable UI components
+│   │   │   │   ├── common/              # Generic components (Button, Modal, etc.)
+│   │   │   │   ├── auth/                # Authentication components
+│   │   │   │   ├── course/              # Course-related components
+│   │   │   │   ├── calendar/            # Calendar components
+│   │   │   │   ├── statistics/          # Statistics components
+│   │   │   │   └── profile/             # Profile components
+│   │   │   ├── modules/                 # Feature modules
+│   │   │   │   ├── auth/                # Authentication module
+│   │   │   │   ├── user-profile/        # User profile module
+│   │   │   │   ├── news/                # News module
+│   │   │   │   ├── courses/             # Course management module
+│   │   │   │   ├── planning/            # Planning/Calendar module
+│   │   │   │   └── statistics/          # Statistics module
+│   │   │   ├── hooks/                   # Custom React hooks
+│   │   │   ├── contexts/                # React contexts
+│   │   │   ├── utils/                   # Frontend utilities
+│   │   │   ├── styles/                  # Global styles
+│   │   │   └── types/                   # TypeScript type definitions
+│   │   ├── pages/                       # Next.js pages
+│   │   ├── public/                      # Static assets
+│   │   └── tests/                       # Frontend tests
+│   │
+│   ├── api-services/                     # Microservices
+│   │   ├── auth-service/                # Authentication service
+│   │   │   ├── src/
+│   │   │   │   ├── controllers/         # Route controllers
+│   │   │   │   ├── middleware/          # Express middleware
+│   │   │   │   ├── routes/              # API routes
+│   │   │   │   ├── services/            # Business logic
+│   │   │   │   ├── utils/               # Service utilities
+│   │   │   │   └── app.js               # Express app setup
+│   │   │   ├── tests/                   # Service tests
+│   │   │   └── swagger.yaml             # API documentation
+│   │   ├── user-service/                # User management service
+│   │   ├── course-service/              # Course management service
+│   │   ├── planning-service/            # Planning/Calendar service
+│   │   ├── statistics-service/          # Statistics service
+│   │   ├── news-service/                # News management service
+│   │   └── notification-service/        # Notification service
+│   │
+│   ├── shared-utilities/                # Shared utilities across services
+│   │   ├── validation/                  # Input validation schemas
+│   │   ├── constants/                   # Shared constants
+│   │   ├── helpers/                     # Utility functions
+│   │   ├── middleware/                  # Shared middleware
+│   │   └── types/                       # Shared TypeScript types
+│   │
+│   ├── database-schemas/                # MongoDB schemas and models
+│   │   ├── models/                      # Mongoose models
+│   │   ├── migrations/                  # Database migrations
+│   │   ├── seeders/                     # Database seeders
+│   │   └── validators/                  # Data validation
+│   │
+│   └── testing-utilities/               # Shared testing utilities
+│       ├── fixtures/                    # Test data fixtures
+│       ├── helpers/                     # Test helper functions
+│       ├── mocks/                       # Mock implementations
+│       └── performance/                 # Performance benchmark tests
+│
+├── docs/                                # Documentation
+│   ├── api/                            # API documentation
+│   ├── deployment/                     # Deployment guides
+│   ├── user-guides/                    # User documentation
+│   └── development/                    # Development setup
+│
+├── scripts/                            # Build and deployment scripts
+├── docker-compose.yml                  # Development environment
+├── package.json                        # Root package configuration
+└── README.md                          # Project overview
+```
+
+## Database Schema Design
+
+### Users Collection
+```javascript
+// Path: packages/database-schemas/models/User.js
+{
+  _id: ObjectId,
+  email: String (unique, required),
+  password: String (hashed, required),
+  role: String (enum: ['admin', 'staff', 'teacher', 'student'], required),
+  profile: {
+    firstName: String (required),
+    lastName: String (required),
+    photo: String (url),
+    studentId: String (students only),
+    department: String (staff only),
+    specialties: [String] (teachers only),
+    bio: String (teachers only),
+    officeHours: String (teachers only),
+    promotion: ObjectId (students only, ref: 'Promotion'),
+    contactInfo: {
+      phone: String,
+      address: String,
+      emergencyContact: {
+        name: String,
+        phone: String,
+        relation: String
+      }
+    }
+  },
+  preferences: {
+    language: String (default: 'fr'),
+    notifications: {
+      scheduleChanges: Boolean (default: true),
+      newAnnouncements: Boolean (default: true),
+      assignmentReminders: Boolean (default: true)
+    },
+    accessibility: {
+      colorblindMode: Boolean (default: false),
+      fontSize: String (default: 'medium'),
+      highContrast: Boolean (default: false)
+    }
+  },
+  isActive: Boolean (default: true),
+  lastLogin: Date,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Additional Collections
+- **Courses**: Course information, chapters, sections, content
+- **Promotions**: Student groups/classes
+- **Schedules**: Calendar events and planning
+- **News**: Announcements and news articles  
+- **Assignments**: Student assignments and submissions
+- **Statistics**: Performance metrics and analytics
+- **AuditLogs**: System activity tracking
+
+## Core Modules with API Documentation
+
+### 1. Authentication Module
+
+#### Features
+- Email/password authentication with password recovery
+- JWT access tokens (2h) and refresh tokens (24h)
+- Role-based authorization
+- Development mode bypass
+- Session management
+- Activity logging
+
+#### API Endpoints
+
+```yaml
+# Path: packages/api-services/auth-service/swagger.yaml
+/api/auth/login:
+  post:
+    summary: User login
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+              password:
+                type: string
+                minLength: 8
+    responses:
+      200:
+        description: Login successful
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accessToken:
+                  type: string
+                refreshToken:
+                  type: string
+                user:
+                  $ref: '#/components/schemas/User'
+
+/api/auth/refresh:
+  post:
+    summary: Refresh access token
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              refreshToken:
+                type: string
+    responses:
+      200:
+        description: Token refreshed
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accessToken:
+                  type: string
+
+/api/auth/forgot-password:
+  post:
+    summary: Request password reset
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+    responses:
+      200:
+        description: Password reset email sent
+
+/api/auth/reset-password:
+  post:
+    summary: Reset password with token
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+              newPassword:
+                type: string
+                minLength: 8
+    responses:
+      200:
+        description: Password reset successful
+
+/api/auth/logout:
+  post:
+    summary: User logout
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: Logout successful
+```
+
+### 2. User Profile Module
+
+#### Features
+- Profile management for all roles
+- Profile picture upload (square, max 5MB)
+- Notification preferences
+- Accessibility settings
+- Activity logging
+- GDPR compliance
+
+#### API Endpoints
+
+```yaml
+# Path: packages/api-services/user-service/swagger.yaml
+/api/users/profile:
+  get:
+    summary: Get current user profile
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: User profile
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+
+  put:
+    summary: Update user profile
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UpdateUserProfile'
+    responses:
+      200:
+        description: Profile updated
+
+/api/users/profile/photo:
+  post:
+    summary: Upload profile photo
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              photo:
+                type: string
+                format: binary
+    responses:
+      200:
+        description: Photo uploaded
+
+/api/users/preferences:
+  put:
+    summary: Update user preferences
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserPreferences'
+    responses:
+      200:
+        description: Preferences updated
+
+/api/users/activity-logs:
+  get:
+    summary: Get user activity logs
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 50
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          default: 0
+    responses:
+      200:
+        description: Activity logs
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ActivityLog'
+```
+
+### 3. Course Management Module
+
+#### Features
+- Markdown-based course creation/editing
+- Git version control with auto-commit on save
+- Course structure: Course → Chapters → Sections → Content
+- Interactive elements: code exercises, quizzes
+- File/resource attachments
+- Change tracking
+
+#### API Endpoints
+
+```yaml
+# Path: packages/api-services/course-service/swagger.yaml
+/api/courses:
+  get:
+    summary: Get courses list
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: role
+        in: query
+        schema:
+          type: string
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: category
+        in: query
+        schema:
+          type: string
+    responses:
+      200:
+        description: Courses list
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Course'
+
+  post:
+    summary: Create new course (Teachers, Staff, Admin)
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateCourse'
+    responses:
+      201:
+        description: Course created
+
+/api/courses/{courseId}:
+  get:
+    summary: Get course details
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Course details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseDetail'
+
+  put:
+    summary: Update course (Teachers, Staff, Admin)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UpdateCourse'
+    responses:
+      200:
+        description: Course updated
+
+/api/courses/{courseId}/chapters:
+  post:
+    summary: Add chapter to course
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateChapter'
+    responses:
+      201:
+        description: Chapter created
+
+/api/courses/{courseId}/chapters/{chapterId}/sections:
+  post:
+    summary: Add section to chapter
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateSection'
+    responses:
+      201:
+        description: Section created
+
+/api/courses/{courseId}/exercises:
+  post:
+    summary: Create code exercise
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateExercise'
+    responses:
+      201:
+        description: Exercise created
+
+/api/courses/{courseId}/exercises/{exerciseId}/submit:
+  post:
+    summary: Submit exercise solution
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+              language:
+                type: string
+                enum: [c, python, javascript]
+              files:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileUpload'
+    responses:
+      200:
+        description: Exercise submitted
+
+/api/courses/{courseId}/version-history:
+  get:
+    summary: Get course version history
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: Version history
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CourseVersion'
+```
+
+### 4. Planning/Calendar Module
+
+#### Features
+- Comprehensive calendar system
+- Google Calendar integration
+- Recurring events (weekly patterns)
+- Conflict detection with warnings
+- Schedule change notifications
+- Year-ahead planning
+- Role-based view filtering
+
+#### API Endpoints
+
+```yaml
+# Path: packages/api-services/planning-service/swagger.yaml
+/api/planning/events:
+  get:
+    summary: Get calendar events
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: startDate
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: type
+        in: query
+        schema:
+          type: string
+          enum: [class, exam, meeting, event]
+    responses:
+      200:
+        description: Calendar events
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CalendarEvent'
+
+  post:
+    summary: Create calendar event (Staff, Admin)
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateEvent'
+    responses:
+      201:
+        description: Event created
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  $ref: '#/components/schemas/CalendarEvent'
+                conflicts:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ConflictWarning'
+
+/api/planning/events/{eventId}:
+  put:
+    summary: Update calendar event
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UpdateEvent'
+    responses:
+      200:
+        description: Event updated
+
+/api/planning/conflicts:
+  get:
+    summary: Check for scheduling conflicts
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: resourceIds
+        in: query
+        schema:
+          type: array
+          items:
+            type: string
+    responses:
+      200:
+        description: Conflict check results
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ConflictWarning'
+
+/api/planning/google-calendar/sync:
+  post:
+    summary: Sync with Google Calendar
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              calendarId:
+                type: string
+              syncDirection:
+                type: string
+                enum: [import, export, bidirectional]
+    responses:
+      200:
+        description: Sync completed
+```
+
+### 5. Statistics Module
+
+#### Features
+- Role-specific analytics dashboards
+- Data visualization with charts
+- Export functionality (PDF, CSV)
+- Real-time metrics calculation
+- Historical trend analysis
+
+#### Statistics by Role
+- **Students**: Attendance graphs, grade trends, assignment completion rates
+- **Teachers**: Class performance, attendance rates, engagement metrics  
+- **Staff**: School-wide statistics, enrollment trends, resource utilization
+
+#### API Endpoints
+
+```yaml
+# Path: packages/api-services/statistics-service/swagger.yaml
+/api/statistics/dashboard:
+  get:
+    summary: Get role-specific dashboard data
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: period
+        in: query
+        schema:
+          type: string
+          enum: [week, month, semester, year]
+          default: month
+    responses:
+      200:
+        description: Dashboard statistics
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardStats'
+
+/api/statistics/attendance:
+  get:
+    summary: Get attendance statistics
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: userId
+        in: query
+        schema:
+          type: string
+      - name: courseId
+        in: query
+        schema:
+          type: string
+      - name: startDate
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        schema:
+          type: string
+          format: date
+    responses:
+      200:
+        description: Attendance data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceStats'
+
+/api/statistics/grades:
+  get:
+    summary: Get grade statistics
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: userId
+        in: query
+        schema:
+          type: string
+      - name: courseId
+        in: query
+        schema:
+          type: string
+    responses:
+      200:
+        description: Grade statistics
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GradeStats'
+
+/api/statistics/export:
+  post:
+    summary: Export statistics report
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [pdf, csv, excel]
+              reportType:
+                type: string
+                enum: [attendance, grades, engagement, overview]
+              filters:
+                type: object
+              dateRange:
+                type: object
+                properties:
+                  start:
+                    type: string
+                    format: date
+                  end:
+                    type: string
+                    format: date
+    responses:
+      200:
+        description: Export file
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+```
+
+### 6. News Module
+
+#### Features
+- Staff-published announcements
+- News categorization and tagging
+- Rich text editing
+- Notification system
+- Archive with search functionality
+
+#### API Endpoints
+
+```yaml
+# Path: packages/api-services/news-service/swagger.yaml
+/api/news:
+  get:
+    summary: Get news articles
+    parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          default: 10
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          default: 0
+      - name: category
+        in: query
+        schema:
+          type: string
+      - name: search
+        in: query
+        schema:
+          type: string
+    responses:
+      200:
+        description: News articles
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                articles:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/NewsArticle'
+                total:
+                  type: integer
+                pagination:
+                  $ref: '#/components/schemas/Pagination'
+
+  post:
+    summary: Create news article (Staff, Admin)
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateNewsArticle'
+    responses:
+      201:
+        description: Article created
+
+/api/news/{articleId}:
+  get:
+    summary: Get article details
+    parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Article details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsArticleDetail'
+
+  put:
+    summary: Update news article (Staff, Admin)
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UpdateNewsArticle'
+    responses:
+      200:
+        description: Article updated
+
+  delete:
+    summary: Delete news article (Staff, Admin)
+    security:
+      - bearerAuth: []
+    responses:
+      204:
+        description: Article deleted
+```
+
+## Testing Strategy
+
+### Unit Tests Coverage
+- Aim for 90%+ code coverage
+- Test all business logic functions
+- Test React components with React Testing Library
+- Test API endpoints with supertest
+- Test database operations with in-memory MongoDB
+
+### Integration Tests
+- End-to-end user flows for each role
+- API integration between services
+- Database integration tests
+- Authentication flow testing
+
+### Performance Benchmarks
+Create dedicated performance test file:
+
+```javascript
+// Path: packages/testing-utilities/performance/benchmarks.test.js
+// File: packages/testing-utilities/performance/benchmarks.test.js
+
+const performanceTests = {
+  // Page load time benchmarks
+  pageLoad: {
+    homepage: { target: '< 2s', critical: '< 3s' },
+    coursePage: { target: '< 1.5s', critical: '< 2.5s' },
+    dashboard: { target: '< 2s', critical: '< 3s' }
+  },
+  
+  // API response time benchmarks  
+  apiResponse: {
+    auth: { target: '< 300ms', critical: '< 500ms' },
+    courseList: { target: '< 400ms', critical: '< 600ms' },
+    statistics: { target: '< 500ms', critical: '< 800ms' }
+  },
+  
+  // Database query performance
+  databaseQuery: {
+    userLogin: { target: '< 100ms', critical: '< 200ms' },
+    courseSearch: { target: '< 150ms', critical: '< 300ms' },
+    statisticsAggregation: { target: '< 200ms', critical: '< 400ms' }
+  }
+};
+```
+
+## Activity Logging System
+
+### Logged Activities
+- Login/logout events
+- All course editing actions (create, update, delete, publish, version changes)
+- Assignment submissions and grading
+- Profile modifications
+- Schedule changes
+- Administrative actions
+- File uploads/downloads
+- System configuration changes
+
+### Audit Log Schema
+```javascript
+// Path: packages/database-schemas/models/AuditLog.js
+{
+  _id: ObjectId,
+  userId: ObjectId (ref: 'User'),
+  action: String (required),
+  resource: String (required), // 'course', 'user', 'schedule', etc.
+  resourceId: ObjectId,
+  details: {
+    before: Object, // Previous state
+    after: Object,  // New state
+    metadata: Object // Additional context
+  },
+  ipAddress: String,
+  userAgent: String,
+  timestamp: Date (default: Date.now),
+  sessionId: String
+}
+```
+
+## Deployment Instructions
+
+### Environment Setup
+Create detailed deployment documentation:
+
+```markdown
+# Path: docs/deployment/vercel-deployment.md
+
+## Vercel Deployment Guide
+
+### Prerequisites
+- Vercel account
+- MongoDB Atlas database
+- Environment variables configured
+
+### Environment Variables
+```bash
+# Authentication
+JWT_SECRET=your-jwt-secret
+JWT_REFRESH_SECRET=your-refresh-secret
+SESSION_DURATION=24h
+
+# Database
+MONGODB_URI=mongodb+srv://...
+MONGODB_DB_NAME=101-school
+
+# Email Service (for password reset)
+EMAIL_SERVICE_API_KEY=your-email-key
+EMAIL_FROM=noreply@101school.com
+
+# File Storage
+CLOUDINARY_API_KEY=your-cloudinary-key
+CLOUDINARY_API_SECRET=your-cloudinary-secret
+
+# Google Calendar Integration
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
+
+### Deployment Steps
+1. Connect repository to Vercel
+2. Configure build settings
+3. Set environment variables
+4. Deploy microservices
+5. Configure custom domain
+6. Setup SSL certificates
+7. Configure monitoring
+
+### Performance Optimization
+- Enable Vercel Edge Functions
+- Configure CDN for static assets
+- Implement proper caching strategies
+- Optimize images with Next.js Image component
+```
+
+## Future Expansion Modules
+
+### Easily Extensible Architecture
+The modular design allows for easy addition of:
+- **E-learning Module**: Video streaming, interactive lessons
+- **Communication Module**: Chat, forums, messaging
+- **Assessment Module**: Advanced testing, proctoring
+- **Mobile App**: React Native companion app
+- **Analytics Module**: Advanced reporting, AI insights
+- **Integration Module**: LMS integrations, third-party tools
+
+### Module Addition Process
+1. Create new service in `packages/api-services/`
+2. Add corresponding frontend module in `packages/frontend/src/modules/`
+3. Update shared types and utilities
+4. Implement comprehensive tests
+5. Update API documentation
+6. Add deployment configuration
+
+## Development Timeline
+
+### Phase 1: Foundation (Weeks 1-2)
+- Project setup and repository structure
+- Authentication service and frontend module
+- Basic user management and profiles
+- Development environment setup
+
+### Phase 2: Core Features (Weeks 3-5)
+- News module with homepage
+- Course viewing and basic management
+- Calendar/planning system foundation
+- Role-based navigation and permissions
+
+### Phase 3: Advanced Features (Weeks 6-8)
+- Complete course creation and editing
+- Interactive exercises and code editor
+- Full calendar with Google integration
+- Statistics and reporting module
+
+### Phase 4: Polish and Optimization (Weeks 9-10)
+- Performance optimization
+- Comprehensive testing
+- Security hardening
+- Documentation completion
+- Deployment preparation
+
+This comprehensive guide provides the foundation for building a robust, scalable, and maintainable IT school platform with all the specified features and requirements.

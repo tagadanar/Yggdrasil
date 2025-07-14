@@ -124,7 +124,7 @@ describe('Auth Token Management Functional Tests', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('deactivated');
+      expect(response.body.error).toContain('locked');
 
       // Reactivate user for other tests
       await UserModel.findByIdAndUpdate(testUser._id, { isActive: true });

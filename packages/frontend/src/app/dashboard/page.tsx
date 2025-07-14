@@ -1,175 +1,176 @@
 // packages/frontend/src/app/dashboard/page.tsx
-// Main dashboard page - displays "Hello World" for authenticated users
+// Main dashboard page for authenticated users
 
 'use client';
 
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isLoading, logout } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [showAccessDenied, setShowAccessDenied] = useState(false);
 
-  const getRoleEmoji = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return '👑';
-      case 'staff':
-        return '🏢';
-      case 'teacher':
-        return '👩‍🏫';
-      case 'student':
-        return '📚';
-      default:
-        return '👤';
+  // Check for access denied error
+  useEffect(() => {
+    if (searchParams.get('error') === 'access_denied') {
+      setShowAccessDenied(true);
+      // Clear the error parameter from URL
+      router.replace('/dashboard');
     }
-  };
+  }, [searchParams, router]);
 
-  const getRoleDescription = (role: string) => {
-    switch (role) {
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect to login
+  }
+
+  const getDashboardContent = () => {
+    switch (user.role) {
       case 'admin':
-        return 'You have full administrative access to the platform.';
-      case 'staff':
-        return 'You can manage users and oversee school operations.';
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Admin Dashboard</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
+                <p className="text-gray-600 mb-4">Manage users, roles, and permissions</p>
+                <Link href="/admin/users" className="btn-primary">
+                  Manage Users
+                </Link>
+              </div>
+            </div>
+          </div>
+        );
       case 'teacher':
-        return 'You can create courses and track student progress.';
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Teacher Dashboard</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">My Courses</h3>
+                <p className="text-gray-600 mb-4">Manage your courses and lessons</p>
+                <Link href="/courses" className="btn-primary">
+                  View Courses
+                </Link>
+              </div>
+            </div>
+          </div>
+        );
+      case 'staff':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Staff Dashboard</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Academic Planning</h3>
+                <p className="text-gray-600 mb-4">Manage schedules and academic calendar</p>
+                <Link href="/planning" className="btn-primary">
+                  View Planning
+                </Link>
+              </div>
+            </div>
+          </div>
+        );
       case 'student':
-        return 'You can access courses and track your learning progress.';
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Student Dashboard</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">My Enrollments</h3>
+                <p className="text-gray-600 mb-4">View your enrolled courses</p>
+                <Link href="/courses" className="btn-primary">
+                  View Courses
+                </Link>
+              </div>
+            </div>
+          </div>
+        );
       default:
-        return 'Welcome to the platform!';
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+            <p className="text-gray-600">Welcome to your dashboard!</p>
+          </div>
+        );
     }
   };
 
   return (
-    <ProtectedRoute>
-      <DashboardLayout>
-        <div className="space-y-6">
-          {/* Welcome Card */}
-          <div className="card">
-            <div className="text-center">
-              <div className="text-6xl mb-4">
-                {getRoleEmoji(user?.role || '')}
-              </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                Hello World! 🌍
-              </h1>
-              <p className="text-xl text-gray-600 mb-4">
-                Welcome back, {user?.profile?.firstName || 'User'}!
-              </p>
-              <p className="text-gray-500">
-                {getRoleDescription(user?.role || '')}
-              </p>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center">
+              <Link href="/" className="text-2xl font-bold text-gray-900">
+                🌳 Yggdrasil
+              </Link>
             </div>
-          </div>
-
-          {/* User Information Card */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="card">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Your Profile
-              </h2>
-              <dl className="space-y-3">
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Full Name</dt>
-                  <dd className="text-sm text-gray-900">
-                    {user?.profile?.firstName || 'Unknown'} {user?.profile?.lastName || 'User'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Email</dt>
-                  <dd className="text-sm text-gray-900">{user?.email}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Role</dt>
-                  <dd className="text-sm text-gray-900 capitalize">{user?.role}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Language Preference</dt>
-                  <dd className="text-sm text-gray-900 uppercase">
-                    {user?.preferences?.language || 'FR'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Account Status</dt>
-                  <dd className="text-sm">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">
-                      {user?.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <div className="card">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Quick Stats
-              </h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-primary-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-primary-900">Login Status</p>
-                    <p className="text-xs text-primary-600">Successfully authenticated</p>
-                  </div>
-                  <div className="text-2xl">✅</div>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-success-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-success-900">Platform Access</p>
-                    <p className="text-xs text-success-600">All systems operational</p>
-                  </div>
-                  <div className="text-2xl">🚀</div>
-                </div>
-
-                {user?.lastLogin && (
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Last Login</p>
-                      <p className="text-xs text-gray-600">
-                        {new Date(user.lastLogin).toLocaleDateString()} at{' '}
-                        {new Date(user.lastLogin).toLocaleTimeString()}
-                      </p>
-                    </div>
-                    <div className="text-2xl">🕒</div>
-                  </div>
-                )}
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                Welcome, {user.profile.firstName} {user.profile.lastName}
               </div>
-            </div>
-          </div>
-
-          {/* Getting Started Card */}
-          <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              🎯 What's Next?
-            </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl mb-2">📚</div>
-                <h3 className="font-medium text-gray-900">Courses</h3>
-                <p className="text-xs text-gray-600 mt-1">Browse available courses</p>
+              <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                {user.role.toUpperCase()}
               </div>
-              
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl mb-2">📅</div>
-                <h3 className="font-medium text-gray-900">Schedule</h3>
-                <p className="text-xs text-gray-600 mt-1">View your calendar</p>
-              </div>
-              
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl mb-2">📊</div>
-                <h3 className="font-medium text-gray-900">Progress</h3>
-                <p className="text-xs text-gray-600 mt-1">Track your performance</p>
-              </div>
-              
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl mb-2">📰</div>
-                <h3 className="font-medium text-gray-900">News</h3>
-                <p className="text-xs text-gray-600 mt-1">Latest announcements</p>
-              </div>
+              <button
+                onClick={() => logout()}
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
-      </DashboardLayout>
-    </ProtectedRoute>
+      </header>
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          {showAccessDenied && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Access Denied</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>You don't have permission to access the requested page.</p>
+                  </div>
+                  <div className="mt-4">
+                    <button
+                      onClick={() => setShowAccessDenied(false)}
+                      className="text-sm bg-red-100 text-red-800 px-3 py-1 rounded hover:bg-red-200"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {getDashboardContent()}
+        </div>
+      </main>
+    </div>
   );
 }

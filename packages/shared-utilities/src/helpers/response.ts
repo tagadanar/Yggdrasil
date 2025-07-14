@@ -1,7 +1,8 @@
 // packages/shared-utilities/src/helpers/response.ts
 // Helper functions for creating consistent API responses
 
-import { ApiResponse, ErrorResponse, PaginatedResponse, HttpStatus } from '../types/api';
+import { ApiResponse, ErrorResponse, PaginatedResponse } from '../types/api';
+import { HTTP_STATUS } from '../constants';
 
 export class ResponseHelper {
   /**
@@ -21,7 +22,7 @@ export class ResponseHelper {
    */
   static error(
     error: string,
-    statusCode: number = HttpStatus.INTERNAL_SERVER_ERROR,
+    statusCode: number = HTTP_STATUS.INTERNAL_SERVER_ERROR,
     details?: Record<string, any>
   ): ErrorResponse {
     return {
@@ -52,7 +53,7 @@ export class ResponseHelper {
       success: false,
       error: errorMessage,
       message: errorMessage,
-      statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      statusCode: HTTP_STATUS.UNPROCESSABLE_ENTITY,
       timestamp: new Date().toISOString(),
       details: {
         validationErrors,
@@ -92,34 +93,34 @@ export class ResponseHelper {
    * Create a not found error response
    */
   static notFound(resource: string = 'Resource'): ErrorResponse {
-    return this.error(`${resource} not found`, HttpStatus.NOT_FOUND);
+    return this.error(`${resource} not found`, HTTP_STATUS.NOT_FOUND);
   }
 
   /**
    * Create an unauthorized error response
    */
   static unauthorized(message: string = 'Unauthorized access'): ErrorResponse {
-    return this.error(message, HttpStatus.UNAUTHORIZED);
+    return this.error(message, HTTP_STATUS.UNAUTHORIZED);
   }
 
   /**
    * Create a forbidden error response
    */
   static forbidden(message: string = 'Insufficient permissions'): ErrorResponse {
-    return this.error(message, HttpStatus.FORBIDDEN);
+    return this.error(message, HTTP_STATUS.FORBIDDEN);
   }
 
   /**
    * Create a conflict error response
    */
   static conflict(message: string = 'Resource already exists'): ErrorResponse {
-    return this.error(message, HttpStatus.CONFLICT);
+    return this.error(message, HTTP_STATUS.CONFLICT);
   }
 
   /**
    * Create a bad request error response
    */
   static badRequest(message: string = 'Bad request'): ErrorResponse {
-    return this.error(message, HttpStatus.BAD_REQUEST);
+    return this.error(message, HTTP_STATUS.BAD_REQUEST);
   }
 }

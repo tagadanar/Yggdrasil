@@ -8,7 +8,7 @@ import { connectDatabase } from '@yggdrasil/database-schemas';
 // Load environment variables from project root
 dotenv.config({ path: '../../../.env' });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.AUTH_SERVICE_PORT || process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 async function startServer(): Promise<void> {

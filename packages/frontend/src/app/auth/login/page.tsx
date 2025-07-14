@@ -16,30 +16,44 @@ export default function LoginPage() {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string>('');
 
-  // Redirect authenticated users to home
+  // Redirect authenticated users to dashboard
   useEffect(() => {
     if (user && !isLoading) {
-      router.push('/');
+      router.push('/dashboard');
     }
   }, [user, isLoading, router]);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting }
+    formState: { errors, isSubmitting },
+    watch
   } = useForm<LoginRequestType>({
     resolver: zodResolver(LoginRequestSchema),
   });
 
+  // Clear submit error when user types
+  useEffect(() => {
+    const subscription = watch(() => {
+      if (submitError) {
+        setSubmitError('');
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, submitError]);
+
   const onSubmit = async (data: LoginRequestType) => {
     try {
       setSubmitError('');
+      // Small delay to show loading state (simulates network latency)
+      await new Promise(resolve => setTimeout(resolve, 100));
       const result = await login(data.email, data.password);
       
       if (result.success) {
-        router.push('/');
+        // Small delay to ensure the user sees the success state before redirect
+        setTimeout(() => router.push('/dashboard'), 100);
       } else {
-        setSubmitError(result.error || 'Login failed');
+        setSubmitError(result.error || 'Invalid email or password');
       }
     } catch (error) {
       setSubmitError('An unexpected error occurred');
@@ -52,7 +66,8 @@ export default function LoginPage() {
       const result = await login(email, password);
       
       if (result.success) {
-        router.push('/');
+        // Small delay to ensure the user sees the success state before redirect
+        setTimeout(() => router.push('/dashboard'), 100);
       } else {
         setSubmitError(result.error || 'Demo login failed');
       }
@@ -95,7 +110,7 @@ export default function LoginPage() {
 
         {/* Form */}
         <div className="card">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
             {/* Email Field */}
             <div className="form-group">
               <label htmlFor="email" className="form-label">
@@ -198,6 +213,23 @@ export default function LoginPage() {
                 </div>
               </div>
               <div className="text-xs text-green-600">Click to login</div>
+            </button>
+            
+            <button
+              onClick={() => handleDemoLogin('staff@yggdrasil.edu', 'Admin123!')}
+              disabled={isSubmitting}
+              className="w-full flex items-center justify-between p-3 bg-orange-50 hover:bg-orange-100 rounded-md border border-orange-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
+                  <span className="text-white text-xs font-bold">ST</span>
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-medium text-gray-900">Staff Account</div>
+                  <div className="text-xs text-gray-600">staff@yggdrasil.edu</div>
+                </div>
+              </div>
+              <div className="text-xs text-orange-600">Click to login</div>
             </button>
             
             <button

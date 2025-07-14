@@ -78,10 +78,29 @@ export class ValidationHelper {
   }
 
   /**
-   * Sanitize string input
+   * Sanitize string input to prevent XSS attacks
+   * Removes/escapes potentially dangerous characters and patterns
    */
   static sanitizeString(input: string): string {
-    return input.trim().replace(/[<>]/g, '');
+    if (typeof input !== 'string') {
+      return '';
+    }
+    
+    return input
+      .trim()
+      // Remove/escape HTML entities and dangerous characters
+      .replace(/[<>]/g, '') // Remove angle brackets
+      .replace(/&/g, '&amp;') // Escape ampersands
+      .replace(/"/g, '&quot;') // Escape quotes
+      .replace(/'/g, '&#x27;') // Escape single quotes
+      .replace(/\//g, '&#x2F;') // Escape forward slashes
+      // Remove common XSS patterns
+      .replace(/javascript:/gi, '') // Remove javascript: protocol
+      .replace(/vbscript:/gi, '') // Remove vbscript: protocol
+      .replace(/data:/gi, '') // Remove data: protocol (can be dangerous)
+      .replace(/on\w+\s*=/gi, '') // Remove event handlers like onclick=
+      // Remove null bytes and control characters
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
   }
 
   /**

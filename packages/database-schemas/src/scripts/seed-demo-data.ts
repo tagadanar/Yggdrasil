@@ -3,7 +3,6 @@
 
 import { connectDatabase, disconnectDatabase } from '../connection/database';
 import { UserModel } from '../models/User';
-import bcrypt from 'bcrypt';
 
 const DEMO_USERS = [
   {
@@ -27,6 +26,17 @@ const DEMO_USERS = [
     isActive: true,
   },
   {
+    email: 'staff@yggdrasil.edu',
+    password: 'Admin123!',
+    role: 'staff',
+    profile: {
+      firstName: 'Jane',
+      lastName: 'Smith',
+      department: 'Academic Administration',
+    },
+    isActive: true,
+  },
+  {
     email: 'student@yggdrasil.edu',
     password: 'Admin123!', 
     role: 'student',
@@ -40,37 +50,22 @@ const DEMO_USERS = [
 
 async function seedDemoData(): Promise<void> {
   try {
-    console.log('🌱 Starting demo data seeding...');
-    
     // Connect to database
     await connectDatabase();
     
     // Clear existing demo users
-    console.log('🧹 Clearing existing demo users...');
     await UserModel.deleteMany({ 
       email: { $in: DEMO_USERS.map(u => u.email) } 
     });
     
     // Create demo users
-    console.log('👥 Creating demo users...');
     for (const userData of DEMO_USERS) {
-      // Hash password
-      const hashedPassword = await bcrypt.hash(userData.password, 12);
-      
-      // Create user
-      const user = new UserModel({
-        ...userData,
-        password: hashedPassword,
-      });
-      
+      // Create user with plain password - pre-save middleware will hash it
+      const user = new UserModel(userData);
       await user.save();
-      console.log(`✅ Created ${userData.role}: ${userData.email}`);
     }
     
-    console.log('🎉 Demo data seeding completed successfully!');
-    
   } catch (error) {
-    console.error('❌ Demo data seeding failed:', error);
     throw error;
   } finally {
     await disconnectDatabase();
@@ -81,11 +76,9 @@ async function seedDemoData(): Promise<void> {
 if (require.main === module) {
   seedDemoData()
     .then(() => {
-      console.log('✅ Seeding process completed');
       process.exit(0);
     })
     .catch((error) => {
-      console.error('❌ Seeding process failed:', error);
       process.exit(1);
     });
 }

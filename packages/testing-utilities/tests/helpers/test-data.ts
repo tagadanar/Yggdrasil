@@ -8,6 +8,10 @@ export const TestUsers = {
     email: 'teacher@yggdrasil.edu',
     password: 'Admin123!'
   },
+  DEMO_STAFF: {
+    email: 'staff@yggdrasil.edu',
+    password: 'Admin123!'
+  },
   DEMO_STUDENT: {
     email: 'student@yggdrasil.edu',
     password: 'Admin123!'
@@ -40,10 +44,12 @@ export const TestScenarios = {
 export function generateUniqueUser(role: 'student' | 'teacher' | 'staff' = 'student') {
   const timestamp = Date.now();
   return {
-    firstName: 'Test',
-    lastName: 'User',
     email: `test.${timestamp}@example.com`,
     password: 'TestPassword123!',
-    role
+    role,
+    profile: {
+      firstName: 'Test',
+      lastName: 'User'
+    }
   };
 }

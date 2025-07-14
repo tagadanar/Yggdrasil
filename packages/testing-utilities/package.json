@@ -6,11 +6,17 @@
   "scripts": {
     "test": "playwright test",
     "test:functional": "playwright test",
+    "test:quiet": "playwright test --reporter=dot",
+    "test:single": "playwright test --reporter=line --headed --workers=1",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:report": "playwright show-report",
-    "install:browsers": "playwright install"
+    "install:browsers": "playwright install",
+    "services:start": "node service-manager.js start",
+    "services:stop": "node service-manager.js stop",
+    "services:health": "node service-manager.js health",
+    "services:clean": "node service-manager.js clean"
   },
   "dependencies": {
     "@yggdrasil/shared-utilities": "file:../shared-utilities"

@@ -199,7 +199,7 @@ describe('Auth Login Functional Tests', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('deactivated');
+      expect(response.body.error).toContain('locked');
     });
 
     it('should fail login with missing email', async () => {

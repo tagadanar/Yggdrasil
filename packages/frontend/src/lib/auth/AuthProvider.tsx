@@ -32,6 +32,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const initializeAuth = async () => {
     try {
+      // If we're on a login page, skip auth initialization to avoid conflicts
+      if (typeof window !== 'undefined' && window.location.pathname.includes('/auth/login')) {
+        setIsLoading(false);
+        return;
+      }
+
       const storedTokens = tokenStorage.getTokens();
       if (!storedTokens?.accessToken) {
         setIsLoading(false);
@@ -51,6 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!refreshSuccess) {
             tokenStorage.clearTokens();
           }
+        } else {
+          // Clear invalid tokens
+          tokenStorage.clearTokens();
         }
       }
     } catch (error) {
@@ -64,6 +73,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      // Clear any existing tokens before login attempt
+      tokenStorage.clearTokens();
+      setUser(null);
+      setTokens(null);
+      
       const result = await authApi.login({ email, password });
       
       if (result.success && result.user && result.tokens) {
@@ -72,11 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tokenStorage.setTokens(result.tokens);
         return { success: true };
       } else {
-        return { success: false, error: result.error || 'Login failed' };
+        return { success: false, error: result.error || 'Invalid email or password' };
       }
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: 'Login failed' };
+      return { success: false, error: 'Network error. Please try again.' };
     } finally {
       setIsLoading(false);
     }

@@ -28,7 +28,7 @@ export const RegisterRequestSchema = z.object({
 });
 
 export const RefreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string({ required_error: 'Validation failed' }).min(1, 'Refresh token is required'),
 });
 
 export const ForgotPasswordSchema = z.object({

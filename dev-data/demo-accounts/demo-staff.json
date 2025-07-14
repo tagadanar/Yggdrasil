@@ -1,0 +1,10 @@
+{
+  "email": "staff@yggdrasil.edu",
+  "password": "Admin123!",
+  "profile": {
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "department": "Academic Administration"
+  },
+  "role": "staff"
+}

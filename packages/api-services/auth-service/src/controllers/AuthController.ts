@@ -33,7 +33,7 @@ export class AuthController {
 
       if (result.success) {
         res.status(HTTP_STATUS.CREATED).json(
-          ResponseHelper.success(result, 'User registered successfully')
+          ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'User registered successfully')
         );
       } else {
         const statusCode = result.error?.includes('already exists') 
@@ -45,7 +45,6 @@ export class AuthController {
         );
       }
     } catch (error) {
-      console.error('Register controller error:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
         ResponseHelper.error('Registration failed')
       );
@@ -72,7 +71,7 @@ export class AuthController {
 
       if (result.success) {
         res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success(result, 'Login successful')
+          ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'Login successful')
         );
       } else {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
@@ -80,7 +79,6 @@ export class AuthController {
         );
       }
     } catch (error) {
-      console.error('Login controller error:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
         ResponseHelper.error('Login failed')
       );
@@ -107,7 +105,7 @@ export class AuthController {
 
       if (result.success) {
         res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success(result, 'Tokens refreshed successfully')
+          ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'Tokens refreshed successfully')
         );
       } else {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
@@ -115,7 +113,6 @@ export class AuthController {
         );
       }
     } catch (error) {
-      console.error('Refresh controller error:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
         ResponseHelper.error('Token refresh failed')
       );
@@ -150,7 +147,6 @@ export class AuthController {
         );
       }
     } catch (error) {
-      console.error('Logout controller error:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
         ResponseHelper.error('Logout failed')
       );
@@ -176,7 +172,6 @@ export class AuthController {
         ResponseHelper.success({ user }, 'User information retrieved')
       );
     } catch (error) {
-      console.error('Me controller error:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
         ResponseHelper.error('Failed to retrieve user information')
       );

@@ -4,7 +4,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
 
-const BASE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Create axios instance
 export const apiClient: AxiosInstance = axios.create({
@@ -58,14 +58,18 @@ apiClient.interceptors.response.use(
             return apiClient(originalRequest);
           }
         } catch (refreshError) {
-          // Refresh failed, clear tokens and redirect to login
+          // Refresh failed, clear tokens and redirect to login only if not already on login page
           tokenStorage.clearTokens();
-          window.location.href = '/auth/login';
+          if (!window.location.pathname.includes('/auth/login')) {
+            window.location.href = '/auth/login';
+          }
         }
       } else {
-        // No refresh token, redirect to login
+        // No refresh token, redirect to login only if not already on login page
         tokenStorage.clearTokens();
-        window.location.href = '/auth/login';
+        if (!window.location.pathname.includes('/auth/login')) {
+          window.location.href = '/auth/login';
+        }
       }
     }
     
