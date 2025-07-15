@@ -6,3 +6,4 @@ export * from './connection/database';
 
 // Models
 export * from './models/User';
+export * from './models/NewsArticle';

@@ -1,10 +1,9 @@
 // packages/api-services/user-service/src/middleware/auth.ts
-// Authentication middleware for user service
+// Authentication middleware for user service - now using shared JWT utilities
 
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { UserModel } from '@yggdrasil/database-schemas';
-import { ResponseHelper } from '@yggdrasil/shared-utilities';
+import { ResponseHelper, SharedJWTHelper } from '@yggdrasil/shared-utilities';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -15,69 +14,40 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-export interface JWTPayload {
-  id: string;  // Changed from userId to id to match auth service
-  email: string;
-  role: string;
-  type: 'access' | 'refresh';
-  tokenVersion?: number;
-  iat: number;
-  exp: number;
-}
-
 export const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    // Extract token from Authorization header
+    // Extract token from Authorization header using shared utility
     const authHeader = req.headers.authorization;
+    const token = SharedJWTHelper.extractTokenFromHeader(authHeader);
     
-    if (!authHeader) {
-      const errorResponse = ResponseHelper.error('No token provided', 401);
-      return res.status(errorResponse.statusCode).json(errorResponse);
-    }
-
-    if (!authHeader.startsWith('Bearer ')) {
-      const errorResponse = ResponseHelper.error('Invalid authorization format', 401);
-      return res.status(errorResponse.statusCode).json(errorResponse);
-    }
-
-    const token = authHeader.slice(7); // Remove 'Bearer ' prefix
-
     if (!token) {
       const errorResponse = ResponseHelper.error('No token provided', 401);
       return res.status(errorResponse.statusCode).json(errorResponse);
     }
 
-    // Verify JWT token
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('JWT_SECRET environment variable is not set');
-      const errorResponse = ResponseHelper.error('Internal server error', 500);
+    // Verify JWT token using shared utility
+    const verificationResult = SharedJWTHelper.verifyAccessToken(token);
+    
+    if (!verificationResult.success || !verificationResult.data) {
+      const errorResponse = ResponseHelper.error(
+        verificationResult.error || 'Invalid token', 
+        401
+      );
       return res.status(errorResponse.statusCode).json(errorResponse);
     }
 
-    let decoded: JWTPayload;
-    try {
-      decoded = jwt.verify(token, jwtSecret) as JWTPayload;
-    } catch (jwtError: any) {
-      let errorMessage = 'Invalid token';
-      if (jwtError.name === 'TokenExpiredError') {
-        errorMessage = 'Token expired';
-      } else if (jwtError.name === 'JsonWebTokenError') {
-        errorMessage = 'Invalid token';
-      }
-      
-      const errorResponse = ResponseHelper.error(errorMessage, 401);
-      return res.status(errorResponse.statusCode).json(errorResponse);
-    }
+    const decoded = verificationResult.data;
 
-    // Validate token type
-    if (decoded.type !== 'access') {
-      const errorResponse = ResponseHelper.error('Invalid token type', 401);
+    // Get user ID (with fallback for backward compatibility)
+    const userId = decoded.userId || decoded.id;
+    
+    if (!userId) {
+      const errorResponse = ResponseHelper.error('Invalid token payload', 401);
       return res.status(errorResponse.statusCode).json(errorResponse);
     }
 
     // Verify user exists and is active
-    const user = await UserModel.findById(decoded.id);
+    const user = await UserModel.findById(userId);
     if (!user) {
       const errorResponse = ResponseHelper.error('User not found', 401);
       return res.status(errorResponse.statusCode).json(errorResponse);
@@ -102,7 +72,7 @@ export const requireAuth = async (req: AuthenticatedRequest, res: Response, next
 
     // Add user info to request object
     req.user = {
-      userId: decoded.id,
+      userId: userId,
       email: decoded.email,
       role: decoded.role,
       tokenVersion: decoded.tokenVersion

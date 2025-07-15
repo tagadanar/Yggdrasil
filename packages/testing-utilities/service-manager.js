@@ -8,7 +8,8 @@ const path = require('path');
 const SERVICES = [
   { name: 'Frontend', url: 'http://localhost:3000', port: 3000 },
   { name: 'Auth Service', url: 'http://localhost:3001/health', port: 3001 },
-  { name: 'User Service', url: 'http://localhost:3002/health', port: 3002 }
+  { name: 'User Service', url: 'http://localhost:3002/health', port: 3002 },
+  { name: 'News Service', url: 'http://localhost:3003/health', port: 3003 }
 ];
 
 const LOCK_FILE = path.join(__dirname, '.service-manager.lock');
@@ -23,6 +24,7 @@ class ServiceManager {
     this.frontendProcess = null;
     this.authProcess = null;
     this.userProcess = null;
+    this.newsProcess = null;
     this.isShuttingDown = false;
   }
 
@@ -165,13 +167,22 @@ class ServiceManager {
       detached: false,
       env: { ...process.env, PORT: '3002' }
     });
+    
+    // Start news service
+    console.log('📰 Starting news service...');
+    this.newsProcess = spawn('npm', ['run', 'dev'], {
+      cwd: path.join(rootDir, 'packages/api-services/news-service'),
+      stdio: 'pipe',
+      detached: false,
+      env: { ...process.env, PORT: '3003' }
+    });
 
     // Store all process references
-    this.processes = [this.frontendProcess, this.authProcess, this.userProcess];
+    this.processes = [this.frontendProcess, this.authProcess, this.userProcess, this.newsProcess];
     
     // Handle errors for all processes
     this.processes.forEach((process, index) => {
-      const names = ['frontend', 'auth', 'user'];
+      const names = ['frontend', 'auth', 'user', 'news'];
       process.on('error', (error) => {
         console.error(`❌ Failed to start ${names[index]} service:`, error);
         process.exit(1);
@@ -250,7 +261,7 @@ class ServiceManager {
     
     // Stop all individual processes
     if (this.processes && this.processes.length > 0) {
-      const names = ['frontend', 'auth', 'user'];
+      const names = ['frontend', 'auth', 'user', 'news'];
       
       for (let i = 0; i < this.processes.length; i++) {
         const process = this.processes[i];

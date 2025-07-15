@@ -3,14 +3,19 @@
 // Replaces: login-success.spec.ts, login-failure.spec.ts, register.spec.ts
 
 import { test, expect } from '@playwright/test';
-import { AuthHelpers } from '../helpers/auth.helpers';
+import { IsolatedAuthHelpers } from '../helpers/isolated-auth.helpers';
 import { TestUsers, TestScenarios, generateUniqueUser } from '../helpers/test-data';
 
 test.describe('Authentication UI Flows', () => {
-  let authHelpers: AuthHelpers;
+  let authHelpers: IsolatedAuthHelpers;
 
   test.beforeEach(async ({ page }) => {
-    authHelpers = new AuthHelpers(page);
+    authHelpers = new IsolatedAuthHelpers(page);
+    await authHelpers.initialize();
+  });
+
+  test.afterEach(async ({ page }) => {
+    await authHelpers.cleanup();
   });
 
   // =============================================================================
@@ -18,36 +23,41 @@ test.describe('Authentication UI Flows', () => {
   // =============================================================================
   test.describe('Login Success Flows', () => {
     test(TestScenarios.LOGIN_SUCCESS + ' - Admin Demo Account', async ({ page }) => {
-      await authHelpers.navigateToLogin();
-      await authHelpers.clickDemoLogin('admin');
+      await authHelpers.loginAsAdmin();
       await authHelpers.waitForLoadingToFinish();
-      await authHelpers.expectLoginSuccess();
-      await expect(page.locator('body')).not.toContainText('Sign in to your account');
+      // Should redirect to news page after login
+      await expect(page).toHaveURL('/news');
+      await expect(page.locator('h1:has-text("News & Announcements")')).toBeVisible();
     });
 
     test(TestScenarios.LOGIN_SUCCESS + ' - Teacher Demo Account', async ({ page }) => {
-      await authHelpers.navigateToLogin();
-      await authHelpers.clickDemoLogin('teacher');
+      await authHelpers.loginAsTeacher();
       await authHelpers.waitForLoadingToFinish();
-      await authHelpers.expectLoginSuccess();
+      // Should redirect to news page after login
+      await expect(page).toHaveURL('/news');
     });
 
     test(TestScenarios.LOGIN_SUCCESS + ' - Student Demo Account', async ({ page }) => {
-      await authHelpers.navigateToLogin();
-      await authHelpers.clickDemoLogin('student');
+      await authHelpers.loginAsStudent();
       await authHelpers.waitForLoadingToFinish();
-      await authHelpers.expectLoginSuccess();
+      // Should redirect to news page after login
+      await expect(page).toHaveURL('/news');
     });
 
     test(TestScenarios.LOGIN_SUCCESS + ' - Manual Form Entry', async ({ page }) => {
+      // Create a test user first
+      const testUser = await authHelpers.getTestUser('admin');
+      
       await authHelpers.navigateToLogin();
-      await authHelpers.fillLoginForm(
-        TestUsers.DEMO_ADMIN.email,
-        TestUsers.DEMO_ADMIN.password
-      );
+      await authHelpers.fillLoginForm(testUser.email, testUser.password);
       await authHelpers.submitForm();
       await authHelpers.waitForLoadingToFinish();
       await authHelpers.expectLoginSuccess();
+      // Should redirect to news page after login
+      await expect(page).toHaveURL('/news');
+      
+      // Release the test user
+      authHelpers.releaseTestUser(testUser);
     });
 
     test('Login form has proper structure and labels', async ({ page }) => {
@@ -59,11 +69,13 @@ test.describe('Authentication UI Flows', () => {
       await expect(page.locator('#password')).toHaveAttribute('type', 'password');
       await expect(page.locator('button[type="submit"]')).toContainText('Sign in');
       
+      // Demo login buttons should still be visible for regular users
       await expect(page.locator('text=Admin Account')).toBeVisible();
       await expect(page.locator('text=Teacher Account')).toBeVisible();
       await expect(page.locator('text=Student Account')).toBeVisible();
       
-      await expect(page.locator('a[href="/auth/register"]')).toContainText('create a new account');
+      // Registration link should not exist
+      await expect(page.locator('a[href="/auth/register"]')).not.toBeVisible();
       await expect(page.locator('a[href="/"]').filter({ hasText: 'Back to home' })).toBeVisible();
     });
   });
@@ -134,14 +146,17 @@ test.describe('Authentication UI Flows', () => {
     });
 
     test('Login fails with wrong password for valid email', async ({ page }) => {
+      // Create a test user first
+      const testUser = await authHelpers.getTestUser('admin');
+      
       await authHelpers.navigateToLogin();
-      await authHelpers.fillLoginForm(
-        TestUsers.DEMO_ADMIN.email,
-        'WrongPassword123!'
-      );
+      await authHelpers.fillLoginForm(testUser.email, 'WrongPassword123!');
       await authHelpers.submitForm();
       await authHelpers.waitForLoadingToFinish();
       await authHelpers.expectLoginError('Invalid email or password');
+      
+      // Release the test user
+      authHelpers.releaseTestUser(testUser);
     });
 
     test('Form shows loading state during submission', async ({ page }) => {
@@ -178,140 +193,24 @@ test.describe('Authentication UI Flows', () => {
   });
 
   // =============================================================================
-  // REGISTRATION FLOWS (SIMPLIFIED - FOCUS ON UI/UX)
+  // REGISTRATION DISABLED
   // =============================================================================
-  test.describe('Registration UI Flows', () => {
-    test(TestScenarios.REGISTER_SUCCESS + ' - Student account', async ({ page }) => {
-      await authHelpers.navigateToRegister();
-      const newUser = generateUniqueUser('student');
-      await authHelpers.fillRegisterForm(newUser);
-      await authHelpers.submitForm();
-      await authHelpers.waitForLoadingToFinish();
-      await authHelpers.expectRegisterSuccess();
-    });
-
-    test(TestScenarios.REGISTER_SUCCESS + ' - Teacher account', async ({ page }) => {
-      await authHelpers.navigateToRegister();
-      const newUser = generateUniqueUser('teacher');
-      await authHelpers.fillRegisterForm(newUser);
-      await authHelpers.submitForm();
-      await authHelpers.waitForLoadingToFinish();
-      await authHelpers.expectRegisterSuccess();
-    });
-
-    test('Registration form has proper structure and labels', async ({ page }) => {
-      await authHelpers.navigateToRegister();
+  test.describe('Registration Disabled', () => {
+    test('Registration page should not be accessible', async ({ page }) => {
+      // Try to navigate to register page
+      const response = await page.goto('/auth/register');
       
-      await expect(page.locator('label[for="firstName"]')).toContainText('First Name');
-      await expect(page.locator('#firstName')).toHaveAttribute('type', 'text');
-      await expect(page.locator('label[for="lastName"]')).toContainText('Last Name');
-      await expect(page.locator('#lastName')).toHaveAttribute('type', 'text');
-      await expect(page.locator('label[for="email"]')).toContainText('Email address');
-      await expect(page.locator('#email')).toHaveAttribute('type', 'email');
-      await expect(page.locator('label[for="password"]')).toContainText('Password');
-      await expect(page.locator('#password')).toHaveAttribute('type', 'password');
-      await expect(page.locator('label[for="role"]')).toContainText('Role');
-      await expect(page.locator('#role')).toBeVisible();
+      // Should redirect to login or show error
+      await expect(page).toHaveURL(/\/auth\/login/);
+    });
+
+    test('No registration link on login page', async ({ page }) => {
+      await authHelpers.navigateToLogin();
       
-      await expect(page.locator('text=Password must be at least 8 characters')).toBeVisible();
-      await expect(page.locator('button[type="submit"]')).toContainText('Create account');
-      await expect(page.locator('a[href="/auth/login"]')).toContainText('sign in to existing account');
-      await expect(page.locator('a[href="/"]').filter({ hasText: 'Back to home' })).toBeVisible();
-    });
-
-    test('Registration validates required fields', async ({ page }) => {
-      await authHelpers.navigateToRegister();
-      await authHelpers.submitForm();
-      
-      // Check for validation errors - may be client or server side
-      try {
-        await authHelpers.expectFormValidationError('firstName');
-        await authHelpers.expectFormValidationError('lastName');
-        await authHelpers.expectFormValidationError('email');
-        await authHelpers.expectFormValidationError('password');
-      } catch (e) {
-        // Fallback: check for server-side validation
-        await authHelpers.expectRegisterError();
-      }
-    });
-
-    test('Registration validates email format', async ({ page }) => {
-      await authHelpers.navigateToRegister();
-      const invalidUser = {
-        ...generateUniqueUser(),
-        email: 'invalid-email-format'
-      };
-      await authHelpers.fillRegisterForm(invalidUser);
-      await authHelpers.submitForm();
-      
-      try {
-        await authHelpers.expectFormValidationError('email');
-      } catch (e) {
-        await authHelpers.expectRegisterError();
-      }
-    });
-
-    test('Registration validates password strength', async ({ page }) => {
-      await authHelpers.navigateToRegister();
-      const weakPasswordUser = {
-        ...generateUniqueUser(),
-        password: 'weak'
-      };
-      await authHelpers.fillRegisterForm(weakPasswordUser);
-      await authHelpers.submitForm();
-      
-      try {
-        await authHelpers.expectFormValidationError('password');
-      } catch (e) {
-        await authHelpers.expectRegisterError();
-      }
-    });
-
-    test('Registration fails with duplicate email', async ({ page }) => {
-      await authHelpers.navigateToRegister();
-      const duplicateUser = {
-        ...generateUniqueUser(),
-        email: TestUsers.DEMO_ADMIN.email
-      };
-      await authHelpers.fillRegisterForm(duplicateUser);
-      await authHelpers.submitForm();
-      await authHelpers.waitForLoadingToFinish();
-      await authHelpers.expectRegisterError();
-    });
-
-    test('Form shows loading state during submission', async ({ page }) => {
-      await authHelpers.navigateToRegister();
-      const newUser = generateUniqueUser();
-      await authHelpers.fillRegisterForm(newUser);
-      await authHelpers.submitForm();
-      await expect(page.locator('button[type="submit"]')).toBeDisabled();
-      await expect(page.locator('text=Creating account...')).toBeVisible();
-      await authHelpers.waitForLoadingToFinish();
-    });
-
-    test('Role selector has all expected options', async ({ page }) => {
-      await authHelpers.navigateToRegister();
-      const roleSelect = page.locator('#role');
-      await expect(roleSelect.locator('option[value="student"]')).toContainText('Student');
-      await expect(roleSelect.locator('option[value="teacher"]')).toContainText('Teacher');
-      await expect(roleSelect.locator('option[value="staff"]')).toContainText('Staff');
-      await expect(roleSelect).toHaveValue('student');
-    });
-  });
-
-  // =============================================================================
-  // NAVIGATION AND INTEGRATION
-  // =============================================================================
-  test.describe('Auth Navigation Flows', () => {
-    test('Navigation between login and register works', async ({ page }) => {
-      await authHelpers.navigateToRegister();
-      await page.click('a[href="/auth/login"]');
-      await expect(page).toHaveURL(/\/auth\/login$/);
-      await expect(page.locator('h2')).toContainText('Sign in to your account');
-      
-      await page.click('a[href="/auth/register"]');
-      await expect(page).toHaveURL(/\/auth\/register$/);
-      await expect(page.locator('h2')).toContainText('Create your account');
+      // Ensure no registration link exists
+      await expect(page.locator('a[href="/auth/register"]')).not.toBeVisible();
+      await expect(page.locator('text=create a new account')).not.toBeVisible();
+      await expect(page.locator('text=Create account')).not.toBeVisible();
     });
   });
 });

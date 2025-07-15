@@ -13,9 +13,14 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect unauthenticated users to login
-    if (!isLoading && !user) {
-      router.push('/auth/login');
+    if (!isLoading) {
+      if (!user) {
+        // Redirect unauthenticated users to login
+        router.push('/auth/login');
+      } else {
+        // Redirect authenticated users to news page (homepage)
+        router.push('/news');
+      }
     }
   }, [user, isLoading, router]);
 

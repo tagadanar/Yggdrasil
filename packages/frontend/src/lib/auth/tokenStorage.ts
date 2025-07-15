@@ -13,15 +13,19 @@ export const tokenStorage = {
     Cookies.set(ACCESS_TOKEN_KEY, tokens.accessToken, { 
       expires: 1/12, // 2 hours
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax', // Changed from 'strict' to allow navigation
+      path: '/', // Explicitly set path
+      domain: undefined, // Let browser handle domain
     });
 
     // Store refresh token in longer-lived cookie (24 hours)
     Cookies.set(REFRESH_TOKEN_KEY, tokens.refreshToken, {
       expires: 1, // 1 day
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax', // Changed from 'strict' to allow navigation
       httpOnly: false, // We need to access this from JS
+      path: '/', // Explicitly set path
+      domain: undefined, // Let browser handle domain
     });
   },
 
@@ -56,7 +60,9 @@ export const tokenStorage = {
     Cookies.set(ACCESS_TOKEN_KEY, token, {
       expires: 1/12, // 2 hours
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax', // Changed from 'strict' to allow navigation
+      path: '/', // Explicitly set path
+      domain: undefined, // Let browser handle domain
     });
   },
 };

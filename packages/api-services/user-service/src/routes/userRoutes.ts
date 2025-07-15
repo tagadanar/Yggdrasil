@@ -14,6 +14,17 @@ export const userRoutes = Router();
 // Apply authentication to all routes
 userRoutes.use(requireAuth);
 
+// Admin Only Routes
+// POST /api/users - Create new user (admin only)
+userRoutes.post('/', UserController.createUser);
+
+// GET /api/users - List all users (admin only)
+userRoutes.get('/', UserController.listUsers);
+
+// DELETE /api/users/:id - Delete user (admin only)
+userRoutes.delete('/:id', UserController.deleteUser);
+
+// Individual User Routes
 // GET /api/users/:id - View user profile
 // Students can only view their own profile
 // Teachers can view any student profile

@@ -4,19 +4,18 @@
   "description": "Testing utilities and functional tests for Yggdrasil platform",
   "private": true,
   "scripts": {
-    "test": "playwright test",
-    "test:functional": "playwright test",
     "test:quiet": "playwright test --reporter=dot",
-    "test:single": "playwright test --reporter=line --headed --workers=1",
-    "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug",
-    "test:report": "playwright show-report",
-    "install:browsers": "playwright install",
-    "services:start": "node service-manager.js start",
-    "services:stop": "node service-manager.js stop",
-    "services:health": "node service-manager.js health",
-    "services:clean": "node service-manager.js clean"
+    "test:single": "playwright test --reporter=line --workers=1",
+    "test:debug": "playwright test --reporter=line --headed --workers=1",
+    "test:unit": "echo 'Unit tests not implemented yet - use test:quiet for functional tests'",
+    "dev": "node service-manager.js start",
+    "dev:health": "node service-manager.js health",
+    "lint": "echo 'Linting not configured - please configure ESLint/Prettier'",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "setup:db": "echo 'Database setup not configured - please configure MongoDB setup'",
+    "seed": "echo 'Data seeding not configured - please configure test data seeding'",
+    "install:browsers": "playwright install"
   },
   "dependencies": {
     "@yggdrasil/shared-utilities": "file:../shared-utilities"

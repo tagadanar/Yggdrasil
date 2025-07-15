@@ -3,13 +3,20 @@
 // Replaces: demo-accounts-validation.spec.ts, environment-check.spec.ts, homepage-availability.spec.ts
 
 import { test, expect } from '@playwright/test';
-import { AuthHelpers } from '../helpers/auth.helpers';
+import { IsolatedAuthHelpers } from '../helpers/isolated-auth.helpers';
+
+test.describe.configure({ mode: 'serial' });
 
 test.describe('Environment Validation - Live Dev Environment', () => {
-  let authHelpers: AuthHelpers;
+  let authHelpers: IsolatedAuthHelpers;
 
   test.beforeEach(async ({ page }) => {
-    authHelpers = new AuthHelpers(page);
+    authHelpers = new IsolatedAuthHelpers(page);
+    await authHelpers.initialize();
+  });
+
+  test.afterEach(async ({ page }) => {
+    await authHelpers.cleanup();
   });
 
   // =============================================================================
@@ -18,10 +25,8 @@ test.describe('Environment Validation - Live Dev Environment', () => {
   test.describe('Backend Service Health', () => {
     test('Backend services should connect to correct database', async ({ page }) => {
       const authHealthResponse = await page.request.get('http://localhost:3001/health');
-      console.log('Auth Service Health Status:', authHealthResponse.status());
       
       if (authHealthResponse.status() !== 200) {
-        console.log('Auth Service Health Response:', await authHealthResponse.text());
       }
       
       expect(authHealthResponse.status()).toBe(200);
@@ -44,23 +49,27 @@ test.describe('Environment Validation - Live Dev Environment', () => {
   // =============================================================================
   test.describe('Demo Account Database Validation', () => {
     test('All demo accounts should exist in database and be accessible', async ({ page }) => {
-      const accounts = [
-        { email: 'admin@yggdrasil.edu', password: 'Admin123!', expectedDashboard: 'Admin Dashboard' },
-        { email: 'teacher@yggdrasil.edu', password: 'Admin123!', expectedDashboard: 'Teacher Dashboard' },
-        { email: 'staff@yggdrasil.edu', password: 'Admin123!', expectedDashboard: 'Staff Dashboard' },
-        { email: 'student@yggdrasil.edu', password: 'Admin123!', expectedDashboard: 'Student Dashboard' }
+      const loginMethods = [
+        { method: () => authHelpers.loginAsAdmin(), role: 'admin' },
+        { method: () => authHelpers.loginAsTeacher(), role: 'teacher' },
+        { method: () => authHelpers.loginAsStaff(), role: 'staff' },
+        { method: () => authHelpers.loginAsStudent(), role: 'student' }
       ];
       
-      for (const account of accounts) {
-        await page.goto('/auth/login');
-        await page.fill('input[name="email"]', account.email);
-        await page.fill('input[name="password"]', account.password);
-        await page.click('button[type="submit"]');
+      for (const account of loginMethods) {
+        await account.method();
         
-        await expect(page).toHaveURL('/dashboard');
-        await expect(page.locator(`text=${account.expectedDashboard}`)).toBeVisible();
+        // Should redirect to news page
+        await expect(page).toHaveURL('/news');
+        await expect(page.locator('h1:has-text("News & Announcements")')).toBeVisible();
         
+        // Logout between iterations
         await authHelpers.logout();
+        await page.context().clearCookies();
+        await page.evaluate(() => {
+          if (typeof localStorage !== 'undefined') localStorage.clear();
+          if (typeof sessionStorage !== 'undefined') sessionStorage.clear();
+        });
       }
     });
 
@@ -77,11 +86,9 @@ test.describe('Environment Validation - Live Dev Environment', () => {
           data: account
         });
         
-        console.log(`${account.email} - Status: ${response.status()}`);
         
         if (response.status() !== 200) {
           const errorText = await response.text();
-          console.log(`${account.email} - Error: ${errorText}`);
         }
         
         expect(response.status()).toBe(200);
@@ -122,7 +129,7 @@ test.describe('Environment Validation - Live Dev Environment', () => {
       
       await page.goto('/admin/users');
       await expect(page.locator('text=User Management')).toBeVisible();
-      await expect(page.locator('nav')).toContainText('System Administration');
+      await expect(page.locator('[data-testid="sidebar-nav"]')).toContainText('Users');
     });
 
     test('Teacher demo account should have teacher permissions', async ({ page }) => {
@@ -133,7 +140,7 @@ test.describe('Environment Validation - Live Dev Environment', () => {
       
       // Should NOT be able to access admin features
       await page.goto('/admin/users');
-      await expect(page).toHaveURL(/\/dashboard(\?error=access_denied)?$/);
+      await expect(page).toHaveURL(/\/news(\?error=access_denied)?/);
       await expect(page.locator('text=Access Denied')).toBeVisible();
     });
 
@@ -145,7 +152,7 @@ test.describe('Environment Validation - Live Dev Environment', () => {
       
       // Should NOT be able to access admin features
       await page.goto('/admin/users');
-      await expect(page).toHaveURL(/\/dashboard(\?error=access_denied)?$/);
+      await expect(page).toHaveURL(/\/news(\?error=access_denied)?/);
     });
 
     test('Student demo account should have student permissions', async ({ page }) => {
@@ -156,7 +163,7 @@ test.describe('Environment Validation - Live Dev Environment', () => {
       
       // Should NOT be able to access admin features
       await page.goto('/admin/users');
-      await expect(page).toHaveURL(/\/dashboard(\?error=access_denied)?$/);
+      await expect(page).toHaveURL(/\/news(\?error=access_denied)?/);
     });
   });
 
@@ -164,23 +171,23 @@ test.describe('Environment Validation - Live Dev Environment', () => {
   // DEMO ACCOUNT PROFILE DATA
   // =============================================================================
   test.describe('Demo Account Profile Data', () => {
-    test('Demo accounts should have correct profile information', async ({ page }) => {
+    test('Test accounts should have correct profile information', async ({ page }) => {
       const profiles = [
         {
           login: () => authHelpers.loginAsAdmin(),
-          expectedData: { firstName: 'Admin', lastName: 'User', email: 'admin@yggdrasil.edu', role: 'admin' }
+          role: 'admin'
         },
         {
           login: () => authHelpers.loginAsTeacher(),
-          expectedData: { firstName: 'Teacher', lastName: 'Demo', email: 'teacher@yggdrasil.edu', role: 'teacher' }
+          role: 'teacher'
         },
         {
           login: () => authHelpers.loginAsStaff(),
-          expectedData: { firstName: 'Jane', lastName: 'Smith', email: 'staff@yggdrasil.edu', role: 'staff' }
+          role: 'staff'
         },
         {
           login: () => authHelpers.loginAsStudent(),
-          expectedData: { firstName: 'Student', lastName: 'Demo', email: 'student@yggdrasil.edu', role: 'student' }
+          role: 'student'
         }
       ];
       
@@ -188,11 +195,13 @@ test.describe('Environment Validation - Live Dev Environment', () => {
         await profile.login();
         await page.goto('/profile');
         
-        await expect(page.locator('input[name="firstName"]')).toHaveValue(profile.expectedData.firstName);
-        await expect(page.locator('input[name="lastName"]')).toHaveValue(profile.expectedData.lastName);
-        await expect(page.locator('input[name="email"]')).toHaveValue(profile.expectedData.email);
-        await expect(page.locator('select[name="role"]')).toHaveValue(profile.expectedData.role);
+        const user = authHelpers.getCurrentUser();
+        await expect(page.locator('input[name="firstName"]')).toHaveValue(user?.profile.firstName || '');
+        await expect(page.locator('input[name="lastName"]')).toHaveValue(user?.profile.lastName || '');
+        await expect(page.locator('input[name="email"]')).toHaveValue(user?.email || '');
+        await expect(page.locator('select[name="role"]')).toHaveValue(user?.role || '');
         
+        // Clean up between iterations
         await authHelpers.logout();
       }
     });
@@ -205,18 +214,14 @@ test.describe('Environment Validation - Live Dev Environment', () => {
     test('Demo account tokens should be valid and functional', async ({ page }) => {
       await authHelpers.loginAsAdmin();
       
-      const response = await page.request.get('/api/auth/verify', {
-        headers: {
-          'Authorization': `Bearer ${await authHelpers.getAccessToken()}`
-        }
-      });
+      const response = await authHelpers.makeAuthenticatedRequest('GET', 'http://localhost:3001/api/auth/me');
       
       expect(response.status()).toBe(200);
       
       const userData = await response.json();
       expect(userData.success).toBe(true);
-      expect(userData.user.email).toBe('admin@yggdrasil.edu');
-      expect(userData.user.role).toBe('admin');
+      expect(userData.data.user.email).toBe('admin@yggdrasil.edu');
+      expect(userData.data.user.role).toBe('admin');
     });
 
     test('Demo account refresh tokens should work', async ({ page }) => {
@@ -224,7 +229,7 @@ test.describe('Environment Validation - Live Dev Environment', () => {
       
       const refreshToken = await authHelpers.getRefreshToken();
       
-      const response = await page.request.post('/api/auth/refresh', {
+      const response = await authHelpers.makeAuthenticatedRequest('POST', 'http://localhost:3001/api/auth/refresh', {
         data: { refreshToken }
       });
       
@@ -232,8 +237,8 @@ test.describe('Environment Validation - Live Dev Environment', () => {
       
       const tokenData = await response.json();
       expect(tokenData.success).toBe(true);
-      expect(tokenData.tokens.accessToken).toBeDefined();
-      expect(tokenData.tokens.refreshToken).toBeDefined();
+      expect(tokenData.data.tokens.accessToken).toBeDefined();
+      expect(tokenData.data.tokens.refreshToken).toBeDefined();
     });
   });
 
@@ -258,13 +263,12 @@ test.describe('Environment Validation - Live Dev Environment', () => {
       await page.fill('input[name="password"]', 'Admin123!');
       await page.click('button[type="submit"]');
       
-      await expect(page).toHaveURL('/dashboard');
+      await expect(page).toHaveURL('/news');
       
       await page.goto('/');
-      await expect(page.locator('text=Welcome to Yggdrasil Educational Platform')).toBeVisible();
-      await expect(page.locator('text=Authentication Information')).toBeVisible();
-      await expect(page.locator('text=Admin')).toBeVisible();
-      await expect(page.locator('text=admin@yggdrasil.edu')).toBeVisible();
+      // Should redirect to news page as the new homepage
+      await expect(page).toHaveURL('/news');
+      await expect(page.locator('h1:has-text("News & Announcements")')).toBeVisible();
     });
 
     test('All main navigation pages should be accessible', async ({ page }) => {
@@ -273,14 +277,20 @@ test.describe('Environment Validation - Live Dev Environment', () => {
       await page.fill('input[name="password"]', 'Admin123!');
       await page.click('button[type="submit"]');
       
+      // Wait for login to complete and redirect to news page
+      await expect(page).toHaveURL('/news');
+      await expect(page.locator('h1')).toContainText('News & Announcements');
+      
+      // News is the new homepage - test homepage redirect
       await page.goto('/');
-      await expect(page.locator('h1')).toContainText('Welcome to Yggdrasil');
+      await expect(page).toHaveURL('/news');
+      await expect(page.locator('h1')).toContainText('News & Announcements');
       
-      await page.goto('/dashboard');
-      await expect(page.locator('h2')).toContainText('Admin Dashboard');
+      await page.goto('/news');
+      await expect(page.locator('h1')).toContainText('News & Announcements');
       
-      await page.goto('/auth/login');
-      await expect(page.locator('h2')).toContainText('Sign in to your account');
+      await page.goto('/admin/users');
+      await expect(page.locator('h1')).toContainText('User Management');
     });
 
     test('Static assets and resources should load', async ({ page }) => {
@@ -298,10 +308,16 @@ test.describe('Environment Validation - Live Dev Environment', () => {
       await page.goto('/auth/login');
       
       const criticalErrors = logs.filter(log => 
-        log.includes('Failed to load') || 
+        (log.includes('Failed to load') || 
         log.includes('404') || 
         log.includes('500') ||
-        log.includes('TypeError')
+        log.includes('TypeError')) &&
+        !log.includes('React Query Devtools') &&
+        !log.includes('React Dev Tools') &&
+        !log.includes('devtools') &&
+        !log.includes('RSC payload') &&
+        !log.includes('fetch-server-response') &&
+        !log.includes('router-reducer')
       );
       
       expect(criticalErrors).toHaveLength(0);

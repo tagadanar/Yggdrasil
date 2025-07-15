@@ -32,6 +32,7 @@ export interface AuthResult {
 
 export interface JWTPayload {
   id: string;
+  userId: string;  // Consistent field name for user ID
   email: string;
   role: UserRole;
   tokenVersion: number;
@@ -41,6 +42,7 @@ export interface JWTPayload {
 
 export interface RefreshTokenPayload {
   id: string;
+  userId: string;  // Consistent field name for user ID
   tokenVersion: number;
   iat?: number;
   exp?: number;
@@ -93,4 +95,11 @@ export interface UserPreferences {
     fontSize: 'small' | 'medium' | 'large';
     highContrast: boolean;
   };
+}
+
+// Express Request with authenticated user
+import { Request } from 'express';
+
+export interface AuthRequest extends Request {
+  user?: any; // Will be populated by auth middleware
 }

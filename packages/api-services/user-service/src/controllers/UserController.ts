@@ -3,7 +3,7 @@
 
 import { Response } from 'express';
 import { UserService, UserServiceResult } from '../services/UserService';
-import { ResponseHelper, HttpStatus } from '@yggdrasil/shared-utilities';
+import { ResponseHelper, HTTP_STATUS } from '@yggdrasil/shared-utilities';
 import { AuthenticatedRequest } from '../middleware/auth';
 
 export class UserController {
@@ -11,7 +11,7 @@ export class UserController {
   private static handleServiceResult(res: Response, result: UserServiceResult, successMessage: string): void {
     if (result.success) {
       const response = ResponseHelper.success(result.data, successMessage);
-      res.status(HttpStatus.OK).json(response);
+      res.status(HTTP_STATUS.OK).json(response);
     } else {
       // REFACTOR: Cleaner error mapping
       if (result.error?.includes('Invalid user ID') || result.error?.includes('Invalid profile data')) {
@@ -59,6 +59,109 @@ export class UserController {
       const { id } = req.params;
       const result = await UserService.getUserPreferences(id);
       UserController.handleServiceResult(res, result, 'Preferences retrieved successfully');
+    } catch (error) {
+      const errorResponse = ResponseHelper.error('Internal server error');
+      res.status(errorResponse.statusCode).json(errorResponse);
+    }
+  }
+
+  // Admin Only: Create new user
+  static async createUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      // Check if user is admin
+      if (!req.user || req.user.role !== 'admin') {
+        const errorResponse = ResponseHelper.forbidden('Only administrators can create users');
+        res.status(errorResponse.statusCode).json(errorResponse);
+        return;
+      }
+
+      const userData = req.body;
+      const result = await UserService.createUser(userData);
+      
+      if (result.success) {
+        const response = ResponseHelper.success(result.data, 'User created successfully');
+        res.status(HTTP_STATUS.CREATED).json(response);
+      } else {
+        if (result.error?.includes('already exists')) {
+          const errorResponse = ResponseHelper.conflict(result.error);
+          res.status(errorResponse.statusCode).json(errorResponse);
+        } else if (result.error?.includes('Validation error')) {
+          const errorResponse = ResponseHelper.validationError([{field: 'general', message: result.error}]);
+          res.status(errorResponse.statusCode).json(errorResponse);
+        } else {
+          const errorResponse = ResponseHelper.error(result.error || 'Failed to create user');
+          res.status(errorResponse.statusCode).json(errorResponse);
+        }
+      }
+    } catch (error) {
+      const errorResponse = ResponseHelper.error('Internal server error');
+      res.status(errorResponse.statusCode).json(errorResponse);
+    }
+  }
+
+  // Admin Only: List all users
+  static async listUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      // Check if user is admin
+      if (!req.user || req.user.role !== 'admin') {
+        const errorResponse = ResponseHelper.forbidden('Only administrators can list users');
+        res.status(errorResponse.statusCode).json(errorResponse);
+        return;
+      }
+
+      const { role, limit, offset } = req.query;
+      const result = await UserService.listUsers({
+        role: role as string,
+        limit: limit ? parseInt(limit as string) : undefined,
+        offset: offset ? parseInt(offset as string) : undefined
+      });
+      
+      if (result.success) {
+        const response = ResponseHelper.success(result.data, 'Users retrieved successfully');
+        res.status(HTTP_STATUS.OK).json(response);
+      } else {
+        const errorResponse = ResponseHelper.error(result.error || 'Failed to retrieve users');
+        res.status(errorResponse.statusCode).json(errorResponse);
+      }
+    } catch (error) {
+      const errorResponse = ResponseHelper.error('Internal server error');
+      res.status(errorResponse.statusCode).json(errorResponse);
+    }
+  }
+
+  // Admin Only: Delete user
+  static async deleteUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      // Check if user is admin
+      if (!req.user || req.user.role !== 'admin') {
+        const errorResponse = ResponseHelper.forbidden('Only administrators can delete users');
+        res.status(errorResponse.statusCode).json(errorResponse);
+        return;
+      }
+
+      const { id } = req.params;
+      
+      // Prevent self-deletion
+      if (req.user.userId === id) {
+        const errorResponse = ResponseHelper.forbidden('Cannot delete your own account');
+        res.status(errorResponse.statusCode).json(errorResponse);
+        return;
+      }
+      
+      const result = await UserService.deleteUser(id);
+      
+      if (result.success) {
+        const response = ResponseHelper.success(null, 'User deleted successfully');
+        res.status(HTTP_STATUS.OK).json(response);
+      } else {
+        if (result.error === 'User not found') {
+          const errorResponse = ResponseHelper.notFound('User');
+          res.status(errorResponse.statusCode).json(errorResponse);
+        } else {
+          const errorResponse = ResponseHelper.error(result.error || 'Failed to delete user');
+          res.status(errorResponse.statusCode).json(errorResponse);
+        }
+      }
     } catch (error) {
       const errorResponse = ResponseHelper.error('Internal server error');
       res.status(errorResponse.statusCode).json(errorResponse);

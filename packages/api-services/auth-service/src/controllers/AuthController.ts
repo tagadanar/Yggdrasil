@@ -15,40 +15,13 @@ import {
 export class AuthController {
   /**
    * POST /api/auth/register
-   * Register a new user
+   * Public registration is disabled - only admin can create users
    */
   static async register(req: Request, res: Response): Promise<void> {
-    try {
-      // Validate request body
-      const validation = ValidationHelper.validate(RegisterRequestSchema, req.body);
-      if (!validation.success) {
-        res.status(HTTP_STATUS.UNPROCESSABLE_ENTITY).json(
-          ResponseHelper.validationError(validation.errors!)
-        );
-        return;
-      }
-
-      // Register user
-      const result = await AuthService.register(validation.data!);
-
-      if (result.success) {
-        res.status(HTTP_STATUS.CREATED).json(
-          ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'User registered successfully')
-        );
-      } else {
-        const statusCode = result.error?.includes('already exists') 
-          ? HTTP_STATUS.CONFLICT 
-          : HTTP_STATUS.BAD_REQUEST;
-        
-        res.status(statusCode).json(
-          ResponseHelper.error(result.error!, statusCode)
-        );
-      }
-    } catch (error) {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Registration failed')
-      );
-    }
+    // Public registration is disabled
+    res.status(HTTP_STATUS.FORBIDDEN).json(
+      ResponseHelper.error('Public registration is disabled. User creation is restricted to administrators.', HTTP_STATUS.FORBIDDEN)
+    );
   }
 
   /**
@@ -174,6 +147,25 @@ export class AuthController {
     } catch (error) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
         ResponseHelper.error('Failed to retrieve user information')
+      );
+    }
+  }
+
+  /**
+   * GET /api/auth/registration-status
+   * Get registration status information
+   */
+  static async registrationStatus(req: Request, res: Response): Promise<void> {
+    try {
+      res.status(HTTP_STATUS.OK).json(
+        ResponseHelper.success({
+          registrationEnabled: false,
+          message: 'User creation is restricted to administrators. Please contact your system administrator to create new accounts.'
+        }, 'Registration status retrieved')
+      );
+    } catch (error) {
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
+        ResponseHelper.error('Failed to retrieve registration status')
       );
     }
   }

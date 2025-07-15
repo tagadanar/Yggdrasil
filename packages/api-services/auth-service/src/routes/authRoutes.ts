@@ -11,6 +11,7 @@ export const authRoutes = Router();
 authRoutes.post('/register', AuthController.register);
 authRoutes.post('/login', AuthController.login);
 authRoutes.post('/refresh', AuthController.refresh);
+authRoutes.get('/registration-status', AuthController.registrationStatus);
 
 // Protected routes (authentication required)
 authRoutes.post('/logout', authenticateToken, AuthController.logout);

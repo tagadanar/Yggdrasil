@@ -13,6 +13,7 @@ export const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable sending cookies with requests
 });
 
 // Request interceptor to add auth token
@@ -58,23 +59,96 @@ apiClient.interceptors.response.use(
             return apiClient(originalRequest);
           }
         } catch (refreshError) {
-          // Refresh failed, clear tokens and redirect to login only if not already on login page
+          // Refresh failed, clear tokens
           tokenStorage.clearTokens();
-          if (!window.location.pathname.includes('/auth/login')) {
-            window.location.href = '/auth/login';
-          }
+          // Let the ProtectedRoute component handle redirect
         }
       } else {
-        // No refresh token, redirect to login only if not already on login page
+        // No refresh token, clear tokens
         tokenStorage.clearTokens();
-        if (!window.location.pathname.includes('/auth/login')) {
-          window.location.href = '/auth/login';
-        }
+        // Let the ProtectedRoute component handle redirect
       }
     }
     
     return Promise.reject(error);
   }
 );
+
+// User service API client
+const USER_SERVICE_URL = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'http://localhost:3002';
+
+// Create separate axios instance for user service
+const userApiClient: AxiosInstance = axios.create({
+  baseURL: `${USER_SERVICE_URL}/api`,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true,
+});
+
+// Add auth token to user service requests
+userApiClient.interceptors.request.use(
+  (config) => {
+    const token = tokenStorage.getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// User management API methods
+export const userApi = {
+  // List all users (admin only)
+  async listUsers() {
+    const response = await userApiClient.get('/users');
+    return response.data;
+  },
+
+  // Create new user (admin only)
+  async createUser(userData: {
+    email: string;
+    password: string;
+    role: string;
+    profile: {
+      firstName: string;
+      lastName: string;
+      department?: string;
+      title?: string;
+      grade?: string;
+      studentId?: string;
+    };
+  }) {
+    const response = await userApiClient.post('/users', userData);
+    return response.data;
+  },
+
+  // Update user profile
+  async updateUser(userId: string, profileData: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    role?: string;
+  }) {
+    const response = await userApiClient.patch(`/users/${userId}/profile`, profileData);
+    return response.data;
+  },
+
+  // Delete user (admin only)
+  async deleteUser(userId: string) {
+    const response = await userApiClient.delete(`/users/${userId}`);
+    return response.data;
+  },
+
+  // Get user by ID
+  async getUserById(userId: string) {
+    const response = await userApiClient.get(`/users/${userId}`);
+    return response.data;
+  }
+};
 
 export default apiClient;

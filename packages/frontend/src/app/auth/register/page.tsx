@@ -1,66 +1,32 @@
 // packages/frontend/src/app/auth/register/page.tsx
-// Registration page component
+// Registration disabled page - redirects to login
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { RegisterRequestSchema, RegisterRequestType } from '@yggdrasil/shared-utilities';
 
 export default function RegisterPage() {
-  const { register: registerUser, isLoading, user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [submitError, setSubmitError] = useState<string>('');
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to news page
   useEffect(() => {
     if (user && !isLoading) {
-      router.push('/dashboard');
+      router.push('/news');
     }
   }, [user, isLoading, router]);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    watch
-  } = useForm<RegisterRequestType>({
-    resolver: zodResolver(RegisterRequestSchema),
-    defaultValues: {
-      role: 'student',
-    },
-  });
-
-  // Clear submit error when user types
+  // Redirect to login page after a short delay
   useEffect(() => {
-    const subscription = watch(() => {
-      if (submitError) {
-        setSubmitError('');
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, submitError]);
-
-  const onSubmit = async (data: RegisterRequestType) => {
-    try {
-      setSubmitError('');
-      // Small delay to show loading state (simulates network latency)
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const result = await registerUser(data);
-      
-      if (result.success) {
-        router.push('/dashboard');
-      } else {
-        setSubmitError(result.error || 'Registration failed');
-      }
-    } catch (error) {
-      setSubmitError('An unexpected error occurred');
-    }
-  };
+    const timer = setTimeout(() => {
+      router.push('/auth/login');
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, [router]);
 
   if (isLoading) {
     return (
@@ -81,144 +47,39 @@ export default function RegisterPage() {
             </h1>
           </Link>
           <h2 className="text-2xl font-bold text-gray-900">
-            Create your account
+            Registration Disabled
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Or{' '}
-            <Link
-              href="/auth/login"
-              className="font-medium text-primary-600 hover:text-primary-500"
-            >
-              sign in to existing account
-            </Link>
-          </p>
         </div>
 
-        {/* Form */}
-        <div className="card">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
-            {/* First Name */}
-            <div className="form-group">
-              <label htmlFor="firstName" className="form-label">
-                First Name
-              </label>
-              <input
-                {...register('profile.firstName')}
-                id="firstName"
-                type="text"
-                autoComplete="given-name"
-                className={`input ${errors.profile?.firstName ? 'border-error-500 focus:border-error-500 focus:ring-error-500' : ''}`}
-                placeholder="Enter your first name"
-              />
-              {errors.profile?.firstName && (
-                <p className="form-error">{errors.profile.firstName.message}</p>
-              )}
-            </div>
+        {/* Message */}
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="mx-auto w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Public Registration is Disabled
+          </h3>
+          
+          <p className="text-gray-600 mb-6">
+            User account creation is restricted to administrators only. 
+            Please contact your system administrator to create new accounts.
+          </p>
 
-            {/* Last Name */}
-            <div className="form-group">
-              <label htmlFor="lastName" className="form-label">
-                Last Name
-              </label>
-              <input
-                {...register('profile.lastName')}
-                id="lastName"
-                type="text"
-                autoComplete="family-name"
-                className={`input ${errors.profile?.lastName ? 'border-error-500 focus:border-error-500 focus:ring-error-500' : ''}`}
-                placeholder="Enter your last name"
-              />
-              {errors.profile?.lastName && (
-                <p className="form-error">{errors.profile.lastName.message}</p>
-              )}
+          <div className="space-y-4">
+            <Link
+              href="/auth/login"
+              className="w-full btn-primary py-3 text-base inline-block"
+            >
+              Go to Login
+            </Link>
+            
+            <div className="text-sm text-gray-500">
+              You will be redirected to the login page in a few seconds...
             </div>
-
-            {/* Email */}
-            <div className="form-group">
-              <label htmlFor="email" className="form-label">
-                Email address
-              </label>
-              <input
-                {...register('email')}
-                id="email"
-                type="email"
-                autoComplete="email"
-                className={`input ${errors.email ? 'border-error-500 focus:border-error-500 focus:ring-error-500' : ''}`}
-                placeholder="Enter your email"
-              />
-              {errors.email && (
-                <p className="form-error">{errors.email.message}</p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div className="form-group">
-              <label htmlFor="password" className="form-label">
-                Password
-              </label>
-              <input
-                {...register('password')}
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                className={`input ${errors.password ? 'border-error-500 focus:border-error-500 focus:ring-error-500' : ''}`}
-                placeholder="Enter your password"
-              />
-              {errors.password && (
-                <p className="form-error">{errors.password.message}</p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Password must be at least 8 characters with uppercase, lowercase, and number
-              </p>
-            </div>
-
-            {/* Role */}
-            <div className="form-group">
-              <label htmlFor="role" className="form-label">
-                Role
-              </label>
-              <select
-                {...register('role')}
-                id="role"
-                className={`input ${errors.role ? 'border-error-500 focus:border-error-500 focus:ring-error-500' : ''}`}
-              >
-                <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
-                <option value="staff">Staff</option>
-              </select>
-              {errors.role && (
-                <p className="form-error">{errors.role.message}</p>
-              )}
-            </div>
-
-            {/* Submit Error */}
-            {submitError && (
-              <div className="bg-error-50 border border-error-200 rounded-md p-3">
-                <p className="text-error-700 text-sm">{submitError}</p>
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full btn-primary py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creating account...
-                  </span>
-                ) : (
-                  'Create account'
-                )}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
 
         {/* Footer Links */}

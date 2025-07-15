@@ -1,5 +1,5 @@
 // packages/api-services/auth-service/__tests__/functional/auth-registration.test.ts
-// Functional tests for user registration workflow
+// Functional tests for disabled public registration
 
 import request from 'supertest';
 import mongoose from 'mongoose';
@@ -7,7 +7,7 @@ import { createApp } from '../../src/app';
 import { connectDatabase, disconnectDatabase, UserModel } from '@yggdrasil/database-schemas';
 import { Application } from 'express';
 
-describe('Auth Registration Functional Tests', () => {
+describe('Auth Registration Functional Tests - Public Registration Disabled', () => {
   let app: Application;
 
   beforeAll(async () => {
@@ -25,8 +25,8 @@ describe('Auth Registration Functional Tests', () => {
     await UserModel.deleteMany({ email: { $regex: /test.*@yggdrasil\.edu/ } });
   });
 
-  describe('POST /api/auth/register - Student Registration', () => {
-    it('should successfully register a new student', async () => {
+  describe('POST /api/auth/register - Registration Disabled', () => {
+    it('should reject any public registration attempt', async () => {
       const studentData = {
         email: 'test.student@yggdrasil.edu',
         password: 'SecurePass123!',
@@ -42,25 +42,17 @@ describe('Auth Registration Functional Tests', () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send(studentData)
-        .expect(201);
+        .expect(403);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toContain('registered successfully');
-      expect(response.body.data.user).toBeDefined();
-      expect(response.body.data.user.email).toBe(studentData.email);
-      expect(response.body.data.user.role).toBe('student');
-      expect(response.body.data.user.profile.firstName).toBe('Test');
-      expect(response.body.data.tokens).toBeDefined();
-      expect(response.body.data.tokens.accessToken).toBeDefined();
-      expect(response.body.data.tokens.refreshToken).toBeDefined();
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('Public registration is disabled');
 
-      // Verify user was created in database
+      // Verify user was NOT created in database
       const createdUser = await UserModel.findByEmail(studentData.email);
-      expect(createdUser).toBeDefined();
-      expect(createdUser?.isActive).toBe(true);
+      expect(createdUser).toBeNull();
     });
 
-    it('should successfully register a new teacher', async () => {
+    it('should reject teacher registration attempts', async () => {
       const teacherData = {
         email: 'test.teacher@yggdrasil.edu',
         password: 'SecurePass123!',
@@ -77,122 +69,13 @@ describe('Auth Registration Functional Tests', () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send(teacherData)
-        .expect(201);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.user.role).toBe('teacher');
-      expect(response.body.data.user.profile.specialties).toEqual(['Calculus', 'Linear Algebra']);
-    });
-
-    it('should fail registration with duplicate email', async () => {
-      const userData = {
-        email: 'test.duplicate@yggdrasil.edu',
-        password: 'SecurePass123!',
-        role: 'student',
-        profile: {
-          firstName: 'Test',
-          lastName: 'Duplicate',
-          studentId: 'STU999999'
-        }
-      };
-
-      // First registration should succeed
-      await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
-
-      // Second registration with same email should fail
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(409);
+        .expect(403);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('already exists');
+      expect(response.body.error).toContain('Public registration is disabled');
     });
 
-    it('should fail registration with invalid email format', async () => {
-      const invalidEmailData = {
-        email: 'invalid-email',
-        password: 'SecurePass123!',
-        role: 'student',
-        profile: {
-          firstName: 'Test',
-          lastName: 'Invalid'
-        }
-      };
-
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(invalidEmailData)
-        .expect(422);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('Invalid email');
-    });
-
-    it('should fail registration with weak password', async () => {
-      const weakPasswordData = {
-        email: 'test.weak@yggdrasil.edu',
-        password: '123456', // Too weak
-        role: 'student',
-        profile: {
-          firstName: 'Test',
-          lastName: 'Weak'
-        }
-      };
-
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(weakPasswordData)
-        .expect(422);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('Password must');
-    });
-
-    it('should fail registration with missing required profile fields', async () => {
-      const incompleteData = {
-        email: 'test.incomplete@yggdrasil.edu',
-        password: 'SecurePass123!',
-        role: 'student',
-        profile: {
-          firstName: 'Test'
-          // Missing lastName
-        }
-      };
-
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(incompleteData)
-        .expect(422);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('Required');
-    });
-
-    it('should fail registration with invalid role', async () => {
-      const invalidRoleData = {
-        email: 'test.invalid@yggdrasil.edu',
-        password: 'SecurePass123!',
-        role: 'superuser', // Invalid role
-        profile: {
-          firstName: 'Test',
-          lastName: 'Invalid'
-        }
-      };
-
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(invalidRoleData)
-        .expect(422);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('Invalid enum value');
-    });
-
-    it('should successfully register admin (no restriction currently implemented)', async () => {
+    it('should reject admin registration attempts', async () => {
       const adminData = {
         email: 'test.admin@yggdrasil.edu',
         password: 'SecurePass123!',
@@ -206,84 +89,91 @@ describe('Auth Registration Functional Tests', () => {
       const response = await request(app)
         .post('/api/auth/register')
         .send(adminData)
-        .expect(201);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.user.role).toBe('admin');
-    });
-
-    it('should prevent duplicate studentId (database constraint)', async () => {
-      const studentId = 'STU777777';
-      
-      const student1 = {
-        email: 'test.student1@yggdrasil.edu',
-        password: 'SecurePass123!',
-        role: 'student',
-        profile: {
-          firstName: 'Student',
-          lastName: 'One',
-          studentId: studentId
-        }
-      };
-
-      // First student registration should succeed
-      await request(app)
-        .post('/api/auth/register')
-        .send(student1)
-        .expect(201);
-
-      // Second student with same studentId should fail
-      const student2 = {
-        email: 'test.student2@yggdrasil.edu',
-        password: 'SecurePass123!',
-        role: 'student',
-        profile: {
-          firstName: 'Student',
-          lastName: 'Two',
-          studentId: studentId
-        }
-      };
-
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(student2)
-        .expect(400);
+        .expect(403);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain('Internal server error');
+      expect(response.body.error).toContain('Public registration is disabled');
     });
 
-    it('should set default preferences for new users', async () => {
-      const userData = {
-        email: 'test.defaults@yggdrasil.edu',
+    it('should reject staff registration attempts', async () => {
+      const staffData = {
+        email: 'test.staff@yggdrasil.edu',
         password: 'SecurePass123!',
-        role: 'student',
+        role: 'staff',
         profile: {
           firstName: 'Test',
-          lastName: 'Defaults',
-          studentId: 'STU888888'
+          lastName: 'Staff',
+          department: 'Administration'
         }
       };
 
       const response = await request(app)
         .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
+        .send(staffData)
+        .expect(403);
 
-      // Verify default preferences were set
-      const user = await UserModel.findByEmail(userData.email);
-      expect(user?.preferences).toBeDefined();
-      expect(user?.preferences.language).toBe('fr'); // Default language
-      expect(user?.preferences.notifications.scheduleChanges).toBe(true);
-      expect(user?.preferences.accessibility.fontSize).toBe('medium');
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('Public registration is disabled');
+    });
+
+    it('should reject registration even with valid data', async () => {
+      const validData = {
+        email: 'test.valid@yggdrasil.edu',
+        password: 'VerySecurePass123!@#',
+        role: 'student',
+        profile: {
+          firstName: 'Valid',
+          lastName: 'User',
+          studentId: 'STU999999',
+          department: 'Engineering'
+        }
+      };
+
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(validData)
+        .expect(403);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('Public registration is disabled');
+    });
+
+    it('should not expose validation errors for registration attempts', async () => {
+      const invalidData = {
+        email: 'invalid-email',
+        password: '123', // Weak password
+        role: 'invalid-role',
+        profile: {
+          firstName: 'Test'
+          // Missing required fields
+        }
+      };
+
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(invalidData)
+        .expect(403);
+
+      // Should not expose validation details, just generic error
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('Public registration is disabled');
+      expect(response.body.error).not.toContain('Invalid email');
+      expect(response.body.error).not.toContain('Password must');
     });
   });
 
-  // Note: Rate limiting is not currently implemented
-  // This test would be added when rate limiting middleware is implemented
-  // describe('Registration Rate Limiting', () => {
-  //   it('should rate limit registration attempts from same IP', async () => {
-  //     // Test implementation would go here
-  //   });
-  // });
+  describe('Registration Status Endpoint', () => {
+    it('should indicate registration is disabled', async () => {
+      const response = await request(app)
+        .get('/api/auth/registration-status')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.registrationEnabled).toBe(false);
+      expect(response.body.data.message).toContain('User creation is restricted to administrators');
+    });
+  });
+
+  // Note: Admin-based user creation tests would be in the user-service tests
+  // This file only tests that public registration is properly disabled
 });

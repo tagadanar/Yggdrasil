@@ -16,10 +16,10 @@ export default function LoginPage() {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string>('');
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to news page
   useEffect(() => {
     if (user && !isLoading) {
-      router.push('/dashboard');
+      router.push('/news');
     }
   }, [user, isLoading, router]);
 
@@ -45,13 +45,10 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginRequestType) => {
     try {
       setSubmitError('');
-      // Small delay to show loading state (simulates network latency)
-      await new Promise(resolve => setTimeout(resolve, 100));
       const result = await login(data.email, data.password);
       
       if (result.success) {
-        // Small delay to ensure the user sees the success state before redirect
-        setTimeout(() => router.push('/dashboard'), 100);
+        router.push('/news');
       } else {
         setSubmitError(result.error || 'Invalid email or password');
       }
@@ -66,8 +63,7 @@ export default function LoginPage() {
       const result = await login(email, password);
       
       if (result.success) {
-        // Small delay to ensure the user sees the success state before redirect
-        setTimeout(() => router.push('/dashboard'), 100);
+        router.push('/news');
       } else {
         setSubmitError(result.error || 'Demo login failed');
       }
@@ -98,13 +94,7 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Or{' '}
-            <Link
-              href="/auth/register"
-              className="font-medium text-primary-600 hover:text-primary-500"
-            >
-              create a new account
-            </Link>
+            Access is limited to authorized users
           </p>
         </div>
 

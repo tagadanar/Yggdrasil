@@ -1,90 +1,49 @@
+// packages/frontend/src/app/courses/page.tsx
+// Courses page - role-based content
+
 'use client';
 
+import React from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import Link from 'next/link';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { UnderConstruction } from '@/components/ui/UnderConstruction';
 
 export default function CoursesPage() {
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/auth/login');
+  const getTitleBasedOnRole = () => {
+    if (user?.role === 'teacher' || user?.role === 'admin') {
+      return 'My Courses';
+    } else if (user?.role === 'student') {
+      return 'My Enrollments';
     }
-  }, [user, isLoading, router]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  const getCoursesContent = () => {
-    switch (user.role) {
-      case 'teacher':
-        return (
-          <>
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">My Courses</h1>
-            <div className="bg-white shadow rounded-lg p-6">
-              <p className="text-gray-600">Manage your courses and lessons here...</p>
-            </div>
-          </>
-        );
-      case 'student':
-        return (
-          <>
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">My Enrollments</h1>
-            <div className="bg-white shadow rounded-lg p-6">
-              <p className="text-gray-600">View your enrolled courses here...</p>
-            </div>
-          </>
-        );
-      default:
-        return (
-          <>
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">Courses</h1>
-            <div className="bg-white shadow rounded-lg p-6">
-              <p className="text-gray-600">Course management interface...</p>
-            </div>
-          </>
-        );
-    }
+    return 'Courses';
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-gray-900">
-                🌳 Yggdrasil
-              </Link>
-            </div>
-            <nav className="flex items-center space-x-8">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-                Dashboard
-              </Link>
-              <span className="text-gray-900 font-semibold">
-                {user.role === 'teacher' ? 'Teaching' : user.role === 'student' ? 'Learning' : 'Courses'}
-              </span>
-            </nav>
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="max-w-6xl mx-auto py-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{getTitleBasedOnRole()}</h1>
+            <p className="text-gray-600">
+              {user?.role === 'teacher' || user?.role === 'admin' 
+                ? 'Manage your courses and assignments'
+                : user?.role === 'student'
+                ? 'View your enrolled courses and assignments'
+                : 'Course management system'
+              }
+            </p>
           </div>
+          
+          <UnderConstruction
+            title=""
+            description="The course management system is currently under development. This will include course creation, enrollment, assignments, and progress tracking."
+            expectedCompletion="Phase 3 - Expected completion in 4-6 weeks"
+          />
         </div>
-      </header>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {getCoursesContent()}
-        </div>
-      </main>
-    </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

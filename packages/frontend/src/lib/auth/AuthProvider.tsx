@@ -7,6 +7,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, AuthTokens } from '@yggdrasil/shared-utilities';
 import { authApi } from '@/lib/api/auth';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
+import { tokenSync } from '@/lib/auth/tokenSync';
 
 interface AuthContextType {
   user: User | null;
@@ -27,17 +28,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize auth state on mount
   useEffect(() => {
+    // Initialize token sync
+    tokenSync.initialize();
+    
+    // Subscribe to token changes
+    const unsubscribe = tokenSync.subscribe((tokens) => {
+      if (!tokens) {
+        setUser(null);
+        setTokens(null);
+      }
+    });
+    
+    // Initialize auth
     initializeAuth();
+    
+    // Cleanup
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const initializeAuth = async () => {
     try {
-      // If we're on a login page, skip auth initialization to avoid conflicts
-      if (typeof window !== 'undefined' && window.location.pathname.includes('/auth/login')) {
-        setIsLoading(false);
-        return;
-      }
-
       const storedTokens = tokenStorage.getTokens();
       if (!storedTokens?.accessToken) {
         setIsLoading(false);
@@ -72,18 +84,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      setIsLoading(true);
       // Clear any existing tokens before login attempt
       tokenStorage.clearTokens();
-      setUser(null);
-      setTokens(null);
       
       const result = await authApi.login({ email, password });
       
       if (result.success && result.user && result.tokens) {
+        // Set tokens in storage first
+        tokenStorage.setTokens(result.tokens);
+        // Update state in a single batch to avoid multiple re-renders
         setUser(result.user);
         setTokens(result.tokens);
-        tokenStorage.setTokens(result.tokens);
+        // Notify other tabs/components
+        tokenSync.notifyTokenChange(result.tokens);
         return { success: true };
       } else {
         return { success: false, error: result.error || 'Invalid email or password' };
@@ -91,8 +104,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Network error. Please try again.' };
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -102,9 +113,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await authApi.register(userData);
       
       if (result.success && result.user && result.tokens) {
+        tokenStorage.setTokens(result.tokens);
         setUser(result.user);
         setTokens(result.tokens);
-        tokenStorage.setTokens(result.tokens);
+        tokenSync.notifyTokenChange(result.tokens);
         return { success: true };
       } else {
         return { success: false, error: result.error || 'Registration failed' };
@@ -128,6 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setTokens(null);
       tokenStorage.clearTokens();
+      tokenSync.notifyTokenChange(null);
     }
   };
 
@@ -141,9 +154,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await authApi.refresh(storedTokens.refreshToken);
       
       if (result.success && result.tokens && result.user) {
+        tokenStorage.setTokens(result.tokens);
         setUser(result.user);
         setTokens(result.tokens);
-        tokenStorage.setTokens(result.tokens);
+        tokenSync.notifyTokenChange(result.tokens);
         return true;
       } else {
         return false;

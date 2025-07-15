@@ -15,22 +15,23 @@ describe('User API Functional Tests', () => {
   let adminTokens: { accessToken: string; refreshToken: string };
 
   beforeAll(async () => {
-    // Setup both user-service and auth-service apps
+    // Connect to test database - single shared connection
+    await connectDatabase(process.env.MONGODB_TEST_URI || 'mongodb://localhost:27018/yggdrasil-test');
+    
+    // Setup both user-service and auth-service apps - both will use the same database connection
     app = createApp();
     authApp = createAuthApp();
     
-    // Connect to test database
-    await connectDatabase(process.env.MONGODB_TEST_URI || 'mongodb://localhost:27018/yggdrasil-test');
-    
-    // Remove existing test users
+    // Remove existing test users - be more specific to avoid interfering with other tests
     await UserModel.findByIdAndDelete(testUserId);
-    await UserModel.deleteMany({ email: { $regex: /test.*@yggdrasil\.edu/ } });
+    await UserModel.deleteMany({ email: { $regex: /^test@yggdrasil\.edu$/ } });
+    await UserModel.deleteMany({ email: { $regex: /^admin@yggdrasil\.edu$/ } });
     
     // Create test user for API calls
     await UserModel.create({
       _id: new mongoose.Types.ObjectId(testUserId),
       email: 'test@yggdrasil.edu',
-      password: 'TestPassword123!',
+      password: 'TestPassword123!', // Let the User model's pre-save middleware handle password hashing
       role: 'student',
       profile: {
         firstName: 'Test',
@@ -56,7 +57,7 @@ describe('User API Functional Tests', () => {
     // Create admin user for admin-level tests
     await UserModel.create({
       email: 'admin@yggdrasil.edu',
-      password: 'AdminPassword123!',
+      password: 'AdminPassword123!', // Let the User model's pre-save middleware handle password hashing
       role: 'admin',
       profile: {
         firstName: 'Admin',
@@ -64,6 +65,9 @@ describe('User API Functional Tests', () => {
       },
       isActive: true
     });
+    
+    // Wait a moment for database operations to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Login as regular user to get tokens
     const userLoginResponse = await request(authApp)
@@ -73,7 +77,11 @@ describe('User API Functional Tests', () => {
         password: 'TestPassword123!'
       });
     
-    userTokens = userLoginResponse.body.data.tokens;
+    if (userLoginResponse.body.success) {
+      userTokens = userLoginResponse.body.data.tokens;
+    } else {
+      throw new Error(`User login failed: ${userLoginResponse.body.error}`);
+    }
     
     // Login as admin to get admin tokens
     const adminLoginResponse = await request(authApp)
@@ -83,15 +91,20 @@ describe('User API Functional Tests', () => {
         password: 'AdminPassword123!'
       });
     
-    adminTokens = adminLoginResponse.body.data.tokens;
+    if (adminLoginResponse.body.success) {
+      adminTokens = adminLoginResponse.body.data.tokens;
+    } else {
+      throw new Error(`Admin login failed: ${adminLoginResponse.body.error}`);
+    }
   });
 
   afterAll(async () => {
-    // Clean up test data
+    // Clean up test data - be more specific to avoid interfering with other tests
     await UserModel.findByIdAndDelete(testUserId);
-    await UserModel.deleteMany({ email: { $regex: /test.*@yggdrasil\.edu/ } });
-    await UserModel.deleteMany({ email: { $regex: /admin@yggdrasil\.edu/ } });
-    await disconnectDatabase();
+    await UserModel.deleteMany({ email: { $regex: /^test@yggdrasil\.edu$/ } });
+    await UserModel.deleteMany({ email: { $regex: /^admin@yggdrasil\.edu$/ } });
+    // Don't disconnect database - let Jest handle it to avoid conflicts with other tests
+    // await disconnectDatabase();
   });
 
   describe('GET /api/users/:id', () => {
