@@ -214,6 +214,7 @@ describe('AuthService', () => {
     it('should successfully refresh tokens with valid refresh token', async () => {
       const tokenPayload = {
         id: mockUser._id,
+        userId: mockUser._id,
         tokenVersion: 0,
       };
 
@@ -249,6 +250,7 @@ describe('AuthService', () => {
     it('should reject refresh token for non-existent user', async () => {
       const tokenPayload = {
         id: 'non-existent-id',
+        userId: 'non-existent-id',
         tokenVersion: 0,
       };
 
@@ -268,6 +270,7 @@ describe('AuthService', () => {
     it('should reject refresh token for inactive user', async () => {
       const tokenPayload = {
         id: mockUser._id,
+        userId: mockUser._id,
         tokenVersion: 0,
       };
 
@@ -288,6 +291,7 @@ describe('AuthService', () => {
     it('should reject refresh token with mismatched token version', async () => {
       const tokenPayload = {
         id: mockUser._id,
+        userId: mockUser._id,
         tokenVersion: 0,
       };
 
@@ -355,6 +359,7 @@ describe('AuthService', () => {
     it('should successfully verify user with valid token', async () => {
       const tokenPayload = {
         id: mockUser._id,
+        userId: mockUser._id,
         email: mockUser.email,
         role: mockUser.role as UserRole,
         tokenVersion: 0,
@@ -390,6 +395,7 @@ describe('AuthService', () => {
     it('should reject token for non-existent user', async () => {
       const tokenPayload = {
         id: 'non-existent-id',
+        userId: 'non-existent-id',
         email: 'test@example.com',
         role: 'student' as UserRole,
         tokenVersion: 0,
@@ -411,6 +417,7 @@ describe('AuthService', () => {
     it('should reject token for inactive user', async () => {
       const tokenPayload = {
         id: mockUser._id,
+        userId: mockUser._id,
         email: mockUser.email,
         role: mockUser.role as UserRole,
         tokenVersion: 0,

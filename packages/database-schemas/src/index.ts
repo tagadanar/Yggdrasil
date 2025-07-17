@@ -7,3 +7,6 @@ export * from './connection/database';
 // Models
 export * from './models/User';
 export * from './models/NewsArticle';
+export * from './models/Course';
+export * from './models/CourseEnrollment';
+export * from './models/Event';

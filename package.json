@@ -19,6 +19,7 @@
     
     "test:quiet": "npm run test:quiet --workspace=@yggdrasil/testing-utilities",
     "test:single": "npm run test:single --workspace=@yggdrasil/testing-utilities --",
+    "test:smart": "npm run test:smart --workspace=@yggdrasil/testing-utilities",
     "test:unit": "npm run test:unit --workspaces --if-present",
     
     "lint": "npm run lint --workspaces",

@@ -4,9 +4,9 @@
   "description": "Testing utilities and functional tests for Yggdrasil platform",
   "private": true,
   "scripts": {
-    "test:quiet": "playwright test --reporter=dot",
-    "test:single": "playwright test --reporter=line --workers=1",
-    "test:debug": "playwright test --reporter=line --headed --workers=1",
+    "test:quiet": "playwright test --config=playwright.enhanced.config.ts --workers=4 --reporter=dot",
+    "test:single": "playwright test --config=playwright.enhanced.config.ts --reporter=line --workers=1",
+    "test:debug": "playwright test --config=playwright.enhanced.config.ts --reporter=line --headed --workers=1",
     "test:unit": "echo 'Unit tests not implemented yet - use test:quiet for functional tests'",
     "dev": "node service-manager.js start",
     "dev:health": "node service-manager.js health",
@@ -15,14 +15,20 @@
     "build": "tsc",
     "setup:db": "echo 'Database setup not configured - please configure MongoDB setup'",
     "seed": "echo 'Data seeding not configured - please configure test data seeding'",
+    "clean": "rm -rf dist test-results test-results-enhanced playwright-report",
     "install:browsers": "playwright install"
   },
   "dependencies": {
-    "@yggdrasil/shared-utilities": "file:../shared-utilities"
+    "@types/bcrypt": "^5.0.2",
+    "@types/uuid": "^10.0.0",
+    "@yggdrasil/shared-utilities": "file:../shared-utilities",
+    "bcrypt": "^6.0.0",
+    "mongoose": "^8.16.4",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
-    "typescript": "^5.3.0",
-    "@types/node": "^20.10.0"
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
   }
 }

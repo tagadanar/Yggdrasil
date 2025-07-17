@@ -9,7 +9,10 @@ const SERVICES = [
   { name: 'Frontend', url: 'http://localhost:3000', port: 3000 },
   { name: 'Auth Service', url: 'http://localhost:3001/health', port: 3001 },
   { name: 'User Service', url: 'http://localhost:3002/health', port: 3002 },
-  { name: 'News Service', url: 'http://localhost:3003/health', port: 3003 }
+  { name: 'News Service', url: 'http://localhost:3003/health', port: 3003 },
+  { name: 'Course Service', url: 'http://localhost:3004/health', port: 3004 },
+  { name: 'Planning Service', url: 'http://localhost:3005/health', port: 3005 },
+  { name: 'Statistics Service', url: 'http://localhost:3006/health', port: 3006 }
 ];
 
 const LOCK_FILE = path.join(__dirname, '.service-manager.lock');
@@ -25,6 +28,9 @@ class ServiceManager {
     this.authProcess = null;
     this.userProcess = null;
     this.newsProcess = null;
+    this.courseProcess = null;
+    this.planningProcess = null;
+    this.statisticsProcess = null;
     this.isShuttingDown = false;
   }
 
@@ -141,48 +147,76 @@ class ServiceManager {
     // Start services individually to avoid npm workspace command issues
     const rootDir = path.join(__dirname, '../..');
     
+    // Enhanced environment for test mode
+    const testEnv = { ...process.env, NODE_ENV: 'test' };
+    
     // Start frontend service (Next.js)
-    console.log('📱 Starting frontend service...');
+    console.log('📱 Starting frontend service (test mode)...');
     this.frontendProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/frontend'),
       stdio: 'pipe',
       detached: false,
-      env: { ...process.env, PORT: '3000' }
+      env: { ...testEnv, PORT: '3000' }
     });
     
     // Start auth service
-    console.log('🔐 Starting auth service...');
+    console.log('🔐 Starting auth service (test mode)...');
     this.authProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/auth-service'),
       stdio: 'pipe', 
       detached: false,
-      env: { ...process.env, PORT: '3001' }
+      env: { ...testEnv, PORT: '3001' }
     });
     
     // Start user service
-    console.log('👤 Starting user service...');
+    console.log('👤 Starting user service (test mode)...');
     this.userProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/user-service'),
       stdio: 'pipe',
       detached: false,
-      env: { ...process.env, PORT: '3002' }
+      env: { ...testEnv, PORT: '3002' }
     });
     
     // Start news service
-    console.log('📰 Starting news service...');
+    console.log('📰 Starting news service (test mode)...');
     this.newsProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/news-service'),
       stdio: 'pipe',
       detached: false,
-      env: { ...process.env, PORT: '3003' }
+      env: { ...testEnv, PORT: '3003' }
+    });
+
+    // Start course service
+    console.log('📚 Starting course service (test mode)...');
+    this.courseProcess = spawn('npm', ['run', 'dev'], {
+      cwd: path.join(rootDir, 'packages/api-services/course-service'),
+      stdio: 'pipe',
+      detached: false,
+      env: { ...testEnv, PORT: '3004' }
+    });
+
+    console.log('📅 Starting planning service (test mode)...');
+    this.planningProcess = spawn('npm', ['run', 'dev'], {
+      cwd: path.join(rootDir, 'packages/api-services/planning-service'),
+      stdio: 'pipe',
+      detached: false,
+      env: { ...testEnv, PORT: '3005' }
+    });
+
+    console.log('📊 Starting statistics service (test mode)...');
+    this.statisticsProcess = spawn('npm', ['run', 'dev'], {
+      cwd: path.join(rootDir, 'packages/api-services/statistics-service'),
+      stdio: 'pipe',
+      detached: false,
+      env: { ...testEnv, PORT: '3006' }
     });
 
     // Store all process references
-    this.processes = [this.frontendProcess, this.authProcess, this.userProcess, this.newsProcess];
+    this.processes = [this.frontendProcess, this.authProcess, this.userProcess, this.newsProcess, this.courseProcess, this.planningProcess, this.statisticsProcess];
     
     // Handle errors for all processes
     this.processes.forEach((process, index) => {
-      const names = ['frontend', 'auth', 'user', 'news'];
+      const names = ['frontend', 'auth', 'user', 'news', 'course', 'planning', 'statistics'];
       process.on('error', (error) => {
         console.error(`❌ Failed to start ${names[index]} service:`, error);
         process.exit(1);
@@ -261,7 +295,7 @@ class ServiceManager {
     
     // Stop all individual processes
     if (this.processes && this.processes.length > 0) {
-      const names = ['frontend', 'auth', 'user', 'news'];
+      const names = ['frontend', 'auth', 'user', 'news', 'course', 'planning', 'statistics'];
       
       for (let i = 0; i < this.processes.length; i++) {
         const process = this.processes[i];

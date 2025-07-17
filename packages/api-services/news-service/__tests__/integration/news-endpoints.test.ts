@@ -7,6 +7,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { createApp } from '../../src/app';
 import { NewsArticleModel, UserModel } from '@yggdrasil/database-schemas';
 import jwt from 'jsonwebtoken';
+import { SharedJWTHelper } from '@yggdrasil/shared-utilities';
 
 describe('News Service Integration Tests', () => {
   let app: any;
@@ -20,12 +21,13 @@ describe('News Service Integration Tests', () => {
   let teacherToken: string;
   let studentToken: string;
 
-  const JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
-
   // Helper to create JWT token
-  const createToken = (userId: string) => {
-    return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '1h' });
+  const createToken = (user: any) => {
+    const tokens = SharedJWTHelper.generateTokens(user);
+    return tokens.accessToken;
   };
+
+  const JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 
   beforeAll(async () => {
     // Start in-memory MongoDB instance
@@ -136,10 +138,10 @@ describe('News Service Integration Tests', () => {
     });
 
     // Create JWT tokens
-    adminToken = createToken(adminUser._id.toString());
-    staffToken = createToken(staffUser._id.toString());
-    teacherToken = createToken(teacherUser._id.toString());
-    studentToken = createToken(studentUser._id.toString());
+    adminToken = createToken(adminUser);
+    staffToken = createToken(staffUser);
+    teacherToken = createToken(teacherUser);
+    studentToken = createToken(studentUser);
   });
 
   afterAll(async () => {

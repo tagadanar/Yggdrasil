@@ -85,21 +85,31 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <Link href="/" className="inline-block">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              🌳 Yggdrasil
-            </h1>
+          <Link href="/" className="inline-block group">
+            <div className="flex items-center justify-center mb-4">
+              <div className="relative mr-3">
+                <img 
+                  src="/logo101.png" 
+                  alt="Yggdrasil Logo" 
+                  className="w-12 h-12 transition-transform duration-300 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-primary-500 opacity-0 group-hover:opacity-10 rounded-full transition-opacity duration-300"></div>
+              </div>
+              <h1 className="text-4xl font-bold text-gray-900 group-hover:text-primary-700 transition-colors duration-300">
+                Yggdrasil
+              </h1>
+            </div>
           </Link>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Sign in to your account
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="text-sm text-gray-600">
             Access is limited to authorized users
           </p>
         </div>
 
         {/* Form */}
-        <div className="card">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
             {/* Email Field */}
             <div className="form-group">
@@ -149,7 +159,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full btn-primary py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white py-3 px-4 rounded-lg text-base font-medium shadow-lg shadow-primary-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center">
@@ -168,13 +178,13 @@ export default function LoginPage() {
         </div>
 
         {/* Demo Accounts */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Demo Login</h3>
-          <div className="space-y-2">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Quick Demo Login</h3>
+          <div className="space-y-3">
             <button
               onClick={() => handleDemoLogin('admin@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting}
-              className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 rounded-md border border-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg border border-blue-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
@@ -191,7 +201,7 @@ export default function LoginPage() {
             <button
               onClick={() => handleDemoLogin('teacher@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting}
-              className="w-full flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 rounded-md border border-green-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg border border-green-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
@@ -208,7 +218,7 @@ export default function LoginPage() {
             <button
               onClick={() => handleDemoLogin('staff@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting}
-              className="w-full flex items-center justify-between p-3 bg-orange-50 hover:bg-orange-100 rounded-md border border-orange-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-lg border border-orange-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
@@ -225,7 +235,7 @@ export default function LoginPage() {
             <button
               onClick={() => handleDemoLogin('student@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting}
-              className="w-full flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 rounded-md border border-purple-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg border border-purple-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center mr-3">

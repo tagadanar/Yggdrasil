@@ -14,6 +14,7 @@ describe('JWTHelper', () => {
 
   const validPayload = {
     id: mockUser._id,
+    userId: mockUser._id,
     email: mockUser.email,
     role: mockUser.role as any,
     tokenVersion: 0,
@@ -129,7 +130,7 @@ describe('JWTHelper', () => {
   });
 
   describe('verifyRefreshToken', () => {
-    const refreshPayload = { id: mockUser._id, tokenVersion: 0 };
+    const refreshPayload = { id: mockUser._id, userId: mockUser._id, tokenVersion: 0 };
 
     it('should verify valid refresh token successfully', () => {
       const token = JWTHelper.generateRefreshToken(refreshPayload);

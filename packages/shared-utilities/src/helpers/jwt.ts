@@ -28,10 +28,11 @@ export class SharedJWTHelper {
     const accessTokenPayload: JWTPayload = {
       userId: user._id,  // Use consistent field name 'userId'
       id: user._id,      // Keep 'id' for backward compatibility
+      _id: user._id,     // Add _id field for full compatibility
       email: user.email,
       role: user.role as any,
       tokenVersion: user.tokenVersion || 0,
-    };
+    } as any;
 
     const refreshTokenPayload: RefreshTokenPayload = {
       userId: user._id,  // Use consistent field name 'userId'

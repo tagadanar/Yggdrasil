@@ -5,6 +5,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { createApp } from '../../src/app';
 import { NewsArticleModel, UserModel } from '@yggdrasil/database-schemas';
 import jwt from 'jsonwebtoken';
+import { SharedJWTHelper } from '@yggdrasil/shared-utilities';
 
 describe('News Service - Edge Cases and Stress Testing', () => {
   let app: any;
@@ -12,7 +13,6 @@ describe('News Service - Edge Cases and Stress Testing', () => {
   let adminUser: any;
   let adminToken: string;
 
-  const JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
@@ -37,7 +37,8 @@ describe('News Service - Edge Cases and Stress Testing', () => {
       isActive: true,
     });
 
-    adminToken = jwt.sign({ userId: adminUser._id }, JWT_SECRET, { expiresIn: '1h' });
+    const tokens = SharedJWTHelper.generateTokens(adminUser);
+    adminToken = tokens.accessToken;
   });
 
   afterAll(async () => {

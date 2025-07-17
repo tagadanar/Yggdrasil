@@ -40,3 +40,10 @@ userRoutes.patch('/:id/profile', requireOwnershipForModification, UserController
 // Teachers can view any student preferences
 // Admins can view any preferences
 userRoutes.get('/:id/preferences', requireOwnershipOrTeacherRole, UserController.getUserPreferences);
+
+// Current User Profile Routes
+// GET /api/users/profile - Get current user's profile
+userRoutes.get('/profile', UserController.getCurrentUserProfile);
+
+// PUT /api/users/profile - Update current user's profile
+userRoutes.put('/profile', UserController.updateCurrentUserProfile);

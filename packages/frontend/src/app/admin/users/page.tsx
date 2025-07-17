@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { userApi } from '@/lib/api/client';
+import { User as SharedUser } from '@yggdrasil/shared-utilities';
 
 interface User {
   id: string;
@@ -217,7 +218,7 @@ export default function AdminUsersPage() {
     if (!selectedUser) return;
     
     // Prevent self-deletion
-    if (selectedUser.id === user?.id || selectedUser.id === user?._id) {
+    if (selectedUser.id === (user as SharedUser)?._id) {
       setError('Cannot delete your own account');
       setShowDeleteModal(false);
       return;

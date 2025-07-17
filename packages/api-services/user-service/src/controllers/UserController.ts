@@ -167,4 +167,39 @@ export class UserController {
       res.status(errorResponse.statusCode).json(errorResponse);
     }
   }
+
+  // Protected: Get current user's profile
+  static async getCurrentUserProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user || !req.user.userId) {
+        const errorResponse = ResponseHelper.unauthorized('Authentication required');
+        res.status(errorResponse.statusCode).json(errorResponse);
+        return;
+      }
+
+      const result = await UserService.getUserById(req.user.userId);
+      UserController.handleServiceResult(res, result, 'Profile retrieved successfully');
+    } catch (error) {
+      const errorResponse = ResponseHelper.error('Internal server error');
+      res.status(errorResponse.statusCode).json(errorResponse);
+    }
+  }
+
+  // Protected: Update current user's profile
+  static async updateCurrentUserProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user || !req.user.userId) {
+        const errorResponse = ResponseHelper.unauthorized('Authentication required');
+        res.status(errorResponse.statusCode).json(errorResponse);
+        return;
+      }
+
+      const profileData = req.body;
+      const result = await UserService.updateUserProfile(req.user.userId, profileData);
+      UserController.handleServiceResult(res, result, 'Profile updated successfully');
+    } catch (error) {
+      const errorResponse = ResponseHelper.error('Internal server error');
+      res.status(errorResponse.statusCode).json(errorResponse);
+    }
+  }
 }

@@ -29,10 +29,13 @@ export class DatabaseConnection {
     try {
       const defaultOptions: mongoose.ConnectOptions = {
         // Connection optimization options
-        maxPoolSize: 10, // Maintain up to 10 socket connections
+        maxPoolSize: process.env.NODE_ENV === 'test' ? 50 : 10, // Higher pool size for tests
         serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
         socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
         bufferCommands: false, // Disable mongoose buffering
+        // Additional test optimizations
+        minPoolSize: process.env.NODE_ENV === 'test' ? 5 : 0, // Minimum connections for tests
+        maxIdleTimeMS: process.env.NODE_ENV === 'test' ? 30000 : 30000, // 30 seconds
       };
 
       const options = { ...defaultOptions, ...config.options };

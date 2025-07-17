@@ -123,4 +123,97 @@ export class ResponseHelper {
   static badRequest(message: string = 'Bad request'): ErrorResponse {
     return this.error(message, HTTP_STATUS.BAD_REQUEST);
   }
+
+  // Express response helpers (using different method names to avoid conflicts)
+  /**
+   * Send a successful response (Express compatible)
+   */
+  static sendSuccess<T>(res: any, message: string, data?: T): void {
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message,
+      data,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Send a created response (Express compatible)
+   */
+  static sendCreated<T>(res: any, message: string, data?: T): void {
+    res.status(HTTP_STATUS.CREATED).json({
+      success: true,
+      message,
+      data,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Send an unauthorized response (Express compatible)
+   */
+  static sendUnauthorized(res: any, message: string): void {
+    res.status(HTTP_STATUS.UNAUTHORIZED).json({
+      success: false,
+      error: message,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Send a forbidden response (Express compatible)
+   */
+  static sendForbidden(res: any, message: string): void {
+    res.status(HTTP_STATUS.FORBIDDEN).json({
+      success: false,
+      error: message,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Send a not found response (Express compatible)
+   */
+  static sendNotFound(res: any, message: string): void {
+    res.status(HTTP_STATUS.NOT_FOUND).json({
+      success: false,
+      error: message,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Send a bad request response (Express compatible)
+   */
+  static sendBadRequest(res: any, message: string, details?: any): void {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      error: message,
+      details,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Send a conflict response (Express compatible)
+   */
+  static sendConflict(res: any, message: string): void {
+    res.status(HTTP_STATUS.CONFLICT).json({
+      success: false,
+      error: message,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Send a server error response (Express compatible)
+   */
+  static sendServerError(res: any, message: string, error?: string): void {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: message,
+      details: error,
+      timestamp: new Date().toISOString()
+    });
+  }
 }

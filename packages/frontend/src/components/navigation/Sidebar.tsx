@@ -116,14 +116,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo section */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <Link href="/news" className="flex items-center">
-              <span className="text-2xl font-bold text-gray-900 mr-2">🌳</span>
-              <span className="text-xl font-bold text-gray-900">Yggdrasil</span>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-primary-100">
+            <Link href="/news" className="flex items-center group">
+              <div className="relative mr-3">
+                <img 
+                  src="/logo101.png" 
+                  alt="Yggdrasil Logo" 
+                  className="w-8 h-8 transition-transform duration-200 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-primary-500 opacity-0 group-hover:opacity-10 rounded-full transition-opacity duration-200"></div>
+              </div>
+              <span className="text-xl font-bold text-gray-900 group-hover:text-primary-700 transition-colors duration-200">
+                Yggdrasil
+              </span>
             </Link>
             <button
               onClick={onClose}
-              className="md:hidden p-2 rounded-md hover:bg-gray-100"
+              className="md:hidden p-2 rounded-md hover:bg-white/50 transition-colors duration-200"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -132,42 +141,44 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
 
           {/* Navigation menu */}
-          <nav className="flex-1 px-2 py-4 space-y-1">
+          <nav className="flex-1 px-4 py-6 space-y-2">
             {visibleMenuItems.map((item) => (
               <Link
                 key={item.id}
                 href={item.href}
                 data-testid={`nav-${item.id}`}
                 className={`
-                  flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                  flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 group
                   ${isActiveRoute(item.href) 
-                    ? 'bg-primary-100 text-primary-900 border-r-2 border-primary-500 active' 
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 active' 
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md'
                   }
                 `}
                 onClick={onClose}
               >
-                <span className="mr-3">{item.icon}</span>
+                <span className={`mr-3 transition-colors duration-200 ${isActiveRoute(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}>
+                  {item.icon}
+                </span>
                 {item.name}
               </Link>
             ))}
           </nav>
 
           {/* User info at bottom */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                  <span className="text-primary-700 font-medium text-sm">
+                <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-sm">
                     {user?.profile?.firstName?.[0] || 'U'}
                   </span>
                 </div>
               </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-semibold text-gray-900">
                   {user?.profile?.firstName || 'User'}
                 </p>
-                <p className="text-xs text-gray-500 capitalize">
+                <p className="text-xs text-gray-600 capitalize font-medium">
                   {user?.role || 'Role'}
                 </p>
               </div>

@@ -43,7 +43,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col md:ml-64">
         {/* Top Navigation */}
-        <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-10">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               {/* Mobile menu button */}
@@ -51,7 +51,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <button
                   onClick={() => setIsSidebarOpen(true)}
                   data-testid="mobile-menu-toggle"
-                  className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                  className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 transition-colors duration-200"
                 >
                   <span className="sr-only">Open sidebar</span>
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -60,9 +60,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </button>
               </div>
 
-              {/* Desktop logo placeholder */}
+              {/* Desktop logo */}
               <div className="hidden md:flex items-center">
-                <div className="w-8"></div> {/* Spacer */}
+                <div className="flex items-center">
+                  <img 
+                    src="/logo101.png" 
+                    alt="Yggdrasil Logo" 
+                    className="w-8 h-8 mr-2"
+                  />
+                  <span className="text-lg font-semibold text-gray-900">Yggdrasil</span>
+                </div>
               </div>
 
               {/* Right side navigation */}
@@ -71,15 +78,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Link 
                   href="/profile" 
                   data-testid="profile-link"
-                  className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors duration-200"
+                  className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg px-3 py-2 transition-all duration-200 hover:shadow-sm"
                 >
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-semibold text-gray-900">
                       {user?.profile?.firstName || 'Unknown'} {user?.profile?.lastName || 'User'}
                     </p>
-                    <p className="text-xs text-gray-500">{user?.email}</p>
+                    <p className="text-xs text-gray-600">{user?.email}</p>
                   </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleColor(user?.role || '')}`}>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold capitalize shadow-sm ${getRoleColor(user?.role || '')}`}>
                     {user?.role}
                   </span>
                 </Link>
@@ -87,7 +94,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 {/* Logout Button */}
                 <button
                   onClick={handleLogout}
-                  className="btn-secondary text-sm"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 >
                   Logout
                 </button>
@@ -97,8 +104,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="py-6 px-4 sm:px-6 lg:px-8">
+        <main className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="py-8 px-4 sm:px-6 lg:px-8">
             {children}
           </div>
         </main>

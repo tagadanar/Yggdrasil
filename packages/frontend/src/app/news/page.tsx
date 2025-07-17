@@ -394,7 +394,7 @@ function NewsPageContent() {
               </div>
             ) : (
               filteredArticles.map((article) => (
-                <article key={article.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                <article key={article.id} className="bg-white rounded-lg shadow-md overflow-hidden" data-testid="news-article">
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(article.category)}`}>
@@ -463,6 +463,7 @@ function NewsPageContent() {
               <button 
                 onClick={() => setShowCreateForm(true)}
                 className="btn-primary"
+                data-testid="create-news-button"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -489,6 +490,7 @@ function NewsPageContent() {
                       onChange={(e) => setFormData({...formData, title: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       placeholder="Enter article title"
+                      data-testid="news-title"
                     />
                   </div>
                   <div>
@@ -500,8 +502,10 @@ function NewsPageContent() {
                       value={formData.category}
                       onChange={(e) => setFormData({...formData, category: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      data-testid="news-category"
                     >
                       <option value="announcements">Announcements</option>
+                      <option value="announcement">Announcement</option>
                       <option value="events">Events</option>
                       <option value="academic">Academic</option>
                       <option value="general">General</option>
@@ -531,6 +535,7 @@ function NewsPageContent() {
                       onChange={(e) => setFormData({...formData, content: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       placeholder="Full article content"
+                      data-testid="news-content"
                     />
                   </div>
                 </form>
@@ -545,6 +550,7 @@ function NewsPageContent() {
                     onClick={handleCreateArticle}
                     disabled={isSubmitting}
                     className="btn-primary disabled:opacity-50"
+                    data-testid="publish-button"
                   >
                     {isSubmitting ? 'Creating...' : 'Create Article'}
                   </button>
@@ -583,6 +589,7 @@ function NewsPageContent() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="announcements">Announcements</option>
+                      <option value="announcement">Announcement</option>
                       <option value="events">Events</option>
                       <option value="academic">Academic</option>
                       <option value="general">General</option>

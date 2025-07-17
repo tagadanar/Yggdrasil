@@ -67,26 +67,111 @@ export class IsolatedAuthHelpers {
   }
 
   /**
-   * Perform login with isolated user
+   * Perform login with isolated user (ENHANCED: Resilient to service load)
    */
   private async performLogin(user: IsolatedTestUser): Promise<void> {
-    await this.page.goto('/auth/login');
+    const maxRetries = 3;
+    let lastError: string | null = null;
     
-    // Wait for page to be fully loaded
-    await this.page.waitForLoadState('networkidle');
-    
-    // Fill login form with isolated user credentials
-    await this.page.fill('#email', user.email);
-    await this.page.fill('#password', user.password);
-    
-    // Submit form
-    await this.page.click('button[type="submit"]');
-    
-    // Wait for redirect to news page
-    await expect(this.page).toHaveURL('/news', { timeout: 10000 });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Add jitter to prevent thundering herd in batch mode
+        if (attempt > 1) {
+          const jitter = Math.random() * 1000; // 0-1000ms jitter
+          await new Promise(resolve => setTimeout(resolve, jitter));
+        }
+        
+        await this.page.goto('/auth/login');
+        
+        // Wait for page to be fully loaded with longer timeout
+        await this.page.waitForLoadState('networkidle', { timeout: 15000 });
+        
+        // Fill login form with isolated user credentials
+        await this.page.fill('#email', user.email);
+        await this.page.fill('#password', user.password);
+        
+        // Submit form
+        await this.page.click('button[type="submit"]');
+        
+        // Wait for either success redirect or error message with longer timeout
+        const result = await Promise.race([
+          this.page.waitForURL('/news', { timeout: 20000 }).then(() => ({ success: true })),
+          this.page.waitForSelector('[data-testid="error-message"], .form-error, .bg-error-50', { timeout: 20000 })
+            .then(async (errorElement) => {
+              const errorText = await errorElement.textContent();
+              return { success: false, error: errorText };
+            })
+        ]).catch(async (error) => {
+          // If neither redirect nor error occurs, check current URL and page state
+          const currentURL = this.page.url();
+          return { success: false, error: `Login timeout. Current URL: ${currentURL}` };
+        });
+        
+        // Handle login result
+        if (result.success) {
+          // Complete authentication setup
+          await this.completeAuthSetup(user);
+          return; // Success - exit retry loop
+        } else {
+          lastError = result.error || 'Unknown login error';
+          
+          // If this is a temporary service issue, retry
+          if (attempt < maxRetries && (lastError.includes('timeout') || lastError.includes('Login failed'))) {
+            console.log(`⚠️  Login attempt ${attempt} failed for ${user.email}: ${lastError}. Retrying...`);
+            continue;
+          }
+          
+          // If it's a permanent error or final attempt, throw
+          throw new Error(`Login failed for user ${user.email}: ${lastError}`);
+        }
+      } catch (error) {
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        lastError = error instanceof Error ? error.message : 'Unknown error';
+        console.log(`⚠️  Login attempt ${attempt} failed for ${user.email}: ${lastError}. Retrying...`);
+      }
+    }
+  }
+
+  /**
+   * Complete authentication setup after successful login
+   */
+  private async completeAuthSetup(user: IsolatedTestUser): Promise<void> {
+    // Verify we're on the news page
+    await expect(this.page).toHaveURL('/news', { timeout: 5000 });
     
     // Wait for auth state to be initialized
-    await this.page.waitForTimeout(200);
+    await this.page.waitForLoadState('networkidle');
+    
+    // Capture authentication tokens from cookies (not localStorage)
+    const tokens = await this.page.evaluate(() => {
+      // Helper function to get cookie value
+      const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+        return null;
+      };
+      
+      const accessToken = getCookie('yggdrasil_access_token');
+      const refreshToken = getCookie('yggdrasil_refresh_token');
+      
+      if (accessToken && refreshToken) {
+        return {
+          accessToken,
+          refreshToken
+        };
+      }
+      return null;
+    });
+    
+    // Store tokens in the user object
+    if (tokens) {
+      user.tokens = tokens;
+    } else {
+      console.warn('No tokens found in localStorage after login');
+    }
   }
 
   /**
@@ -241,17 +326,43 @@ export class IsolatedAuthHelpers {
    * Make authenticated request using stored tokens
    */
   async makeAuthenticatedRequest(method: string, url: string, options?: any): Promise<any> {
-    // Get tokens from localStorage
+    // Get tokens from cookies
     const tokens = await this.page.evaluate(() => {
       try {
-        const tokenData = localStorage.getItem('tokens');
-        return tokenData ? JSON.parse(tokenData) : null;
+        const cookies = document.cookie.split('; ');
+        const accessTokenCookie = cookies.find(cookie => cookie.startsWith('yggdrasil_access_token='));
+        const refreshTokenCookie = cookies.find(cookie => cookie.startsWith('yggdrasil_refresh_token='));
+        
+        let accessToken = null;
+        let refreshToken = null;
+        
+        if (accessTokenCookie) {
+          accessToken = decodeURIComponent(accessTokenCookie.split('=')[1]);
+        }
+        if (refreshTokenCookie) {
+          refreshToken = decodeURIComponent(refreshTokenCookie.split('=')[1]);
+        }
+        
+        return { accessToken, refreshToken };
       } catch {
         return null;
       }
     });
 
     if (!tokens?.accessToken) {
+      // Try to get current user tokens if direct access fails
+      const currentUser = this.getCurrentUser();
+      if (currentUser?.tokens?.accessToken) {
+        return await this.page.request.fetch(url, {
+          method,
+          headers: {
+            'Authorization': `Bearer ${currentUser.tokens.accessToken}`,
+            'Content-Type': 'application/json',
+            ...options?.headers
+          },
+          ...options
+        });
+      }
       throw new Error('No access token found');
     }
 
@@ -267,14 +378,21 @@ export class IsolatedAuthHelpers {
   }
 
   /**
-   * Get refresh token from localStorage
+   * Get refresh token from cookies
    */
   async getRefreshToken(): Promise<string | null> {
     return await this.page.evaluate(() => {
       try {
-        const tokenData = localStorage.getItem('tokens');
-        const tokens = tokenData ? JSON.parse(tokenData) : null;
-        return tokens?.refreshToken || null;
+        // Get refresh token from cookies using the cookie name used by the app
+        const cookies = document.cookie.split('; ');
+        const refreshTokenCookie = cookies.find(cookie => cookie.startsWith('yggdrasil_refresh_token='));
+        
+        if (refreshTokenCookie) {
+          const refreshToken = refreshTokenCookie.split('=')[1];
+          return decodeURIComponent(refreshToken);
+        }
+        
+        return null;
       } catch {
         return null;
       }

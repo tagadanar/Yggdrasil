@@ -50,7 +50,7 @@ export const ERROR_MESSAGES = {
 } as const;
 
 export const PASSWORD_CONFIG = {
-  SALT_ROUNDS: 12,
+  SALT_ROUNDS: process.env.NODE_ENV === 'test' ? 4 : 12, // Faster hashing for tests
   MIN_LENGTH: 6,
   MAX_LENGTH: 128,
   REQUIRE_UPPERCASE: true,

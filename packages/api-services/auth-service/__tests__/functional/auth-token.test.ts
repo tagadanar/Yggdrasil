@@ -134,6 +134,7 @@ describe('Auth Token Management Functional Tests', () => {
       // Create an expired refresh token
       const expiredToken = JWTHelper.generateRefreshToken({
         id: testUser._id.toString(),
+        userId: testUser._id.toString(),
         tokenVersion: testUser.tokenVersion
       }, '-1s'); // Already expired
 
@@ -281,6 +282,7 @@ describe('Auth Token Management Functional Tests', () => {
       // Create an expired access token
       const expiredToken = JWTHelper.generateAccessToken({
         id: testUser._id.toString(),
+        userId: testUser._id.toString(),
         email: testUser.email,
         role: testUser.role as any,
         tokenVersion: testUser.tokenVersion
