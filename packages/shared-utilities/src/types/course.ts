@@ -327,6 +327,8 @@ export interface CourseFilters {
   tags?: string[];
   status?: CourseStatus;
   search?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface CourseSearchResult {

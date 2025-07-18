@@ -52,7 +52,7 @@ export interface CourseModelType extends mongoose.Model<CourseDocument> {
   findPublished(): Promise<CourseDocument[]>;
   findByInstructor(instructorId: string): Promise<CourseDocument[]>;
   findByCategory(category: string): Promise<CourseDocument[]>;
-  searchCourses(query: string, filters?: any): Promise<CourseDocument[]>;
+  searchCourses(query: string, filters?: any): any;
 }
 
 // Test Case Schema for exercises
@@ -663,10 +663,15 @@ CourseSchema.statics.searchCourses = function(query: string, filters: any = {}) 
     searchCriteria.tags = { $in: filters.tags };
   }
   
-  return this.find(searchCriteria).sort({ 
-    score: query ? { $meta: 'textScore' } : undefined,
-    createdAt: -1 
-  });
+  // Build sort criteria properly to avoid "Invalid sort value" error
+  if (query && query.trim().length > 0) {
+    return this.find(searchCriteria).sort({ 
+      score: { $meta: 'textScore' },
+      createdAt: -1 
+    });
+  } else {
+    return this.find(searchCriteria).sort({ createdAt: -1 });
+  }
 };
 
 // Create and export the model

@@ -61,7 +61,7 @@ export class CourseController {
         user.userId,
         `${user.profile?.firstName} ${user.profile?.lastName}`,
         user.email,
-        validation.data
+        validation.data as any
       );
 
       res.status(HTTP_STATUS.CREATED).json(
@@ -140,7 +140,7 @@ export class CourseController {
 
       const course = await this.courseService.updateCourse(
         courseId,
-        validation.data,
+        validation.data as any,
         user.userId,
         user.role
       );
@@ -212,6 +212,7 @@ export class CourseController {
     try {
       const validation = CourseSearchSchema.safeParse(req.query);
       if (!validation.success) {
+        console.error('Validation error:', validation.error.issues);
         res.status(HTTP_STATUS.BAD_REQUEST).json(
           ResponseHelper.badRequest('Invalid search parameters')
         );
@@ -223,6 +224,7 @@ export class CourseController {
         ResponseHelper.success(result, 'Courses retrieved successfully')
       );
     } catch (error: any) {
+      console.error('Course search error:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
         ResponseHelper.error('Failed to search courses')
       );

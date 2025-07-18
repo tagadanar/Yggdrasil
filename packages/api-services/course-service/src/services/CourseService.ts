@@ -39,8 +39,16 @@ export class CourseService {
     courseData: CreateCourseRequest
   ): Promise<CourseDocument> {
     try {
+      // Convert string dates to Date objects if they exist
+      const processedSettings = courseData.settings ? {
+        ...courseData.settings,
+        startDate: courseData.settings.startDate ? new Date(courseData.settings.startDate) : undefined,
+        endDate: courseData.settings.endDate ? new Date(courseData.settings.endDate) : undefined
+      } : undefined;
+
       const course = new CourseModel({
         ...courseData,
+        settings: processedSettings,
         instructor: {
           _id: instructorId,
           name: instructorName,
@@ -64,7 +72,7 @@ export class CourseService {
 
       await course.save();
       return course;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to create course: ${error.message}`);
     }
   }
@@ -72,7 +80,7 @@ export class CourseService {
   async getCourseById(courseId: string): Promise<CourseDocument | null> {
     try {
       return await CourseModel.findById(courseId);
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to get course: ${error.message}`);
     }
   }
@@ -80,7 +88,7 @@ export class CourseService {
   async getCourseBySlug(slug: string): Promise<CourseDocument | null> {
     try {
       return await CourseModel.findBySlug(slug);
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to get course by slug: ${error.message}`);
     }
   }
@@ -102,8 +110,18 @@ export class CourseService {
         throw new Error('Insufficient permissions to modify this course');
       }
 
+      // Convert string dates to Date objects if they exist
+      const processedUpdateData = { ...updateData };
+      if (processedUpdateData.settings) {
+        processedUpdateData.settings = {
+          ...processedUpdateData.settings,
+          startDate: processedUpdateData.settings.startDate ? new Date(processedUpdateData.settings.startDate) : undefined,
+          endDate: processedUpdateData.settings.endDate ? new Date(processedUpdateData.settings.endDate) : undefined
+        };
+      }
+
       // Update fields
-      Object.assign(course, updateData);
+      Object.assign(course, processedUpdateData);
       
       // Increment version on significant changes
       if (updateData.title || updateData.description || updateData.status) {
@@ -112,7 +130,7 @@ export class CourseService {
 
       await course.save();
       return course;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to update course: ${error.message}`);
     }
   }
@@ -135,7 +153,7 @@ export class CourseService {
       await CourseEnrollmentModel.deleteMany({ courseId });
       
       return true;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to delete course: ${error.message}`);
     }
   }
@@ -146,9 +164,11 @@ export class CourseService {
 
   async searchCourses(filters: CourseFilters): Promise<CourseSearchResult> {
     try {
+      console.log('CourseService.searchCourses called with filters:', JSON.stringify(filters, null, 2));
       const { search, page = 1, limit = 20, ...otherFilters } = filters;
       const skip = (page - 1) * limit;
 
+      console.log('Calling CourseModel.searchCourses with:', { search: search || '', otherFilters });
       const courses = await CourseModel.searchCourses(search || '', otherFilters)
         .skip(skip)
         .limit(limit);
@@ -162,6 +182,7 @@ export class CourseService {
         ...(otherFilters.tags && { tags: { $in: otherFilters.tags } })
       });
 
+      console.log('CourseService.searchCourses completed successfully');
       return {
         courses,
         total,
@@ -169,15 +190,16 @@ export class CourseService {
         limit,
         filters
       };
-    } catch (error) {
-      throw new Error(`Failed to search courses: ${error.message}`);
+    } catch (error: any) {
+      console.error('CourseService.searchCourses error:', error);
+      throw new Error(`Failed to search courses: ${error?.message || error}`);
     }
   }
 
   async getCoursesByInstructor(instructorId: string): Promise<CourseDocument[]> {
     try {
       return await CourseModel.findByInstructor(instructorId);
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to get courses by instructor: ${error.message}`);
     }
   }
@@ -185,7 +207,7 @@ export class CourseService {
   async getPublishedCourses(): Promise<CourseDocument[]> {
     try {
       return await CourseModel.findPublished();
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to get published courses: ${error.message}`);
     }
   }
@@ -224,7 +246,7 @@ export class CourseService {
       await course.save();
 
       return course;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to add chapter: ${error.message}`);
     }
   }
@@ -246,7 +268,7 @@ export class CourseService {
         throw new Error('Insufficient permissions to modify this course');
       }
 
-      const chapter = course.chapters.id(chapterId);
+      const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
         throw new Error('Chapter not found');
       }
@@ -256,7 +278,7 @@ export class CourseService {
       await course.save();
 
       return course;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to update chapter: ${error.message}`);
     }
   }
@@ -277,17 +299,20 @@ export class CourseService {
         throw new Error('Insufficient permissions to modify this course');
       }
 
-      const chapter = course.chapters.id(chapterId);
+      const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
         throw new Error('Chapter not found');
       }
 
-      course.chapters.pull(chapterId);
+      const chapterIndex = course.chapters.findIndex((ch: any) => ch._id.toString() === chapterId);
+      if (chapterIndex !== -1) {
+        course.chapters.splice(chapterIndex, 1);
+      }
       await course.incrementVersion();
       await course.save();
 
       return course;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to delete chapter: ${error.message}`);
     }
   }
@@ -313,7 +338,7 @@ export class CourseService {
         throw new Error('Insufficient permissions to modify this course');
       }
 
-      const chapter = course.chapters.id(chapterId);
+      const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
         throw new Error('Chapter not found');
       }
@@ -332,7 +357,7 @@ export class CourseService {
       await course.save();
 
       return course;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to add section: ${error.message}`);
     }
   }
@@ -355,12 +380,12 @@ export class CourseService {
         throw new Error('Insufficient permissions to modify this course');
       }
 
-      const chapter = course.chapters.id(chapterId);
+      const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
         throw new Error('Chapter not found');
       }
 
-      const section = chapter.sections.id(sectionId);
+      const section = chapter.sections.find((sec: any) => sec._id.toString() === sectionId);
       if (!section) {
         throw new Error('Section not found');
       }
@@ -370,7 +395,7 @@ export class CourseService {
       await course.save();
 
       return course;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to update section: ${error.message}`);
     }
   }
@@ -397,12 +422,12 @@ export class CourseService {
         throw new Error('Insufficient permissions to modify this course');
       }
 
-      const chapter = course.chapters.id(chapterId);
+      const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
         throw new Error('Chapter not found');
       }
 
-      const section = chapter.sections.id(sectionId);
+      const section = chapter.sections.find((sec: any) => sec._id.toString() === sectionId);
       if (!section) {
         throw new Error('Section not found');
       }
@@ -420,7 +445,7 @@ export class CourseService {
       await course.save();
 
       return course;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to add content: ${error.message}`);
     }
   }
@@ -444,17 +469,17 @@ export class CourseService {
         throw new Error('Insufficient permissions to modify this course');
       }
 
-      const chapter = course.chapters.id(chapterId);
+      const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
         throw new Error('Chapter not found');
       }
 
-      const section = chapter.sections.id(sectionId);
+      const section = chapter.sections.find((sec: any) => sec._id.toString() === sectionId);
       if (!section) {
         throw new Error('Section not found');
       }
 
-      const content = section.content.id(contentId);
+      const content = section.content.find((cont: any) => cont._id.toString() === contentId);
       if (!content) {
         throw new Error('Content not found');
       }
@@ -464,7 +489,7 @@ export class CourseService {
       await course.save();
 
       return course;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to update content: ${error.message}`);
     }
   }
@@ -511,7 +536,7 @@ export class CourseService {
       await course.save();
 
       return enrollment;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to enroll student: ${error.message}`);
     }
   }
@@ -519,7 +544,7 @@ export class CourseService {
   async getStudentEnrollments(studentId: string): Promise<CourseEnrollmentDocument[]> {
     try {
       return await CourseEnrollmentModel.findByStudent(studentId);
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to get student enrollments: ${error.message}`);
     }
   }
@@ -527,7 +552,7 @@ export class CourseService {
   async getCourseEnrollments(courseId: string): Promise<CourseEnrollmentDocument[]> {
     try {
       return await CourseEnrollmentModel.findByCourse(courseId);
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to get course enrollments: ${error.message}`);
     }
   }
@@ -556,7 +581,7 @@ export class CourseService {
       // For now, we'll just save the submission without evaluation
 
       return submission;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to submit exercise: ${error.message}`);
     }
   }
@@ -570,7 +595,7 @@ export class CourseService {
         return await ExerciseSubmissionModel.find({ exerciseId, studentId });
       }
       return await ExerciseSubmissionModel.findByExercise(exerciseId);
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to get exercise submissions: ${error.message}`);
     }
   }

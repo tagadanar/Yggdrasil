@@ -95,7 +95,7 @@ export const StudentDashboard: React.FC = () => {
         const dashboardData = response.data;
         
         // Set basic stats immediately for faster UI feedback
-        setLearningStats(dashboardData.learningStatistics);
+        setLearningStats(dashboardData.learningStats);
         setLoading(false); // Show basic data immediately
         
         // Process heavy data transformations asynchronously to avoid blocking UI

@@ -199,10 +199,11 @@ router.patch(
   async (req, res) => {
     try {
       const { publish } = req.body;
-      await courseController.updateCourse({
+      const modifiedReq = {
         ...req,
         body: { status: publish ? 'published' : 'draft' }
-      }, res);
+      } as any;
+      await courseController.updateCourse(modifiedReq, res);
     } catch (error) {
       res.status(500).json({ error: 'Failed to update course status' });
     }
@@ -216,10 +217,11 @@ router.patch(
   async (req, res) => {
     try {
       const { archive } = req.body;
-      await courseController.updateCourse({
+      const modifiedReq = {
         ...req,
         body: { status: archive ? 'archived' : 'published' }
-      }, res);
+      } as any;
+      await courseController.updateCourse(modifiedReq, res);
     } catch (error) {
       res.status(500).json({ error: 'Failed to update course status' });
     }

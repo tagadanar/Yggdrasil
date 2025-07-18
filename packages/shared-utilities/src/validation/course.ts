@@ -230,8 +230,8 @@ export const CourseSearchSchema = z.object({
   instructor: z.string().optional(),
   tags: z.array(z.string().max(30)).optional(),
   status: z.enum(['draft', 'published', 'archived']).optional(),
-  page: z.number().min(1).default(1),
-  limit: z.number().min(1).max(100).default(20)
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(20)
 });
 
 // Course enrollment

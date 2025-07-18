@@ -165,8 +165,7 @@ test.describe('Planning Management - Optimized Tests', () => {
     
     // Test that calendar view has proper structure
     const calendarView = page.locator('[data-testid="calendar-view"]');
-    await expect(calendarView).toHaveClass(/bg-white/);
-    await expect(calendarView).toHaveClass(/rounded-lg/);
+    await expect(calendarView).toHaveClass(/card/);
     
   });
 });

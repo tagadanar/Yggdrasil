@@ -245,6 +245,9 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     ];
 
     for (const roleTest of roleTests) {
+      // Ensure clean state before each role test
+      await authHelpers.logout();
+      
       // Login as the specific role
       await authHelpers[roleTest.loginMethod]();
       
@@ -258,7 +261,17 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await page.request.get(endpoint.path);
+        // Get access token for authorization header
+        const accessToken = authHelpers.getAccessToken();
+        
+        // Make API request with authorization header
+        const response = await page.context().request.get(endpoint.path, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        console.log(`Role: ${roleTest.role}, Endpoint: ${endpoint.path}, Status: ${response.status()}, Expected access: ${endpoint.access}`);
         
         if (endpoint.access) {
           expect(response.status()).toBeLessThan(400);
@@ -271,14 +284,24 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       // Test cross-role boundary violations → verify proper rejection
       if (roleTest.role === 'student') {
         // Students should not be able to access admin endpoints
-        const adminResponse = await page.request.get('/api/users/admin/create');
+        const accessToken = authHelpers.getAccessToken();
+        const adminResponse = await page.context().request.get('/api/users/admin/create', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
         expect(adminResponse.status()).toBeGreaterThanOrEqual(401);
         expect(adminResponse.status()).toBeLessThanOrEqual(403);
       }
 
       if (roleTest.role === 'teacher') {
         // Teachers should not be able to access user management
-        const userMgmtResponse = await page.request.get('/api/users');
+        const accessToken = authHelpers.getAccessToken();
+        const userMgmtResponse = await page.context().request.get('/api/users', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
         expect(userMgmtResponse.status()).toBeGreaterThanOrEqual(401);
         expect(userMgmtResponse.status()).toBeLessThanOrEqual(403);
       }

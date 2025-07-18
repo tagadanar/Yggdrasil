@@ -175,6 +175,13 @@ export class IsolatedAuthHelpers {
   }
 
   /**
+   * Get current user's access token
+   */
+  getAccessToken(): string | null {
+    return this.currentUser?.tokens?.accessToken || null;
+  }
+
+  /**
    * Logout current user
    */
   async logout(): Promise<void> {
