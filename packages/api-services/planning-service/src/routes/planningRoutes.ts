@@ -7,6 +7,24 @@ const router = Router();
 // Apply authentication to all routes
 router.use(authenticate);
 
+// Root route - authenticated users can access planning service
+router.get('/', (req, res) => {
+  res.json({
+    service: 'planning-service',
+    message: 'Planning service is running',
+    user: req.user ? { id: req.user._id, role: req.user.role } : null,
+    endpoints: {
+      'GET /events': 'List all events',
+      'POST /events': 'Create event (admin/staff)',
+      'GET /events/:eventId': 'Get event by ID',
+      'PUT /events/:eventId': 'Update event (admin/staff)',
+      'DELETE /events/:eventId': 'Delete event (admin/staff)',
+      'GET /conflicts': 'Check for conflicts',
+      'POST /export': 'Export calendar'
+    }
+  });
+});
+
 // Events routes
 router.get('/events', PlanningController.getEvents);
 router.post('/events', requireRole(['admin', 'staff']), PlanningController.createEvent);

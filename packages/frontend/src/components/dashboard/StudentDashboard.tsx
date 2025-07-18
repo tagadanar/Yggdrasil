@@ -88,47 +88,53 @@ export const StudentDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Call real statistics service API
+      // Progressive loading: Load critical stats first for faster perceived performance
       const response = await StatisticsApi.getStudentDashboard(user._id);
       
       if (response.success && response.data) {
         const dashboardData = response.data;
         
-        // Transform API data to match component interfaces
-        const transformedCourseProgress: CourseProgress[] = dashboardData.courseProgress.map(course => ({
-          courseId: course.courseId,
-          courseTitle: course.courseTitle,
-          progress: course.progress,
-          timeSpent: course.timeSpent,
-          lastAccessed: new Date(course.lastAccessed),
-          enrollmentStatus: course.enrollmentStatus,
-          instructor: course.instructor,
-          estimatedCompletion: new Date(course.estimatedCompletion)
-        }));
+        // Set basic stats immediately for faster UI feedback
+        setLearningStats(dashboardData.learningStatistics);
+        setLoading(false); // Show basic data immediately
+        
+        // Process heavy data transformations asynchronously to avoid blocking UI
+        setTimeout(() => {
+          // Transform API data to match component interfaces (non-blocking)
+          const transformedCourseProgress: CourseProgress[] = dashboardData.courseProgress.map(course => ({
+            courseId: course.courseId,
+            courseTitle: course.courseTitle,
+            progress: course.progress,
+            timeSpent: course.timeSpent,
+            lastAccessed: new Date(course.lastAccessed),
+            enrollmentStatus: course.enrollmentStatus,
+            instructor: course.instructor,
+            estimatedCompletion: new Date(course.estimatedCompletion)
+          }));
 
-        const transformedRecentActivity: RecentActivity[] = dashboardData.recentActivity.map(activity => ({
-          id: activity.id,
-          type: activity.type,
-          courseTitle: activity.courseTitle,
-          activityTitle: activity.activityTitle,
-          completedAt: new Date(activity.completedAt),
-          score: activity.score
-        }));
+          const transformedRecentActivity: RecentActivity[] = dashboardData.recentActivity.map(activity => ({
+            id: activity.id,
+            type: activity.type,
+            courseTitle: activity.courseTitle,
+            activityTitle: activity.activityTitle,
+            completedAt: new Date(activity.completedAt),
+            score: activity.score
+          }));
 
-        const transformedAchievements: Achievement[] = dashboardData.achievements.map(achievement => ({
-          id: achievement.id,
-          title: achievement.title,
-          description: achievement.description,
-          iconName: achievement.iconName,
-          unlockedAt: new Date(achievement.unlockedAt),
-          category: achievement.category
-        }));
+          const transformedAchievements: Achievement[] = dashboardData.achievements.map(achievement => ({
+            id: achievement.id,
+            title: achievement.title,
+            description: achievement.description,
+            iconName: achievement.iconName,
+            unlockedAt: new Date(achievement.unlockedAt),
+            category: achievement.category
+          }));
 
-        // Set data from API response
-        setLearningStats(dashboardData.learningStats);
-        setCourseProgress(transformedCourseProgress);
-        setRecentActivity(transformedRecentActivity);
-        setAchievements(transformedAchievements);
+          // Set processed data (after basic stats are already shown)
+          setCourseProgress(transformedCourseProgress);
+          setRecentActivity(transformedRecentActivity);
+          setAchievements(transformedAchievements);
+        }, 0);
       } else {
         throw new Error(response.error || 'Failed to load dashboard data');
       }
@@ -136,8 +142,7 @@ export const StudentDashboard: React.FC = () => {
     } catch (err: any) {
       console.error('Dashboard load error:', err);
       setError(err.message || 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only set loading false on error since we set it false earlier on success
     }
   };
 

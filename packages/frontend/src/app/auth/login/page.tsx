@@ -16,12 +16,12 @@ export default function LoginPage() {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string>('');
 
-  // Redirect authenticated users to news page
+  // Redirect authenticated users to news page (non-blocking)
   useEffect(() => {
-    if (user && !isLoading) {
+    if (user) {
       router.push('/news');
     }
-  }, [user, isLoading, router]);
+  }, [user, router]);
 
   const {
     register,
@@ -72,13 +72,8 @@ export default function LoginPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+  // Remove blocking loading screen - show login form immediately
+  // Authentication happens in background without blocking UI
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -154,24 +149,29 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Submit Button - Ultra-Stable Static DOM */}
             <div>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white py-3 px-4 rounded-lg text-base font-medium shadow-lg shadow-primary-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white py-3 px-4 rounded-lg text-base font-medium shadow-lg shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                style={{ minHeight: '48px' }}
               >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Signing in...
+                <span className="flex items-center justify-center relative">
+                  <svg 
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white absolute left-0" 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24"
+                    style={{ opacity: isSubmitting ? 1 : 0 }}
+                  >
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span style={{ marginLeft: isSubmitting ? '32px' : '0px' }}>
+                    {isSubmitting ? 'Signing in...' : 'Sign in'}
                   </span>
-                ) : (
-                  'Sign in'
-                )}
+                </span>
               </button>
             </div>
           </form>

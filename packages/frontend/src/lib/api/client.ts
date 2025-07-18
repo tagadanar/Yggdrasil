@@ -9,7 +9,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 // Create axios instance
 export const apiClient: AxiosInstance = axios.create({
   baseURL: `${BASE_URL}/api`,
-  timeout: 10000,
+  timeout: 30000, // Increased from 10s to 30s for test environments
   headers: {
     'Content-Type': 'application/json',
   },

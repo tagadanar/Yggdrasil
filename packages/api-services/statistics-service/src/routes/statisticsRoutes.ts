@@ -14,6 +14,30 @@ import {
 const router = Router();
 
 // =============================================================================
+// ROOT ROUTE
+// =============================================================================
+
+/**
+ * Root statistics endpoint - admin only access
+ * GET /api/statistics
+ */
+router.get('/', authenticateToken, requireAdminOnly, (req, res) => {
+  res.json({
+    service: 'statistics-service',
+    message: 'Statistics service is running',
+    user: req.user ? { id: req.user.userId || req.user.id, role: req.user.role } : null,
+    endpoints: {
+      'GET /dashboard/student/:userId': 'Student dashboard',
+      'GET /dashboard/teacher/:userId': 'Teacher dashboard', 
+      'GET /dashboard/admin': 'Admin dashboard',
+      'GET /analytics/course/:courseId': 'Course analytics',
+      'GET /analytics/platform': 'Platform analytics',
+      'GET /achievements/:userId': 'User achievements'
+    }
+  });
+});
+
+// =============================================================================
 // DASHBOARD ROUTES
 // =============================================================================
 

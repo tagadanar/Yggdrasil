@@ -452,8 +452,8 @@ export default function AdminUsersPage() {
                     )}
                   </div>
                   
-                  <div className="mb-4">
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="firstName" className="form-label">
                       First Name
                     </label>
                     <input
@@ -462,16 +462,16 @@ export default function AdminUsersPage() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className={`w-full p-2 border rounded-md ${formErrors.firstName ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`input ${formErrors.firstName ? 'input-error' : ''}`}
                       placeholder="Enter first name"
                     />
                     {formErrors.firstName && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.firstName}</p>
+                      <p className="form-error">{formErrors.firstName}</p>
                     )}
                   </div>
                   
-                  <div className="mb-4">
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="lastName" className="form-label">
                       Last Name
                     </label>
                     <input
@@ -480,16 +480,16 @@ export default function AdminUsersPage() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className={`w-full p-2 border rounded-md ${formErrors.lastName ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`input ${formErrors.lastName ? 'input-error' : ''}`}
                       placeholder="Enter last name"
                     />
                     {formErrors.lastName && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.lastName}</p>
+                      <p className="form-error">{formErrors.lastName}</p>
                     )}
                   </div>
                   
-                  <div className="mb-4">
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="password" className="form-label">
                       Password
                     </label>
                     <input
@@ -498,16 +498,16 @@ export default function AdminUsersPage() {
                       name="password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className={`w-full p-2 border rounded-md ${formErrors.password ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`input ${formErrors.password ? 'input-error' : ''}`}
                       placeholder="Enter password"
                     />
                     {formErrors.password && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.password}</p>
+                      <p className="form-error">{formErrors.password}</p>
                     )}
                   </div>
                   
-                  <div className="mb-6">
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="role" className="form-label">
                       Role
                     </label>
                     <select
@@ -515,7 +515,7 @@ export default function AdminUsersPage() {
                       name="role"
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'staff' | 'teacher' | 'student' })}
-                      className={`w-full p-2 border rounded-md ${formErrors.role ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`input ${formErrors.role ? 'input-error' : ''}`}
                     >
                       <option value="student">Student</option>
                       <option value="teacher">Teacher</option>
@@ -523,7 +523,7 @@ export default function AdminUsersPage() {
                       <option value="admin">Admin</option>
                     </select>
                     {formErrors.role && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.role}</p>
+                      <p className="form-error">{formErrors.role}</p>
                     )}
                   </div>
                   
@@ -563,8 +563,8 @@ export default function AdminUsersPage() {
                     </div>
                   )}
                   
-                  <div className="mb-4">
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="email" className="form-label">
                       Email
                     </label>
                     <input
@@ -573,16 +573,16 @@ export default function AdminUsersPage() {
                       name="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className={`w-full p-2 border rounded-md ${formErrors.email ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`input ${formErrors.email ? 'input-error' : ''}`}
                       placeholder="Enter email address"
                     />
                     {formErrors.email && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                      <p className="form-error">{formErrors.email}</p>
                     )}
                   </div>
                   
-                  <div className="mb-4">
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="firstName" className="form-label">
                       First Name
                     </label>
                     <input
@@ -591,16 +591,16 @@ export default function AdminUsersPage() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className={`w-full p-2 border rounded-md ${formErrors.firstName ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`input ${formErrors.firstName ? 'input-error' : ''}`}
                       placeholder="Enter first name"
                     />
                     {formErrors.firstName && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.firstName}</p>
+                      <p className="form-error">{formErrors.firstName}</p>
                     )}
                   </div>
                   
-                  <div className="mb-4">
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="lastName" className="form-label">
                       Last Name
                     </label>
                     <input
@@ -609,16 +609,16 @@ export default function AdminUsersPage() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className={`w-full p-2 border rounded-md ${formErrors.lastName ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`input ${formErrors.lastName ? 'input-error' : ''}`}
                       placeholder="Enter last name"
                     />
                     {formErrors.lastName && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.lastName}</p>
+                      <p className="form-error">{formErrors.lastName}</p>
                     )}
                   </div>
                   
-                  <div className="mb-6">
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="role" className="form-label">
                       Role
                     </label>
                     <select
@@ -626,7 +626,7 @@ export default function AdminUsersPage() {
                       name="role"
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'staff' | 'teacher' | 'student' })}
-                      className={`w-full p-2 border rounded-md ${formErrors.role ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`input ${formErrors.role ? 'input-error' : ''}`}
                     >
                       <option value="student">Student</option>
                       <option value="teacher">Teacher</option>
@@ -634,7 +634,7 @@ export default function AdminUsersPage() {
                       <option value="admin">Admin</option>
                     </select>
                     {formErrors.role && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.role}</p>
+                      <p className="form-error">{formErrors.role}</p>
                     )}
                   </div>
                   

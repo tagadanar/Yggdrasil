@@ -3,7 +3,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -82,17 +82,28 @@ const menuItems: MenuItem[] = [
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user } = useAuth();
   const pathname = usePathname();
+  const [currentPath, setCurrentPath] = useState<string>('');
+
+  // Update local path state when pathname changes
+  useEffect(() => {
+    if (pathname !== currentPath) {
+      setCurrentPath(pathname);
+    }
+  }, [pathname, currentPath]);
 
   // Filter menu items based on user role
   const visibleMenuItems = menuItems.filter(item => 
     user?.role && item.allowedRoles.includes(user.role)
   );
 
+  // Robust active route detection with both pathname and local state
   const isActiveRoute = (href: string) => {
+    const activePath = currentPath || pathname;
+    
     if (href === '/news') {
-      return pathname === '/news' || pathname === '/';
+      return activePath === '/news' || activePath === '/';
     }
-    return pathname.startsWith(href);
+    return activePath.startsWith(href);
   };
 
   return (

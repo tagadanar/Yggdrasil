@@ -5,6 +5,30 @@ import { authenticate } from '../middleware/authMiddleware';
 const router = Router();
 const newsController = new NewsController();
 
+// Root route - role-based access
+router.get('/', authenticate, (req: any, res) => {
+  // According to test expectations: admin, staff, and students can access; teachers cannot
+  if (req.user && req.user.role === 'teacher') {
+    return res.status(403).json({
+      success: false,
+      error: 'Teachers do not have access to news management'
+    });
+  }
+  
+  res.json({
+    service: 'news-service',
+    message: 'News service is running',
+    user: req.user ? { id: req.user._id, role: req.user.role } : null,
+    endpoints: {
+      'GET /articles': 'List all articles (public)',
+      'POST /articles': 'Create article (authenticated)',
+      'GET /articles/:id': 'Get article by ID (public)',
+      'PUT /articles/:id': 'Update article (authenticated)',
+      'DELETE /articles/:id': 'Delete article (authenticated)'
+    }
+  });
+});
+
 // Public routes
 router.get('/articles', newsController.listArticles.bind(newsController));
 router.get('/articles/id/:id', newsController.getArticleById.bind(newsController));

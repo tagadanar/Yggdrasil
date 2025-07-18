@@ -21,25 +21,17 @@ export const authenticateToken = async (
 
     const token = authHeader.substring(7); // Remove "Bearer " prefix
     
-    try {
-      const decoded = SharedJWTHelper.verifyAccessToken(token);
-      req.user = decoded;
-      next();
-    } catch (jwtError: any) {
-      if (jwtError.name === 'TokenExpiredError') {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Access token expired')
-        );
-      } else if (jwtError.name === 'JsonWebTokenError') {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Invalid access token')
-        );
-      } else {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Token verification failed')
-        );
-      }
+    const verificationResult = SharedJWTHelper.verifyAccessToken(token);
+    
+    if (!verificationResult.success || !verificationResult.data) {
+      res.status(HTTP_STATUS.UNAUTHORIZED).json(
+        ResponseHelper.unauthorized(verificationResult.error || 'Invalid access token')
+      );
+      return;
     }
+
+    req.user = verificationResult.data;
+    next();
   } catch (error: any) {
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
       ResponseHelper.error('Authentication error')
