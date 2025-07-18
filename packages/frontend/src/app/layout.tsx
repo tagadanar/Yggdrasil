@@ -5,11 +5,17 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { QueryProvider } from '@/lib/QueryProvider';
+import { ThemeProvider } from '@/lib/theme/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'Yggdrasil Educational Platform',
-  description: 'Modern IT school management platform',
+  description: 'Modern IT school management platform with beautiful light/dark mode',
   viewport: 'width=device-width, initial-scale=1',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f172a' }
+  ],
+  colorScheme: 'light dark',
 };
 
 export default function RootLayout({
@@ -19,12 +25,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
+      <head>
+        <meta name="theme-color" content="#ffffff" />
+      </head>
       <body className="h-full">
-        <QueryProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </QueryProvider>
+        <ThemeProvider>
+          <QueryProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

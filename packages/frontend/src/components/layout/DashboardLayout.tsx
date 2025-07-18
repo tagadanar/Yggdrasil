@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { useState } from 'react';
 import Link from 'next/link';
 import { Sidebar } from '@/components/navigation/Sidebar';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { Button } from '@/components/ui/Button';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -23,27 +25,27 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'bg-red-100 text-red-800';
+        return 'bg-gradient-to-r from-rose-100 to-rose-200 text-rose-800 dark:from-rose-900/30 dark:to-rose-800/30 dark:text-rose-300';
       case 'staff':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 dark:from-amber-900/30 dark:to-amber-800/30 dark:text-amber-300';
       case 'teacher':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-300';
       case 'student':
-        return 'bg-green-100 text-green-800';
+        return 'bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 dark:from-emerald-900/30 dark:to-emerald-800/30 dark:text-emerald-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gradient-to-r from-secondary-100 to-secondary-200 text-secondary-800 dark:from-secondary-700/30 dark:to-secondary-600/30 dark:text-secondary-300';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-950 flex transition-colors duration-300">
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col md:ml-64">
         {/* Top Navigation */}
-        <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-10">
+        <nav className="bg-white/80 dark:bg-secondary-800/80 backdrop-blur-md shadow-soft dark:shadow-dark-soft border-b border-secondary-200 dark:border-secondary-700 sticky top-0 z-10 transition-all duration-300">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               {/* Mobile menu button */}
@@ -51,7 +53,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <button
                   onClick={() => setIsSidebarOpen(true)}
                   data-testid="mobile-menu-toggle"
-                  className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 transition-colors duration-200"
+                  className="p-2 rounded-xl text-secondary-400 hover:text-secondary-500 hover:bg-secondary-100 dark:hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 transition-all duration-200 transform hover:scale-105"
                 >
                   <span className="sr-only">Open sidebar</span>
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -62,50 +64,66 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
               {/* Desktop logo */}
               <div className="hidden md:flex items-center">
-                <div className="flex items-center">
-                  <img 
-                    src="/logo101.png" 
-                    alt="Yggdrasil Logo" 
-                    className="w-8 h-8 mr-2"
-                  />
-                  <span className="text-lg font-semibold text-gray-900">Yggdrasil</span>
-                </div>
+                <Link href="/news" className="flex items-center group">
+                  <div className="relative mr-3">
+                    <img 
+                      src="/logo101.png" 
+                      alt="Yggdrasil Logo" 
+                      className="w-8 h-8 transition-transform duration-200 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-primary-500 opacity-0 group-hover:opacity-10 rounded-full transition-opacity duration-200"></div>
+                  </div>
+                  <span className="text-lg font-bold text-secondary-900 dark:text-secondary-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
+                    Yggdrasil
+                  </span>
+                </Link>
               </div>
 
               {/* Right side navigation */}
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                {/* Theme Toggle */}
+                <ThemeToggle size="md" />
+
                 {/* User Info */}
                 <Link 
                   href="/profile" 
                   data-testid="profile-link"
-                  className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg px-3 py-2 transition-all duration-200 hover:shadow-sm"
+                  className="flex items-center space-x-3 hover:bg-secondary-50 dark:hover:bg-secondary-700 rounded-xl px-3 py-2 transition-all duration-200 hover:shadow-sm transform hover:scale-[1.02] group"
                 >
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="text-sm font-semibold text-secondary-900 dark:text-secondary-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
                       {user?.profile?.firstName || 'Unknown'} {user?.profile?.lastName || 'User'}
                     </p>
-                    <p className="text-xs text-gray-600">{user?.email}</p>
+                    <p className="text-xs text-secondary-600 dark:text-secondary-400">{user?.email}</p>
                   </div>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold capitalize shadow-sm ${getRoleColor(user?.role || '')}`}>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold capitalize shadow-sm transition-all duration-200 ${getRoleColor(user?.role || '')}`}>
                     {user?.role}
                   </span>
                 </Link>
 
                 {/* Logout Button */}
-                <button
+                <Button
                   onClick={handleLogout}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  variant="ghost"
+                  size="sm"
+                  className="font-medium"
+                  icon={
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  }
+                  iconPosition="right"
                 >
                   Logout
-                </button>
+                </Button>
               </div>
             </div>
           </div>
         </nav>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="py-8 px-4 sm:px-6 lg:px-8">
+        <main className="flex-1 overflow-y-auto bg-secondary-50 dark:bg-secondary-950 transition-colors duration-300 scrollbar-thin">
+          <div className="py-8 px-4 sm:px-6 lg:px-8 animate-fade-in">
             {children}
           </div>
         </main>
