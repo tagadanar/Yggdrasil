@@ -10,6 +10,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { userApi } from '@/lib/api/client';
 import { User as SharedUser } from '@yggdrasil/shared-utilities';
+import { Button } from '@/components/ui/Button';
 
 interface User {
   id: string;
@@ -289,49 +290,53 @@ export default function AdminUsersPage() {
       <DashboardLayout>
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">User Management</h1>
+            <p className="text-secondary-600 dark:text-secondary-400">
               Manage user accounts, roles, and permissions for the Yggdrasil platform
             </p>
           </div>
 
           {/* Create User Button */}
           <div className="mb-6">
-            <button
+            <Button
               onClick={() => setShowCreateForm(true)}
-              className="btn-primary"
+              variant="primary"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              }
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
               Create User
-            </button>
+            </Button>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
               <div className="flex items-center">
-                <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-rose-400 dark:text-rose-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
-                <span className="text-red-700">{error}</span>
+                <span className="text-rose-700 dark:text-rose-300">{error}</span>
               </div>
-              <button
+              <Button
                 onClick={loadUsers}
-                className="mt-2 text-red-600 hover:text-red-800 underline"
+                variant="ghost"
+                size="sm"
+                className="mt-2 text-rose-600 dark:text-rose-300 hover:text-rose-800 dark:hover:text-rose-100"
               >
                 Retry
-              </button>
+              </Button>
             </div>
           )}
 
           {/* Users Table */}
-          <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div className="card overflow-hidden">
             {loading ? (
               <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading users...</p>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 dark:border-primary-400 mx-auto mb-4"></div>
+                <p className="text-secondary-600 dark:text-secondary-400">Loading users...</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -355,23 +360,23 @@ export default function AdminUsersPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-secondary-800 divide-y divide-secondary-200 dark:divide-secondary-700">
                     {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
+                      <tr key={user.id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors duration-200">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                                <span className="text-sm font-medium text-primary-700">
+                              <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center">
+                                <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
                                   {user.profile.firstName.charAt(0)}{user.profile.lastName.charAt(0)}
                                 </span>
                               </div>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
                                 {user.profile.firstName} {user.profile.lastName}
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-secondary-500 dark:text-secondary-400">
                                 {user.email}
                               </div>
                             </div>
@@ -387,22 +392,26 @@ export default function AdminUsersPage() {
                             {user.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500 dark:text-secondary-400">
                           {formatDate(user.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button 
+                          <Button
                             onClick={() => handleEditUser(user)}
-                            className="text-primary-600 hover:text-primary-900 mr-4"
+                            variant="ghost"
+                            size="sm"
+                            className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 mr-2"
                           >
                             Edit
-                          </button>
-                          <button 
+                          </Button>
+                          <Button
                             onClick={() => handleDeleteUser(user)}
-                            className="text-red-600 hover:text-red-900"
+                            variant="ghost"
+                            size="sm"
+                            className="text-rose-600 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300"
                           >
                             Delete
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -414,19 +423,19 @@ export default function AdminUsersPage() {
 
           {/* Create User Form Modal */}
           {showCreateForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold mb-4">Create New User</h2>
+            <div className="modal-overlay flex items-center justify-center z-50">
+              <div className="modal-content p-6 w-full max-w-md">
+                <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Create New User</h2>
                 
                 <form onSubmit={handleCreateUser}>
                   {formErrors.general && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                    <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-700 dark:text-rose-300 text-sm">
                       {formErrors.general}
                     </div>
                   )}
                   
-                  <div className="mb-4">
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <div className="form-group">
+                    <label htmlFor="email" className="form-label">
                       Email
                     </label>
                     <input
@@ -435,11 +444,11 @@ export default function AdminUsersPage() {
                       name="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className={`w-full p-2 border rounded-md ${formErrors.email ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`input ${formErrors.email ? 'input-error' : ''}`}
                       placeholder="Enter email address"
                     />
                     {formErrors.email && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                      <p className="form-error">{formErrors.email}</p>
                     )}
                   </div>
                   
@@ -519,21 +528,22 @@ export default function AdminUsersPage() {
                   </div>
                   
                   <div className="flex justify-end space-x-2">
-                    <button
+                    <Button
                       type="button"
                       onClick={closeModal}
-                      className="btn-secondary"
+                      variant="secondary"
                       disabled={isSubmitting}
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="submit"
-                      className="btn-primary"
+                      variant="primary"
                       disabled={isSubmitting}
+                      loading={isSubmitting}
                     >
                       {isSubmitting ? 'Creating...' : 'Create User'}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -542,9 +552,9 @@ export default function AdminUsersPage() {
 
           {/* Edit User Form Modal */}
           {showEditForm && selectedUser && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold mb-4">Edit User</h2>
+            <div className="modal-overlay flex items-center justify-center z-50">
+              <div className="modal-content p-6 w-full max-w-md">
+                <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Edit User</h2>
                 
                 <form onSubmit={handleUpdateUser}>
                   {formErrors.general && (
@@ -652,31 +662,32 @@ export default function AdminUsersPage() {
 
           {/* Delete User Confirmation Modal */}
           {showDeleteModal && selectedUser && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold mb-4">Delete User</h2>
-                <p className="text-gray-600 mb-4">
+            <div className="modal-overlay flex items-center justify-center z-50">
+              <div className="modal-content p-6 w-full max-w-md">
+                <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Delete User</h2>
+                <p className="text-secondary-600 dark:text-secondary-400 mb-4">
                   Are you sure you want to delete this user?
                 </p>
-                <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded">
-                  <p className="font-medium">{selectedUser.profile.firstName} {selectedUser.profile.lastName}</p>
-                  <p className="text-sm text-gray-600">{selectedUser.email}</p>
+                <div className="mb-4 p-3 bg-secondary-50 dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-xl">
+                  <p className="font-medium text-secondary-900 dark:text-secondary-100">{selectedUser.profile.firstName} {selectedUser.profile.lastName}</p>
+                  <p className="text-sm text-secondary-600 dark:text-secondary-400">{selectedUser.email}</p>
                 </div>
                 <div className="flex justify-end space-x-2">
-                  <button
+                  <Button
                     onClick={closeModal}
-                    className="btn-secondary"
+                    variant="secondary"
                     disabled={isSubmitting}
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={confirmDeleteUser}
-                    className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 disabled:bg-gray-400"
+                    variant="danger"
                     disabled={isSubmitting}
+                    loading={isSubmitting}
                   >
                     {isSubmitting ? 'Deleting...' : 'Delete'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

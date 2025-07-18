@@ -10,6 +10,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { CourseList } from '@/components/courses/CourseList';
 import { CourseForm } from '@/components/courses/CourseForm';
 import { CourseDetail } from '@/components/courses/CourseDetail';
+import { Button } from '@/components/ui/Button';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'detail';
 
@@ -128,13 +129,14 @@ export default function CoursesPage() {
           />
         ) : (
           <div className="text-center py-12">
-            <div className="text-red-600">Course not found</div>
-            <button
+            <div className="text-rose-600 dark:text-rose-400">Course not found</div>
+            <Button
               onClick={handleBackToList}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              variant="primary"
+              className="mt-4"
             >
               Back to Courses
-            </button>
+            </Button>
           </div>
         );
       
@@ -156,8 +158,8 @@ export default function CoursesPage() {
         <div className="max-w-7xl mx-auto py-6">
           {viewMode === 'list' && (
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{getTitleBasedOnRole()}</h1>
-              <p className="text-gray-600">{getDescriptionBasedOnRole()}</p>
+              <h1 className="text-3xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">{getTitleBasedOnRole()}</h1>
+              <p className="text-secondary-600 dark:text-secondary-400">{getDescriptionBasedOnRole()}</p>
             </div>
           )}
           

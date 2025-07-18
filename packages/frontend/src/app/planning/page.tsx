@@ -22,6 +22,7 @@ import {
   FunnelIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import { Button } from '@/components/ui/Button';
 
 interface Event {
   _id: string;
@@ -323,7 +324,7 @@ export default function PlanningPage() {
       <ProtectedRoute>
         <DashboardLayout>
           <div className="flex justify-center items-center h-96">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 dark:border-primary-400"></div>
           </div>
         </DashboardLayout>
       </ProtectedRoute>
@@ -338,43 +339,46 @@ export default function PlanningPage() {
           <div className="mb-8">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Academic Planning</h1>
-                <p className="text-gray-600">
+                <h1 className="text-3xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">Academic Planning</h1>
+                <p className="text-secondary-600 dark:text-secondary-400">
                   Manage your academic schedule and events
                 </p>
               </div>
               
               <div className="flex space-x-4">
                 {/* Filter Toggle */}
-                <button
+                <Button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  variant="secondary"
+                  size="sm"
+                  icon={<FunnelIcon className="h-4 w-4" />}
                   data-testid="filter-toggle"
                 >
-                  <FunnelIcon className="h-4 w-4 mr-2" />
                   Filters
-                </button>
+                </Button>
 
                 {/* Export Button */}
-                <button
+                <Button
                   onClick={() => setShowExportModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  variant="secondary"
+                  size="sm"
+                  icon={<ArrowDownTrayIcon className="h-4 w-4" />}
                   data-testid="export-calendar-button"
                 >
-                  <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
                   Export
-                </button>
+                </Button>
 
                 {/* Create Event Button (Admin/Staff only) */}
                 {canModifyEvents && (
-                  <button
+                  <Button
                     onClick={() => setShowCreateModal(true)}
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                    variant="primary"
+                    size="sm"
+                    icon={<PlusIcon className="h-4 w-4" />}
                     data-testid="create-event-button"
                   >
-                    <PlusIcon className="h-4 w-4 mr-2" />
                     Create Event
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -382,19 +386,21 @@ export default function PlanningPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4" data-testid="error-message">
+            <div className="mb-6 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl p-4" data-testid="error-message">
               <div className="flex">
-                <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+                <ExclamationTriangleIcon className="h-5 w-5 text-rose-400 dark:text-rose-300" />
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">Error</h3>
-                  <div className="mt-2 text-sm text-red-700">{error}</div>
-                  <button
+                  <h3 className="text-sm font-medium text-rose-800 dark:text-rose-200">Error</h3>
+                  <div className="mt-2 text-sm text-rose-700 dark:text-rose-300">{error}</div>
+                  <Button
                     onClick={loadData}
-                    className="mt-2 text-sm font-medium text-red-800 hover:text-red-600"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-rose-800 dark:text-rose-200 hover:text-rose-600 dark:hover:text-rose-100"
                     data-testid="retry-button"
                   >
                     Try again
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -402,16 +408,16 @@ export default function PlanningPage() {
 
           {/* Success Message */}
           {successMessage && (
-            <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4" data-testid="success-message">
+            <div className="mb-6 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4" data-testid="success-message">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 w-5 text-emerald-400 dark:text-emerald-300" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-green-800">Success</h3>
-                  <div className="mt-2 text-sm text-green-700">{successMessage}</div>
+                  <h3 className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Success</h3>
+                  <div className="mt-2 text-sm text-emerald-700 dark:text-emerald-300">{successMessage}</div>
                 </div>
               </div>
             </div>
@@ -429,7 +435,7 @@ export default function PlanningPage() {
           )}
 
           {/* Calendar View */}
-          <div className="bg-white rounded-lg shadow" data-testid="calendar-view">
+          <div className="card" data-testid="calendar-view">
             <CalendarView
               events={events}
               currentView={currentView}
