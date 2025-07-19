@@ -6,7 +6,8 @@ import { UserController } from '../controllers/UserController';
 import { 
   requireAuth, 
   requireOwnershipOrTeacherRole, 
-  requireOwnershipForModification 
+  requireOwnershipForModification,
+  requireRole
 } from '../middleware/auth';
 
 export const userRoutes = Router();
@@ -16,13 +17,20 @@ userRoutes.use(requireAuth);
 
 // Admin Only Routes
 // POST /api/users - Create new user (admin only)
-userRoutes.post('/', UserController.createUser);
+userRoutes.post('/', requireRole(['admin']), UserController.createUser);
 
-// GET /api/users - List all users (admin only)
-userRoutes.get('/', UserController.listUsers);
+// GET /api/users - List all users (admin and staff)
+userRoutes.get('/', requireRole(['admin', 'staff']), UserController.listUsers);
+
+// Current User Profile Routes (must come before /:id routes)
+// GET /api/users/profile - Get current user's profile
+userRoutes.get('/profile', UserController.getCurrentUserProfile);
+
+// PUT /api/users/profile - Update current user's profile
+userRoutes.put('/profile', UserController.updateCurrentUserProfile);
 
 // DELETE /api/users/:id - Delete user (admin only)
-userRoutes.delete('/:id', UserController.deleteUser);
+userRoutes.delete('/:id', requireRole(['admin']), UserController.deleteUser);
 
 // Individual User Routes
 // GET /api/users/:id - View user profile
@@ -40,10 +48,3 @@ userRoutes.patch('/:id/profile', requireOwnershipForModification, UserController
 // Teachers can view any student preferences
 // Admins can view any preferences
 userRoutes.get('/:id/preferences', requireOwnershipOrTeacherRole, UserController.getUserPreferences);
-
-// Current User Profile Routes
-// GET /api/users/profile - Get current user's profile
-userRoutes.get('/profile', UserController.getCurrentUserProfile);
-
-// PUT /api/users/profile - Update current user's profile
-userRoutes.put('/profile', UserController.updateCurrentUserProfile);

@@ -5,18 +5,73 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+// Get worker ID from environment with consistent detection logic
+function detectWorkerId() {
+  console.log(`🔍 SERVICE MANAGER: Environment variables:`, {
+    PLAYWRIGHT_WORKER_ID: process.env.PLAYWRIGHT_WORKER_ID,
+    TEST_WORKER_INDEX: process.env.TEST_WORKER_INDEX,
+    WORKER_ID: process.env.WORKER_ID
+  });
+  
+  // Try environment variable first
+  const envWorkerId = process.env.PLAYWRIGHT_WORKER_ID;
+  if (envWorkerId) {
+    console.log(`🔍 SERVICE MANAGER: Using PLAYWRIGHT_WORKER_ID: ${envWorkerId}`);
+    return parseInt(envWorkerId, 10);
+  }
+
+  // Try explicit worker ID
+  const explicitWorkerId = process.env.WORKER_ID;
+  if (explicitWorkerId) {
+    console.log(`🔍 SERVICE MANAGER: Using WORKER_ID: ${explicitWorkerId}`);
+    return parseInt(explicitWorkerId, 10);
+  }
+
+  // Try process arguments
+  const args = process.argv.join(' ');
+  const workerMatch = args.match(/--worker-id=(\d+)/);
+  if (workerMatch) {
+    console.log(`🔍 SERVICE MANAGER: Using process args worker ID: ${workerMatch[1]}`);
+    return parseInt(workerMatch[1], 10);
+  }
+
+  // Try to get worker ID from test worker env if available
+  const testWorkerId = process.env.TEST_WORKER_INDEX;
+  if (testWorkerId) {
+    console.log(`🔍 SERVICE MANAGER: Using TEST_WORKER_INDEX: ${testWorkerId}`);
+    return parseInt(testWorkerId, 10);
+  }
+
+  // For single worker tests, default to worker 0
+  if (process.env.NODE_ENV === 'test') {
+    console.log(`🔍 SERVICE MANAGER: Test mode - defaulting to Worker 0`);
+    return 0;
+  }
+
+  // For enhanced testing with multiple workers, use PID-based detection
+  // with a more reliable approach
+  const pid = process.pid;
+  const workerIndex = Math.abs(pid % 4); // Ensure it's between 0-3
+  
+  console.log(`🔍 SERVICE MANAGER: Worker ID detection: PID=${pid}, WorkerIndex=${workerIndex}`);
+  return workerIndex;
+}
+
+const WORKER_ID = detectWorkerId();
+const BASE_PORT = 3000 + (WORKER_ID * 10); // 10 port gap between workers to match global setup
+
 const SERVICES = [
-  { name: 'Frontend', url: 'http://localhost:3000', port: 3000 },
-  { name: 'Auth Service', url: 'http://localhost:3001/health', port: 3001 },
-  { name: 'User Service', url: 'http://localhost:3002/health', port: 3002 },
-  { name: 'News Service', url: 'http://localhost:3003/health', port: 3003 },
-  { name: 'Course Service', url: 'http://localhost:3004/health', port: 3004 },
-  { name: 'Planning Service', url: 'http://localhost:3005/health', port: 3005 },
-  { name: 'Statistics Service', url: 'http://localhost:3006/health', port: 3006 }
+  { name: 'Frontend', url: `http://localhost:${BASE_PORT}`, port: BASE_PORT },
+  { name: 'Auth Service', url: `http://localhost:${BASE_PORT + 1}/health`, port: BASE_PORT + 1 },
+  { name: 'User Service', url: `http://localhost:${BASE_PORT + 2}/health`, port: BASE_PORT + 2 },
+  { name: 'News Service', url: `http://localhost:${BASE_PORT + 3}/health`, port: BASE_PORT + 3 },
+  { name: 'Course Service', url: `http://localhost:${BASE_PORT + 4}/health`, port: BASE_PORT + 4 },
+  { name: 'Planning Service', url: `http://localhost:${BASE_PORT + 5}/health`, port: BASE_PORT + 5 },
+  { name: 'Statistics Service', url: `http://localhost:${BASE_PORT + 6}/health`, port: BASE_PORT + 6 }
 ];
 
-const LOCK_FILE = path.join(__dirname, '.service-manager.lock');
-const PID_FILE = path.join(__dirname, '.service-manager.pids');
+const LOCK_FILE = path.join(__dirname, `.service-manager-worker-${WORKER_ID}.lock`);
+const PID_FILE = path.join(__dirname, `.service-manager-worker-${WORKER_ID}.pids`);
 const MAX_WAIT_TIME = 120000; // 2 minutes
 const CHECK_INTERVAL = 2000; // 2 seconds
 
@@ -142,73 +197,112 @@ class ServiceManager {
     const ports = SERVICES.map(s => s.port);
     await this.killPortProcesses(ports);
     
-    console.log('🚀 Starting development services...');
+    console.log(`🚀 Worker ${WORKER_ID}: Starting development services on ports ${BASE_PORT}-${BASE_PORT + 6}...`);
     
     // Start services individually to avoid npm workspace command issues
     const rootDir = path.join(__dirname, '../..');
     
-    // Enhanced environment for test mode
-    const testEnv = { ...process.env, NODE_ENV: 'test' };
+    // Enhanced environment for test mode with worker isolation
+    const workerPrefix = `w${WORKER_ID}`;
+    const testEnv = { 
+      ...process.env, 
+      NODE_ENV: 'test',
+      WORKER_ID: WORKER_ID.toString(),
+      // Worker-specific database configuration
+      PLAYWRIGHT_WORKER_ID: WORKER_ID.toString(),
+      TEST_WORKER_INDEX: WORKER_ID.toString(),
+      DB_NAME: `yggdrasil_test_${workerPrefix}`,
+      DB_COLLECTION_PREFIX: `${workerPrefix}_`,
+      // Service URLs for inter-service communication
+      AUTH_SERVICE_URL: `http://localhost:${BASE_PORT + 1}`,
+      USER_SERVICE_URL: `http://localhost:${BASE_PORT + 2}`,
+      NEWS_SERVICE_URL: `http://localhost:${BASE_PORT + 3}`,
+      COURSE_SERVICE_URL: `http://localhost:${BASE_PORT + 4}`,
+      PLANNING_SERVICE_URL: `http://localhost:${BASE_PORT + 5}`,
+      STATISTICS_SERVICE_URL: `http://localhost:${BASE_PORT + 6}`,
+      // Frontend environment variables
+      NEXT_PUBLIC_API_URL: `http://localhost:${BASE_PORT + 1}`,
+      NEXT_PUBLIC_USER_SERVICE_URL: `http://localhost:${BASE_PORT + 2}`,
+      NEXT_PUBLIC_NEWS_SERVICE_URL: `http://localhost:${BASE_PORT + 3}`,
+      NEXT_PUBLIC_COURSE_SERVICE_URL: `http://localhost:${BASE_PORT + 4}`,
+      NEXT_PUBLIC_PLANNING_SERVICE_URL: `http://localhost:${BASE_PORT + 5}`,
+      NEXT_PUBLIC_STATISTICS_SERVICE_URL: `http://localhost:${BASE_PORT + 6}`
+    };
     
     // Start frontend service (Next.js)
-    console.log('📱 Starting frontend service (test mode)...');
+    console.log(`📱 Worker ${WORKER_ID}: Starting frontend service on port ${BASE_PORT}...`);
     this.frontendProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/frontend'),
       stdio: 'pipe',
       detached: false,
-      env: { ...testEnv, PORT: '3000' }
+      env: { ...testEnv, PORT: BASE_PORT.toString() }
     });
     
     // Start auth service
-    console.log('🔐 Starting auth service (test mode)...');
+    console.log(`🔐 Worker ${WORKER_ID}: Starting auth service on port ${BASE_PORT + 1}...`);
+    console.log(`🔐 Worker ${WORKER_ID}: Auth service environment:`, {
+      NODE_ENV: testEnv.NODE_ENV,
+      DB_NAME: testEnv.DB_NAME,
+      DB_COLLECTION_PREFIX: testEnv.DB_COLLECTION_PREFIX,
+      WORKER_ID: testEnv.WORKER_ID,
+      PORT: (BASE_PORT + 1).toString()
+    });
     this.authProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/auth-service'),
-      stdio: 'pipe', 
+      stdio: ['pipe', 'pipe', 'pipe'], 
       detached: false,
-      env: { ...testEnv, PORT: '3001' }
+      env: { ...testEnv, PORT: (BASE_PORT + 1).toString() }
+    });
+    
+    // Forward auth service logs for debugging
+    this.authProcess.stdout.on('data', (data) => {
+      console.log(`🔐 AUTH SERVICE: ${data.toString().trim()}`);
+    });
+    this.authProcess.stderr.on('data', (data) => {
+      console.error(`🚨 AUTH SERVICE ERROR: ${data.toString().trim()}`);
     });
     
     // Start user service
-    console.log('👤 Starting user service (test mode)...');
+    console.log(`👤 Worker ${WORKER_ID}: Starting user service on port ${BASE_PORT + 2}...`);
     this.userProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/user-service'),
       stdio: 'pipe',
       detached: false,
-      env: { ...testEnv, PORT: '3002' }
+      env: { ...testEnv, PORT: (BASE_PORT + 2).toString() }
     });
     
     // Start news service
-    console.log('📰 Starting news service (test mode)...');
+    console.log(`📰 Worker ${WORKER_ID}: Starting news service on port ${BASE_PORT + 3}...`);
     this.newsProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/news-service'),
       stdio: 'pipe',
       detached: false,
-      env: { ...testEnv, PORT: '3003' }
+      env: { ...testEnv, PORT: (BASE_PORT + 3).toString() }
     });
 
     // Start course service
-    console.log('📚 Starting course service (test mode)...');
+    console.log(`📚 Worker ${WORKER_ID}: Starting course service on port ${BASE_PORT + 4}...`);
     this.courseProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/course-service'),
       stdio: 'pipe',
       detached: false,
-      env: { ...testEnv, PORT: '3004' }
+      env: { ...testEnv, PORT: (BASE_PORT + 4).toString() }
     });
 
-    console.log('📅 Starting planning service (test mode)...');
+    console.log(`📅 Worker ${WORKER_ID}: Starting planning service on port ${BASE_PORT + 5}...`);
     this.planningProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/planning-service'),
       stdio: 'pipe',
       detached: false,
-      env: { ...testEnv, PORT: '3005' }
+      env: { ...testEnv, PORT: (BASE_PORT + 5).toString() }
     });
 
-    console.log('📊 Starting statistics service (test mode)...');
+    console.log(`📊 Worker ${WORKER_ID}: Starting statistics service on port ${BASE_PORT + 6}...`);
     this.statisticsProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/statistics-service'),
       stdio: 'pipe',
       detached: false,
-      env: { ...testEnv, PORT: '3006' }
+      env: { ...testEnv, PORT: (BASE_PORT + 6).toString() }
     });
 
     // Store all process references

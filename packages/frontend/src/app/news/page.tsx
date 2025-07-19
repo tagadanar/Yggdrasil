@@ -20,6 +20,9 @@ interface NewsArticle {
   excerpt: string;
 }
 
+// Get news service URL from environment variables
+const NEWS_SERVICE_URL = process.env.NEXT_PUBLIC_NEWS_SERVICE_URL || 'http://localhost:3003';
+
 function NewsPageContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -61,7 +64,7 @@ function NewsPageContent() {
     const loadNews = async () => {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:3003/api/news/articles', {
+        const response = await fetch(`${NEWS_SERVICE_URL}/api/news/articles`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -148,7 +151,7 @@ function NewsPageContent() {
         return;
       }
 
-      const response = await fetch('http://localhost:3003/api/news/articles', {
+      const response = await fetch(`${NEWS_SERVICE_URL}/api/news/articles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -223,7 +226,7 @@ function NewsPageContent() {
         return;
       }
 
-      const response = await fetch(`http://localhost:3003/api/news/articles/${editingArticle.id}`, {
+      const response = await fetch(`${NEWS_SERVICE_URL}/api/news/articles/${editingArticle.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -287,7 +290,7 @@ function NewsPageContent() {
         return;
       }
 
-      const response = await fetch(`http://localhost:3003/api/news/articles/${articleId}`, {
+      const response = await fetch(`${NEWS_SERVICE_URL}/api/news/articles/${articleId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

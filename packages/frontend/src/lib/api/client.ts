@@ -4,7 +4,33 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Dynamic API URL detection for worker-specific testing
+function getApiUrl(): string {
+  // In test environment, detect worker-specific API URL from frontend port
+  if (process.env.NODE_ENV === 'test' || typeof window !== 'undefined') {
+    const frontendPort = typeof window !== 'undefined' 
+      ? parseInt(window.location.port, 10) 
+      : parseInt(process.env.PORT || '3000', 10);
+    
+    // Calculate auth service port from frontend port (frontend + 1)
+    const authPort = frontendPort + 1;
+    
+    // Use localhost if we're in a test environment or browser
+    if (typeof window !== 'undefined' || process.env.NODE_ENV === 'test') {
+      return `http://localhost:${authPort}`;
+    }
+  }
+  
+  // Fallback to environment variable or default
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+}
+
+const BASE_URL = getApiUrl();
+
+console.log('🔧 FRONTEND API CLIENT: Calculated BASE_URL:', BASE_URL);
+console.log('🔧 FRONTEND API CLIENT: NODE_ENV:', process.env.NODE_ENV);
+console.log('🔧 FRONTEND API CLIENT: PORT:', process.env.PORT);
+console.log('🔧 FRONTEND API CLIENT: NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
 
 // Create axios instance
 export const apiClient: AxiosInstance = axios.create({

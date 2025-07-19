@@ -16,7 +16,7 @@ export default defineConfig({
   // No retries - tests should be deterministic with enhanced isolation
   retries: 0,
   
-  // 4 workers for maximum parallelization
+  // 4 workers for enhanced parallelization
   workers: 4,
   
   // Enhanced reporter configuration
@@ -82,20 +82,7 @@ export default defineConfig({
     timeout: 30000, // 30 seconds
   },
   
-  // Enhanced web server configuration - start real services
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 10 * 60 * 1000, // 10 minutes for all services to start
-    stdout: 'pipe',
-    stderr: 'pipe',
-    env: {
-      NODE_ENV: 'test',
-      ENHANCED_TESTING: 'true',
-      WORKER_COUNT: '4'
-    }
-  },
+  // Services are managed by enhanced global setup/teardown for 4-worker coordination
   
   // Output directory for enhanced results
   outputDir: 'test-results-enhanced/',
@@ -122,7 +109,7 @@ export default defineConfig({
   metadata: {
     framework: 'Enhanced Yggdrasil Testing Framework',
     version: '1.0.0',
-    parallelization: 'Ultra-robust 4-worker isolation',
+    parallelization: '4-worker for enhanced parallelization',
     raceConditions: 'Completely eliminated'
   }
 });

@@ -16,8 +16,13 @@
     "typecheck": "tsc --noEmit"
   },
   "files": [
-    "dist"
+    "dist",
+    "testing.ts"
   ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./testing": "./testing.ts"
+  },
   "dependencies": {
     "zod": "^3.22.4",
     "jsonwebtoken": "^9.0.2"

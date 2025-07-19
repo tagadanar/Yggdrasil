@@ -2,7 +2,7 @@
 // Comprehensive platform features test - simplified to match current implementation
 
 import { test, expect } from '@playwright/test';
-import { IsolatedAuthHelpers } from '../helpers/isolated-auth.helpers';
+import { IsolatedAuthHelpers } from '../helpers/enhanced-isolated-auth.helpers';
 import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
 
 test.describe('Platform Features - Comprehensive Tests', () => {

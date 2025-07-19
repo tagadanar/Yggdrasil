@@ -1,0 +1,187 @@
+// packages/shared-utilities/src/testing/WorkerConfig.ts
+// Centralized worker configuration and port calculation for all test infrastructure
+
+export interface WorkerConfig {
+  workerId: number;
+  basePort: number;
+  ports: {
+    frontend: number;
+    auth: number;
+    user: number;
+    news: number;
+    course: number;
+    planning: number;
+    statistics: number;
+  };
+  database: {
+    name: string;
+    collectionPrefix: string;
+    connectionUri: string;
+  };
+  environment: Record<string, string>;
+}
+
+export class WorkerConfigManager {
+  /**
+   * Detect worker ID from environment with consistent logic across all components
+   */
+  static detectWorkerId(): number {
+    console.log(`🔍 WORKER CONFIG: Environment variables:`, {
+      PLAYWRIGHT_WORKER_ID: process.env.PLAYWRIGHT_WORKER_ID,
+      TEST_WORKER_INDEX: process.env.TEST_WORKER_INDEX,
+      WORKER_ID: process.env.WORKER_ID
+    });
+    
+    // Try environment variable first (most reliable)
+    const envWorkerId = process.env.PLAYWRIGHT_WORKER_ID;
+    if (envWorkerId !== undefined) {
+      console.log(`🔍 WORKER CONFIG: Using PLAYWRIGHT_WORKER_ID: ${envWorkerId}`);
+      return parseInt(envWorkerId, 10);
+    }
+
+    // Try explicit worker ID
+    const explicitWorkerId = process.env.WORKER_ID;
+    if (explicitWorkerId !== undefined) {
+      console.log(`🔍 WORKER CONFIG: Using WORKER_ID: ${explicitWorkerId}`);
+      return parseInt(explicitWorkerId, 10);
+    }
+
+    // Try test worker index
+    const testWorkerId = process.env.TEST_WORKER_INDEX;
+    if (testWorkerId !== undefined) {
+      console.log(`🔍 WORKER CONFIG: Using TEST_WORKER_INDEX: ${testWorkerId}`);
+      return parseInt(testWorkerId, 10);
+    }
+
+    // For test mode, default to worker 0
+    if (process.env.NODE_ENV === 'test') {
+      console.log(`🔍 WORKER CONFIG: Test mode - defaulting to Worker 0`);
+      return 0;
+    }
+
+    // For development mode, use PID-based detection as fallback
+    const pid = process.pid;
+    const workerIndex = Math.abs(pid % 4); // Ensure it's between 0-3
+    
+    console.log(`🔍 WORKER CONFIG: PID-based detection: PID=${pid}, WorkerIndex=${workerIndex}`);
+    return workerIndex;
+  }
+
+  /**
+   * Generate complete worker configuration for a given worker ID
+   */
+  static generateWorkerConfig(workerId: number): WorkerConfig {
+    // Calculate ports with 10-port gaps between workers
+    const basePort = 3000 + (workerId * 10);
+    
+    const ports = {
+      frontend: basePort,
+      auth: basePort + 1,
+      user: basePort + 2,
+      news: basePort + 3,
+      course: basePort + 4,
+      planning: basePort + 5,
+      statistics: basePort + 6
+    };
+
+    // Generate database configuration
+    const workerPrefix = `w${workerId}`;
+    const database = {
+      name: `yggdrasil_test_${workerPrefix}`,
+      collectionPrefix: `${workerPrefix}_`,
+      connectionUri: process.env.MONGODB_URI || `mongodb://localhost:27018/yggdrasil_test_${workerPrefix}`
+    };
+
+    // Generate environment variables for this worker
+    const environment = {
+      NODE_ENV: 'test',
+      WORKER_ID: workerId.toString(),
+      PLAYWRIGHT_WORKER_ID: workerId.toString(),
+      TEST_WORKER_INDEX: workerId.toString(),
+      
+      // Database configuration
+      DB_NAME: database.name,
+      DB_COLLECTION_PREFIX: database.collectionPrefix,
+      MONGODB_URI: database.connectionUri,
+      
+      // Service URLs for inter-service communication
+      AUTH_SERVICE_URL: `http://localhost:${ports.auth}`,
+      USER_SERVICE_URL: `http://localhost:${ports.user}`,
+      NEWS_SERVICE_URL: `http://localhost:${ports.news}`,
+      COURSE_SERVICE_URL: `http://localhost:${ports.course}`,
+      PLANNING_SERVICE_URL: `http://localhost:${ports.planning}`,
+      STATISTICS_SERVICE_URL: `http://localhost:${ports.statistics}`,
+      
+      // Frontend environment variables
+      NEXT_PUBLIC_API_URL: `http://localhost:${ports.auth}`,
+      NEXT_PUBLIC_USER_SERVICE_URL: `http://localhost:${ports.user}`,
+      NEXT_PUBLIC_NEWS_SERVICE_URL: `http://localhost:${ports.news}`,
+      NEXT_PUBLIC_COURSE_SERVICE_URL: `http://localhost:${ports.course}`,
+      NEXT_PUBLIC_PLANNING_SERVICE_URL: `http://localhost:${ports.planning}`,
+      NEXT_PUBLIC_STATISTICS_SERVICE_URL: `http://localhost:${ports.statistics}`,
+      
+      // Port assignments for each service
+      PORT: basePort.toString(), // For frontend
+      AUTH_SERVICE_PORT: ports.auth.toString(),
+      USER_SERVICE_PORT: ports.user.toString(),
+      NEWS_SERVICE_PORT: ports.news.toString(),
+      COURSE_SERVICE_PORT: ports.course.toString(),
+      PLANNING_SERVICE_PORT: ports.planning.toString(),
+      STATISTICS_SERVICE_PORT: ports.statistics.toString()
+    };
+
+    return {
+      workerId,
+      basePort,
+      ports,
+      database,
+      environment
+    };
+  }
+
+  /**
+   * Get current worker configuration (detects and generates)
+   */
+  static getCurrentWorkerConfig(): WorkerConfig {
+    const workerId = this.detectWorkerId();
+    return this.generateWorkerConfig(workerId);
+  }
+
+  /**
+   * Get service port for a specific service type
+   */
+  static getServicePort(serviceType: keyof WorkerConfig['ports'], workerId?: number): number {
+    const currentWorkerId = workerId ?? this.detectWorkerId();
+    const config = this.generateWorkerConfig(currentWorkerId);
+    return config.ports[serviceType];
+  }
+
+  /**
+   * Get all worker configurations for multi-worker setup
+   */
+  static getAllWorkerConfigs(workerCount: number = 4): WorkerConfig[] {
+    const configs: WorkerConfig[] = [];
+    for (let i = 0; i < workerCount; i++) {
+      configs.push(this.generateWorkerConfig(i));
+    }
+    return configs;
+  }
+
+  /**
+   * Merge worker environment into current process environment
+   */
+  static applyWorkerEnvironment(workerId?: number): void {
+    const currentWorkerId = workerId ?? this.detectWorkerId();
+    const config = this.generateWorkerConfig(currentWorkerId);
+    
+    console.log(`🔧 WORKER CONFIG: Applying environment for Worker ${currentWorkerId}`);
+    
+    // Apply all environment variables
+    Object.entries(config.environment).forEach(([key, value]) => {
+      if (!process.env[key]) { // Don't override existing environment variables
+        process.env[key] = value;
+        console.log(`🔧 WORKER CONFIG: Set ${key}=${value}`);
+      }
+    });
+  }
+}

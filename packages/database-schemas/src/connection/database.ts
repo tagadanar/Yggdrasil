@@ -82,7 +82,21 @@ export class DatabaseConnection {
 
 // Utility functions for database operations
 export const connectDatabase = async (uri?: string): Promise<void> => {
-  const dbUri = uri || process.env.MONGODB_URI || 'mongodb://localhost:27018/yggdrasil-dev';
+  let dbUri = uri || process.env.MONGODB_URI || 'mongodb://localhost:27018/yggdrasil-dev';
+  
+  // In test environment, use worker-specific database if DB_NAME is set
+  if (process.env.NODE_ENV === 'test' && process.env.DB_NAME) {
+    // Replace database name in URI with worker-specific name
+    const urlParts = dbUri.split('/');
+    urlParts[urlParts.length - 1] = process.env.DB_NAME;
+    dbUri = urlParts.join('/');
+  }
+  
+  console.log('🔧 DATABASE: Connecting to database...');
+  console.log('🔧 DATABASE: URI:', dbUri);
+  console.log('🔧 DATABASE: NODE_ENV:', process.env.NODE_ENV);
+  console.log('🔧 DATABASE: DB_NAME:', process.env.DB_NAME);
+  console.log('🔧 DATABASE: DB_COLLECTION_PREFIX:', process.env.DB_COLLECTION_PREFIX);
   
   const config: DatabaseConfig = {
     uri: dbUri,
@@ -90,6 +104,9 @@ export const connectDatabase = async (uri?: string): Promise<void> => {
 
   const db = DatabaseConnection.getInstance();
   await db.connect(config);
+  
+  console.log('🔧 DATABASE: Connected successfully');
+  console.log('🔧 DATABASE: Database name:', db.getConnection().name);
 };
 
 export const disconnectDatabase = async (): Promise<void> => {

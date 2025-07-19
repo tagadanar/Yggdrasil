@@ -1,6 +1,18 @@
 import { createApp } from './app';
 
-const PORT = process.env.PLANNING_SERVICE_PORT || 3005;
+// Calculate worker-specific port for parallel testing
+function getWorkerSpecificPort(): number {
+  const workerId = process.env.WORKER_ID || process.env.PLAYWRIGHT_WORKER_ID || process.env.TEST_WORKER_INDEX || '0';
+  const basePort = 3000 + (parseInt(workerId, 10) * 10);
+  const planningPort = basePort + 5; // Planning service is always basePort + 5
+  return planningPort;
+}
+
+const PORT = process.env.PLANNING_SERVICE_PORT || 
+            (process.env.NODE_ENV === 'test' ? getWorkerSpecificPort() : 3005);
+
+console.log(`🔧 PLANNING SERVICE: Worker ID: ${process.env.WORKER_ID || process.env.PLAYWRIGHT_WORKER_ID || '0'}`);
+console.log(`🔧 PLANNING SERVICE: Calculated PORT: ${PORT}`);
 
 const startServer = async () => {
   try {

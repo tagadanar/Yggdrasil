@@ -1,94 +1,23 @@
 // packages/api-services/course-service/src/middleware/authMiddleware.ts
-// Authentication middleware for course service
+// Authentication middleware for course service - now using shared utilities
 
-import { Request, Response, NextFunction } from 'express';
-import { SharedJWTHelper, ResponseHelper, HTTP_STATUS, type AuthRequest } from '@yggdrasil/shared-utilities';
+import { AuthMiddleware } from '@yggdrasil/shared-utilities';
+import { UserModel } from '@yggdrasil/database-schemas';
 
-export const authenticateToken = async (
-  req: AuthRequest, 
-  res: Response, 
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json(
-        ResponseHelper.unauthorized('Access token required')
-      );
-      return;
-    }
-
-    const token = authHeader.substring(7); // Remove "Bearer " prefix
-    
-    const verificationResult = SharedJWTHelper.verifyAccessToken(token);
-    
-    if (!verificationResult.success || !verificationResult.data) {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json(
-        ResponseHelper.unauthorized(verificationResult.error || 'Invalid access token')
-      );
-      return;
-    }
-
-    req.user = verificationResult.data;
-    next();
-  } catch (error: any) {
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-      ResponseHelper.error('Authentication error')
-    );
+// Use centralized auth middleware with user lookup for consistency
+export const authenticateToken = AuthMiddleware.verifyTokenWithUserLookup(
+  async (id: string) => {
+    return await UserModel.findById(id);
   }
-};
+);
 
-// Optional authentication - adds user info if token is present but doesn't require it
-export const optionalAuth = async (
-  req: AuthRequest, 
-  res: Response, 
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const authHeader = req.headers.authorization;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      
-      try {
-        const decoded = SharedJWTHelper.verifyAccessToken(token);
-        req.user = decoded;
-      } catch (jwtError) {
-        // Ignore token errors for optional auth
-        req.user = undefined;
-      }
-    }
-    
-    next();
-  } catch (error) {
-    // Don't fail on optional auth errors
-    next();
-  }
-};
+// Re-export centralized middleware from shared utilities
+export const {
+  optionalAuth,
+  requireRole,
+  adminOnly: requireAdminOnly,
+  teacherAndAbove: requireTeacherOrAdmin,
+} = AuthMiddleware;
 
-// Role-based authorization middleware
-export const requireRole = (allowedRoles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json(
-        ResponseHelper.unauthorized('Authentication required')
-      );
-      return;
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      res.status(HTTP_STATUS.FORBIDDEN).json(
-        ResponseHelper.forbidden(`Access denied. Required roles: ${allowedRoles.join(', ')}`)
-      );
-      return;
-    }
-
-    next();
-  };
-};
-
-// Specific role middleware for common cases
-export const requireTeacherOrAdmin = requireRole(['teacher', 'staff', 'admin']);
-export const requireAdminOnly = requireRole(['admin']);
-export const requireStudentOnly = requireRole(['student']);
+// Custom role middleware for course service specific roles
+export const requireStudentOnly = AuthMiddleware.requireRole('student');

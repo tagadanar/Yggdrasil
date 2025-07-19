@@ -2,7 +2,7 @@
 // Comprehensive authentication and security workflow tests
 
 import { test, expect } from '@playwright/test';
-import { IsolatedAuthHelpers } from '../helpers/isolated-auth.helpers';
+import { IsolatedAuthHelpers } from '../helpers/enhanced-isolated-auth.helpers';
 
 test.describe('Authentication Security - Comprehensive Workflows', () => {
   let authHelpers: IsolatedAuthHelpers;
@@ -285,10 +285,11 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       if (roleTest.role === 'student') {
         // Students should not be able to access admin endpoints
         const accessToken = authHelpers.getAccessToken();
-        const adminResponse = await page.context().request.get('/api/users/admin/create', {
+        const adminResponse = await page.context().request.post('/api/users', {
           headers: {
             'Authorization': `Bearer ${accessToken}`
-          }
+          },
+          data: { name: 'Test User', email: 'test@example.com' }
         });
         expect(adminResponse.status()).toBeGreaterThanOrEqual(401);
         expect(adminResponse.status()).toBeLessThanOrEqual(403);

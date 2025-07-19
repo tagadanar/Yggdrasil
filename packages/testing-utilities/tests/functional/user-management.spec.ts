@@ -3,7 +3,7 @@
 // Reduced from 31 tests to 7 comprehensive tests while maintaining full coverage
 
 import { test, expect } from '@playwright/test';
-import { IsolatedAuthHelpers } from '../helpers/isolated-auth.helpers';
+import { IsolatedAuthHelpers } from '../helpers/enhanced-isolated-auth.helpers';
 
 test.describe('User Management - Optimized Functional Tests', () => {
   let authHelpers: IsolatedAuthHelpers;
@@ -646,9 +646,31 @@ test.describe('User Management - Optimized Functional Tests', () => {
 
     // Verify successful login
     await page.waitForLoadState('networkidle');
+    
+    // Debug: Check current URL and page content
+    const currentUrl = page.url();
+    console.log('Current URL after login:', currentUrl);
+    
+    // Navigate to dashboard since login redirects to news page by default
+    if (!currentUrl.includes('/dashboard')) {
+      await page.goto('/dashboard');
+      await page.waitForLoadState('networkidle');
+    }
+    
+    // Check for login errors
+    const errorElements = await page.locator('.error, .alert-error, :has-text("Invalid"), :has-text("Error")').count();
+    if (errorElements > 0) {
+      console.log('Login errors found on page');
+    }
+    
+    // Check if still on login page
+    if (currentUrl.includes('/auth/login')) {
+      console.log('Still on login page - login may have failed');
+    }
+    
     const dashboardIndicators = [
-      'h1:has-text("Dashboard")',
-      'h1:has-text("Welcome")',
+      'h2:has-text("Student Dashboard")',
+      'h3:has-text("My Enrollments")',
       ':has-text("My Enrollments")',
       ':has-text("Student Dashboard")'
     ];
@@ -658,9 +680,28 @@ test.describe('User Management - Optimized Functional Tests', () => {
       if (await page.locator(indicator).count() > 0) {
         await expect(page.locator(indicator)).toBeVisible();
         loginSuccess = true;
+        console.log('Found dashboard indicator:', indicator);
         break;
       }
     }
+    
+    // If login failed, check if we need to wait longer or if there's a redirect issue
+    if (!loginSuccess) {
+      console.log('Dashboard indicators not found. Checking for dashboard redirect...');
+      if (currentUrl === 'http://localhost:3000/' || currentUrl.includes('/dashboard')) {
+        // Try waiting a bit longer for content to load
+        await page.waitForTimeout(2000);
+        for (const indicator of dashboardIndicators) {
+          if (await page.locator(indicator).count() > 0) {
+            await expect(page.locator(indicator)).toBeVisible();
+            loginSuccess = true;
+            console.log('Found dashboard indicator after additional wait:', indicator);
+            break;
+          }
+        }
+      }
+    }
+    
     expect(loginSuccess).toBeTruthy();
 
     // Complete profile information

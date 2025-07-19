@@ -4,7 +4,6 @@
 import { TestIdGenerator } from './test-id-generator';
 import { DatabaseIsolationManager, IsolatedUserData } from './database-isolation';
 import { WorkerIsolationManager } from './worker-isolation';
-import bcrypt from 'bcrypt';
 
 /**
  * Resource Pool Manager
@@ -224,12 +223,13 @@ export class ResourcePoolManager {
   private async createTestUser(role: UserRole, index: number): Promise<IsolatedTestUser> {
     const userId = this.testIdGenerator.generateUserId(`pool_${role}`, role, index);
     const email = `${userId}@test.yggdrasil.local`;
-    const hashedPassword = await bcrypt.hash('TestPassword123!', 4);
+    // Don't pre-hash the password - let the User model handle it
+    const plainPassword = 'TestPassword123!';
     
     const userData: IsolatedUserData = {
       _id: userId,
       email: email,
-      password: hashedPassword,
+      password: plainPassword,
       role: role,
       profile: {
         firstName: `Test${role.charAt(0).toUpperCase() + role.slice(1)}`,

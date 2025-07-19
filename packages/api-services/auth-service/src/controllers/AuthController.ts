@@ -29,29 +29,59 @@ export class AuthController {
    * Authenticate user
    */
   static async login(req: Request, res: Response): Promise<void> {
+    console.log('🚨 AUTH CONTROLLER: LOGIN CONTROLLER CALLED');
+    console.log('🚨 AUTH CONTROLLER: Request body:', JSON.stringify(req.body, null, 2));
+    console.log('🚨 AUTH CONTROLLER: NODE_ENV:', process.env.NODE_ENV);
+    
     try {
+      console.log('🔐 AUTH CONTROLLER: Received login request');
+      console.log('🔐 AUTH CONTROLLER: Request body:', JSON.stringify(req.body, null, 2));
+      console.log('🔐 AUTH CONTROLLER: NODE_ENV:', process.env.NODE_ENV);
+      
       // Validate request body
       const validation = ValidationHelper.validate(LoginRequestSchema, req.body);
       if (!validation.success) {
+        console.log('❌ AUTH CONTROLLER: Validation failed:', validation.errors);
         res.status(HTTP_STATUS.UNPROCESSABLE_ENTITY).json(
           ResponseHelper.validationError(validation.errors!)
         );
         return;
       }
 
+      console.log('✅ AUTH CONTROLLER: Validation passed, calling AuthService.login');
+      
       // Authenticate user
       const result = await AuthService.login(validation.data!);
 
+      console.log('🔐 AUTH CONTROLLER: AuthService.login result:', {
+        success: result.success,
+        error: result.error,
+        hasUser: !!result.user,
+        hasTokens: !!result.tokens
+      });
+
       if (result.success) {
+        console.log('✅ AUTH CONTROLLER: Login successful, sending response');
         res.status(HTTP_STATUS.OK).json(
           ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'Login successful')
         );
       } else {
+        console.log('❌ AUTH CONTROLLER: Login failed with error:', result.error);
+        // Add debug information to the response in test environment
+        const debugInfo = process.env.NODE_ENV === 'test' ? {
+          debug: {
+            email: validation.data?.email,
+            error: result.error,
+            timestamp: new Date().toISOString()
+          }
+        } : undefined;
+        
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized(result.error!)
+          ResponseHelper.error(result.error!, HTTP_STATUS.UNAUTHORIZED, debugInfo)
         );
       }
     } catch (error) {
+      console.error('💥 AUTH CONTROLLER: Exception during login:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
         ResponseHelper.error('Login failed')
       );

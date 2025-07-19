@@ -3,6 +3,7 @@
 
 import mongoose from 'mongoose';
 import { WorkerIsolationManager } from './worker-isolation';
+import { UserSchema } from '@yggdrasil/database-schemas';
 
 /**
  * Database Isolation Manager
@@ -43,6 +44,10 @@ export class DatabaseIsolationManager {
     const env = worker.getEnvironment();
     
     try {
+      console.log(`🔧 DB ISOLATION: Using connection string: ${env.database.connectionString}`);
+      console.log(`🔧 DB ISOLATION: Expected database name: ${env.database.name}`);
+      console.log(`🔧 DB ISOLATION: Collection prefix: ${env.database.collectionPrefix}`);
+      
       // Create isolated connection
       this.connection = await mongoose.createConnection(env.database.connectionString, {
         maxPoolSize: 20, // Smaller pool per worker
@@ -106,7 +111,7 @@ export class DatabaseIsolationManager {
     if (!this.connection) return;
 
     const modelDefinitions = [
-      { name: 'User', schema: this.getUserSchema() },
+      // Note: User model is imported from @yggdrasil/database-schemas to ensure password hashing
       { name: 'News', schema: this.getNewsSchema() },
       { name: 'Course', schema: this.getCourseSchema() },
       { name: 'Event', schema: this.getEventSchema() },
@@ -197,20 +202,133 @@ export class DatabaseIsolationManager {
    * Create isolated user for this worker
    */
   async createIsolatedUser(userData: IsolatedUserData, testId: string): Promise<any> {
-    const UserModel = this.getModel('User');
+    // Create User model with the real schema (including password hashing) but using test database connection
+    const collectionName = this.getCollectionName('users');
+    const UserModel = this.connection!.model('User', UserSchema, collectionName);
     const session = this.transactionSessions.get(testId);
 
-    // Add worker prefix to ensure isolation
+    // Add worker prefix to ensure isolation (only if not already prefixed)
+    // Preserve the original _id for JWT authentication consistency
     const isolatedUserData = {
       ...userData,
-      email: `${this.workerPrefix}_${userData.email}`,
-      _id: `${this.workerPrefix}_${userData._id || userData.email}`
+      email: userData.email.startsWith(this.workerPrefix) ? userData.email : `${this.workerPrefix}_${userData.email}`
     };
+    
+    // Keep the original _id if provided - this is crucial for JWT authentication
+    // The _id field is used in JWT tokens and must match the database record
+
+    console.log(`🔧 DB ISOLATION: Creating isolated user for worker ${this.workerId}`);
+    console.log(`🔧 DB ISOLATION: Original userData:`, {
+      email: userData.email,
+      _id: userData._id,
+      role: userData.role,
+      hasPassword: !!userData.password,
+      passwordLength: userData.password?.length || 0
+    });
+
+    console.log(`🔧 DB ISOLATION: Isolated userData:`, {
+      email: isolatedUserData.email,
+      _id: isolatedUserData._id,
+      role: isolatedUserData.role,
+      hasPassword: !!isolatedUserData.password,
+      passwordLength: isolatedUserData.password?.length || 0,
+      password: isolatedUserData.password // Show the actual password for debugging
+    });
 
     try {
-      const user = new UserModel(isolatedUserData);
-      await user.save({ session });
-      return user;
+      console.log(`🔧 DB ISOLATION: Creating user with UserModel...`);
+      
+      // For test users with string IDs, use insertOne directly to bypass Mongoose ObjectId validation
+      if (isolatedUserData._id && typeof isolatedUserData._id === 'string') {
+        console.log(`🔧 DB ISOLATION: Creating test user with string ID using insertOne...`);
+        
+        // Hash the password manually since we're bypassing Mongoose middleware
+        const bcrypt = require('bcrypt');
+        const hashedPassword = await bcrypt.hash(isolatedUserData.password, 12);
+        
+        // Add timestamps and default values that Mongoose would normally handle
+        const userDocumentData = {
+          ...isolatedUserData,
+          password: hashedPassword, // Use the hashed password
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isActive: isolatedUserData.isActive !== undefined ? isolatedUserData.isActive : true,
+          tokenVersion: isolatedUserData.tokenVersion || 0,
+          profile: isolatedUserData.profile || {
+            firstName: isolatedUserData.firstName || 'Test',
+            lastName: isolatedUserData.lastName || 'User'
+          },
+          preferences: isolatedUserData.preferences || {
+            language: 'fr',
+            notifications: {
+              scheduleChanges: true,
+              newAnnouncements: true,
+              assignmentReminders: true
+            },
+            accessibility: {
+              colorblindMode: false,
+              fontSize: 'medium',
+              highContrast: false
+            }
+          }
+        };
+        
+        // Use MongoDB collection directly to bypass Mongoose validation
+        const collection = this.connection!.db.collection(collectionName);
+        const result = await collection.insertOne(userDocumentData, { session: session || undefined });
+        
+        console.log(`🔧 DB ISOLATION: User inserted directly with string ID: ${result.insertedId}`);
+        
+        // Retrieve the user using MongoDB collection directly to avoid ObjectId casting
+        const insertedDoc = await collection.findOne({ _id: isolatedUserData._id }, { session: session || undefined });
+        
+        if (!insertedDoc) {
+          throw new Error('Failed to retrieve inserted user');
+        }
+        
+        // Create a minimal user object that matches the expected interface
+        const userDoc = {
+          ...insertedDoc,
+          // Add Mongoose-like methods if needed
+          save: async () => insertedDoc,
+          toJSON: () => ({
+            ...insertedDoc,
+            _id: insertedDoc._id.toString()
+          }),
+          toObject: () => insertedDoc
+        };
+        
+        console.log(`🔧 DB ISOLATION: User saved successfully with email: ${userDoc.email}`);
+        console.log(`🔧 DB ISOLATION: Saved user details:`, {
+          email: userDoc.email,
+          role: userDoc.role,
+          isActive: userDoc.isActive,
+          hasPassword: !!userDoc.password,
+          passwordLength: userDoc.password?.length || 0
+        });
+        
+        return userDoc;
+      } else {
+        // For regular users (with ObjectId), use normal Mongoose flow
+        console.log(`🔧 DB ISOLATION: Creating regular user with Mongoose...`);
+        const user = new UserModel(isolatedUserData);
+        
+        console.log(`🔧 DB ISOLATION: User created, saving to database...`);
+        console.log(`🔧 DB ISOLATION: Session exists: ${!!session}`);
+        
+        await user.save({ session });
+        
+        console.log(`🔧 DB ISOLATION: User saved successfully with email: ${user.email}`);
+        console.log(`🔧 DB ISOLATION: Saved user details:`, {
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+          hasPassword: !!user.password,
+          passwordLength: user.password?.length || 0
+        });
+        
+        return user;
+      }
     } catch (error) {
       console.error(`❌ Worker ${this.workerId}: Failed to create user:`, error);
       throw error;
@@ -221,7 +339,9 @@ export class DatabaseIsolationManager {
    * Find isolated users for this worker
    */
   async findIsolatedUsers(query: any, testId: string): Promise<any[]> {
-    const UserModel = this.getModel('User');
+    // Create User model with the real schema but using test database connection
+    const collectionName = this.getCollectionName('users');
+    const UserModel = this.connection!.model('User', UserSchema, collectionName);
     const session = this.transactionSessions.get(testId);
 
     // Add worker prefix to query
@@ -293,7 +413,9 @@ export class DatabaseIsolationManager {
    * Create database indexes for performance
    */
   private async createIndexes(): Promise<void> {
-    const UserModel = this.getModel('User');
+    // Create User model with the real schema but using test database connection
+    const collectionName = this.getCollectionName('users');
+    const UserModel = this.connection!.model('User', UserSchema, collectionName);
     const NewsModel = this.getModel('News');
     const CourseModel = this.getModel('Course');
 
@@ -306,31 +428,8 @@ export class DatabaseIsolationManager {
 
   /**
    * Database Schema Definitions
+   * Note: User schema is imported from @yggdrasil/database-schemas to ensure password hashing
    */
-  private getUserSchema(): mongoose.Schema {
-    return new mongoose.Schema({
-      _id: { type: String, required: true },
-      email: { type: String, required: true, unique: true },
-      password: { type: String, required: true },
-      role: { type: String, enum: ['admin', 'staff', 'teacher', 'student'], required: true },
-      profile: {
-        firstName: String,
-        lastName: String,
-        department: String,
-        bio: String,
-        contactInfo: {
-          phone: String,
-          office: String
-        },
-        studentId: String,
-        officeHours: String,
-        specialties: [String]
-      },
-      isActive: { type: Boolean, default: true },
-      createdAt: { type: Date, default: Date.now },
-      updatedAt: { type: Date, default: Date.now }
-    });
-  }
 
   private getNewsSchema(): mongoose.Schema {
     return new mongoose.Schema({

@@ -2,7 +2,7 @@
 // Comprehensive system integration tests - combines cross-service, resilience, and security tests
 
 import { test, expect } from '@playwright/test';
-import { IsolatedAuthHelpers } from '../helpers/isolated-auth.helpers';
+import { IsolatedAuthHelpers } from '../helpers/enhanced-isolated-auth.helpers';
 import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
 
 test.describe('System Integration - Comprehensive Tests', () => {

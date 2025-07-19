@@ -47,7 +47,7 @@ statisticsApiClient.interceptors.response.use(
       if (refreshToken) {
         try {
           // Try to refresh the token
-          const response = await axios.post('http://localhost:3001/api/auth/refresh', {
+          const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/refresh`, {
             refreshToken,
           });
           

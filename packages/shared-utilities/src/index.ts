@@ -21,3 +21,9 @@ export * from './constants';
 export * from './helpers/response';
 export * from './helpers/validation';
 export * from './helpers/jwt';
+
+// Middleware
+export * from './middleware/auth';
+
+// Testing utilities are exported separately to avoid Node.js dependencies in browser builds
+// Use: import { ... } from '@yggdrasil/shared-utilities/testing' for test infrastructure

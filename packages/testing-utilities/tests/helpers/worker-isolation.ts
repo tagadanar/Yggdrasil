@@ -84,7 +84,7 @@ export class WorkerIsolationManager {
       database: {
         name: `yggdrasil_test_${this.workerPrefix}`,
         collectionPrefix: `${this.workerPrefix}_`,
-        connectionString: process.env.MONGODB_URI || `mongodb://localhost:27018/yggdrasil-dev`
+        connectionString: process.env.MONGODB_URI || `mongodb://localhost:27018/yggdrasil_test_${this.workerPrefix}`
       },
 
       // Isolated file system paths

@@ -3,7 +3,20 @@
 
 import app from './app';
 
-const PORT = process.env.PORT || 3006;
+// Calculate worker-specific port for parallel testing
+function getWorkerSpecificPort(): number {
+  const workerId = process.env.WORKER_ID || process.env.PLAYWRIGHT_WORKER_ID || process.env.TEST_WORKER_INDEX || '0';
+  const basePort = 3000 + (parseInt(workerId, 10) * 10);
+  const statisticsPort = basePort + 6; // Statistics service is always basePort + 6
+  return statisticsPort;
+}
+
+const PORT = process.env.STATISTICS_SERVICE_PORT || 
+            process.env.PORT || 
+            (process.env.NODE_ENV === 'test' ? getWorkerSpecificPort() : 3006);
+
+console.log(`🔧 STATISTICS SERVICE: Worker ID: ${process.env.WORKER_ID || process.env.PLAYWRIGHT_WORKER_ID || '0'}`);
+console.log(`🔧 STATISTICS SERVICE: Calculated PORT: ${PORT}`);
 
 const server = app.listen(PORT, () => {
   console.log(`📊 Statistics Service running on port ${PORT}`);

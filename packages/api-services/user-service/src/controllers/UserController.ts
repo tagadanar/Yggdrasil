@@ -99,12 +99,12 @@ export class UserController {
     }
   }
 
-  // Admin Only: List all users
+  // Admin and Staff: List all users
   static async listUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check if user is admin
-      if (!req.user || req.user.role !== 'admin') {
-        const errorResponse = ResponseHelper.forbidden('Only administrators can list users');
+      // Check if user is admin or staff
+      if (!req.user || !['admin', 'staff'].includes(req.user.role)) {
+        const errorResponse = ResponseHelper.forbidden('Only administrators and staff can list users');
         res.status(errorResponse.statusCode).json(errorResponse);
         return;
       }

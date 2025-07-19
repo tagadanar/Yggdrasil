@@ -168,25 +168,97 @@ export class EnhancedTestIsolationManager {
     }
 
     try {
+      // Listen to console messages from the browser
+      page.on('console', (msg) => {
+        console.log(`🖥️ BROWSER CONSOLE [${msg.type()}]: ${msg.text()}`);
+      });
+      
+      // Listen to page errors
+      page.on('pageerror', (error) => {
+        console.error(`🖥️ BROWSER ERROR: ${error.message}`);
+      });
+      
       // Clear any existing authentication
       await this.clearBrowserState(page);
 
-      // Navigate to login page
-      const loginUrl = this.serviceManager.getServiceUrl('frontend') + '/auth/login';
-      await page.goto(loginUrl);
-      await page.waitForLoadState('networkidle');
+      // Navigate to login page (frontend service is always on port 3000)
+      const loginUrl = 'http://localhost:3000/auth/login';
+      console.log(`🔐 TEST: Navigating to login page: ${loginUrl}`);
+      await page.goto(loginUrl, { waitUntil: 'networkidle' });
+      
+      // Wait for React hydration by checking if form is interactive
+      await page.waitForFunction(() => {
+        const form = document.querySelector('form');
+        const email = document.querySelector('#email');
+        const password = document.querySelector('#password');
+        const submit = document.querySelector('button[type="submit"]');
+        return form && email && password && submit && !email.disabled && !password.disabled && !submit.disabled;
+      }, { timeout: 45000 });
 
-      // Perform login
-      await page.fill('[data-testid="email"]', user.email);
-      await page.fill('[data-testid="password"]', 'TestPassword123!');
-      await page.click('[data-testid="login-button"]');
+      // TEST: Try with demo account first to see if authentication works at all
+      console.log(`🔐 TEST: DEBUGGING - trying with demo account first`);
+      await page.fill('#email', 'admin@yggdrasil.edu');
+      await page.fill('#password', 'Admin123!');
+      
+      console.log(`🔐 TEST: Clicking submit button for demo account`);
+      await page.click('button[type="submit"]');
+      
+      // Wait a moment to see if demo login works
+      await page.waitForTimeout(2000);
+      
+      const currentUrl = page.url();
+      console.log(`🔐 TEST: Current URL after demo login attempt: ${currentUrl}`);
+      
+      if (!currentUrl.includes('/auth/login')) {
+        console.log(`🔐 TEST: Demo login SUCCEEDED! Auth system is working.`);
+        console.log(`🔐 TEST: Now testing with actual test user...`);
+        
+        // Clear session and return to login page
+        await this.clearBrowserState(page);
+        await page.goto('http://localhost:3000/auth/login', { waitUntil: 'networkidle' });
+        
+        // Wait for form to be ready again
+        await page.waitForFunction(() => {
+          const form = document.querySelector('form');
+          const email = document.querySelector('#email');
+          const password = document.querySelector('#password');
+          const submit = document.querySelector('button[type="submit"]');
+          return form && email && password && submit && !email.disabled && !password.disabled && !submit.disabled;
+        }, { timeout: 45000 });
+        
+        // Now try with the actual test user
+        console.log(`🔐 TEST: Filling email field with: ${user.email}`);
+        await page.fill('#email', user.email);
+        console.log(`🔐 TEST: Filling password field with: TestPassword123!`);
+        await page.fill('#password', 'TestPassword123!');
+      } else {
+        console.log(`🔐 TEST: Demo login FAILED. Auth system has issues.`);
+        console.log(`🔐 TEST: Now trying original test user...`);
+        
+        // Clear fields and try with test user
+        await page.fill('#email', '');
+        await page.fill('#password', '');
+        
+        // Original test user login
+        console.log(`🔐 TEST: Filling email field with: ${user.email}`);
+        await page.fill('#email', user.email);
+        console.log(`🔐 TEST: Filling password field with: TestPassword123!`);
+        await page.fill('#password', 'TestPassword123!');
+      }
+      
+      // Wait for the button to be stable and click it
+      console.log(`🔐 TEST: Waiting for submit button to be available`);
+      await page.waitForSelector('button[type="submit"]:not([disabled])', { state: 'visible' });
+      console.log(`🔐 TEST: Clicking submit button`);
+      await page.click('button[type="submit"]');
 
-      // Wait for authentication to complete
-      await page.waitForLoadState('networkidle');
+      console.log(`🔐 TEST: Waiting for navigation away from login page`);
+      // Wait for navigation or authentication result
+      await page.waitForURL(url => !url.toString().includes('/auth/login'), { timeout: 30000 });
       
       // Verify authentication success
-      const currentUrl = page.url();
-      if (currentUrl.includes('/auth/login')) {
+      const finalUrl = page.url();
+      if (finalUrl.includes('/auth/login')) {
         throw new Error(`Authentication failed for user ${user.email}`);
       }
 
@@ -297,17 +369,26 @@ export class EnhancedTestIsolationManager {
    * Clear browser state
    */
   async clearBrowserState(page: Page): Promise<void> {
-    // Clear all storage
+    // Clear all storage with error handling
     await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch (error) {
+        // localStorage/sessionStorage might not be available on some pages
+        console.log('Storage clear failed:', error.message);
+      }
       
-      // Clear all cookies
-      document.cookie.split(";").forEach(cookie => {
-        const eqPos = cookie.indexOf("=");
-        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-      });
+      try {
+        // Clear all cookies
+        document.cookie.split(";").forEach(cookie => {
+          const eqPos = cookie.indexOf("=");
+          const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        });
+      } catch (error) {
+        console.log('Cookie clear failed:', error.message);
+      }
     });
 
     // Additional cleanup

@@ -1,72 +1,37 @@
 // packages/api-services/statistics-service/src/middleware/authMiddleware.ts
-// Authentication middleware for statistics service
+// Authentication middleware for statistics service - now using shared utilities
 
+import { AuthMiddleware } from '@yggdrasil/shared-utilities';
+import { UserModel } from '@yggdrasil/database-schemas';
 import { Request, Response, NextFunction } from 'express';
-import { SharedJWTHelper, ResponseHelper, HTTP_STATUS, type AuthRequest } from '@yggdrasil/shared-utilities';
+import { type AuthRequest } from '@yggdrasil/shared-utilities';
 
-export const authenticateToken = async (
-  req: AuthRequest, 
-  res: Response, 
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json(
-        ResponseHelper.unauthorized('Access token required')
-      );
-      return;
-    }
-
-    const token = authHeader.substring(7); // Remove "Bearer " prefix
-    
-    const verificationResult = SharedJWTHelper.verifyAccessToken(token);
-    
-    if (!verificationResult.success || !verificationResult.data) {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json(
-        ResponseHelper.unauthorized(verificationResult.error || 'Invalid access token')
-      );
-      return;
-    }
-
-    req.user = verificationResult.data;
-    next();
-  } catch (error: any) {
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-      ResponseHelper.error('Authentication error')
-    );
+// Use centralized auth middleware with user lookup for consistency
+export const authenticateToken = AuthMiddleware.verifyTokenWithUserLookup(
+  async (id: string) => {
+    return await UserModel.findById(id);
   }
-};
+);
 
-// Role-based authorization middleware
-export const requireRole = (allowedRoles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json(
-        ResponseHelper.unauthorized('Authentication required')
-      );
-      return;
-    }
+// Re-export centralized middleware from shared utilities
+export const {
+  requireRole,
+  adminOnly: requireAdminOnly,
+  staffOnly: requireStaffOrAdmin,
+  teacherAndAbove: requireTeacherOrAdmin,
+} = AuthMiddleware;
 
-    if (!allowedRoles.includes(req.user.role)) {
-      res.status(HTTP_STATUS.FORBIDDEN).json(
-        ResponseHelper.forbidden(`Access denied. Required roles: ${allowedRoles.join(', ')}`)
-      );
-      return;
-    }
-
-    next();
-  };
-};
+// Custom role middleware for statistics service specific roles
+export const requireStudentOnly = AuthMiddleware.requireRole('student');
 
 // User ownership verification middleware - ensures users can only access their own data
 export const requireOwnershipOrAdmin = (userIdParam: string = 'userId') => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json(
-        ResponseHelper.unauthorized('Authentication required')
-      );
+      res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
       return;
     }
 
@@ -80,18 +45,13 @@ export const requireOwnershipOrAdmin = (userIdParam: string = 'userId') => {
 
     // Admin/staff can access any user's data, users can only access their own
     if (!isAdmin && normalizedRequestedId !== normalizedCurrentId) {
-      res.status(HTTP_STATUS.FORBIDDEN).json(
-        ResponseHelper.forbidden('Access denied: can only access your own data')
-      );
+      res.status(403).json({
+        success: false,
+        error: 'Access denied: can only access your own data'
+      });
       return;
     }
 
     next();
   };
 };
-
-// Specific role middleware for common cases
-export const requireTeacherOrAdmin = requireRole(['teacher', 'staff', 'admin']);
-export const requireAdminOnly = requireRole(['admin']);
-export const requireStudentOnly = requireRole(['student']);
-export const requireStaffOrAdmin = requireRole(['staff', 'admin']);

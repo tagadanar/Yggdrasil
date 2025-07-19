@@ -8,7 +8,40 @@ import { connectDatabase } from '@yggdrasil/database-schemas';
 // Load environment variables from project root
 dotenv.config({ path: '../../../.env' });
 
-const PORT = process.env.USER_SERVICE_PORT || process.env.PORT || 3002;
+// Calculate worker-specific port for parallel testing
+function getWorkerSpecificPort(): number {
+  const workerId = process.env.WORKER_ID || process.env.PLAYWRIGHT_WORKER_ID || process.env.TEST_WORKER_INDEX || '0';
+  const basePort = 3000 + (parseInt(workerId, 10) * 10);
+  const userPort = basePort + 2; // User service is always basePort + 2
+  return userPort;
+}
+
+// Respect PORT environment variable when provided by service manager
+let calculatedPort;
+if (process.env.NODE_ENV === 'test' && process.env.PORT) {
+  // In test mode, prioritize PORT (set by service manager) over USER_SERVICE_PORT (from .env)
+  calculatedPort = parseInt(process.env.PORT, 10);
+  console.log(`🔧 USER SERVICE: Test mode - Using service manager PORT: ${calculatedPort}`);
+} else if (process.env.USER_SERVICE_PORT) {
+  calculatedPort = parseInt(process.env.USER_SERVICE_PORT, 10);
+  console.log(`🔧 USER SERVICE: Using USER_SERVICE_PORT: ${calculatedPort}`);
+} else if (process.env.PORT) {
+  calculatedPort = parseInt(process.env.PORT, 10);
+  console.log(`🔧 USER SERVICE: Using PORT: ${calculatedPort}`);
+} else if (process.env.NODE_ENV === 'test') {
+  calculatedPort = getWorkerSpecificPort();
+  console.log(`🔧 USER SERVICE: Using calculated worker-specific port: ${calculatedPort}`);
+} else {
+  calculatedPort = 3002;
+  console.log(`🔧 USER SERVICE: Using default port: ${calculatedPort}`);
+}
+
+const PORT = calculatedPort;
+
+console.log(`🔧 USER SERVICE: Worker ID: ${process.env.WORKER_ID || process.env.PLAYWRIGHT_WORKER_ID || '0'}`);
+console.log(`🔧 USER SERVICE: Environment PORT: '${process.env.PORT}'`);
+console.log(`🔧 USER SERVICE: Environment USER_SERVICE_PORT: '${process.env.USER_SERVICE_PORT}'`);
+console.log(`🔧 USER SERVICE: Final PORT: ${PORT}`);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/yggdrasil-dev';
 
 async function startServer() {
