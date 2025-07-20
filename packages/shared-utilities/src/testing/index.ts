@@ -5,10 +5,17 @@ export { WorkerConfigManager, type WorkerConfig } from './WorkerConfig';
 export { ServiceManager, type ServiceInfo, type ServiceManagerOptions } from './ServiceManager';
 export { DatabaseIsolationManager, type DatabaseIsolationOptions, type TestUserData } from './DatabaseIsolation';
 export { TestSetup, type TestSetupOptions, type TestEnvironmentInfo } from './TestSetup';
+export { WorkerValidation } from './WorkerValidation';
+export { DemoUserManager, demoUserManager, DEMO_USERS, type DemoUser } from './DemoUserManager';
+export { AuthTestHelper, QuickAuth, type AuthTestOptions, type AuthResult } from './AuthTestHelper';
+export { CleanAuthHelper, type CleanAuthResult } from './CleanAuthHelper';
+export { TestInitializer, type TestInitializationOptions } from './TestInitializer';
+export { TestCleanup, withCleanup, testCleanupHooks, type CleanupTracker } from './TestCleanup';
 
 // Import for internal use
 import { TestSetup } from './TestSetup';
 import { WorkerConfigManager } from './WorkerConfig';
+import { TestInitializer } from './TestInitializer';
 
 // Convenience exports for common patterns
 
@@ -18,15 +25,17 @@ import { WorkerConfigManager } from './WorkerConfig';
  * @returns Complete test environment ready for use
  */
 export async function startTestEnvironment(workerId?: number) {
+  // Initialize test environment with demo users
+  await TestInitializer.quickSetup();
   return TestSetup.quickSetup(workerId);
 }
 
 /**
  * Start test environment for all workers (global setup)
- * @param workerCount Number of workers to setup (default: 4)
+ * @param workerCount Number of workers to setup (default: 1 for single-worker architecture)
  * @returns Array of test environments for each worker
  */
-export async function startAllTestEnvironments(workerCount: number = 4) {
+export async function startAllTestEnvironments(workerCount: number = 1) {
   return TestSetup.setupAllWorkers(workerCount);
 }
 

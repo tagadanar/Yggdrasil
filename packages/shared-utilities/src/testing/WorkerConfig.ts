@@ -1,6 +1,8 @@
 // packages/shared-utilities/src/testing/WorkerConfig.ts
 // Centralized worker configuration and port calculation for all test infrastructure
 
+import { WorkerValidation } from './WorkerValidation';
+
 export interface WorkerConfig {
   workerId: number;
   basePort: number;
@@ -32,39 +34,8 @@ export class WorkerConfigManager {
       WORKER_ID: process.env.WORKER_ID
     });
     
-    // Try environment variable first (most reliable)
-    const envWorkerId = process.env.PLAYWRIGHT_WORKER_ID;
-    if (envWorkerId !== undefined) {
-      console.log(`🔍 WORKER CONFIG: Using PLAYWRIGHT_WORKER_ID: ${envWorkerId}`);
-      return parseInt(envWorkerId, 10);
-    }
-
-    // Try explicit worker ID
-    const explicitWorkerId = process.env.WORKER_ID;
-    if (explicitWorkerId !== undefined) {
-      console.log(`🔍 WORKER CONFIG: Using WORKER_ID: ${explicitWorkerId}`);
-      return parseInt(explicitWorkerId, 10);
-    }
-
-    // Try test worker index
-    const testWorkerId = process.env.TEST_WORKER_INDEX;
-    if (testWorkerId !== undefined) {
-      console.log(`🔍 WORKER CONFIG: Using TEST_WORKER_INDEX: ${testWorkerId}`);
-      return parseInt(testWorkerId, 10);
-    }
-
-    // For test mode, default to worker 0
-    if (process.env.NODE_ENV === 'test') {
-      console.log(`🔍 WORKER CONFIG: Test mode - defaulting to Worker 0`);
-      return 0;
-    }
-
-    // For development mode, use PID-based detection as fallback
-    const pid = process.pid;
-    const workerIndex = Math.abs(pid % 4); // Ensure it's between 0-3
-    
-    console.log(`🔍 WORKER CONFIG: PID-based detection: PID=${pid}, WorkerIndex=${workerIndex}`);
-    return workerIndex;
+    // Use centralized WorkerValidation for consistent bounds checking
+    return WorkerValidation.validateWorkerId();
   }
 
   /**
@@ -159,7 +130,7 @@ export class WorkerConfigManager {
   /**
    * Get all worker configurations for multi-worker setup
    */
-  static getAllWorkerConfigs(workerCount: number = 4): WorkerConfig[] {
+  static getAllWorkerConfigs(workerCount: number = 1): WorkerConfig[] {
     const configs: WorkerConfig[] = [];
     for (let i = 0; i < workerCount; i++) {
       configs.push(this.generateWorkerConfig(i));

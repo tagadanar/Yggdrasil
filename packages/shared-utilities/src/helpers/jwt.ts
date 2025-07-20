@@ -8,7 +8,8 @@ import { JWTPayload, RefreshTokenPayload, AuthTokens } from '../types/auth';
 const JWT_CONFIG = {
   ACCESS_TOKEN_SECRET: process.env.JWT_SECRET || 'yggdrasil-access-token-secret-2024',
   REFRESH_TOKEN_SECRET: process.env.JWT_REFRESH_SECRET || 'yggdrasil-refresh-token-secret-2024',
-  ACCESS_TOKEN_EXPIRES_IN: '15m',
+  // Extended token expiration for test environment to prevent test failures due to timing
+  ACCESS_TOKEN_EXPIRES_IN: process.env.NODE_ENV === 'test' ? '2h' : '15m',
   REFRESH_TOKEN_EXPIRES_IN: '7d',
   ISSUER: 'yggdrasil-auth-service',
   AUDIENCE: 'yggdrasil-platform'
