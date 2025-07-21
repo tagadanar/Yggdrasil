@@ -3,13 +3,15 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { planningApi } from '@/lib/api/planning';
 import { courseApi } from '@/lib/api/courses';
 import { CalendarView } from '@/components/planning/CalendarView';
+import { ModernCalendarView } from '@/components/planning/ModernCalendarView';
+import { GoogleCalendarSync } from '@/components/planning/GoogleCalendarSync';
 import { EventCreateModal } from '@/components/planning/EventCreateModal';
 import { EventDetailsModal } from '@/components/planning/EventDetailsModal';
 import { EventFilters } from '@/components/planning/EventFilters';
@@ -20,7 +22,9 @@ import {
   PlusIcon, 
   ArrowDownTrayIcon,
   FunnelIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  CloudIcon,
+  DevicePhoneMobileIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 
@@ -61,6 +65,7 @@ export default function PlanningPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showConflictModal, setShowConflictModal] = useState(false);
+  const [showGoogleSyncModal, setShowGoogleSyncModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [conflictData, setConflictData] = useState<any>(null);
   
@@ -76,13 +81,32 @@ export default function PlanningPage() {
   // Current date for calendar navigation
   const [currentDate, setCurrentDate] = useState(new Date());
   
+  // Modern calendar features
+  const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'connected' | 'disconnected' | 'syncing' | 'error'>('disconnected');
+  const [isMobile, setIsMobile] = useState(false);
+  
   // Check if user can create/edit events
   const canModifyEvents = user?.role === 'admin' || user?.role === 'staff';
+
+  // Memoize filters to prevent unnecessary API calls
+  const memoizedFilters = useMemo(() => filters, [filters.type, filters.course, filters.location]);
 
   // Load events and courses
   useEffect(() => {
     loadData();
-  }, [currentDate, currentView, filters]);
+  }, [currentDate, currentView, memoizedFilters]);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -99,9 +123,9 @@ export default function PlanningPage() {
         endDate: dateRange.end.toISOString()
       };
       
-      if (filters.type) eventFilters.type = filters.type;
-      if (filters.course) eventFilters.courseId = filters.course;
-      if (filters.location) eventFilters.location = filters.location;
+      if (memoizedFilters.type) eventFilters.type = memoizedFilters.type;
+      if (memoizedFilters.course) eventFilters.courseId = memoizedFilters.course;
+      if (memoizedFilters.location) eventFilters.location = memoizedFilters.location;
 
       const eventsResponse = await planningApi.getEvents(eventFilters);
       
@@ -319,6 +343,52 @@ export default function PlanningPage() {
     }
   };
 
+  // Handle event drag & drop
+  const handleEventDrop = async (eventId: string, newStart: Date, newEnd: Date) => {
+    try {
+      const updateData = {
+        startDate: newStart.toISOString(),
+        endDate: newEnd.toISOString()
+      };
+      
+      await handleUpdateEvent(eventId, updateData);
+    } catch (error: any) {
+      console.error('Error moving event:', error);
+      setError(error.message || 'Failed to move event');
+    }
+  };
+
+  // Handle event resize
+  const handleEventResize = async (eventId: string, newStart: Date, newEnd: Date) => {
+    try {
+      const updateData = {
+        startDate: newStart.toISOString(),
+        endDate: newEnd.toISOString()
+      };
+      
+      await handleUpdateEvent(eventId, updateData);
+    } catch (error: any) {
+      console.error('Error resizing event:', error);
+      setError(error.message || 'Failed to resize event');
+    }
+  };
+
+  // Handle date/time selection for quick event creation
+  const handleDateSelect = (start: Date, end: Date) => {
+    if (canModifyEvents) {
+      // Pre-fill create modal with selected time
+      setShowCreateModal(true);
+      // You could pass the selected dates to the create modal if needed
+    }
+  };
+
+  // Handle Google Calendar sync completion
+  const handleGoogleSyncComplete = () => {
+    loadData(); // Reload events after sync
+    setSuccessMessage('Google Calendar sync completed successfully');
+    setTimeout(() => setSuccessMessage(null), 3000);
+  };
+
   if (loading) {
     return (
       <ProtectedRoute>
@@ -346,6 +416,17 @@ export default function PlanningPage() {
               </div>
               
               <div className="flex space-x-4">
+                {/* Google Calendar Sync */}
+                <Button
+                  onClick={() => setShowGoogleSyncModal(true)}
+                  variant="secondary"
+                  size="sm"
+                  icon={<CloudIcon className="h-4 w-4" />}
+                  data-testid="google-calendar-sync"
+                >
+                  {isMobile ? 'Sync' : 'Google Calendar'}
+                </Button>
+
                 {/* Filter Toggle */}
                 <Button
                   onClick={() => setShowFilters(!showFilters)}
@@ -354,7 +435,7 @@ export default function PlanningPage() {
                   icon={<FunnelIcon className="h-4 w-4" />}
                   data-testid="filter-toggle"
                 >
-                  Filters
+                  {isMobile ? '' : 'Filters'}
                 </Button>
 
                 {/* Export Button */}
@@ -365,7 +446,7 @@ export default function PlanningPage() {
                   icon={<ArrowDownTrayIcon className="h-4 w-4" />}
                   data-testid="export-calendar-button"
                 >
-                  Export
+                  {isMobile ? '' : 'Export'}
                 </Button>
 
                 {/* Create Event Button (Admin/Staff only) */}
@@ -377,7 +458,7 @@ export default function PlanningPage() {
                     icon={<PlusIcon className="h-4 w-4" />}
                     data-testid="create-event-button"
                   >
-                    Create Event
+                    {isMobile ? '' : 'Create Event'}
                   </Button>
                 )}
               </div>
@@ -434,9 +515,9 @@ export default function PlanningPage() {
             </div>
           )}
 
-          {/* Calendar View */}
-          <div className="card" data-testid="calendar-view">
-            <CalendarView
+          {/* Modern Calendar View */}
+          <div data-testid="calendar-view">
+            <ModernCalendarView
               events={events}
               currentView={currentView}
               currentDate={currentDate}
@@ -444,6 +525,12 @@ export default function PlanningPage() {
               onDateChange={setCurrentDate}
               onEventClick={handleEventClick}
               canModifyEvents={canModifyEvents}
+              onEventDrop={handleEventDrop}
+              onEventResize={handleEventResize}
+              onDateSelect={handleDateSelect}
+              isRealTimeConnected={isRealTimeConnected}
+              syncStatus={syncStatus}
+              isMobile={isMobile}
             />
           </div>
 
@@ -486,6 +573,16 @@ export default function PlanningPage() {
               conflicts={conflictData.conflicts}
               onClose={() => handleConflictResolution(false)}
               onProceed={() => handleConflictResolution(true)}
+            />
+          )}
+
+          {/* Google Calendar Sync Modal */}
+          {showGoogleSyncModal && (
+            <GoogleCalendarSync
+              isOpen={showGoogleSyncModal}
+              onClose={() => setShowGoogleSyncModal(false)}
+              onSyncComplete={handleGoogleSyncComplete}
+              currentSyncStatus={syncStatus}
             />
           )}
         </div>

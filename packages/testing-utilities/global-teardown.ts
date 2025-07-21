@@ -1,5 +1,5 @@
 // packages/testing-utilities/global-teardown.ts
-// Global teardown for 4-worker parallelization service cleanup
+// Global teardown for single-worker service cleanup
 
 import { spawn } from 'child_process';
 import { promisify } from 'util';

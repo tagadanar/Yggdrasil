@@ -10,16 +10,24 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoginRequestSchema, LoginRequestType } from '@yggdrasil/shared-utilities';
+import { authFlowManager } from '@/lib/auth/AuthFlowManager';
 
 export default function LoginPage() {
   const { login, isLoading, user } = useAuth();
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string>('');
 
-  // Redirect authenticated users to news page (non-blocking)
+  // Redirect authenticated users using role-based navigation (non-blocking)
   useEffect(() => {
     if (user) {
-      router.push('/news');
+      console.log('🔐 LOGIN PAGE: User already authenticated, redirecting with AuthFlowManager');
+      authFlowManager.handleLoginSuccess(user, router).then((result) => {
+        console.log('🔐 LOGIN PAGE: Existing user navigation result:', result);
+      }).catch((error) => {
+        console.error('🔐 LOGIN PAGE: Existing user navigation failed:', error);
+        // Fallback to news page
+        router.push('/news');
+      });
     }
   }, [user, router]);
 
@@ -43,19 +51,28 @@ export default function LoginPage() {
   }, [watch, submitError]);
 
   const onSubmit = async (data: LoginRequestType) => {
+    // Prevent multiple concurrent submissions
+    if (isSubmitting || isLoading) {
+      console.log('🔐 LOGIN FORM: Submission already in progress, ignoring duplicate');
+      return;
+    }
+    
     try {
       console.log('🔐 LOGIN FORM: Form submitted with data:', data);
       console.log('🔐 LOGIN FORM: Setting submit error to empty');
       setSubmitError('');
       
-      console.log('🔐 LOGIN FORM: Calling login function');
-      const result = await login(data.email, data.password);
+      console.log('🔐 LOGIN FORM: Calling login function with router');
+      const result = await login(data.email, data.password, router);
       
       console.log('🔐 LOGIN FORM: Login result:', result);
       
       if (result.success) {
-        console.log('🔐 LOGIN FORM: Login successful, redirecting to /news');
-        router.push('/news');
+        console.log('🔐 LOGIN FORM: Login successful, navigation handled by AuthFlowManager');
+        // Navigation is now handled by AuthFlowManager - no manual redirect needed
+        if (result.navigationResult && !result.navigationResult.success) {
+          console.warn('🔐 LOGIN FORM: Navigation had issues but login succeeded:', result.navigationResult);
+        }
       } else {
         console.log('🔐 LOGIN FORM: Login failed, setting error:', result.error);
         setSubmitError(result.error || 'Invalid email or password');
@@ -67,16 +84,31 @@ export default function LoginPage() {
   };
 
   const handleDemoLogin = async (email: string, password: string) => {
+    // Prevent multiple concurrent submissions
+    if (isSubmitting || isLoading) {
+      console.log('🔐 DEMO LOGIN: Submission already in progress, ignoring duplicate');
+      return;
+    }
+    
     try {
+      console.log('🔐 DEMO LOGIN: Starting demo login for:', email);
       setSubmitError('');
-      const result = await login(email, password);
+      const result = await login(email, password, router);
+      
+      console.log('🔐 DEMO LOGIN: Demo login result:', result);
       
       if (result.success) {
-        router.push('/news');
+        console.log('🔐 DEMO LOGIN: Demo login successful, navigation handled by AuthFlowManager');
+        // Navigation is now handled by AuthFlowManager - no manual redirect needed
+        if (result.navigationResult && !result.navigationResult.success) {
+          console.warn('🔐 DEMO LOGIN: Navigation had issues but login succeeded:', result.navigationResult);
+        }
       } else {
+        console.log('🔐 DEMO LOGIN: Demo login failed, setting error:', result.error);
         setSubmitError(result.error || 'Demo login failed');
       }
     } catch (error) {
+      console.error('🔐 DEMO LOGIN: Exception during demo login:', error);
       setSubmitError('An unexpected error occurred');
     }
   };
@@ -114,7 +146,7 @@ export default function LoginPage() {
 
         {/* Form */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate data-testid="login-form">
             {/* Email Field */}
             <div className="form-group">
               <label htmlFor="email" className="form-label">
@@ -125,6 +157,7 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 autoComplete="email"
+                data-testid="email-input"
                 className={`input ${errors.email ? 'border-error-500 focus:border-error-500 focus:ring-error-500' : ''}`}
                 placeholder="Enter your email"
               />
@@ -143,6 +176,7 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 autoComplete="current-password"
+                data-testid="password-input"
                 className={`input ${errors.password ? 'border-error-500 focus:border-error-500 focus:ring-error-500' : ''}`}
                 placeholder="Enter your password"
               />
@@ -163,6 +197,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
+                data-testid="login-button"
                 className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white py-3 px-4 rounded-lg text-base font-medium shadow-lg shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 style={{ minHeight: '48px' }}
               >
@@ -179,6 +214,7 @@ export default function LoginPage() {
             <button
               onClick={() => handleDemoLogin('admin@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting}
+              data-testid="demo-admin-button"
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg border border-blue-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               <div className="flex items-center">
@@ -196,6 +232,7 @@ export default function LoginPage() {
             <button
               onClick={() => handleDemoLogin('teacher@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting}
+              data-testid="demo-teacher-button"
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg border border-green-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               <div className="flex items-center">
@@ -213,6 +250,7 @@ export default function LoginPage() {
             <button
               onClick={() => handleDemoLogin('staff@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting}
+              data-testid="demo-staff-button"
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-lg border border-orange-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               <div className="flex items-center">
@@ -230,6 +268,7 @@ export default function LoginPage() {
             <button
               onClick={() => handleDemoLogin('student@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting}
+              data-testid="demo-student-button"
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg border border-purple-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               <div className="flex items-center">

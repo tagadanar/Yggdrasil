@@ -1,23 +1,34 @@
 // packages/api-services/course-service/src/middleware/authMiddleware.ts
-// Authentication middleware for course service - now using shared utilities
+// Unified authentication middleware for course service using shared utilities
 
-import { AuthMiddleware } from '@yggdrasil/shared-utilities';
+import { AuthFactory, AuthRequest } from '@yggdrasil/shared-utilities';
 import { UserModel } from '@yggdrasil/database-schemas';
 
-// Use centralized auth middleware with user lookup for consistency
-export const authenticateToken = AuthMiddleware.verifyTokenWithUserLookup(
-  async (id: string) => {
-    return await UserModel.findById(id);
-  }
-);
+// Create service-specific auth middleware using the factory
+const serviceAuth = AuthFactory.createServiceAuth(async (id: string) => {
+  return await UserModel.findById(id);
+});
 
-// Re-export centralized middleware from shared utilities
+// Export all standard auth middleware
 export const {
-  optionalAuth,
-  requireRole,
-  adminOnly: requireAdminOnly,
-  teacherAndAbove: requireTeacherOrAdmin,
-} = AuthMiddleware;
+  authenticateToken,        // Full auth with DB lookup
+  verifyToken,              // Fast token-only verification
+  optionalAuth,             // Optional authentication
+  requireRole,              // Role-based access control
+  adminOnly,                // Admin only access
+  staffOnly,                // Staff and admin access
+  teacherAndAbove,          // Teacher, staff, and admin access
+  authenticated,            // Basic authentication requirement
+  requireOwnership,         // Resource ownership validation
+  requireOwnershipOrAdmin,  // Ownership OR admin access
+  requireOwnershipOrStaff,  // Ownership OR staff access
+  requireOwnershipOrTeacher // Ownership OR teacher access
+} = serviceAuth;
 
-// Custom role middleware for course service specific roles
-export const requireStudentOnly = AuthMiddleware.requireRole('student');
+// Export request type for controllers
+export type { AuthRequest };
+
+// Course service specific convenience aliases
+export const requireAdminOnly = adminOnly;
+export const requireTeacherOrAdmin = teacherAndAbove;
+export const requireStudentOnly = requireRole('student');

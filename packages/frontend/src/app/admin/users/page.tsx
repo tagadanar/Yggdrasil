@@ -288,7 +288,7 @@ export default function AdminUsersPage() {
   return (
     <ProtectedRoute allowedRoles={['admin']}>
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto" data-testid="users-page">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">User Management</h1>
             <p className="text-secondary-600 dark:text-secondary-400">
@@ -301,6 +301,7 @@ export default function AdminUsersPage() {
             <Button
               onClick={() => setShowCreateForm(true)}
               variant="primary"
+              data-testid="create-user-button"
               icon={
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -313,7 +314,7 @@ export default function AdminUsersPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
+            <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl" data-testid="error-state">
               <div className="flex items-center">
                 <svg className="w-5 h-5 text-rose-400 dark:text-rose-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -334,13 +335,13 @@ export default function AdminUsersPage() {
           {/* Users Table */}
           <div className="card overflow-hidden">
             {loading ? (
-              <div className="p-8 text-center">
+              <div className="p-8 text-center" data-testid="loading-state">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 dark:border-primary-400 mx-auto mb-4"></div>
                 <p className="text-secondary-600 dark:text-secondary-400">Loading users...</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full divide-y divide-gray-200" data-testid="users-table">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -362,7 +363,7 @@ export default function AdminUsersPage() {
                   </thead>
                   <tbody className="bg-white dark:bg-secondary-800 divide-y divide-secondary-200 dark:divide-secondary-700">
                     {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors duration-200">
+                      <tr key={user.id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors duration-200" data-testid="user-row">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10">
@@ -400,6 +401,7 @@ export default function AdminUsersPage() {
                             onClick={() => handleEditUser(user)}
                             variant="ghost"
                             size="sm"
+                            data-testid="edit-user-button"
                             className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 mr-2"
                           >
                             Edit
@@ -408,6 +410,7 @@ export default function AdminUsersPage() {
                             onClick={() => handleDeleteUser(user)}
                             variant="ghost"
                             size="sm"
+                            data-testid="delete-user-button"
                             className="text-rose-600 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300"
                           >
                             Delete
@@ -423,7 +426,7 @@ export default function AdminUsersPage() {
 
           {/* Create User Form Modal */}
           {showCreateForm && (
-            <div className="modal-overlay flex items-center justify-center z-50">
+            <div className="modal-overlay flex items-center justify-center z-50" data-testid="create-user-modal">
               <div className="modal-content p-6 w-full max-w-md">
                 <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Create New User</h2>
                 
@@ -444,6 +447,7 @@ export default function AdminUsersPage() {
                       name="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      data-testid="email-input"
                       className={`input ${formErrors.email ? 'input-error' : ''}`}
                       placeholder="Enter email address"
                     />
@@ -552,7 +556,7 @@ export default function AdminUsersPage() {
 
           {/* Edit User Form Modal */}
           {showEditForm && selectedUser && (
-            <div className="modal-overlay flex items-center justify-center z-50">
+            <div className="modal-overlay flex items-center justify-center z-50" data-testid="edit-user-modal">
               <div className="modal-content p-6 w-full max-w-md">
                 <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Edit User</h2>
                 
@@ -662,7 +666,7 @@ export default function AdminUsersPage() {
 
           {/* Delete User Confirmation Modal */}
           {showDeleteModal && selectedUser && (
-            <div className="modal-overlay flex items-center justify-center z-50">
+            <div className="modal-overlay flex items-center justify-center z-50" data-testid="delete-confirmation-modal">
               <div className="modal-content p-6 w-full max-w-md">
                 <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Delete User</h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-4">

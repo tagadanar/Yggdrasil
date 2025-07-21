@@ -1,93 +1,96 @@
-// packages/database-schemas/src/models/User.ts
-// User model with Mongoose schema
+// packages/database-schemas/src/models/User.simple.ts
+// Simplified User model without worker-specific logic
 
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
-import { User, UserRole, UserProfile, UserPreferences } from '@yggdrasil/shared-utilities';
-import { PASSWORD_CONFIG, DEFAULT_USER_PREFERENCES } from '@yggdrasil/shared-utilities';
+import { User, UserRole } from '@yggdrasil/shared-utilities';
+import { PASSWORD_CONFIG } from '@yggdrasil/shared-utilities';
 
-// Extend the User interface with Mongoose Document
-export interface UserDocument extends Omit<User, '_id'>, Document {
-  _id: mongoose.Types.ObjectId;
-  password: string;
+// User Document interface extending the shared User type with password and Mongoose methods
+export interface UserDocument extends Document {
+  _id: string;
+  email: string;
+  password: string; // Not included in shared User interface for security
+  role: UserRole;
+  profile: {
+    firstName: string;
+    lastName: string;
+    photo?: string;
+    studentId?: string;
+    department?: string;
+    specialties?: string[];
+    bio?: string;
+    officeHours?: string;
+    contactInfo?: {
+      phone?: string;
+      address?: string;
+      emergencyContact?: {
+        name: string;
+        phone: string;
+        relation: string;
+      };
+    };
+  };
+  preferences: {
+    language: 'fr' | 'en';
+    notifications: {
+      scheduleChanges: boolean;
+      newAnnouncements: boolean;
+      assignmentReminders: boolean;
+    };
+    accessibility: {
+      colorblindMode: boolean;
+      fontSize: 'small' | 'medium' | 'large';
+      highContrast: boolean;
+    };
+  };
+  isActive: boolean;
+  lastLogin?: Date;
   tokenVersion: number;
+  createdAt: Date;
+  updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
   incrementTokenVersion(): Promise<void>;
 }
 
-// Static methods interface
-export interface UserModelType extends mongoose.Model<UserDocument> {
+// Static methods for the User model
+export interface UserModelType extends Model<UserDocument> {
   findByEmail(email: string): Promise<UserDocument | null>;
-  findById(id: string): Promise<UserDocument | null>;
   findActiveUsers(): Promise<UserDocument[]>;
   findByRole(role: UserRole): Promise<UserDocument[]>;
 }
 
 // Contact Info Schema
 const ContactInfoSchema = new Schema({
-  phone: { type: String, trim: true },
-  address: { type: String, trim: true, maxlength: 200 },
+  phone: { type: String },
+  address: { type: String },
   emergencyContact: {
-    name: { type: String, trim: true, maxlength: 100 },
-    phone: { type: String, trim: true },
-    relation: { type: String, trim: true, maxlength: 50 },
+    name: { type: String },
+    phone: { type: String },
+    relation: { type: String },
   },
 }, { _id: false });
 
-// User Profile Schema
+// User Profile Schema (matching shared User interface)
 const UserProfileSchema = new Schema({
-  firstName: { 
-    type: String, 
-    required: true, 
-    trim: true, 
-    maxlength: 50 
-  },
-  lastName: { 
-    type: String, 
-    required: true, 
-    trim: true, 
-    maxlength: 50 
-  },
-  photo: { 
-    type: String, 
-    trim: true 
-  },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  photo: { type: String },
   studentId: { 
     type: String, 
-    trim: true, 
-    sparse: true, // Allow multiple null values but enforce uniqueness for non-null values
-    unique: true 
+    sparse: true,
+    unique: true,
   },
-  department: { 
-    type: String, 
-    trim: true, 
-    maxlength: 100 
-  },
-  specialties: [{ 
-    type: String, 
-    trim: true, 
-    maxlength: 50 
-  }],
-  bio: { 
-    type: String, 
-    trim: true, 
-    maxlength: 500 
-  },
-  officeHours: { 
-    type: String, 
-    trim: true, 
-    maxlength: 200 
-  },
+  department: { type: String },
+  specialties: [{ type: String }],
+  bio: { type: String },
+  officeHours: { type: String },
   contactInfo: ContactInfoSchema,
 }, { _id: false });
 
-// User Preferences Schema
+// User Preferences Schema (matching shared User interface)
 const UserPreferencesSchema = new Schema({
-  language: { 
-    type: String, 
-    enum: ['fr', 'en'], 
-    default: 'fr' 
-  },
+  language: { type: String, enum: ['fr', 'en'], default: 'fr' },
   notifications: {
     scheduleChanges: { type: Boolean, default: true },
     newAnnouncements: { type: Boolean, default: true },
@@ -136,7 +139,19 @@ const UserSchema = new Schema<UserDocument>({
   },
   preferences: {
     type: UserPreferencesSchema,
-    default: () => DEFAULT_USER_PREFERENCES,
+    default: () => ({
+      language: 'fr',
+      notifications: {
+        scheduleChanges: true,
+        newAnnouncements: true,
+        assignmentReminders: true,
+      },
+      accessibility: {
+        colorblindMode: false,
+        fontSize: 'medium',
+        highContrast: false,
+      },
+    }),
   },
   isActive: {
     type: Boolean,
@@ -150,11 +165,11 @@ const UserSchema = new Schema<UserDocument>({
     default: 0,
   },
 }, {
-  timestamps: true, // Adds createdAt and updatedAt
-  collection: 'users', // Always use 'users' collection, search logic will handle worker collections
+  timestamps: true,
+  collection: 'users' // Always use 'users' collection
 });
 
-// Indexes for performance (email and studentId already have unique indexes)
+// Indexes for performance
 UserSchema.index({ role: 1 });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ createdAt: -1 });
@@ -169,11 +184,16 @@ UserSchema.pre('save', async function(next) {
   }
 
   try {
+    console.log(`🔒 USER MODEL: Hashing password for user: ${user.email}`);
+    
     // Hash password with salt
     const salt = await bcrypt.genSalt(PASSWORD_CONFIG.SALT_ROUNDS);
     user.password = await bcrypt.hash(user.password, salt);
+    
+    console.log(`🔒 USER MODEL: Password hashed successfully`);
     next();
   } catch (error) {
+    console.error(`🔒 USER MODEL: Error hashing password:`, error);
     next(error as Error);
   }
 });
@@ -182,8 +202,6 @@ UserSchema.pre('save', async function(next) {
 UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
   const user = this as UserDocument;
   console.log(`🔑 USER MODEL: Comparing password for user: ${user.email}`);
-  console.log(`🔑 USER MODEL: Candidate password: '${candidatePassword}'`);
-  console.log(`🔑 USER MODEL: Stored hash: ${user.password.substring(0, 20)}...`);
   
   const result = await bcrypt.compare(candidatePassword, user.password);
   console.log(`🔑 USER MODEL: Password comparison result: ${result}`);
@@ -191,165 +209,43 @@ UserSchema.methods.comparePassword = async function(candidatePassword: string): 
   return result;
 };
 
-// Instance method to increment token version (for logout functionality)
-UserSchema.methods.incrementTokenVersion = async function(): Promise<void> {
-  const user = this as UserDocument;
-  user.tokenVersion += 1;
-  await user.save();
-};
-
-// Transform output to match our interface
-UserSchema.set('toJSON', {
-  transform: function(doc: any, ret: any) {
-    ret._id = ret._id.toString();
-    delete ret.password;
-    delete ret.tokenVersion;
-    delete ret.__v;
-    return ret;
-  }
-});
-
-UserSchema.set('toObject', {
-  transform: function(doc: any, ret: any) {
-    ret._id = ret._id.toString();
-    delete ret.password;
-    delete ret.tokenVersion;
-    delete ret.__v;
-    return ret;
-  }
-});
-
-// Static methods
+// Static method to find user by email
 UserSchema.statics.findByEmail = async function(email: string) {
   try {
-    const normalizedEmail = email.toLowerCase();
-    console.log(`🔍 USER MODEL: Starting findByEmail for: ${normalizedEmail}`);
+    console.log(`🔍 USER MODEL: Finding user by email: ${email}`);
+    const normalizedEmail = email.toLowerCase().trim();
     
-    // For test users, search across all possible collections
-    if (process.env.NODE_ENV === 'test' && normalizedEmail.includes('@test.yggdrasil.local')) {
-      console.log(`🔍 USER MODEL: Searching for test user: ${normalizedEmail}`);
-      
-      try {
-        // Get the connection and list all collections
-        const db = this.db;
-        const collections = await db.listCollections();
-        const collectionNames = collections.map(c => c.name);
-        console.log(`🔍 USER MODEL: Available collections: ${collectionNames.join(', ')}`);
-        
-        // Search in all user-related collections
-        const userCollections = collectionNames.filter(name => 
-          name === 'users' || name.match(/^w\d+_users$/)
-        );
-        
-        console.log(`🔍 USER MODEL: Searching in user collections: ${userCollections.join(', ')}`);
-        
-        for (const collectionName of userCollections) {
-          console.log(`🔍 USER MODEL: Searching in collection: ${collectionName}`);
-          const collection = db.collection(collectionName);
-          const userDoc = await collection.findOne({ email: normalizedEmail });
-          
-          if (userDoc) {
-            console.log(`✅ USER MODEL: Found user in collection: ${collectionName}`);
-            console.log(`✅ USER MODEL: User details: ${JSON.stringify({
-              email: userDoc.email,
-              role: userDoc.role,
-              hasPassword: !!userDoc.password
-            })}`);
-            
-            // Create a proper UserDocument instance
-            const modelUser = new this(userDoc);
-            // Set the document as not new since it comes from database
-            modelUser.isNew = false;
-            return modelUser;
-          }
-        }
-        
-        console.log(`❌ USER MODEL: User not found in any collection`);
-        return null;
-      } catch (error) {
-        console.error(`💥 USER MODEL: Error searching for test user:`, error);
-        // Fall back to regular search
-        return this.findOne({ email: normalizedEmail });
-      }
+    const user = await this.findOne({ email: normalizedEmail });
+    
+    if (user) {
+      console.log(`✅ USER MODEL: Found user: ${normalizedEmail}`);
+    } else {
+      console.log(`❌ USER MODEL: User not found: ${normalizedEmail}`);
     }
     
-    // Regular search for non-test users
-    console.log(`🔍 USER MODEL: Regular search for: ${normalizedEmail}`);
-    return this.findOne({ email: normalizedEmail });
+    return user;
   } catch (error) {
-    console.error(`💥 USER MODEL: Exception in findByEmail:`, error);
+    console.error(`💥 USER MODEL: Error in findByEmail:`, error);
     return null;
   }
 };
 
+// Static method to find user by ID
 UserSchema.statics.findById = async function(id: string) {
   try {
-    console.log(`🔍 USER MODEL: Starting findById for: ${id}`);
+    console.log(`🔍 USER MODEL: Finding user by ID: ${id}`);
     
-    // For test users with worker-specific IDs, search across all possible collections
-    if (process.env.NODE_ENV === 'test' && id.startsWith('w')) {
-      console.log(`🔍 USER MODEL: Searching for test user with ID: ${id}`);
-      
-      try {
-        // Get the connection and list all collections
-        const db = this.db;
-        const collections = await db.listCollections();
-        const collectionNames = collections.map(c => c.name);
-        console.log(`🔍 USER MODEL: Available collections: ${collectionNames.join(', ')}`);
-        
-        // Search in all user-related collections
-        const userCollections = collectionNames.filter(name => 
-          name === 'users' || name.match(/^w\d+_users$/)
-        );
-        
-        console.log(`🔍 USER MODEL: Searching for ID in user collections: ${userCollections.join(', ')}`);
-        
-        for (const collectionName of userCollections) {
-          console.log(`🔍 USER MODEL: Searching in collection: ${collectionName}`);
-          const collection = db.collection(collectionName);
-          
-          let query;
-          try {
-            // Try to use as ObjectId first
-            query = { _id: new this.base.Types.ObjectId(id) };
-          } catch (error) {
-            // If not a valid ObjectId, search by string (for test user IDs)
-            console.log(`🔍 USER MODEL: ID '${id}' is not a valid ObjectId, searching as string`);
-            query = { _id: id };
-          }
-          
-          const userDoc = await collection.findOne(query);
-          
-          if (userDoc) {
-            console.log(`✅ USER MODEL: Found user by ID in collection: ${collectionName}`);
-            console.log(`✅ USER MODEL: User details: ${JSON.stringify({
-              id: userDoc._id.toString(),
-              email: userDoc.email,
-              role: userDoc.role
-            })}`);
-            
-            // Create a proper UserDocument instance
-            const modelUser = new this(userDoc);
-            // Set the document as not new since it comes from database
-            modelUser.isNew = false;
-            return modelUser;
-          }
-        }
-        
-        console.log(`❌ USER MODEL: User not found by ID in any collection`);
-        return null;
-      } catch (error) {
-        console.error(`💥 USER MODEL: Error searching for test user by ID:`, error);
-        // Fall back to regular search
-        return this.constructor.prototype.findById.call(this, id);
-      }
+    const user = await this.findOne({ _id: id });
+    
+    if (user) {
+      console.log(`✅ USER MODEL: Found user by ID: ${id}`);
+    } else {
+      console.log(`❌ USER MODEL: User not found by ID: ${id}`);
     }
     
-    // Regular search for non-test users
-    console.log(`🔍 USER MODEL: Regular search for ID: ${id}`);
-    return this.constructor.prototype.findById.call(this, id);
+    return user;
   } catch (error) {
-    console.error(`💥 USER MODEL: Exception in findById:`, error);
+    console.error(`💥 USER MODEL: Error in findById:`, error);
     return null;
   }
 };
@@ -362,8 +258,40 @@ UserSchema.statics.findByRole = function(role: UserRole) {
   return this.find({ role, isActive: true });
 };
 
-// Create and export the model
-export const UserModel = mongoose.model<UserDocument, UserModelType>('User', UserSchema) as UserModelType;
+// Instance method to increment token version (for logout functionality)
+UserSchema.methods.incrementTokenVersion = async function() {
+  const user = this as UserDocument;
+  user.tokenVersion += 1;
+  await user.save();
+};
 
-// Export the schema for test infrastructure that needs to create models with different connections
-export { UserSchema };
+// Create and export the User model
+let UserModel: UserModelType;
+
+try {
+  // Check if model already exists
+  UserModel = mongoose.model<UserDocument, UserModelType>('User');
+  console.log(`🏗️ USER MODEL: Reusing existing User model`);
+} catch {
+  // Create new model
+  UserModel = mongoose.model<UserDocument, UserModelType>('User', UserSchema);
+  console.log(`🏗️ USER MODEL: Created new User model`);
+}
+
+// Helper function to create user model (for backwards compatibility)
+export function createUserModel(): UserModelType {
+  return UserModel;
+}
+
+// Helper function to set default model (for backwards compatibility)
+export function setDefaultUserModel(model: UserModelType): void {
+  console.log(`🏗️ USER MODEL: Default model set`);
+}
+
+// Helper function to get default model (for backwards compatibility)
+export function getDefaultUserModel(): UserModelType {
+  return UserModel;
+}
+
+// Export the User model and schema
+export { UserModel, UserSchema };

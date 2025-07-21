@@ -8,48 +8,55 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { StudentDashboard } from '@/components/dashboard/StudentDashboard';
-import { UnderConstruction } from '@/components/ui/UnderConstruction';
+import { TeacherDashboard } from '@/components/dashboard/TeacherDashboard';
+import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
+import { ErrorBoundary } from '@/components/dashboard/ErrorBoundary';
+import { LoadingState } from '@/components/dashboard/LoadingState';
 
 export default function StatisticsPage() {
   const { user } = useAuth();
 
   const renderDashboard = () => {
     if (!user) {
-      return (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          <span className="ml-3 text-gray-600">Loading...</span>
-        </div>
-      );
+      return <LoadingState type="dashboard" message="Loading user information..." testId="loading-state" />;
     }
 
     switch (user.role) {
       case 'student':
-        return <StudentDashboard />;
+        return (
+          <ErrorBoundary
+            onError={(error) => console.error('Student dashboard error:', error)}
+            testId="student-error-boundary"
+          >
+            <StudentDashboard />
+          </ErrorBoundary>
+        );
       
       case 'teacher':
         return (
-          <UnderConstruction
-            title="Teacher Analytics Dashboard"
-            description="The teacher analytics dashboard is currently under development. This will include course performance metrics, student progress tracking, and engagement analytics."
-            expectedCompletion="Coming in next update"
-          />
+          <ErrorBoundary
+            onError={(error) => console.error('Teacher dashboard error:', error)}
+            testId="teacher-error-boundary"
+          >
+            <TeacherDashboard />
+          </ErrorBoundary>
         );
       
       case 'admin':
       case 'staff':
         return (
-          <UnderConstruction
-            title="Administrative Analytics Dashboard"
-            description="The administrative analytics dashboard is currently under development. This will include platform-wide statistics, user management metrics, and system performance data."
-            expectedCompletion="Coming in next update"
-          />
+          <ErrorBoundary
+            onError={(error) => console.error('Admin dashboard error:', error)}
+            testId="admin-error-boundary"
+          >
+            <AdminDashboard />
+          </ErrorBoundary>
         );
       
       default:
         return (
-          <div className="text-center py-12">
-            <div className="text-gray-600">Unable to determine dashboard type for your role.</div>
+          <div className="text-center py-12" data-testid="error-state">
+            <div className="text-gray-600 dark:text-gray-400">Unable to determine dashboard type for your role: {user.role}</div>
           </div>
         );
     }

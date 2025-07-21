@@ -1,5 +1,5 @@
 // packages/testing-utilities/playwright.enhanced.config.ts
-// Enhanced Playwright configuration for ultra-robust 4-worker parallelization
+// Enhanced Playwright configuration for single-worker testing
 
 import { defineConfig, devices } from '@playwright/test';
 
@@ -7,8 +7,8 @@ export default defineConfig({
   // Test directory
   testDir: './tests',
   
-  // Run tests in files in parallel with 4 workers
-  fullyParallel: true,
+  // Run tests sequentially for single-worker stability
+  fullyParallel: false,
   
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,
@@ -16,15 +16,17 @@ export default defineConfig({
   // No retries - tests should be deterministic with enhanced isolation
   retries: 0,
   
-  // 4 workers for enhanced parallelization
-  workers: 4,
+  // Single worker for stable execution
+  workers: 1,
   
-  // Enhanced reporter configuration
-  reporter: [
+  // Enhanced reporter configuration for single-worker analysis
+  reporter: process.env.CI ? [
+    ['dot'],
+    ['json', { outputFile: 'test-results-enhanced/results.json' }]
+  ] : [
     ['html', { outputFolder: 'test-results-enhanced' }],
     ['json', { outputFile: 'test-results-enhanced/results.json' }],
-    ['list', { printSteps: true }],
-    ['dot'] // Clean output during execution
+    ['list', { printSteps: true }] // Default for detailed foreground analysis
   ],
   
   // Global test settings
@@ -71,18 +73,18 @@ export default defineConfig({
     // },
   ],
   
-  // Global timeout for entire test run - 1 hour
-  globalTimeout: 60 * 60 * 1000,
+  // Global timeout for entire test run - 30 minutes (reasonable for quiet mode)
+  globalTimeout: 30 * 60 * 1000,
   
-  // Timeout for each test - 5 minutes
-  timeout: 5 * 60 * 1000,
+  // Timeout for each test - 2 minutes (faster feedback)
+  timeout: 2 * 60 * 1000,
   
   // Expect timeout
   expect: {
     timeout: 30000, // 30 seconds
   },
   
-  // Services are managed by enhanced global setup/teardown for 4-worker coordination
+  // Services are managed by enhanced global setup/teardown for single-worker execution
   
   // Output directory for enhanced results
   outputDir: 'test-results-enhanced/',
@@ -109,7 +111,7 @@ export default defineConfig({
   metadata: {
     framework: 'Enhanced Yggdrasil Testing Framework',
     version: '1.0.0',
-    parallelization: '4-worker for enhanced parallelization',
+    parallelization: 'Single-worker for stable execution',
     raceConditions: 'Completely eliminated'
   }
 });

@@ -1,0 +1,127 @@
+# Page snapshot
+
+```yaml
+- alert
+- complementary:
+  - link "Yggdrasil Logo Yggdrasil":
+    - /url: /news
+    - img "Yggdrasil Logo"
+    - text: Yggdrasil
+  - navigation:
+    - link "News":
+      - /url: /news
+      - img
+      - text: News
+    - link "Users":
+      - /url: /admin/users
+      - img
+      - text: Users
+    - link "Courses":
+      - /url: /courses
+      - img
+      - text: Courses
+    - link "Planning":
+      - /url: /planning
+      - img
+      - text: Planning
+    - link "Statistics":
+      - /url: /statistics
+      - img
+      - text: Statistics
+  - text: A
+  - paragraph: Admin
+  - paragraph: admin
+- navigation:
+  - link "Yggdrasil Logo Yggdrasil":
+    - /url: /news
+    - img "Yggdrasil Logo"
+    - text: Yggdrasil
+  - button "Switch to dark mode":
+    - img
+    - img
+  - link "Admin User admin@yggdrasil.edu admin":
+    - /url: /profile
+    - paragraph: Admin User
+    - paragraph: admin@yggdrasil.edu
+    - text: admin
+  - button "Logout":
+    - text: Logout
+    - img
+- main:
+  - heading "Academic Planning" [level=1]
+  - paragraph: Manage your academic schedule and events
+  - button "Google Calendar"
+  - button "Filters"
+  - button "Export"
+  - button "Create Event"
+  - heading "Error" [level=3]
+  - text: Request failed with status code 401
+  - button "Try again"
+  - button
+  - button
+  - heading "June 2025" [level=2]
+  - button "Today"
+  - button "month"
+  - button "week"
+  - button "day"
+  - button "list"
+  - grid:
+    - rowgroup:
+      - row "Sunday Monday Tuesday Wednesday Thursday Friday Saturday":
+        - columnheader "Sunday": 4 Sun
+        - columnheader "Monday": 5 Mon
+        - columnheader "Tuesday": 6 Tue
+        - columnheader "Wednesday": 7 Wed
+        - columnheader "Thursday": 8 Thu
+        - columnheader "Friday": 9 Fri
+        - columnheader "Saturday": 10 Sat
+    - rowgroup:
+      - row "June 29, 2025 June 30, 2025 July 1, 2025 July 2, 2025 July 3, 2025 July 4, 2025 July 5, 2025":
+        - gridcell "June 29, 2025": W27 29
+        - gridcell "June 30, 2025": "30"
+        - gridcell "July 1, 2025": "1"
+        - gridcell "July 2, 2025": "2"
+        - gridcell "July 3, 2025": "3"
+        - gridcell "July 4, 2025": "4"
+        - gridcell "July 5, 2025": "5"
+      - row "July 6, 2025 July 7, 2025 July 8, 2025 July 9, 2025 July 10, 2025 July 11, 2025 July 12, 2025":
+        - gridcell "July 6, 2025": W28 6
+        - gridcell "July 7, 2025": "7"
+        - gridcell "July 8, 2025": "8"
+        - gridcell "July 9, 2025": "9"
+        - gridcell "July 10, 2025": "10"
+        - gridcell "July 11, 2025": "11"
+        - gridcell "July 12, 2025": "12"
+      - row "July 13, 2025 July 14, 2025 July 15, 2025 July 16, 2025 July 17, 2025 July 18, 2025 July 19, 2025":
+        - gridcell "July 13, 2025": W29 13
+        - gridcell "July 14, 2025": "14"
+        - gridcell "July 15, 2025": "15"
+        - gridcell "July 16, 2025": "16"
+        - gridcell "July 17, 2025": "17"
+        - gridcell "July 18, 2025": "18"
+        - gridcell "July 19, 2025": "19"
+      - row "July 20, 2025 July 21, 2025 July 22, 2025 July 23, 2025 July 24, 2025 July 25, 2025 July 26, 2025":
+        - gridcell "July 20, 2025": W30 20
+        - gridcell "July 21, 2025": "21"
+        - gridcell "July 22, 2025": "22"
+        - gridcell "July 23, 2025": "23"
+        - gridcell "July 24, 2025": "24"
+        - gridcell "July 25, 2025": "25"
+        - gridcell "July 26, 2025": "26"
+      - row "July 27, 2025 July 28, 2025 July 29, 2025 July 30, 2025 July 31, 2025 August 1, 2025 August 2, 2025":
+        - gridcell "July 27, 2025": W31 27
+        - gridcell "July 28, 2025": "28"
+        - gridcell "July 29, 2025": "29"
+        - gridcell "July 30, 2025": "30"
+        - gridcell "July 31, 2025": "31"
+        - gridcell "August 1, 2025": "1"
+        - gridcell "August 2, 2025": "2"
+      - row "August 3, 2025 August 4, 2025 August 5, 2025 August 6, 2025 August 7, 2025 August 8, 2025 August 9, 2025":
+        - gridcell "August 3, 2025": W32 3
+        - gridcell "August 4, 2025": "4"
+        - gridcell "August 5, 2025": "5"
+        - gridcell "August 6, 2025": "6"
+        - gridcell "August 7, 2025": "7"
+        - gridcell "August 8, 2025": "8"
+        - gridcell "August 9, 2025": "9"
+```

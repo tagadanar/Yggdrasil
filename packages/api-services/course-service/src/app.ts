@@ -31,7 +31,7 @@ app.use(cors({
     : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with', 'cache-control', 'pragma', 'expires']
 }));
 
 // Body parsing middleware
@@ -47,15 +47,59 @@ if (process.env.NODE_ENV !== 'production') {
 // DATABASE CONNECTION
 // =============================================================================
 
-// Connect to MongoDB
-connectDatabase()
-  .then(() => {
-    console.log('📚 Course Service: Connected to MongoDB successfully');
-  })
-  .catch((error) => {
+// Database connection function - exported for use in index.ts
+export const initializeDatabase = async (): Promise<void> => {
+  try {
+    console.log(`🔧 COURSE SERVICE: Starting database initialization...`);
+    console.log(`🔧 COURSE SERVICE: NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`🔧 COURSE SERVICE: Received DB_NAME: ${process.env.DB_NAME}`);
+    console.log(`🔧 COURSE SERVICE: Received DB_COLLECTION_PREFIX: ${process.env.DB_COLLECTION_PREFIX}`);
+    console.log(`🔧 COURSE SERVICE: Received PLAYWRIGHT_WORKER_ID: ${process.env.PLAYWRIGHT_WORKER_ID}`);
+    console.log(`🔧 COURSE SERVICE: Received TEST_WORKER_INDEX: ${process.env.TEST_WORKER_INDEX}`);
+    console.log(`🔧 COURSE SERVICE: Received WORKER_ID: ${process.env.WORKER_ID}`);
+    
+    // In test mode, use worker-specific database configuration (same as auth-service)
+    if (process.env.NODE_ENV === 'test') {
+      // Use the worker ID that's already been set by the service manager
+      const receivedWorkerId = process.env.WORKER_ID;
+      const workerId = receivedWorkerId || 
+                      process.env.PLAYWRIGHT_WORKER_ID || 
+                      process.env.TEST_WORKER_INDEX || 
+                      '0'; // Default to worker 0 for single-worker tests
+      
+      // Set worker-specific database name only if not already set
+      const workerPrefix = `w${workerId}`;
+      const workerDatabase = process.env.DB_NAME || `yggdrasil_test_${workerPrefix}`;
+      
+      console.log(`🔧 COURSE SERVICE: Test mode detected`);
+      console.log(`🔧 COURSE SERVICE: Using Worker ID: ${workerId}`);
+      console.log(`🔧 COURSE SERVICE: Worker prefix: ${workerPrefix}`);
+      console.log(`🔧 COURSE SERVICE: Worker database: ${workerDatabase}`);
+      
+      // Only set environment variables if they're not already set by service manager
+      if (!process.env.DB_NAME) {
+        process.env.DB_NAME = workerDatabase;
+        console.log(`🔧 COURSE SERVICE: Set DB_NAME: ${process.env.DB_NAME}`);
+      }
+      if (!process.env.DB_COLLECTION_PREFIX) {
+        process.env.DB_COLLECTION_PREFIX = `${workerPrefix}_`;
+        console.log(`🔧 COURSE SERVICE: Set DB_COLLECTION_PREFIX: ${process.env.DB_COLLECTION_PREFIX}`);
+      }
+    }
+    
+    console.log(`🔧 COURSE SERVICE: Final environment before database connection:`);
+    console.log(`🔧 COURSE SERVICE: NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`🔧 COURSE SERVICE: DB_NAME: ${process.env.DB_NAME}`);
+    console.log(`🔧 COURSE SERVICE: DB_COLLECTION_PREFIX: ${process.env.DB_COLLECTION_PREFIX}`);
+    console.log(`🔧 COURSE SERVICE: MONGODB_URI: ${process.env.MONGODB_URI}`);
+    
+    await connectDatabase();
+    console.log('✅ Course Service: Connected to MongoDB successfully');
+  } catch (error) {
     console.error('❌ Course Service: Failed to connect to MongoDB:', error);
-    process.exit(1);
-  });
+    throw error; // Let the caller handle the error
+  }
+};
 
 // =============================================================================
 // ROUTES
@@ -155,12 +199,19 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('❌ Course Service: Uncaught Exception:', error);
+  console.error('❌ Course Service: Exception stack:', error.stack);
+  console.error('❌ Course Service: Exiting due to uncaught exception');
   process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Course Service: Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('❌ Course Service: Rejection details:', {
+    reason: reason,
+    promise: promise.toString()
+  });
+  console.error('❌ Course Service: Exiting due to unhandled promise rejection');
   process.exit(1);
 });
 

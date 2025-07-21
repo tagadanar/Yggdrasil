@@ -43,7 +43,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-white rounded-lg shadow p-4" data-testid="event-filters">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-medium text-gray-900">Filter Events</h3>
         <button
@@ -64,7 +64,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
             value={filters.type}
             onChange={(e) => handleFilterChange('type', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            data-testid="filter-by-type"
+            data-testid="filter-type"
           >
             <option value="">All Types</option>
             <option value="class">Class</option>
@@ -83,7 +83,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
             value={filters.course}
             onChange={(e) => handleFilterChange('course', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            data-testid="filter-by-course"
+            data-testid="filter-course"
           >
             <option value="">All Courses</option>
             {courses.map((course) => (
@@ -105,7 +105,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
             onChange={(e) => handleFilterChange('location', e.target.value)}
             placeholder="Filter by location..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            data-testid="filter-by-location"
+            data-testid="filter-location"
           />
         </div>
       </div>

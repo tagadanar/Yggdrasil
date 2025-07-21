@@ -7,6 +7,7 @@ import { tokenStorage } from '@/lib/auth/tokenStorage';
 // Course service API client
 const COURSE_SERVICE_URL = process.env.NEXT_PUBLIC_COURSE_SERVICE_URL || 'http://localhost:3004';
 
+
 // Create axios instance for course service
 const courseApiClient: AxiosInstance = axios.create({
   baseURL: `${COURSE_SERVICE_URL}/api/courses`,

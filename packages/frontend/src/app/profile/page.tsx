@@ -50,11 +50,29 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement profile update API call
-    console.log('Profile update:', formData);
-    setIsEditing(false);
+    
+    if (!user) return;
+    
+    try {
+      const { userApi } = await import('@/lib/api/client');
+      const result = await userApi.updateUser(user._id, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+      });
+      
+      if (result.success) {
+        // Update the user context with new data if available
+        // Note: AuthProvider will need to refresh user data
+        setIsEditing(false);
+      } else {
+        console.error('Profile update failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Profile update error:', error);
+    }
   };
 
   const handleCancel = () => {

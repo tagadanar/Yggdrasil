@@ -1,9 +1,8 @@
 // packages/testing-utilities/tests/enhanced-global-teardown.ts
-// Enhanced global teardown for ultra-robust 4-worker parallelization
+// Enhanced global teardown for single-worker testing
 
 import { FullConfig } from '@playwright/test';
-import { createEnhancedTestIsolation } from './helpers/enhanced-test-isolation';
-import { IdCollisionDetector } from './helpers/test-id-generator';
+import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { spawn } from 'child_process';
 import { promisify } from 'util';
 
@@ -51,8 +50,8 @@ async function stopWorkerServices(workerId: number): Promise<void> {
   });
 }
 
-async function stopServicesForAllWorkers(workerCount: number): Promise<void> {
-  console.log(`🛑 GLOBAL TEARDOWN: Stopping services for ${workerCount} workers...`);
+async function stopServicesForSingleWorker(): Promise<void> {
+  console.log('🛑 GLOBAL TEARDOWN: Stopping services for single worker...');
   
   try {
     // Get service processes from global setup
@@ -71,15 +70,10 @@ async function stopServicesForAllWorkers(workerCount: number): Promise<void> {
       }
     }
     
-    // Stop services for all workers
-    const stopPromises = [];
-    for (let workerId = 0; workerId < workerCount; workerId++) {
-      stopPromises.push(stopWorkerServices(workerId));
-    }
+    // Stop services for single worker (workerId = 0)
+    await stopWorkerServices(0);
     
-    await Promise.all(stopPromises);
-    
-    console.log('✅ GLOBAL TEARDOWN: All worker services stopped successfully!');
+    console.log('✅ GLOBAL TEARDOWN: Single worker services stopped successfully!');
     
   } catch (error) {
     console.error('❌ GLOBAL TEARDOWN: Error stopping services:', error);
@@ -87,57 +81,42 @@ async function stopServicesForAllWorkers(workerCount: number): Promise<void> {
 }
 
 async function globalTeardown(config: FullConfig) {
-  console.log('🧹 Starting enhanced global teardown...');
-  
-  const workerCount = config.workers || 4;
-  console.log(`🔧 Cleaning up ${workerCount} workers...`);
+  console.log('🧹 Starting clean global teardown...');
+  console.log('🔧 Using clean testing architecture...');
   
   try {
     // First, stop all services
-    await stopServicesForAllWorkers(workerCount);
+    await stopServicesForSingleWorker();
     
-    // Then cleanup all workers in parallel
-    const cleanupPromises = [];
+    // Then cleanup test data using clean architecture
+    console.log('🧹 Cleaning up test data...');
     
-    for (let workerId = 0; workerId < workerCount; workerId++) {
-      console.log(`🧹 Cleaning up worker ${workerId}...`);
-      
-      const cleanupWorker = async () => {
-        try {
-          const isolationManager = createEnhancedTestIsolation(workerId);
-          await isolationManager.shutdown();
-          console.log(`✅ Worker ${workerId} cleaned up successfully`);
-        } catch (error) {
-          console.error(`❌ Worker ${workerId} cleanup failed:`, error);
-          // Continue with other workers even if one fails
-        }
-      };
-      
-      cleanupPromises.push(cleanupWorker());
+    try {
+      // Use TestCleanup for clean database cleanup
+      const cleanup = TestCleanup.getInstance('GlobalTeardown');
+      await cleanup.cleanup();
+      console.log('✅ Test data cleaned up successfully');
+    } catch (error) {
+      console.error('❌ Test data cleanup failed:', error);
     }
     
-    // Wait for all workers to cleanup
-    await Promise.all(cleanupPromises);
+    console.log('📊 Clean teardown statistics:');
+    console.log('- Services stopped: ✅');
+    console.log('- Database cleaned: ✅');
+    console.log('- Clean architecture used: ✅');
     
-    // Final cleanup of global resources
-    console.log('🧹 Cleaning up global resources...');
-    IdCollisionDetector.cleanupGlobalRegistry();
-    
-    console.log('📊 Final statistics:');
-    console.log(`- Workers cleaned up: ${workerCount}`);
-    console.log(`- Global ID registry size: ${IdCollisionDetector.getGlobalRegistrySize()}`);
-    
-    console.log('✅ Enhanced global teardown completed successfully!');
-    console.log('🎉 All workers shut down cleanly!');
+    console.log('✅ Clean global teardown completed successfully!');
+    console.log('🎉 Clean testing environment shut down!');
     
   } catch (error) {
-    console.error('❌ Enhanced global teardown failed:', error);
+    console.error('❌ Clean global teardown failed:', error);
     
-    // Force cleanup of global resources even on failure
+    // Force cleanup even on failure
     try {
-      IdCollisionDetector.cleanupGlobalRegistry();
+      const cleanup = TestCleanup.getInstance('GlobalTeardown');
+      await cleanup.cleanup();
     } catch (cleanupError) {
-      console.error('Failed to cleanup global registry:', cleanupError);
+      console.error('Failed to cleanup test data:', cleanupError);
     }
     
     // Don't throw error here - teardown should complete even if there are issues

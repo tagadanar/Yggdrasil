@@ -82,21 +82,12 @@ export class DatabaseConnection {
 
 // Utility functions for database operations
 export const connectDatabase = async (uri?: string): Promise<void> => {
-  let dbUri = uri || process.env.MONGODB_URI || 'mongodb://localhost:27018/yggdrasil-dev';
-  
-  // In test environment, use worker-specific database if DB_NAME is set
-  if (process.env.NODE_ENV === 'test' && process.env.DB_NAME) {
-    // Replace database name in URI with worker-specific name
-    const urlParts = dbUri.split('/');
-    urlParts[urlParts.length - 1] = process.env.DB_NAME;
-    dbUri = urlParts.join('/');
-  }
+  // Always use the dev database - no worker-specific naming
+  const dbUri = uri || process.env.MONGODB_URI || 'mongodb://localhost:27018/yggdrasil-dev';
   
   console.log('🔧 DATABASE: Connecting to database...');
   console.log('🔧 DATABASE: URI:', dbUri);
   console.log('🔧 DATABASE: NODE_ENV:', process.env.NODE_ENV);
-  console.log('🔧 DATABASE: DB_NAME:', process.env.DB_NAME);
-  console.log('🔧 DATABASE: DB_COLLECTION_PREFIX:', process.env.DB_COLLECTION_PREFIX);
   
   const config: DatabaseConfig = {
     uri: dbUri,
@@ -107,6 +98,29 @@ export const connectDatabase = async (uri?: string): Promise<void> => {
   
   console.log('🔧 DATABASE: Connected successfully');
   console.log('🔧 DATABASE: Database name:', db.getConnection().name);
+  
+  // Initialize UserModel with correct collection name after database connection
+  console.log('🔧 DATABASE: Initializing UserModel with current environment...');
+  
+  try {
+    console.log('🔧 DATABASE: Importing User model functions...');
+    const userModulePath = require.resolve('../models/User');
+    console.log('🔧 DATABASE: User module path:', userModulePath);
+    
+    const { createUserModel, setDefaultUserModel } = await import('../models/User');
+    console.log('🔧 DATABASE: User model functions imported successfully');
+    console.log('🔧 DATABASE: createUserModel type:', typeof createUserModel);
+    console.log('🔧 DATABASE: setDefaultUserModel type:', typeof setDefaultUserModel);
+    
+    console.log('🔧 DATABASE: Creating UserModel...');
+    const userModel = createUserModel();
+    console.log('🔧 DATABASE: UserModel created, setting as default...');
+    setDefaultUserModel(userModel);
+    console.log('🔧 DATABASE: UserModel initialized successfully');
+  } catch (error) {
+    console.error('🔧 DATABASE: Error initializing UserModel:', error);
+    throw error;
+  }
 };
 
 export const disconnectDatabase = async (): Promise<void> => {

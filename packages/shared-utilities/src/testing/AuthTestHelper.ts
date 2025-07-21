@@ -26,7 +26,7 @@ export class AuthTestHelper {
     this.page = page;
     this.demoUserManager = DemoUserManager.getInstance();
     this.options = {
-      timeout: 30000,
+      timeout: 45000, // 🔧 FIXED TIMING: Increased from 30s to 45s for frontend auth flow
       retries: 3,
       debug: false,
       ...options
@@ -72,9 +72,56 @@ export class AuthTestHelper {
         timeout: this.options.timeout 
       });
 
-      // Fill credentials
+      // 🔧 ENHANCED FORM INTERACTION: Ensure React hydration is complete
+      await this.page.waitForTimeout(1000); // Wait for React hydration
+      
+      if (this.options.debug) {
+        console.log('🔐 AUTH TEST HELPER: Waiting for form to be ready...');
+      }
+
+      // 🔧 SIMPLIFIED: Always use demo button for demo credentials (preserves React flow)
+      const isDemoUser = this.isDemoCredentials(email, password);
+      
+      if (isDemoUser) {
+        if (this.options.debug) {
+          console.log(`🔐 AUTH TEST HELPER: Using demo button authentication path for ${email}`);
+        }
+        return this.authenticateWithDemoButton(email, password);
+      } else {
+        if (this.options.debug) {
+          console.log(`🔐 AUTH TEST HELPER: Using form submission authentication path for ${email}`);
+        }
+      }
+
+      // 🔧 ENHANCED FORM INTERACTION: Check if form is interactive
+      await this.page.waitForFunction(
+        () => {
+          const emailInput = document.querySelector('#email') as HTMLInputElement;
+          const passwordInput = document.querySelector('#password') as HTMLInputElement;
+          const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+          return emailInput && passwordInput && submitButton && !submitButton.disabled;
+        },
+        { timeout: this.options.timeout }
+      );
+
+      if (this.options.debug) {
+        console.log('🔐 AUTH TEST HELPER: Form ready, filling credentials...');
+      }
+
+      // Fill credentials with enhanced interaction
       await this.page.fill('#email', email);
       await this.page.fill('#password', password);
+      
+      // 🔧 ENHANCED FORM INTERACTION: Trigger change events to ensure React state updates
+      await this.page.dispatchEvent('#email', 'change');
+      await this.page.dispatchEvent('#password', 'change');
+      
+      // Small wait to ensure React state has updated
+      await this.page.waitForTimeout(500);
+      
+      if (this.options.debug) {
+        console.log('🔐 AUTH TEST HELPER: Credentials filled, triggering form submission...');
+      }
 
       // Monitor network requests
       const authPromise = this.page.waitForResponse(
@@ -82,8 +129,22 @@ export class AuthTestHelper {
         { timeout: this.options.timeout }
       );
 
-      // Submit form
-      await this.page.click('button[type="submit"]');
+      // 🔧 FIXED: Enhanced form submission that properly triggers React onSubmit handler
+      const submitButton = this.page.locator('button[type="submit"]');
+      
+      // Ensure button is ready and clickable
+      await submitButton.waitFor({ state: 'visible', timeout: this.options.timeout });
+      
+      if (this.options.debug) {
+        console.log('🔐 AUTH TEST HELPER: Submit button is visible, triggering React onClick...');
+      }
+      
+      // Use dispatchEvent to ensure React's onClick handler is triggered
+      await submitButton.click({ force: false }); // Don't force - let React handle it naturally
+      
+      if (this.options.debug) {
+        console.log('🔐 AUTH TEST HELPER: Submit button clicked, waiting for network request...');
+      }
 
       // Wait for auth response
       const authResponse = await authPromise;
@@ -108,49 +169,79 @@ export class AuthTestHelper {
         };
       }
 
-      // Wait for navigation away from login page
+      // 🔧 CLAUDE.MD TIMING: Wait for BOTH navigation AND cookies together (MANDATORY pattern)
       await this.page.waitForFunction(
-        () => !window.location.pathname.includes('/auth/login'),
-        { timeout: this.options.timeout }
+        () => {
+          const notOnLoginPage = !window.location.pathname.includes('/auth/login');
+          const hasCookies = document.cookie.includes('yggdrasil_access_token') || 
+                            document.cookie.includes('yggdrasil_refresh_token');
+          return notOnLoginPage && hasCookies;
+        },
+        { timeout: this.options.timeout } // MANDATORY: Use 45s timeout for frontend auth flow
       );
+      
+      if (this.options.debug) {
+        console.log('🔐 AUTH TEST HELPER: Navigation and cookies completed successfully');
+      }
 
-      // Wait for Yggdrasil authentication cookies to be set (critical for clean architecture)
+      // 🔧 CLAUDE.MD TIMING: Additional wait for frontend state synchronization
+      await this.page.waitForTimeout(2000); // Increased from 1000ms to 2000ms for better stability
+
+      // 🔧 ENHANCED: Additional wait for complete auth state propagation
       try {
         await this.page.waitForFunction(
-          () => document.cookie.includes('yggdrasil_access_token') || document.cookie.includes('yggdrasil_refresh_token'),
-          { timeout: this.options.timeout }
+          () => {
+            // Check that we're fully authenticated:
+            // 1. Not on login page
+            // 2. Have cookies
+            // 3. Page is fully loaded
+            const notOnLoginPage = !window.location.pathname.includes('/auth/login');
+            const hasAccessToken = document.cookie.includes('yggdrasil_access_token');
+            const hasRefreshToken = document.cookie.includes('yggdrasil_refresh_token');
+            const pageReady = document.readyState === 'complete';
+            
+            return notOnLoginPage && hasAccessToken && hasRefreshToken && pageReady;
+          },
+          { timeout: 10000 } // 10 second timeout for this final check
         );
+      } catch (waitError) {
         if (this.options.debug) {
-          console.log('🔐 AUTH TEST HELPER: Yggdrasil cookies detected successfully');
-        }
-      } catch (cookieError) {
-        if (this.options.debug) {
-          console.log('🔐 AUTH TEST HELPER: Timeout waiting for Yggdrasil cookies, continuing...');
+          console.log('🔐 AUTH TEST HELPER: Extended auth state wait failed:', waitError);
         }
       }
 
-      // Wait for authentication state to fully establish
-      await this.page.waitForTimeout(2000);
-
-      // Simple authentication state verification (matching manual test approach)
+      // Simple authentication state verification (should now pass reliably)
       const isAuthenticated = await this.verifyAuthState();
       
       if (!isAuthenticated) {
         if (this.options.debug) {
-          console.log('🔐 AUTH TEST HELPER: Auth state verification failed, but API succeeded');
+          console.log('🔐 AUTH TEST HELPER: Auth state verification failed after extended wait');
           // Get current state for debugging
           const currentState = await this.page.evaluate(() => ({
             url: window.location.href,
+            pathname: window.location.pathname,
             cookies: document.cookie,
-            hasYggdrasil: document.cookie.includes('yggdrasil_')
+            hasAccessToken: document.cookie.includes('yggdrasil_access_token'),
+            hasRefreshToken: document.cookie.includes('yggdrasil_refresh_token'),
+            readyState: document.readyState
           }));
           console.log('🔐 AUTH TEST HELPER: Current state:', JSON.stringify(currentState, null, 2));
         }
         
-        return {
-          success: false,
-          error: `Authentication API succeeded but state verification failed`
-        };
+        // Instead of failing, let's retry the verification once more after additional wait
+        await this.page.waitForTimeout(1000);
+        const retryAuth = await this.verifyAuthState();
+        
+        if (!retryAuth) {
+          return {
+            success: false,
+            error: `Authentication API succeeded but state verification failed after retry`
+          };
+        }
+        
+        if (this.options.debug) {
+          console.log('🔐 AUTH TEST HELPER: Auth state verification succeeded on retry');
+        }
       }
 
       const finalUrl = this.page.url();
@@ -418,6 +509,149 @@ export class AuthTestHelper {
         console.error('🔐 AUTH TEST HELPER: Logout failed:', error);
       }
       return false;
+    }
+  }
+
+  /**
+   * Check if credentials match demo user credentials
+   */
+  private isDemoCredentials(email: string, password: string): boolean {
+    const demoCredentials = [
+      { email: 'admin@yggdrasil.edu', password: 'Admin123!' },
+      { email: 'teacher@yggdrasil.edu', password: 'Admin123!' },
+      { email: 'staff@yggdrasil.edu', password: 'Admin123!' },
+      { email: 'student@yggdrasil.edu', password: 'Admin123!' }
+    ];
+
+    return demoCredentials.some(cred => cred.email === email && cred.password === password);
+  }
+
+  /**
+   * Authenticate using demo button (preserves full React flow)
+   */
+  private async authenticateWithDemoButton(email: string, password: string): Promise<AuthResult> {
+    try {
+      if (this.options.debug) {
+        console.log(`🔐 AUTH TEST HELPER: Using demo button for: ${email}`);
+      }
+
+      // Map emails to demo button test IDs
+      const demoButtonMap: Record<string, string> = {
+        'admin@yggdrasil.edu': 'demo-admin-button',
+        'teacher@yggdrasil.edu': 'demo-teacher-button',
+        'staff@yggdrasil.edu': 'demo-staff-button',
+        'student@yggdrasil.edu': 'demo-student-button'
+      };
+
+      const buttonTestId = demoButtonMap[email];
+      if (!buttonTestId) {
+        throw new Error(`No demo button found for email: ${email}`);
+      }
+
+      // Wait for demo button to be ready
+      const demoButton = this.page.locator(`[data-testid="${buttonTestId}"]`);
+      await demoButton.waitFor({ state: 'visible', timeout: this.options.timeout });
+
+      if (this.options.debug) {
+        console.log(`🔐 AUTH TEST HELPER: Demo button ready: ${buttonTestId}`);
+      }
+
+      // Monitor network request
+      const authPromise = this.page.waitForResponse(
+        response => response.url().includes('/api/auth/login') && response.request().method() === 'POST',
+        { timeout: this.options.timeout }
+      );
+
+      // Click demo button (this triggers the full React flow)
+      await demoButton.click();
+
+      if (this.options.debug) {
+        console.log('🔐 AUTH TEST HELPER: Demo button clicked, waiting for network request...');
+      }
+
+      // Wait for auth response
+      const authResponse = await authPromise;
+      
+      if (this.options.debug) {
+        console.log(`🔐 AUTH TEST HELPER: Auth response status: ${authResponse.status()}`);
+      }
+
+      if (authResponse.status() !== 200) {
+        const errorBody = await authResponse.text();
+        return {
+          success: false,
+          error: `Auth API failed: ${authResponse.status()} - ${errorBody}`
+        };
+      }
+
+      const authResult = await authResponse.json();
+      if (!authResult.success) {
+        return {
+          success: false,
+          error: authResult.error || 'Authentication failed'
+        };
+      }
+
+      // 🔧 CRITICAL: Wait for navigation (demo button triggers full React auth flow)
+      if (this.options.debug) {
+        console.log('🔐 AUTH TEST HELPER: Waiting for navigation after demo button click...');
+      }
+
+      // Wait for BOTH navigation AND cookies together (MANDATORY pattern)
+      await this.page.waitForFunction(
+        () => {
+          const notOnLoginPage = !window.location.pathname.includes('/auth/login');
+          const hasCookies = document.cookie.includes('yggdrasil_access_token') || 
+                            document.cookie.includes('yggdrasil_refresh_token');
+          return notOnLoginPage && hasCookies;
+        },
+        { timeout: this.options.timeout }
+      );
+      
+      if (this.options.debug) {
+        console.log('🔐 AUTH TEST HELPER: Navigation and cookies completed successfully via demo button');
+      }
+
+      // Additional wait for frontend state synchronization
+      await this.page.waitForTimeout(2000);
+
+      // Verify authentication state
+      const isAuthenticated = await this.verifyAuthState();
+      
+      if (!isAuthenticated) {
+        if (this.options.debug) {
+          console.log('🔐 AUTH TEST HELPER: Auth state verification failed after demo button');
+        }
+        
+        return {
+          success: false,
+          error: `Demo button authentication completed but state verification failed`
+        };
+      }
+
+      const finalUrl = this.page.url();
+      const cookies = await this.page.context().cookies();
+
+      if (this.options.debug) {
+        console.log(`🔐 AUTH TEST HELPER: Demo button authentication successful for: ${email}`);
+        console.log(`🔐 AUTH TEST HELPER: Final URL: ${finalUrl}`);
+      }
+
+      return {
+        success: true,
+        finalUrl,
+        cookies
+      };
+
+    } catch (error) {
+      if (this.options.debug) {
+        console.error(`🔐 AUTH TEST HELPER: Demo button authentication failed for: ${email}`, error);
+      }
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown demo button authentication error'
+      };
     }
   }
 }

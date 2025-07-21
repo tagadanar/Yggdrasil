@@ -32,7 +32,8 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
     location: '',
     type: 'class' as 'class' | 'exam' | 'meeting' | 'event',
     startDate: '',
-    endDate: '',
+    startTime: '',
+    endTime: '',
     linkedCourse: '',
     isRecurring: false,
     recurrence: {
@@ -53,10 +54,11 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Convert datetime-local format to ISO string for API
-    const convertToISO = (dateTimeLocal: string) => {
-      if (!dateTimeLocal) return '';
-      return new Date(dateTimeLocal).toISOString();
+    // Combine date and time fields to create ISO strings for API
+    const createISOString = (date: string, time: string) => {
+      if (!date || !time) return '';
+      const dateTimeString = `${date}T${time}:00`;
+      return new Date(dateTimeString).toISOString();
     };
     
     const eventData: any = {
@@ -64,8 +66,8 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
       description: formData.description || undefined,
       location: formData.location || undefined,
       type: formData.type,
-      startDate: convertToISO(formData.startDate),
-      endDate: convertToISO(formData.endDate),
+      startDate: createISOString(formData.startDate, formData.startTime),
+      endDate: createISOString(formData.startDate, formData.endTime), // Use same date but end time
       isPublic: formData.isPublic,
       color: formData.color
     };
@@ -109,7 +111,7 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+      <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white" data-testid="event-create-modal">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Create New Event</h3>
@@ -183,13 +185,13 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
           </div>
 
           {/* Date and Time */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Date & Time *
+                Date *
               </label>
               <input
-                type="datetime-local"
+                type="date"
                 required
                 value={formData.startDate}
                 onChange={(e) => handleInputChange('startDate', e.target.value)}
@@ -198,18 +200,34 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
               />
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                End Date & Time *
-              </label>
-              <input
-                type="datetime-local"
-                required
-                value={formData.endDate}
-                onChange={(e) => handleInputChange('endDate', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                data-testid="event-end-date"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Start Time *
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={formData.startTime}
+                  onChange={(e) => handleInputChange('startTime', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  data-testid="event-start-time"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  End Time *
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={formData.endTime}
+                  onChange={(e) => handleInputChange('endTime', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  data-testid="event-end-time"
+                />
+              </div>
             </div>
           </div>
 
@@ -339,7 +357,7 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
             <button
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"
-              data-testid="submit-event-button"
+              data-testid="create-event-submit"
             >
               Create Event
             </button>

@@ -54,40 +54,23 @@ async function startServer(): Promise<void> {
     console.log(`🔧 AUTH SERVICE: Received TEST_WORKER_INDEX: ${process.env.TEST_WORKER_INDEX}`);
     console.log(`🔧 AUTH SERVICE: Received WORKER_ID: ${process.env.WORKER_ID}`);
     
-    // In test mode, use worker-specific database configuration
+    // In test mode, use the dev database directly (no worker-specific naming)
     if (process.env.NODE_ENV === 'test') {
-      // Use the worker ID that's already been set by the service manager
-      const receivedWorkerId = process.env.WORKER_ID;
-      const workerId = receivedWorkerId || 
-                      process.env.PLAYWRIGHT_WORKER_ID || 
-                      process.env.TEST_WORKER_INDEX || 
-                      '0'; // Default to worker 0 for single-worker tests
+      console.log(`🔧 AUTH SERVICE: Test mode detected - using dev database directly`);
+      console.log(`🔧 AUTH SERVICE: Clean testing approach - no worker isolation`);
       
-      // Set worker-specific database name only if not already set
-      const workerPrefix = `w${workerId}`;
-      const workerDatabase = process.env.DB_NAME || `yggdrasil_test_${workerPrefix}`;
-      
-      console.log(`🔧 AUTH SERVICE: Test mode detected`);
-      console.log(`🔧 AUTH SERVICE: Using Worker ID: ${workerId}`);
-      console.log(`🔧 AUTH SERVICE: Worker prefix: ${workerPrefix}`);
-      console.log(`🔧 AUTH SERVICE: Worker database: ${workerDatabase}`);
-      
-      // Only set environment variables if they're not already set by service manager
-      if (!process.env.DB_NAME) {
-        process.env.DB_NAME = workerDatabase;
-        console.log(`🔧 AUTH SERVICE: Set DB_NAME: ${process.env.DB_NAME}`);
+      // Always use the dev database for testing
+      // This ensures tests run against the same database structure as development
+      if (!process.env.MONGODB_URI) {
+        process.env.MONGODB_URI = 'mongodb://localhost:27018/yggdrasil-dev';
       }
-      if (!process.env.DB_COLLECTION_PREFIX) {
-        process.env.DB_COLLECTION_PREFIX = `${workerPrefix}_`;
-        console.log(`🔧 AUTH SERVICE: Set DB_COLLECTION_PREFIX: ${process.env.DB_COLLECTION_PREFIX}`);
-      }
+      
+      console.log(`🔧 AUTH SERVICE: Using dev database for testing`);
     }
     
     // Connect to database
     console.log(`🔧 AUTH SERVICE: Final environment before database connection:`);
     console.log(`🔧 AUTH SERVICE: NODE_ENV: ${process.env.NODE_ENV}`);
-    console.log(`🔧 AUTH SERVICE: DB_NAME: ${process.env.DB_NAME}`);
-    console.log(`🔧 AUTH SERVICE: DB_COLLECTION_PREFIX: ${process.env.DB_COLLECTION_PREFIX}`);
     console.log(`🔧 AUTH SERVICE: MONGODB_URI: ${process.env.MONGODB_URI}`);
     
     await connectDatabase();

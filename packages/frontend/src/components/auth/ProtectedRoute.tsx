@@ -24,11 +24,30 @@ export function ProtectedRoute({
 
   useEffect(() => {
     if (!isLoading) {
-      // Check if we have tokens in storage even if user is not yet loaded
+      // 🔧 ENHANCED: Check for tokens in multiple places to avoid false redirects
       const hasStoredTokens = tokens !== null;
       
+      // Also check cookies directly to catch cases where AuthProvider hasn't loaded yet
+      const hasCookieTokens = typeof document !== 'undefined' && (
+        document.cookie.includes('yggdrasil_access_token') || 
+        document.cookie.includes('yggdrasil_refresh_token')
+      );
+      
+      console.log('🛡️ PROTECTED ROUTE: Auth check:', {
+        requireAuth,
+        hasUser: !!user,
+        hasStoredTokens,
+        hasCookieTokens,
+        userEmail: user?.email,
+        tokensObject: !!tokens
+      });
+      
+      // Only redirect if we truly have no authentication tokens anywhere
+      const hasAnyAuth = user || hasStoredTokens || hasCookieTokens;
+      
       // Redirect to login if authentication is required but no tokens exist
-      if (requireAuth && !user && !hasStoredTokens) {
+      if (requireAuth && !hasAnyAuth) {
+        console.log('🛡️ PROTECTED ROUTE: No auth found, redirecting to login');
         router.push('/auth/login');
         return;
       }
@@ -52,7 +71,15 @@ export function ProtectedRoute({
   }
 
   // Don't render children if auth check failed
-  if (requireAuth && !user && !tokens) {
+  // 🔧 ENHANCED: Check cookies as fallback to avoid false auth failures
+  const hasCookieTokens = typeof document !== 'undefined' && (
+    document.cookie.includes('yggdrasil_access_token') || 
+    document.cookie.includes('yggdrasil_refresh_token')
+  );
+  
+  const hasAnyAuth = user || tokens || hasCookieTokens;
+  
+  if (requireAuth && !hasAnyAuth) {
     return null;
   }
 

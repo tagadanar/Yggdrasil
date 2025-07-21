@@ -16,6 +16,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   rounded?: boolean;
   glow?: boolean;
   shimmer?: boolean;
+  'data-testid'?: string;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -32,6 +33,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     shimmer = false,
     disabled,
     children,
+    'data-testid': testId,
     ...props
   }, ref) => {
     const baseStyles = [
@@ -167,6 +169,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         disabled={disabled || loading}
+        data-testid={testId}
         ref={ref}
         {...props}
       >

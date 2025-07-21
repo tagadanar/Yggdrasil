@@ -42,12 +42,54 @@ console.log(`🔧 USER SERVICE: Worker ID: ${process.env.WORKER_ID || process.en
 console.log(`🔧 USER SERVICE: Environment PORT: '${process.env.PORT}'`);
 console.log(`🔧 USER SERVICE: Environment USER_SERVICE_PORT: '${process.env.USER_SERVICE_PORT}'`);
 console.log(`🔧 USER SERVICE: Final PORT: ${PORT}`);
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27018/yggdrasil-dev';
 
 async function startServer() {
   try {
+    console.log(`🔧 USER SERVICE: Starting server...`);
+    console.log(`🔧 USER SERVICE: NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`🔧 USER SERVICE: Received DB_NAME: ${process.env.DB_NAME}`);
+    console.log(`🔧 USER SERVICE: Received DB_COLLECTION_PREFIX: ${process.env.DB_COLLECTION_PREFIX}`);
+    console.log(`🔧 USER SERVICE: Received PLAYWRIGHT_WORKER_ID: ${process.env.PLAYWRIGHT_WORKER_ID}`);
+    console.log(`🔧 USER SERVICE: Received TEST_WORKER_INDEX: ${process.env.TEST_WORKER_INDEX}`);
+    console.log(`🔧 USER SERVICE: Received WORKER_ID: ${process.env.WORKER_ID}`);
+    
+    // In test mode, use worker-specific database configuration (same as auth-service)
+    if (process.env.NODE_ENV === 'test') {
+      // Use the worker ID that's already been set by the service manager
+      const receivedWorkerId = process.env.WORKER_ID;
+      const workerId = receivedWorkerId || 
+                      process.env.PLAYWRIGHT_WORKER_ID || 
+                      process.env.TEST_WORKER_INDEX || 
+                      '0'; // Default to worker 0 for single-worker tests
+      
+      // Set worker-specific database name only if not already set
+      const workerPrefix = `w${workerId}`;
+      const workerDatabase = process.env.DB_NAME || `yggdrasil_test_${workerPrefix}`;
+      
+      console.log(`🔧 USER SERVICE: Test mode detected`);
+      console.log(`🔧 USER SERVICE: Using Worker ID: ${workerId}`);
+      console.log(`🔧 USER SERVICE: Worker prefix: ${workerPrefix}`);
+      console.log(`🔧 USER SERVICE: Worker database: ${workerDatabase}`);
+      
+      // Only set environment variables if they're not already set by service manager
+      if (!process.env.DB_NAME) {
+        process.env.DB_NAME = workerDatabase;
+        console.log(`🔧 USER SERVICE: Set DB_NAME: ${process.env.DB_NAME}`);
+      }
+      if (!process.env.DB_COLLECTION_PREFIX) {
+        process.env.DB_COLLECTION_PREFIX = `${workerPrefix}_`;
+        console.log(`🔧 USER SERVICE: Set DB_COLLECTION_PREFIX: ${process.env.DB_COLLECTION_PREFIX}`);
+      }
+    }
+    
     // Connect to database
-    await connectDatabase(MONGODB_URI);
+    console.log(`🔧 USER SERVICE: Final environment before database connection:`);
+    console.log(`🔧 USER SERVICE: NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`🔧 USER SERVICE: DB_NAME: ${process.env.DB_NAME}`);
+    console.log(`🔧 USER SERVICE: DB_COLLECTION_PREFIX: ${process.env.DB_COLLECTION_PREFIX}`);
+    console.log(`🔧 USER SERVICE: MONGODB_URI: ${process.env.MONGODB_URI}`);
+    
+    await connectDatabase();
     console.log('✅ Connected to MongoDB for User Service');
 
     // Create Express app

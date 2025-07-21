@@ -8,12 +8,14 @@ import { User, AuthTokens } from '@yggdrasil/shared-utilities';
 import { authApi } from '@/lib/api/auth';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
 import { tokenSync } from '@/lib/auth/tokenSync';
+import { authFlowManager } from '@/lib/auth/AuthFlowManager';
+import { authStateValidator } from '@/lib/auth/AuthStateValidator';
 
 interface AuthContextType {
   user: User | null;
   tokens: AuthTokens | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string, router?: any) => Promise<{ success: boolean; error?: string; navigationResult?: any }>;
   register: (userData: any) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshTokens: () => Promise<boolean>;
@@ -25,6 +27,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // REQUEST DEDUPLICATION: Prevent concurrent login requests
+  const loginPromiseRef = React.useRef<Promise<{ success: boolean; error?: string; navigationResult?: any }> | null>(null);
 
   // Initialize auth state on mount
   useEffect(() => {
@@ -51,28 +56,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initializeAuth = async () => {
     try {
       const storedTokens = tokenStorage.getTokens();
-      if (!storedTokens?.accessToken) {
+      
+      if (!storedTokens?.refreshToken) {
         setIsLoading(false);
         return;
       }
 
-      // Try to get user info with stored token
-      const result = await authApi.me(storedTokens.accessToken);
-      
-      if (result.success && result.user) {
-        setUser(result.user);
-        setTokens(storedTokens);
-      } else {
-        // Try to refresh tokens
-        if (storedTokens.refreshToken) {
-          const refreshSuccess = await refreshTokens();
-          if (!refreshSuccess) {
-            tokenStorage.clearTokens();
-          }
-        } else {
-          // Clear invalid tokens
+      // If we have a valid access token, try to use it first
+      if (storedTokens.accessToken) {
+        const result = await authApi.me(storedTokens.accessToken);
+        
+        if (result.success && result.user) {
+          setUser(result.user);
+          setTokens(storedTokens);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // If access token is missing or invalid, try to refresh tokens
+      if (storedTokens.refreshToken) {
+        const refreshSuccess = await refreshTokens();
+        if (!refreshSuccess) {
           tokenStorage.clearTokens();
         }
+      } else {
+        tokenStorage.clearTokens();
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
@@ -82,22 +91,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, router?: any) => {
+    // 🔐 REQUEST DEDUPLICATION: Prevent concurrent login requests
+    if (loginPromiseRef.current) {
+      return loginPromiseRef.current;
+    }
+    
+    
+    // Create and store the login promise
+    const loginPromise = performLogin(email, password, router);
+    loginPromiseRef.current = loginPromise;
+    
+    // Clear the promise when done (success or failure)
+    loginPromise.finally(() => {
+      loginPromiseRef.current = null;
+    });
+    
+    return loginPromise;
+  };
+  
+  // Separate function to perform the actual login logic
+  const performLogin = async (email: string, password: string, router?: any) => {
     try {
+      
       // Clear any existing tokens before login attempt
       tokenStorage.clearTokens();
       
       const result = await authApi.login({ email, password });
       
       if (result.success && result.user && result.tokens) {
+        
         // Set tokens in storage first
         tokenStorage.setTokens(result.tokens);
+        
         // Update state in a single batch to avoid multiple re-renders
         setUser(result.user);
         setTokens(result.tokens);
+        
         // Notify other tabs/components
         tokenSync.notifyTokenChange(result.tokens);
-        return { success: true };
+        
+        // Handle navigation if router is provided
+        let navigationResult;
+        if (router) {
+          
+          try {
+            navigationResult = await authFlowManager.handleLoginSuccess(result.user, router);
+          } catch (navError) {
+            console.error('Navigation failed with exception:', navError);
+            navigationResult = {
+              success: false,
+              error: 'Navigation exception: ' + (navError instanceof Error ? navError.message : String(navError))
+            };
+          }
+        } else {
+        }
+        
+        return { 
+          success: true,
+          navigationResult 
+        };
       } else {
         return { success: false, error: result.error || 'Invalid email or password' };
       }

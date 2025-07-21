@@ -4,7 +4,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
-import { QueryProvider } from '@/lib/QueryProvider';
 import { ThemeProvider } from '@/lib/theme/ThemeProvider';
 
 export const metadata: Metadata = {
@@ -30,11 +29,9 @@ export default function RootLayout({
       </head>
       <body className="h-full">
         <ThemeProvider>
-          <QueryProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </QueryProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

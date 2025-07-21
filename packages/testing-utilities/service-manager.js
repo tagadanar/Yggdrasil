@@ -5,60 +5,9 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-// Get worker ID from environment with consistent detection logic
-function detectWorkerId() {
-  console.log(`🔍 SERVICE MANAGER: Environment variables:`, {
-    PLAYWRIGHT_WORKER_ID: process.env.PLAYWRIGHT_WORKER_ID,
-    TEST_WORKER_INDEX: process.env.TEST_WORKER_INDEX,
-    WORKER_ID: process.env.WORKER_ID
-  });
-  
-  // Try environment variable first
-  const envWorkerId = process.env.PLAYWRIGHT_WORKER_ID;
-  if (envWorkerId) {
-    console.log(`🔍 SERVICE MANAGER: Using PLAYWRIGHT_WORKER_ID: ${envWorkerId}`);
-    return parseInt(envWorkerId, 10);
-  }
-
-  // Try explicit worker ID
-  const explicitWorkerId = process.env.WORKER_ID;
-  if (explicitWorkerId) {
-    console.log(`🔍 SERVICE MANAGER: Using WORKER_ID: ${explicitWorkerId}`);
-    return parseInt(explicitWorkerId, 10);
-  }
-
-  // Try process arguments
-  const args = process.argv.join(' ');
-  const workerMatch = args.match(/--worker-id=(\d+)/);
-  if (workerMatch) {
-    console.log(`🔍 SERVICE MANAGER: Using process args worker ID: ${workerMatch[1]}`);
-    return parseInt(workerMatch[1], 10);
-  }
-
-  // Try to get worker ID from test worker env if available
-  const testWorkerId = process.env.TEST_WORKER_INDEX;
-  if (testWorkerId) {
-    console.log(`🔍 SERVICE MANAGER: Using TEST_WORKER_INDEX: ${testWorkerId}`);
-    return parseInt(testWorkerId, 10);
-  }
-
-  // For single worker tests, default to worker 0
-  if (process.env.NODE_ENV === 'test') {
-    console.log(`🔍 SERVICE MANAGER: Test mode - defaulting to Worker 0`);
-    return 0;
-  }
-
-  // For enhanced testing with multiple workers, use PID-based detection
-  // with a more reliable approach
-  const pid = process.pid;
-  const workerIndex = Math.abs(pid % 4); // Ensure it's between 0-3
-  
-  console.log(`🔍 SERVICE MANAGER: Worker ID detection: PID=${pid}, WorkerIndex=${workerIndex}`);
-  return workerIndex;
-}
-
-const WORKER_ID = detectWorkerId();
-const BASE_PORT = 3000 + (WORKER_ID * 10); // 10 port gap between workers to match global setup
+// Simple clean architecture - use standard ports since we removed worker isolation
+const WORKER_ID = 0; // Clean architecture uses single worker
+const BASE_PORT = 3000; // Standard base port for clean architecture
 
 const SERVICES = [
   { name: 'Frontend', url: `http://localhost:${BASE_PORT}`, port: BASE_PORT },
@@ -116,23 +65,35 @@ class ServiceManager {
   }
 
   async killPortProcesses(ports) {
-    console.log(`🧹 Cleaning ports: ${ports.join(', ')}`);
+    console.log(`🧹 Aggressively cleaning ports: ${ports.join(', ')}`);
     
     try {
-      // Kill processes using lsof
+      // Kill processes using lsof with SIGKILL
       const command = `lsof -ti:${ports.join(',')} | xargs -r kill -9 2>/dev/null || true`;
       execSync(command, { stdio: 'ignore' });
       
-      // Additional cleanup for any remaining Node.js processes
-      try {
-        execSync('pkill -f "next-server" 2>/dev/null || true', { stdio: 'ignore' });
-        execSync('pkill -f "ts-node-dev.*src/index.ts" 2>/dev/null || true', { stdio: 'ignore' });
-      } catch (e) {
-        // Ignore errors - processes might not exist
+      // Aggressive cleanup for development tools that spawn child processes
+      const aggressiveKillCommands = [
+        'pkill -f "next-server" 2>/dev/null || true',
+        'pkill -f "ts-node-dev" 2>/dev/null || true',
+        'pkill -f "next.*dev" 2>/dev/null || true',
+        'pkill -f "npm.*run.*dev" 2>/dev/null || true',
+        // Kill any Node.js processes on our port range
+        `lsof -ti:${ports[0]}-${ports[ports.length-1]} | xargs -r kill -9 2>/dev/null || true`
+      ];
+      
+      for (const cmd of aggressiveKillCommands) {
+        try {
+          execSync(cmd, { stdio: 'ignore', timeout: 2000 });
+        } catch (e) {
+          // Ignore errors - processes might not exist
+        }
       }
       
-      // Wait a moment for processes to die
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for processes to die
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log('✅ Aggressive port cleanup completed');
       
     } catch (error) {
       console.log('⚠️ Port cleanup completed (some ports may have been free)');
@@ -202,17 +163,16 @@ class ServiceManager {
     // Start services individually to avoid npm workspace command issues
     const rootDir = path.join(__dirname, '../..');
     
-    // Enhanced environment for test mode with worker isolation
-    const workerPrefix = `w${WORKER_ID}`;
+    // Clean environment for test mode without worker isolation
     const testEnv = { 
       ...process.env, 
       NODE_ENV: 'test',
       WORKER_ID: WORKER_ID.toString(),
-      // Worker-specific database configuration
+      // Clean database configuration - no worker isolation
       PLAYWRIGHT_WORKER_ID: WORKER_ID.toString(),
       TEST_WORKER_INDEX: WORKER_ID.toString(),
-      DB_NAME: `yggdrasil_test_${workerPrefix}`,
-      DB_COLLECTION_PREFIX: `${workerPrefix}_`,
+      MONGODB_URI: 'mongodb://localhost:27018/yggdrasil-dev',
+      // No DB_NAME or DB_COLLECTION_PREFIX - use clean dev database
       // Service URLs for inter-service communication
       AUTH_SERVICE_URL: `http://localhost:${BASE_PORT + 1}`,
       USER_SERVICE_URL: `http://localhost:${BASE_PORT + 2}`,
@@ -387,33 +347,27 @@ class ServiceManager {
 
     console.log('🛑 Shutting down services...');
     
-    // Stop all individual processes
+    // Immediately kill all individual processes with SIGKILL
     if (this.processes && this.processes.length > 0) {
       const names = ['frontend', 'auth', 'user', 'news', 'course', 'planning', 'statistics'];
       
+      // Skip SIGTERM - go straight to SIGKILL for development tools
       for (let i = 0; i < this.processes.length; i++) {
         const process = this.processes[i];
         const name = names[i];
         
         if (process && !process.killed) {
-          console.log(`🛑 Stopping ${name} service...`);
-          process.kill('SIGTERM');
+          console.log(`🔥 Force killing ${name} service immediately...`);
+          try {
+            process.kill('SIGKILL');
+          } catch (error) {
+            console.log(`⚠️ Failed to kill ${name} process:`, error.message);
+          }
         }
       }
       
-      // Wait for graceful shutdown
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Force kill any remaining processes
-      for (let i = 0; i < this.processes.length; i++) {
-        const process = this.processes[i];
-        const name = names[i];
-        
-        if (process && !process.killed) {
-          console.log(`🔥 Force killing ${name} service...`);
-          process.kill('SIGKILL');
-        }
-      }
+      // Shorter wait since we're using SIGKILL
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     // Force clean ports as final step
@@ -453,18 +407,36 @@ async function main() {
   const serviceManager = new ServiceManager();
   const command = process.argv[2] || 'start';
 
-  // Setup graceful shutdown handlers
-  process.on('SIGINT', async () => {
-    console.log('\\n🛑 Received SIGINT, shutting down gracefully...');
-    await serviceManager.stopServices();
-    process.exit(0);
-  });
-
-  process.on('SIGTERM', async () => {
-    console.log('\\n🛑 Received SIGTERM, shutting down gracefully...');
-    await serviceManager.stopServices();
-    process.exit(0);
-  });
+  // Setup aggressive shutdown handlers
+  let isShuttingDown = false;
+  
+  const aggressiveShutdown = async (signal) => {
+    if (isShuttingDown) {
+      console.log('\\n⚡ Force shutdown - killing all processes immediately...');
+      const ports = SERVICES.map(s => s.port);
+      await serviceManager.killPortProcesses(ports);
+      process.exit(1);
+    }
+    
+    isShuttingDown = true;
+    console.log(`\\n🛑 Received ${signal}, shutting down immediately...`);
+    
+    try {
+      // Kill all processes aggressively
+      await serviceManager.stopServices();
+      console.log('✅ Service manager shutdown completed');
+      process.exit(0);
+    } catch (error) {
+      console.error('❌ Service manager shutdown error:', error);
+      const ports = SERVICES.map(s => s.port);
+      await serviceManager.killPortProcesses(ports);
+      process.exit(1);
+    }
+  };
+  
+  process.on('SIGINT', () => aggressiveShutdown('SIGINT'));
+  process.on('SIGTERM', () => aggressiveShutdown('SIGTERM'));
+  // Note: SIGKILL cannot be caught, trapped, or ignored
 
   try {
     switch (command) {

@@ -48,8 +48,7 @@ router.get('/', authenticateToken, requireAdminOnly, (req, res) => {
 router.get(
   '/dashboard/student/:userId',
   authenticateToken,
-  // TODO: Fine-tune authorization middleware for production security
-  // requireOwnershipOrAdmin('userId'),
+  requireOwnershipOrAdmin('userId'),
   StatisticsController.getStudentDashboard
 );
 

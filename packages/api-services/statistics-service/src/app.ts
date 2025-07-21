@@ -58,6 +58,33 @@ if (process.env.NODE_ENV !== 'production') {
 // DATABASE CONNECTION
 // =============================================================================
 
+// Configure test mode database settings before connecting
+console.log(`🔧 STATISTICS SERVICE: Starting database initialization...`);
+console.log(`🔧 STATISTICS SERVICE: NODE_ENV: ${process.env.NODE_ENV}`);
+
+// In test mode, use worker-specific database configuration (same as auth-service)
+if (process.env.NODE_ENV === 'test') {
+  const receivedWorkerId = process.env.WORKER_ID;
+  const workerId = receivedWorkerId || 
+                  process.env.PLAYWRIGHT_WORKER_ID || 
+                  process.env.TEST_WORKER_INDEX || 
+                  '0';
+  
+  const workerPrefix = `w${workerId}`;
+  const workerDatabase = process.env.DB_NAME || `yggdrasil_test_${workerPrefix}`;
+  
+  console.log(`🔧 STATISTICS SERVICE: Test mode detected, Worker ID: ${workerId}`);
+  
+  if (!process.env.DB_NAME) {
+    process.env.DB_NAME = workerDatabase;
+    console.log(`🔧 STATISTICS SERVICE: Set DB_NAME: ${process.env.DB_NAME}`);
+  }
+  if (!process.env.DB_COLLECTION_PREFIX) {
+    process.env.DB_COLLECTION_PREFIX = `${workerPrefix}_`;
+    console.log(`🔧 STATISTICS SERVICE: Set DB_COLLECTION_PREFIX: ${process.env.DB_COLLECTION_PREFIX}`);
+  }
+}
+
 // Connect to MongoDB
 connectDatabase()
   .then(() => {

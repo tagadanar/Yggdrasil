@@ -1,20 +1,20 @@
-// packages/testing-utilities/tests/integration/system-integration-optimized.spec.ts
-// Comprehensive system integration tests - combines cross-service, resilience, and security tests
+// packages/testing-utilities/tests/integration/system-integration.spec.ts
+// Comprehensive system integration tests - updated to follow CLAUDE.md clean testing architecture
 
 import { test, expect } from '@playwright/test';
-import { IsolatedAuthHelpers } from '../helpers/enhanced-isolated-auth.helpers';
+import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
+import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
 
 test.describe('System Integration - Comprehensive Tests', () => {
-  let authHelpers: IsolatedAuthHelpers;
+  // Removed global auth helpers - each test manages its own cleanup
 
   test.beforeEach(async ({ page }) => {
-    authHelpers = new IsolatedAuthHelpers(page);
-    await authHelpers.initialize();
+    // No global setup needed - each test handles its own initialization
   });
 
   test.afterEach(async ({ page }) => {
-    await authHelpers.cleanup();
+    // No global cleanup needed - each test handles its own cleanup
   });
 
   // =============================================================================

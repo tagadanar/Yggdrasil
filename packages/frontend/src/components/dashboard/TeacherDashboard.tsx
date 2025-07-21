@@ -1,0 +1,376 @@
+// packages/frontend/src/components/dashboard/TeacherDashboard.tsx
+// Teacher analytics dashboard with course performance metrics
+
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { StatisticsApi } from '@/lib/api/statistics';
+import {
+  BookOpenIcon,
+  UserGroupIcon,
+  ChartBarIcon,
+  ClockIcon,
+  DocumentCheckIcon,
+  AcademicCapIcon,
+  ArrowTrendingUpIcon,
+  ExclamationCircleIcon
+} from '@heroicons/react/24/outline';
+import { CheckCircleIcon } from '@heroicons/react/24/solid';
+
+interface CourseStats {
+  totalCourses: number;
+  publishedCourses: number;
+  draftCourses: number;
+  totalStudents: number;
+  activeStudents: number;
+  averageProgress: number;
+  totalSubmissions: number;
+  pendingGrading: number;
+}
+
+interface CourseAnalytics {
+  courseId: string;
+  courseTitle: string;
+  enrolledStudents: number;
+  completedStudents: number;
+  averageProgress: number;
+  averageScore: number;
+  lastActivity: Date;
+}
+
+interface RecentSubmission {
+  submissionId: string;
+  studentName: string;
+  courseName: string;
+  exerciseTitle: string;
+  submittedAt: Date;
+  needsGrading: boolean;
+}
+
+export const TeacherDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const [courseStats, setCourseStats] = useState<CourseStats | null>(null);
+  const [courseAnalytics, setCourseAnalytics] = useState<CourseAnalytics[]>([]);
+  const [recentSubmissions, setRecentSubmissions] = useState<RecentSubmission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedTimeRange, setSelectedTimeRange] = useState('30days');
+
+  useEffect(() => {
+    if (user) {
+      loadDashboardData();
+    }
+  }, [user, selectedTimeRange]);
+
+  const loadDashboardData = async () => {
+    if (!user || !user._id) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await StatisticsApi.getTeacherDashboard(user._id);
+      
+      if (response.success && response.data) {
+        const dashboardData = response.data;
+        setCourseStats(dashboardData.courseStats);
+        setCourseAnalytics(dashboardData.courseAnalytics);
+        setRecentSubmissions(dashboardData.recentSubmissions);
+      } else {
+        setError(response.error || 'Failed to load dashboard data');
+      }
+    } catch (err) {
+      console.error('Error loading teacher dashboard:', err);
+      setError('An unexpected error occurred while loading the dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (date: Date | string) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (date: Date | string) => {
+    return new Date(date).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getProgressColor = (progress: number) => {
+    if (progress >= 80) return 'text-green-600';
+    if (progress >= 50) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]" data-testid="loading-state">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading analytics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6" data-testid="error-state">
+        <div className="flex items-center">
+          <ExclamationCircleIcon className="h-6 w-6 text-red-600 dark:text-red-400 mr-3" />
+          <div>
+            <h3 className="text-lg font-medium text-red-800 dark:text-red-200">Error Loading Dashboard</h3>
+            <p className="mt-1 text-red-700 dark:text-red-300">{error}</p>
+            <button
+              onClick={loadDashboardData}
+              className="mt-3 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 underline"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!courseStats) {
+    return (
+      <div className="text-center py-12" data-testid="no-courses-message">
+        <BookOpenIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No Courses Yet</h3>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">Start by creating your first course!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6" data-testid="teacher-dashboard">
+      {/* Header with Time Range Filter */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Teaching Analytics</h1>
+        <div className="flex items-center space-x-4">
+          <select
+            value={selectedTimeRange}
+            onChange={(e) => setSelectedTimeRange(e.target.value)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            data-testid="date-range-filter"
+          >
+            <option value="7days">Last 7 days</option>
+            <option value="30days" data-testid="last-30-days">Last 30 days</option>
+            <option value="90days">Last 90 days</option>
+            <option value="all">All time</option>
+          </select>
+          <span className="text-sm text-gray-500 dark:text-gray-400" data-testid="filtered-label">
+            {selectedTimeRange === '7days' ? 'Last 7 days' : 
+             selectedTimeRange === '30days' ? 'Last 30 days' :
+             selectedTimeRange === '90days' ? 'Last 90 days' : 'All time'}
+          </span>
+        </div>
+      </div>
+
+      {/* Course Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Courses</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="total-courses-stat">
+                {courseStats.totalCourses}
+              </p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <span data-testid="published-courses-stat">{courseStats.publishedCourses}</span> published
+              </p>
+            </div>
+            <BookOpenIcon className="h-12 w-12 text-indigo-600 dark:text-indigo-400" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="total-students-stat">
+                {courseStats.totalStudents}
+              </p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {courseStats.activeStudents} active
+              </p>
+            </div>
+            <UserGroupIcon className="h-12 w-12 text-green-600 dark:text-green-400" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Average Progress</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
+                {courseStats.averageProgress}%
+              </p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Across all courses
+              </p>
+            </div>
+            <ChartBarIcon className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Grading</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
+                {courseStats.pendingGrading}
+              </p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Of {courseStats.totalSubmissions} total
+              </p>
+            </div>
+            <DocumentCheckIcon className="h-12 w-12 text-orange-600 dark:text-orange-400" />
+          </div>
+        </div>
+      </div>
+
+      {/* Course Analytics Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Course Performance</h2>
+        </div>
+        <div className="overflow-x-auto" data-testid="course-analytics-table">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Course
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Students
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Progress
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Avg Score
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Last Activity
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {courseAnalytics.map((course) => (
+                <tr key={course.courseId} data-testid="course-row">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {course.courseTitle}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900 dark:text-gray-100" data-testid="enrolled-students">
+                      {course.enrolledStudents}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {course.completedStudents} completed
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-1 mr-4">
+                        <div className="flex items-center">
+                          <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div
+                              className="bg-indigo-600 dark:bg-indigo-400 h-2 rounded-full"
+                              style={{ width: `${course.averageProgress}%` }}
+                            ></div>
+                          </div>
+                          <span className={`ml-2 text-sm font-medium ${getProgressColor(course.averageProgress)}`} data-testid="average-progress">
+                            {course.averageProgress}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className={`text-sm font-medium ${getProgressColor(course.averageScore)}`}>
+                      {course.averageScore}%
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {formatDate(course.lastActivity)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <button
+                      className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
+                      data-testid="view-course-analytics"
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Recent Submissions */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Submissions</h2>
+        </div>
+        <div className="divide-y divide-gray-200 dark:divide-gray-700" data-testid="recent-submissions">
+          {recentSubmissions.length === 0 ? (
+            <div className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+              No recent submissions
+            </div>
+          ) : (
+            recentSubmissions.map((submission) => (
+              <div key={submission.submissionId} className="px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {submission.studentName}
+                      </p>
+                      {submission.needsGrading && (
+                        <span className="ml-2 px-2 py-1 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 rounded-full">
+                          Needs Grading
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {submission.exerciseTitle} • {submission.courseName}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      {formatDate(submission.submittedAt)} at {formatTime(submission.submittedAt)}
+                    </p>
+                  </div>
+                  <div className="ml-4">
+                    <button className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">
+                      Review
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Last Updated Indicator */}
+      <div className="text-center text-sm text-gray-500 dark:text-gray-400" data-testid="last-updated">
+        Last updated: {new Date().toLocaleString()}
+      </div>
+    </div>
+  );
+};

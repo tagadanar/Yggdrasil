@@ -7,33 +7,15 @@ import { apiClient } from './client';
 export const authApi = {
   async login(data: LoginRequestType): Promise<AuthResult> {
     try {
-      console.log('🌐 FRONTEND API: Making login request to auth service');
-      console.log('🌐 FRONTEND API: Request data:', data);
-      console.log('🌐 FRONTEND API: API client base URL:', (apiClient as any).defaults.baseURL);
-      
       const response = await apiClient.post('/auth/login', data);
-      
-      console.log('🌐 FRONTEND API: Received response from auth service');
-      console.log('🌐 FRONTEND API: Response status:', response.status);
-      console.log('🌐 FRONTEND API: Response data:', response.data);
-      
+
       return {
         success: response.data.success,
-        user: response.data.data.user,
-        tokens: response.data.data.tokens,
+        user: response.data.data.user,    // CORRECT: Backend sends { data: { user, tokens } }
+        tokens: response.data.data.tokens, // CORRECT: Backend sends { data: { user, tokens } }
       };
     } catch (error: any) {
-      console.error('🌐 FRONTEND API: Login request failed');
-      console.error('🌐 FRONTEND API: Error message:', error.message);
-      console.error('🌐 FRONTEND API: Error code:', error.code);
-      console.error('🌐 FRONTEND API: Response status:', error.response?.status);
-      console.error('🌐 FRONTEND API: Response data:', JSON.stringify(error.response?.data, null, 2));
-      console.error('🌐 FRONTEND API: Request config:', {
-        url: error.config?.url,
-        method: error.config?.method,
-        baseURL: error.config?.baseURL,
-        data: error.config?.data
-      });
+      console.error('Login request failed:', error.message);
       
       return {
         success: false,
@@ -47,8 +29,8 @@ export const authApi = {
       const response = await apiClient.post('/auth/register', data);
       return {
         success: response.data.success,
-        user: response.data.data.user,
-        tokens: response.data.data.tokens,
+        user: response.data.data?.user,
+        tokens: response.data.data?.tokens,
       };
     } catch (error: any) {
       return {
@@ -63,8 +45,8 @@ export const authApi = {
       const response = await apiClient.post('/auth/refresh', { refreshToken });
       return {
         success: response.data.success,
-        user: response.data.data.user,
-        tokens: response.data.data.tokens,
+        user: response.data.data?.user,
+        tokens: response.data.data?.tokens,
       };
     } catch (error: any) {
       return {
@@ -99,7 +81,7 @@ export const authApi = {
       });
       return {
         success: true,
-        user: response.data.data.user,
+        user: response.data.data?.user,
       };
     } catch (error: any) {
       return {

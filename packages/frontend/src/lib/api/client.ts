@@ -27,10 +27,6 @@ function getApiUrl(): string {
 
 const BASE_URL = getApiUrl();
 
-console.log('🔧 FRONTEND API CLIENT: Calculated BASE_URL:', BASE_URL);
-console.log('🔧 FRONTEND API CLIENT: NODE_ENV:', process.env.NODE_ENV);
-console.log('🔧 FRONTEND API CLIENT: PORT:', process.env.PORT);
-console.log('🔧 FRONTEND API CLIENT: NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
 
 // Create axios instance
 export const apiClient: AxiosInstance = axios.create({
@@ -100,13 +96,34 @@ apiClient.interceptors.response.use(
   }
 );
 
-// User service API client
-const USER_SERVICE_URL = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'http://localhost:3002';
+// Dynamic User Service URL detection for worker-specific testing
+function getUserServiceUrl(): string {
+  // In test environment, detect worker-specific User Service URL from frontend port
+  if (process.env.NODE_ENV === 'test' || typeof window !== 'undefined') {
+    const frontendPort = typeof window !== 'undefined' 
+      ? parseInt(window.location.port, 10) 
+      : parseInt(process.env.PORT || '3000', 10);
+    
+    // Calculate user service port from frontend port (frontend + 2)
+    const userPort = frontendPort + 2;
+    
+    // Use localhost if we're in a test environment or browser
+    if (typeof window !== 'undefined' || process.env.NODE_ENV === 'test') {
+      return `http://localhost:${userPort}`;
+    }
+  }
+  
+  // Fallback to environment variable or default
+  return process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'http://localhost:3002';
+}
+
+const USER_SERVICE_URL = getUserServiceUrl();
+
 
 // Create separate axios instance for user service
 const userApiClient: AxiosInstance = axios.create({
   baseURL: `${USER_SERVICE_URL}/api`,
-  timeout: 10000,
+  timeout: 30000, // Increased from 10s to 30s for test environments
   headers: {
     'Content-Type': 'application/json',
   },

@@ -8,10 +8,9 @@
     "packages/api-services/*"
   ],
   "scripts": {
-    "dev": "node packages/testing-utilities/service-manager.js start",
-    "dev:clean": "node packages/testing-utilities/service-manager.js clean && node packages/testing-utilities/service-manager.js start",
-    "dev:stop": "node packages/testing-utilities/service-manager.js stop",
-    "dev:health": "node packages/testing-utilities/service-manager.js health",
+    "dev": "npm run dev --workspace=@yggdrasil/testing-utilities",
+    "dev:stop": "npm run dev:stop --workspace=@yggdrasil/testing-utilities", 
+    "dev:health": "npm run dev:health --workspace=@yggdrasil/testing-utilities",
     
     "build": "npm run build --workspaces",
     "build:frontend": "npm run build --workspace=@yggdrasil/frontend",
@@ -19,7 +18,7 @@
     
     "test:quiet": "npm run test:quiet --workspace=@yggdrasil/testing-utilities",
     "test:single": "npm run test:single --workspace=@yggdrasil/testing-utilities --",
-    "test:smart": "npm run test:smart --workspace=@yggdrasil/testing-utilities",
+    "test:debug": "npm run test:debug --workspace=@yggdrasil/testing-utilities --",
     "test:unit": "npm run test:unit --workspaces --if-present",
     
     "lint": "npm run lint --workspaces",

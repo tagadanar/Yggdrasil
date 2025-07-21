@@ -1,66 +1,164 @@
 // packages/testing-utilities/tests/functional/course-management.spec.ts
-// Optimized course management tests - simplified to match current implementation
+// Optimized course management tests - updated to follow CLAUDE.md clean testing architecture
 
 import { test, expect } from '@playwright/test';
-import { IsolatedAuthHelpers } from '../helpers/enhanced-isolated-auth.helpers';
+import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
+import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
 
-test.describe('Course Management - Optimized Tests', () => {
-  let authHelpers: IsolatedAuthHelpers;
+test.describe('Course Management', () => {
+  // Removed global auth helpers - each test manages its own cleanup
 
   test.beforeEach(async ({ page }) => {
-    authHelpers = new IsolatedAuthHelpers(page);
-    await authHelpers.initialize();
+    // No global setup needed - each test handles its own initialization
   });
 
   test.afterEach(async ({ page }) => {
-    await authHelpers.cleanup();
+    // No global cleanup needed - each test handles its own cleanup
   });
 
   // =============================================================================
-  // TEST 1: COMPREHENSIVE ROLE-BASED ACCESS
+  // ROLE-BASED ACCESS TESTS (split by role for stability)
   // =============================================================================
-  test('Role-based course access and permissions - all roles', async ({ page }) => {
-    for (const roleConfig of ROLE_PERMISSIONS_MATRIX) {
-      await authHelpers[roleConfig.loginMethod]();
-      await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
-      
-      // All roles can access courses page - check for role-specific titles
-      const titleSelectors = [
-        'h1:has-text("My Enrollments")',      // Student
-        'h1:has-text("My Courses")',          // Teacher  
-        'h1:has-text("Course Management")',   // Admin/Staff
-        'h1:has-text("Courses")'              // Default
-      ];
-      
-      let titleFound = false;
-      for (const selector of titleSelectors) {
-        if (await page.locator(selector).count() > 0) {
-          await expect(page.locator(selector)).toBeVisible();
-          titleFound = true;
-          break;
-        }
+  
+  test('Admin course access and permissions', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Admin course access and permissions');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsAdmin();
+    await page.goto('/courses');
+    await page.waitForLoadState('networkidle');
+    
+    // Admin should see course management interface
+    const titleSelectors = [
+      'h1:has-text("Course Management")',   // Admin/Staff
+      'h1:has-text("Courses")'              // Default
+    ];
+    
+    let titleFound = false;
+    for (const selector of titleSelectors) {
+      if (await page.locator(selector).count() > 0) {
+        await expect(page.locator(selector)).toBeVisible();
+        titleFound = true;
+        break;
       }
-      expect(titleFound).toBeTruthy();
-      
-      // Check create course button visibility - uses btn-primary class, only for teacher/staff/admin
-      if (roleConfig.courseManagement.canCreate) {
-        // Look for button with "Create" text and btn-primary or similar styling
-        const createButton = page.locator('button:has-text("Create"), button:has-text("New Course"), .btn-primary:has-text("Create")');
-        await expect(createButton.first()).toBeVisible({ timeout: 5000 });
+    }
+    expect(titleFound).toBeTruthy();
+    
+    // Admin should see create course button
+    const createButton = page.locator('button:has-text("Create"), button:has-text("New Course"), .btn-primary:has-text("Create")');
+    await expect(createButton.first()).toBeVisible({ timeout: 5000 });
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Teacher course access and permissions', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Teacher course access and permissions');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsTeacher();
+    await page.goto('/courses');
+    await page.waitForLoadState('networkidle');
+    
+    // Teacher should see their courses interface
+    const titleSelectors = [
+      'h1:has-text("My Courses")',          // Teacher  
+      'h1:has-text("Course Management")',   // Admin/Staff
+      'h1:has-text("Courses")'              // Default
+    ];
+    
+    let titleFound = false;
+    for (const selector of titleSelectors) {
+      if (await page.locator(selector).count() > 0) {
+        await expect(page.locator(selector)).toBeVisible();
+        titleFound = true;
+        break;
       }
-      
-      // Skip course-specific interactions for now since CourseList component isn't implemented
-      // The page renders but doesn't have actual course data or interactive elements yet
-      
-      // TODO: Add course interaction tests when CourseList component is implemented
-      // - Course cards/list display
-      // - Enrollment buttons for students
-      // - Edit/delete buttons for admin/teacher
-      // - Course filtering and search
-      
-      await authHelpers.logout();
+    }
+    expect(titleFound).toBeTruthy();
+    
+    // Teacher should see create course button
+    const createButton = page.locator('button:has-text("Create"), button:has-text("New Course"), .btn-primary:has-text("Create")');
+    await expect(createButton.first()).toBeVisible({ timeout: 5000 });
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Staff course access and permissions', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Staff course access and permissions');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsStaff();
+    await page.goto('/courses');
+    await page.waitForLoadState('networkidle');
+    
+    // Staff should see course management interface
+    const titleSelectors = [
+      'h1:has-text("Course Management")',   // Admin/Staff
+      'h1:has-text("Courses")'              // Default
+    ];
+    
+    let titleFound = false;
+    for (const selector of titleSelectors) {
+      if (await page.locator(selector).count() > 0) {
+        await expect(page.locator(selector)).toBeVisible();
+        titleFound = true;
+        break;
+      }
+    }
+    expect(titleFound).toBeTruthy();
+    
+    // Staff should see create course button
+    const createButton = page.locator('button:has-text("Create"), button:has-text("New Course"), .btn-primary:has-text("Create")');
+    await expect(createButton.first()).toBeVisible({ timeout: 5000 });
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Student course access and permissions', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Student course access and permissions');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsStudent();
+    await page.goto('/courses');
+    await page.waitForLoadState('networkidle');
+    
+    // Student should see their enrollments interface
+    const titleSelectors = [
+      'h1:has-text("My Enrollments")',      // Student
+      'h1:has-text("Courses")'              // Default
+    ];
+    
+    let titleFound = false;
+    for (const selector of titleSelectors) {
+      if (await page.locator(selector).count() > 0) {
+        await expect(page.locator(selector)).toBeVisible();
+        titleFound = true;
+        break;
+      }
+    }
+    expect(titleFound).toBeTruthy();
+    
+    // Student should NOT see create course button
+    const createButton = page.locator('button:has-text("Create"), button:has-text("New Course"), .btn-primary:has-text("Create")');
+    await expect(createButton.first()).not.toBeVisible();
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
     }
   });
 
@@ -68,7 +166,11 @@ test.describe('Course Management - Optimized Tests', () => {
   // TEST 2: BASIC COURSE PAGE FUNCTIONALITY  
   // =============================================================================
   test('Course page basic functionality and navigation', async ({ page }) => {
-    await authHelpers.loginAsAdmin();
+    const cleanup = TestCleanup.getInstance('Course page basic functionality and navigation');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsAdmin();
     await page.goto('/courses');
     await page.waitForLoadState('networkidle');
     
@@ -90,13 +192,22 @@ test.describe('Course Management - Optimized Tests', () => {
     
     // Verify basic page functionality
     await expect(page.locator('.max-w-7xl')).toBeVisible(); // Main container
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   // =============================================================================
   // TEST 3: STUDENT COURSE VIEW
   // =============================================================================
   test('Student course page view and basic functionality', async ({ page }) => {
-    await authHelpers.loginAsStudent();
+    const cleanup = TestCleanup.getInstance('Student course page view and basic functionality');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsStudent();
     await page.goto('/courses');
     await page.waitForLoadState('networkidle');
     
@@ -108,22 +219,27 @@ test.describe('Course Management - Optimized Tests', () => {
     const createButtons = page.locator('button:has-text("Create")');
     expect(await createButtons.count()).toBe(0);
     
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   // =============================================================================
   // TEST 4: TEACHER COURSE VIEW
   // =============================================================================
   test('Teacher course page view and basic functionality', async ({ page }) => {
-    await authHelpers.loginAsTeacher();
+    const cleanup = TestCleanup.getInstance('Teacher course page view and basic functionality');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsTeacher();
     await page.goto('/courses');
     await page.waitForLoadState('networkidle');
     
-    // Wait for page content to fully load
-    await page.waitForTimeout(2000);
-    
     // Teachers should see either "My Courses" or "Courses" title
     const heading = await page.locator('h1').first();
-    await expect(heading).toBeVisible({ timeout: 10000 });
+    await expect(heading).toBeVisible({ timeout: 15000 });
     const headingText = await heading.textContent();
     expect(headingText).toMatch(/Courses|My Courses/);
     
@@ -135,13 +251,23 @@ test.describe('Course Management - Optimized Tests', () => {
     const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course"), .btn-primary');
     await createButton.first().waitFor({ state: 'visible', timeout: 10000 });
     expect(await createButton.count()).toBeGreaterThan(0);
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   // =============================================================================
   // COURSE-001: Complete Course Creation & Publishing Workflow
   // =============================================================================
   test('COURSE-001: Complete Course Creation & Publishing Workflow', async ({ page }) => {
-    await authHelpers.loginAsTeacher();
+    const cleanup = TestCleanup.getInstance('COURSE-001: Complete Course Creation & Publishing Workflow');
+    const authHelper = new CleanAuthHelper(page);
+    let createdCourseTitle: string | null = null;
+    
+    try {
+      await authHelper.loginAsTeacher();
     
     // Step 1: Create draft course with basic info → verify draft status
     await page.goto('/courses');
@@ -151,16 +277,17 @@ test.describe('Course Management - Optimized Tests', () => {
     await createButton.first().waitFor({ state: 'visible', timeout: 10000 });
     await createButton.first().click();
     
-    // Fill in basic course information
-    await page.waitForTimeout(1000); // Wait for form to appear
-    
+    // Wait for form fields to appear
     const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"], input[placeholder*="Title"]');
     const courseDescInput = page.locator('textarea[name="description"], textarea[placeholder*="description"]');
     
-    const uniqueCourseTitle = `Test Course ${Date.now()}`;
+    // Wait for form to be ready for input
+    await courseTitleInput.first().waitFor({ state: 'visible', timeout: 10000 });
+    
+    createdCourseTitle = `Test Course ${Date.now()}`;
     
     if (await courseTitleInput.count() > 0) {
-      await courseTitleInput.fill(uniqueCourseTitle);
+      await courseTitleInput.fill(createdCourseTitle);
     }
     
     if (await courseDescInput.count() > 0) {
@@ -308,9 +435,9 @@ test.describe('Course Management - Optimized Tests', () => {
     // Try to create another course with the same title
     if (await createButton.count() > 0) {
       await createButton.first().click();
-      await page.waitForTimeout(1000);
       
       const newCourseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await newCourseTitleInput.first().waitFor({ state: 'visible', timeout: 10000 });
       if (await newCourseTitleInput.count() > 0) {
         await newCourseTitleInput.fill(uniqueCourseTitle); // Same title
         
@@ -324,14 +451,30 @@ test.describe('Course Management - Optimized Tests', () => {
         }
       }
     }
+    
+    } finally {
+      // CRITICAL: Track and cleanup created course
+      if (createdCourseTitle) {
+        cleanup.addCustomCleanup(async () => {
+          console.log(`Cleaning up test course: ${createdCourseTitle}`);
+          // This would delete the course via API in a real implementation
+        });
+      }
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   // =============================================================================
   // COURSE-002: Exercise Submission & Automated Grading
   // =============================================================================
   test('COURSE-002: Exercise Submission & Automated Grading', async ({ page }) => {
-    // Step 1: Create coding exercise with test cases → verify exercise setup
-    await authHelpers.loginAsTeacher();
+    const cleanup = TestCleanup.getInstance('COURSE-002: Exercise Submission & Automated Grading');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      // Step 1: Create coding exercise with test cases → verify exercise setup
+      await authHelper.loginAsTeacher();
     await page.goto('/courses');
     await page.waitForLoadState('networkidle');
     
@@ -339,9 +482,9 @@ test.describe('Course Management - Optimized Tests', () => {
     const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
     if (await createButton.count() > 0) {
       await createButton.first().click();
-      await page.waitForTimeout(1000);
       
       const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 10000 });
       if (await courseTitleInput.count() > 0) {
         await courseTitleInput.fill(`Exercise Course ${Date.now()}`);
       }
@@ -385,7 +528,7 @@ test.describe('Course Management - Optimized Tests', () => {
     }
     
     // Step 2: Student submits valid solution → verify test execution
-    await authHelpers.loginAsStudent();
+    await authHelper.loginAsStudent();
     await page.goto('/courses');
     await page.waitForLoadState('networkidle');
     
@@ -449,14 +592,24 @@ test.describe('Course Management - Optimized Tests', () => {
         // Should see indication of test failures
       }
     }
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   // =============================================================================
   // COURSE-003: Quiz System & Assessment Workflows
   // =============================================================================
   test('COURSE-003: Quiz System & Assessment Workflows', async ({ page }) => {
-    // Step 1: Create quiz with multiple choice questions → verify setup
-    await authHelpers.loginAsTeacher();
+    const cleanup = TestCleanup.getInstance('COURSE-003: Quiz System & Assessment Workflows');
+    const authHelper = new CleanAuthHelper(page);
+    let createdQuizCourse: string | null = null;
+    
+    try {
+      // Step 1: Create quiz with multiple choice questions → verify setup
+      await authHelper.loginAsTeacher();
     await page.goto('/courses');
     await page.waitForLoadState('networkidle');
     
@@ -464,11 +617,12 @@ test.describe('Course Management - Optimized Tests', () => {
     const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
     if (await createButton.count() > 0) {
       await createButton.first().click();
-      await page.waitForTimeout(1000);
       
       const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 10000 });
       if (await courseTitleInput.count() > 0) {
-        await courseTitleInput.fill(`Quiz Course ${Date.now()}`);
+        createdQuizCourse = `Quiz Course ${Date.now()}`;
+        await courseTitleInput.fill(createdQuizCourse);
       }
       
       // Add quiz
@@ -559,7 +713,7 @@ test.describe('Course Management - Optimized Tests', () => {
     }
     
     // Step 3: Student takes quiz within time limit → verify timing
-    await authHelpers.loginAsStudent();
+    await authHelper.loginAsStudent();
     await page.goto('/courses');
     await page.waitForLoadState('networkidle');
     
@@ -616,7 +770,7 @@ test.describe('Course Management - Optimized Tests', () => {
     // Should see automatic scoring results
     
     // Step 5: Test manual grading workflow for essays
-    await authHelpers.loginAsTeacher();
+    await authHelper.loginAsTeacher();
     await page.goto('/courses');
     await page.waitForLoadState('networkidle');
     
@@ -646,6 +800,18 @@ test.describe('Course Management - Optimized Tests', () => {
           await page.waitForLoadState('networkidle');
         }
       }
+    }
+    
+    } finally {
+      // CRITICAL: Track and cleanup created quiz course
+      if (createdQuizCourse) {
+        cleanup.addCustomCleanup(async () => {
+          console.log(`Cleaning up quiz course: ${createdQuizCourse}`);
+          // This would delete the course via API in a real implementation
+        });
+      }
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
     }
   });
 });

@@ -1,9 +1,8 @@
 // packages/testing-utilities/tests/enhanced-global-setup.ts
-// Enhanced global setup for ultra-robust 4-worker parallelization
+// Enhanced global setup for single-worker testing
 
 import { FullConfig } from '@playwright/test';
-import { createEnhancedTestIsolation } from './helpers/enhanced-test-isolation';
-import { connectDatabase } from '@yggdrasil/database-schemas';
+import { TestInitializer } from '@yggdrasil/shared-utilities/testing';
 import { spawn, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 
@@ -19,7 +18,7 @@ let serviceProcesses: ServiceProcess[] = [];
 
 async function checkServiceHealth(port: number): Promise<boolean> {
   try {
-    // Frontend service (port 3000, 3010, 3020, 3030) doesn't have /health endpoint
+    // Frontend service (port 3000) doesn't have /health endpoint
     const isFrontend = port % 10 === 0;
     const endpoint = isFrontend ? '' : '/health';
     
@@ -47,10 +46,10 @@ async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
   const env = {
     ...process.env,
     NODE_ENV: 'test',
+    MONGODB_URI: 'mongodb://localhost:27018/yggdrasil-dev',
+    // Clean testing approach - no worker-specific database naming
     WORKER_ID: workerId.toString(),
-    PLAYWRIGHT_WORKER_ID: workerId.toString(),
-    DB_NAME: `yggdrasil_test_w${workerId}`,
-    DB_COLLECTION_PREFIX: `w${workerId}_`
+    PLAYWRIGHT_WORKER_ID: workerId.toString()
   };
   
   // Start service manager for this worker
@@ -62,21 +61,29 @@ async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
   });
   
   serviceManager.stdout?.on('data', (data) => {
-    console.log(`📝 Worker ${workerId} Service Manager:`, data.toString().trim());
+    try {
+      console.log(`📝 Worker ${workerId} Service Manager:`, data.toString().trim());
+    } catch (error) {
+      // Ignore EPIPE errors during shutdown
+    }
   });
   
   serviceManager.stderr?.on('data', (data) => {
-    console.error(`❌ Worker ${workerId} Service Manager Error:`, data.toString().trim());
+    try {
+      console.error(`❌ Worker ${workerId} Service Manager Error:`, data.toString().trim());
+    } catch (error) {
+      // Ignore EPIPE errors during shutdown
+    }
   });
   
   // Wait for services to be ready
   console.log(`⏳ GLOBAL SETUP: Waiting for Worker ${workerId} services to be ready...`);
   
   let retries = 0;
-  const maxRetries = 60; // 5 minutes total
+  const maxRetries = 60; // 1 minute total with faster checks
   
   while (retries < maxRetries) {
-    await sleep(5000); // Check every 5 seconds
+    await sleep(1000); // Check every 1 second for faster startup
     
     const healthChecks = await Promise.all(
       ports.map(port => checkServiceHealth(port))
@@ -100,34 +107,102 @@ async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
   throw new Error(`❌ GLOBAL SETUP: Worker ${workerId} services failed to start within timeout`);
 }
 
-async function startServicesForAllWorkers(workerCount: number): Promise<void> {
-  console.log(`🚀 GLOBAL SETUP: Starting services for ${workerCount} workers...`);
+async function verifyWorkerHealth(workerId: number): Promise<boolean> {
+  const basePort = 3000 + (workerId * 10);
+  const ports = [
+    basePort,     // frontend
+    basePort + 1, // auth
+    basePort + 2, // user
+    basePort + 3, // news
+    basePort + 4, // course
+    basePort + 5, // planning
+    basePort + 6  // statistics
+  ];
+  
+  console.log(`🔍 HEALTH CHECK: Verifying Worker ${workerId} services on ports ${ports.join(', ')}...`);
   
   try {
-    // Start services for all workers in parallel
-    const workerPromises = [];
-    for (let workerId = 0; workerId < workerCount; workerId++) {
-      workerPromises.push(startWorkerServices(workerId));
+    const healthChecks = await Promise.all(
+      ports.map(async (port, index) => {
+        const serviceName = ['frontend', 'auth', 'user', 'news', 'course', 'planning', 'statistics'][index];
+        const isHealthy = await checkServiceHealth(port);
+        
+        if (isHealthy) {
+          console.log(`✅ ${serviceName} service (${port}) - healthy`);
+        } else {
+          console.log(`❌ ${serviceName} service (${port}) - unhealthy`);
+        }
+        
+        return isHealthy;
+      })
+    );
+    
+    const healthyCount = healthChecks.filter(Boolean).length;
+    const isFullyHealthy = healthyCount === ports.length;
+    
+    console.log(`📊 Worker ${workerId} Health: ${healthyCount}/${ports.length} services healthy`);
+    
+    if (!isFullyHealthy) {
+      console.warn(`⚠️ Worker ${workerId} has ${ports.length - healthyCount} unhealthy services`);
     }
     
-    serviceProcesses = await Promise.all(workerPromises);
+    return isFullyHealthy;
+  } catch (error) {
+    console.error(`❌ Worker ${workerId} health check failed:`, error);
+    return false;
+  }
+}
+
+async function startSingleWorkerServices(): Promise<void> {
+  console.log(`🚀 GLOBAL SETUP: Starting services for single worker...`);
+  
+  try {
+    serviceProcesses = [];
     
-    console.log('✅ GLOBAL SETUP: All workers have services running!');
-    console.log('📊 Service Status:');
-    for (const worker of serviceProcesses) {
-      console.log(`   Worker ${worker.workerId}: ports ${worker.ports.join(', ')}`);
+    // Single worker setup - workerId is always 0
+    const workerId = 0;
+    console.log(`⚡ Starting Worker ${workerId}...`);
+    
+    const workerStartTime = Date.now();
+    const worker = await startWorkerServices(workerId);
+    serviceProcesses.push(worker);
+    
+    const workerDuration = Date.now() - workerStartTime;
+    console.log(`✅ Worker ${workerId} started in ${workerDuration}ms`);
+    
+    // Verify worker health
+    console.log(`🔍 Verifying Worker ${workerId} health...`);
+    const healthCheck = await verifyWorkerHealth(workerId);
+    if (!healthCheck) {
+      throw new Error(`Worker ${workerId} failed health check after startup`);
     }
+    console.log(`💚 Worker ${workerId} health verified`);
+    
+    console.log('✅ GLOBAL SETUP: Single worker started and verified!');
+    console.log('📊 Startup Results:');
+    console.log(`   Worker 0: ports ${serviceProcesses[0].ports.join(', ')}`);
     
     // Store reference for global teardown
     (global as any).__serviceProcesses = serviceProcesses;
     
   } catch (error) {
-    console.error('❌ GLOBAL SETUP: Failed to start services:', error);
+    console.error('❌ GLOBAL SETUP: Single worker startup failed:', error);
     
-    // Cleanup any started processes
+    // Cleanup for failed startup
+    console.log('🧹 Cleaning up failed worker...');
     for (const worker of serviceProcesses) {
-      for (const process of worker.processes) {
-        process.kill();
+      try {
+        for (const process of worker.processes) {
+          if (process && !process.killed) {
+            process.kill('SIGTERM');
+            await sleep(1000);
+            if (!process.killed) {
+              process.kill('SIGKILL');
+            }
+          }
+        }
+      } catch (cleanupError) {
+        console.error(`Failed to cleanup worker ${worker.workerId}:`, cleanupError);
       }
     }
     
@@ -136,70 +211,52 @@ async function startServicesForAllWorkers(workerCount: number): Promise<void> {
 }
 
 async function globalSetup(config: FullConfig) {
-  console.log('🚀 Starting enhanced global setup for 4-worker parallelization...');
-  
-  const workerCount = config.workers || 4;
-  console.log(`🔧 Initializing ${workerCount} workers with complete isolation...`);
+  console.log('🚀 Starting clean global setup for testing...');
+  console.log('🔧 Using clean testing architecture with dev database...');
   
   try {
-    // First, start services for all workers
-    await startServicesForAllWorkers(workerCount);
+    // Start services for single worker
+    await startSingleWorkerServices();
     
-    // Then initialize isolation for all workers in parallel
-    const initPromises = [];
+    // Initialize clean test environment
+    console.log('🏗️ Initializing clean test environment...');
     
-    for (let workerId = 0; workerId < workerCount; workerId++) {
-      console.log(`🏗️ Setting up worker ${workerId}...`);
-      
-      const setupWorker = async () => {
-        try {
-          const isolationManager = createEnhancedTestIsolation(workerId);
-          await isolationManager.initialize();
-          console.log(`✅ Worker ${workerId} initialized successfully`);
-        } catch (error) {
-          console.error(`❌ Worker ${workerId} initialization failed:`, error);
-          throw error;
-        }
-      };
-      
-      initPromises.push(setupWorker());
+    const initStartTime = Date.now();
+    await TestInitializer.quickSetup(true);
+    
+    const initDuration = Date.now() - initStartTime;
+    console.log(`✅ Clean test environment initialized in ${initDuration}ms`);
+    
+    console.log('🎯 Verifying system health...');
+    
+    // Verify services are healthy
+    const isHealthy = await verifyWorkerHealth(0);
+    
+    if (!isHealthy) {
+      throw new Error('Services are not healthy after startup');
     }
     
-    // Wait for all workers to initialize
-    await Promise.all(initPromises);
-    
-    console.log('🎯 Verifying system health across all workers...');
-    
-    // Verify all workers are healthy
-    for (let workerId = 0; workerId < workerCount; workerId++) {
-      const isolationManager = createEnhancedTestIsolation(workerId);
-      const stats = isolationManager.getSystemStatistics();
-      
-      if (!stats.isInitialized) {
-        throw new Error(`Worker ${workerId} is not properly initialized`);
-      }
-      
-      console.log(`📊 Worker ${workerId} stats:`, {
-        isInitialized: stats.isInitialized,
-        poolCount: stats.poolStatistics.pools.length,
-        serviceCount: stats.serviceStatuses.length
-      });
-    }
-    
-    console.log('✅ Enhanced global setup completed successfully!');
-    console.log('🎉 All workers ready for ultra-robust parallel testing!');
+    console.log('✅ Clean global setup completed successfully!');
+    console.log('🎉 Services ready for clean testing!');
     
   } catch (error) {
-    console.error('❌ Enhanced global setup failed:', error);
+    console.error('❌ Clean global setup failed:', error);
     
     // Cleanup on failure
     console.log('🧹 Cleaning up failed setup...');
-    for (let workerId = 0; workerId < workerCount; workerId++) {
+    for (const worker of serviceProcesses) {
       try {
-        const isolationManager = createEnhancedTestIsolation(workerId);
-        await isolationManager.shutdown();
+        for (const process of worker.processes) {
+          if (process && !process.killed) {
+            process.kill('SIGTERM');
+            await sleep(1000);
+            if (!process.killed) {
+              process.kill('SIGKILL');
+            }
+          }
+        }
       } catch (cleanupError) {
-        console.error(`Failed to cleanup worker ${workerId}:`, cleanupError);
+        console.error(`Failed to cleanup worker ${worker.workerId}:`, cleanupError);
       }
     }
     
