@@ -20,7 +20,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   // =============================================================================
   // AUTH-001: Complete JWT Security Lifecycle
   // =============================================================================
-  test('AUTH-001: Complete JWT Security Lifecycle', async ({ page }) => {
+  test('Complete JWT Security Lifecycle', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('AUTH-001: Complete JWT Security Lifecycle');
     const authHelper = new CleanAuthHelper(page);
     
@@ -273,7 +273,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   // =============================================================================
   // AUTH-002: Multi-Device Session Management
   // =============================================================================
-  test('AUTH-002: Multi-Device Session Management', async ({ page, context }) => {
+  test('Multi-Device Session Management', async ({ page, context }) => {
     const cleanup = TestCleanup.getInstance('AUTH-002: Multi-Device Session Management');
     const authHelper = new CleanAuthHelper(page);
     

@@ -482,7 +482,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
   // =============================================================================
   // INTEGRATION-001: Complete Student Learning Journey
   // =============================================================================
-  test('INTEGRATION-001: Complete Student Learning Journey', async ({ page }) => {
+  test('Complete Student Learning Journey', async ({ page }) => {
     let studentEmail: string;
     let courseName: string;
 
@@ -822,7 +822,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
   // =============================================================================
   // INTEGRATION-002: Instructor Teaching Workflow
   // =============================================================================
-  test('INTEGRATION-002: Instructor Teaching Workflow', async ({ page }) => {
+  test('Instructor Teaching Workflow', async ({ page }) => {
     let courseName: string;
     let studentEmails: string[] = [];
 

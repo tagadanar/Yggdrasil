@@ -261,7 +261,7 @@ test.describe('Course Management', () => {
   // =============================================================================
   // COURSE-001: Complete Course Creation & Publishing Workflow
   // =============================================================================
-  test('COURSE-001: Complete Course Creation & Publishing Workflow', async ({ page }) => {
+  test('Complete Course Creation & Publishing Workflow', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('COURSE-001: Complete Course Creation & Publishing Workflow');
     const authHelper = new CleanAuthHelper(page);
     let createdCourseTitle: string | null = null;
@@ -468,7 +468,7 @@ test.describe('Course Management', () => {
   // =============================================================================
   // COURSE-002: Exercise Submission & Automated Grading
   // =============================================================================
-  test('COURSE-002: Exercise Submission & Automated Grading', async ({ page }) => {
+  test('Exercise Submission & Automated Grading', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('COURSE-002: Exercise Submission & Automated Grading');
     const authHelper = new CleanAuthHelper(page);
     
@@ -602,7 +602,7 @@ test.describe('Course Management', () => {
   // =============================================================================
   // COURSE-003: Quiz System & Assessment Workflows
   // =============================================================================
-  test('COURSE-003: Quiz System & Assessment Workflows', async ({ page }) => {
+  test('Quiz System & Assessment Workflows', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('COURSE-003: Quiz System & Assessment Workflows');
     const authHelper = new CleanAuthHelper(page);
     let createdQuizCourse: string | null = null;

@@ -17,10 +17,46 @@ const SUITE_CATEGORIES = [
   { name: 'System Integration', priority: 'HIGH' }
 ];
 
+// Helper function to format elapsed time
+function formatElapsedTime(startTime) {
+  const elapsed = Date.now() - startTime;
+  const seconds = Math.floor(elapsed / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  
+  if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+  return `${seconds}s`;
+}
+
+// Helper function to clean test names (remove file paths)
+function cleanTestName(testName) {
+  if (!testName) return testName;
+  
+  // Remove file path prefixes like "tests/functional/auth-security.spec.ts:" or similar
+  let cleaned = testName.replace(/^.*[\/\\]([^\/\\]+\.spec\.ts):\s*/, '');
+  
+  // Remove any remaining file path references
+  cleaned = cleaned.replace(/^[^\/\\]*\.spec\.ts:\s*/, '');
+  
+  // Remove line numbers and other technical references (like :24:7 or 6:7)
+  cleaned = cleaned.replace(/:\d+:\d+/g, '');
+  cleaned = cleaned.replace(/^\d+:\d+\s*›\s*/, '');
+  
+  // Remove extra whitespace and trim
+  cleaned = cleaned.trim();
+  
+  return cleaned;
+}
+
 // Main async function to handle the test execution
 async function runTests() {
+  const startTime = Date.now();
+  
   console.log('🧪 Test Suite Overview');
   console.log('💡 Running all tests with centralized service management\n');
+  console.log(`⏰ Started at: ${new Date(startTime).toLocaleTimeString()}\n`);
 
   // Use centralized service manager for cleaning
   console.log('🧹 Cleaning environment via service manager...');
@@ -46,6 +82,8 @@ async function runTests() {
   let totalTestsEstimate = 45; // Approximate total tests based on CLAUDE.md
   let collectingError = false;
   let errorBuffer = '';
+  let testStartTime = null;
+  let testLineNumber = 0; // Line counter for test results
 
   try {
     // Use Playwright with list reporter for live updates
@@ -96,7 +134,7 @@ async function runTests() {
           // Test execution detection
           if (line.includes('Running') && line.includes('test')) {
             if (!testsStarted) {
-              console.log('🧪 Test execution starting...\n');
+              console.log(`🧪 Test execution starting... [${formatElapsedTime(startTime)}]\n`);
               testsStarted = true;
             }
             
@@ -106,14 +144,15 @@ async function runTests() {
               const newSuite = suiteMatch[1];
               if (newSuite !== currentTestSuite) {
                 currentTestSuite = newSuite;
-                console.log(`\n📋 Running: ${currentTestSuite}`);
+                console.log(`\n📋 Running: ${currentTestSuite} [${formatElapsedTime(startTime)}]`);
               }
             }
             
-            // Extract test name from the line
+            // Extract test name from the line and start timing
             const testNameMatch = line.match(/Running.*?test\s+(.+?)$/);
             if (testNameMatch) {
-              currentTestName = testNameMatch[1].trim();
+              currentTestName = cleanTestName(testNameMatch[1].trim());
+              testStartTime = Date.now();
             }
           }
           
@@ -135,7 +174,7 @@ async function runTests() {
               for (const pattern of patterns) {
                 const nameMatch = line.match(pattern);
                 if (nameMatch) {
-                  currentTestName = nameMatch[1].trim();
+                  currentTestName = cleanTestName(nameMatch[1].trim());
                   break;
                 }
               }
@@ -145,24 +184,32 @@ async function runTests() {
             if (testProgress.total >= totalTestsEstimate - 5) {
               totalTestsEstimate = testProgress.total + 10; // Add buffer for remaining tests
             }
-                        
-            // Simple progress counter
-            const progressInfo = `[${testProgress.total}/${totalTestsEstimate}]`;
+            
+            // Calculate test duration if we have a start time
+            let testDuration = '';
+            if (testStartTime) {
+              const duration = Date.now() - testStartTime;
+              testDuration = ` (${Math.round(duration / 10) / 100}s)`;
+            }
+            
+            // Progress counter with elapsed time
+            const progressInfo = `[${testProgress.total}/${totalTestsEstimate}] [${formatElapsedTime(startTime)}]${testDuration}`;
             
             if (isPass) {
               testProgress.passed++;
-              console.log(`✓ ${currentTestName || 'Test'} ${progressInfo}`);
+              console.log(`✓ ${progressInfo} ${currentTestName || 'Test'}`);
             } else {
               testProgress.failed++;
-              console.log(`✗ ${currentTestName || 'Test'} ${progressInfo}`);
+              console.log(`✗ ${progressInfo} ${currentTestName || 'Test'}`);
               
               // Start collecting error details for failed test
               collectingError = true;
               errorBuffer = '';
             }
             
-            // Reset current test name for next test
+            // Reset for next test
             currentTestName = '';
+            testStartTime = null;
           }
           
           // Collect error details if we're tracking a failed test
@@ -171,11 +218,11 @@ async function runTests() {
             
             // Look for test file location and error details
             if (line.includes('.spec.ts:') && (line.includes('Error:') || line.includes('at '))) {
-              // Extract file location
-              const locationMatch = line.match(/([^\/\s]+\.spec\.ts):(\d+):(\d+)/);
+              // Extract file location but don't show line numbers
+              const locationMatch = line.match(/([^\/\s]+\.spec\.ts)/);
               if (locationMatch) {
-                const [, file, lineNum] = locationMatch;
-                console.log(`   📍 Failed at ${file}:${lineNum}`);
+                const [, file] = locationMatch;
+                console.log(`   📍 Failed in ${file}`);
               }
               
               // Stop collecting after showing location
@@ -225,7 +272,8 @@ async function runTests() {
       });
     });
 
-    console.log('\n\n📊 Generating final test overview...');
+    const totalExecutionTime = formatElapsedTime(startTime);
+    console.log(`\n\n📊 Generating final test overview... [Total: ${totalExecutionTime}]`);
     
     // Simple final overview using the progress we tracked
     const suiteResults = new Map();
@@ -310,6 +358,8 @@ async function runTests() {
     console.log('═'.repeat(80));
     console.log(`🎯 Test Suites: ${passedSuites} passed, ${failedSuites} failed, ${passedSuites + failedSuites} total`);
     console.log(`🧪 Individual Tests: ${totalPassed} passed, ${totalFailed} failed, ${totalTests} total`);
+    console.log(`⏰ Total Execution Time: ${totalExecutionTime}`);
+    console.log(`🕐 Finished at: ${new Date().toLocaleTimeString()}`);
     
     if (failedSuites === 0) {
       console.log('\n🎉 ALL TEST SUITES PASSED! System is healthy.');

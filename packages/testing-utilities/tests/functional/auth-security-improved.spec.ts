@@ -7,7 +7,7 @@ import { SimplifiedAuthHelpers } from '../helpers/simplified-auth.helpers';
 test.describe('Authentication Security', () => {
   // Removed auth helper setup since we're using direct demo button authentication
 
-  test('IMPROVED-AUTH-001: Admin Authentication Flow', async ({ page }) => {
+  test('Admin Authentication Flow', async ({ page }) => {
     console.log('🧪 TEST: Starting admin authentication test...');
     
     // Go to login page
@@ -38,7 +38,7 @@ test.describe('Authentication Security', () => {
     console.log('🧪 TEST: Admin authentication test completed successfully');
   });
 
-  test('IMPROVED-AUTH-002: Teacher Authentication Flow', async ({ page }) => {
+  test('Teacher Authentication Flow', async ({ page }) => {
     console.log('🧪 TEST: Starting teacher authentication test...');
     
     // Go to login page and use demo button
@@ -66,7 +66,7 @@ test.describe('Authentication Security', () => {
     console.log('🧪 TEST: Teacher authentication test completed successfully');
   });
 
-  test('IMPROVED-AUTH-003: Staff Authentication Flow', async ({ page }) => {
+  test('Staff Authentication Flow', async ({ page }) => {
     console.log('🧪 TEST: Starting staff authentication test...');
     
     // Go to login page and use demo button
@@ -94,7 +94,7 @@ test.describe('Authentication Security', () => {
     console.log('🧪 TEST: Staff authentication test completed successfully');
   });
 
-  test('IMPROVED-AUTH-004: Student Authentication Flow', async ({ page }) => {
+  test('Student Authentication Flow', async ({ page }) => {
     console.log('🧪 TEST: Starting student authentication test...');
     
     // Go to login page and use demo button
@@ -122,7 +122,7 @@ test.describe('Authentication Security', () => {
     console.log('🧪 TEST: Student authentication test completed successfully');
   });
 
-  test('IMPROVED-AUTH-005: Sequential Authentication Test', async () => {
+  test('Sequential Authentication Test', async () => {
     console.log('🧪 TEST: Starting sequential authentication test...');
     
     const page = authHelpers.getPage();
@@ -157,7 +157,7 @@ test.describe('Authentication Security', () => {
     console.log('🧪 TEST: Sequential authentication test completed successfully');
   });
 
-  test('IMPROVED-AUTH-006: Cookie Persistence Test', async () => {
+  test('Cookie Persistence Test', async () => {
     console.log('🧪 TEST: Starting cookie persistence test...');
     
     const page = authHelpers.getPage();
@@ -191,7 +191,7 @@ test.describe('Authentication Security', () => {
     console.log('🧪 TEST: Cookie persistence test completed successfully');
   });
 
-  test('IMPROVED-AUTH-007: Authentication State Isolation', async () => {
+  test('Authentication State Isolation', async () => {
     console.log('🧪 TEST: Starting authentication state isolation test...');
     
     const page = authHelpers.getPage();

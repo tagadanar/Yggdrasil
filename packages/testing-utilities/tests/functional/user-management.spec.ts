@@ -632,7 +632,7 @@ test.describe('User Management', () => {
   // =============================================================================
   // USER-001: Complete User Lifecycle Management
   // =============================================================================
-  test('USER-001: Complete User Lifecycle Management', async ({ page }) => {
+  test('Complete User Lifecycle Management', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('USER-001: Complete User Lifecycle Management');
     const authHelper = new CleanAuthHelper(page);
     let testUserEmail: string;
@@ -932,7 +932,7 @@ test.describe('User Management', () => {
   // =============================================================================
   // USER-002: Bulk User Operations & Data Management
   // =============================================================================
-  test('USER-002: Bulk User Operations & Data Management', async ({ page }) => {
+  test('Bulk User Operations & Data Management', async ({ page }) => {
     await authHelpers.loginAsAdmin();
     await page.goto('/admin/users');
     await expect(page.locator('text=Loading users...')).not.toBeVisible();
