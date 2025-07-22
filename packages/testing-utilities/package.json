@@ -8,7 +8,7 @@
     "test:single": "playwright test --config=playwright.enhanced.config.ts --reporter=line --workers=1",
     "test:debug": "playwright test --config=playwright.enhanced.config.ts --reporter=line --headed --workers=1",
     "test:unit": "echo 'Unit tests not implemented yet - use test:quiet for functional tests'",
-    "dev": "node service-manager.js start",
+    "dev": "exec node service-manager.js start",
     "dev:health": "node service-manager.js health",
     "dev:stop": "node service-manager.js stop",
     "typecheck": "tsc --noEmit",

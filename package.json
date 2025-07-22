@@ -8,7 +8,7 @@
     "packages/api-services/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=@yggdrasil/testing-utilities",
+    "dev": "exec npm run dev --workspace=@yggdrasil/testing-utilities",
     "dev:stop": "npm run dev:stop --workspace=@yggdrasil/testing-utilities", 
     "dev:health": "npm run dev:health --workspace=@yggdrasil/testing-utilities",
     

@@ -75,11 +75,8 @@ class ServiceManager {
       // Aggressive cleanup for development tools that spawn child processes
       const aggressiveKillCommands = [
         'pkill -f "next-server" 2>/dev/null || true',
-        'pkill -f "ts-node-dev" 2>/dev/null || true',
-        'pkill -f "next.*dev" 2>/dev/null || true',
-        'pkill -f "npm.*run.*dev" 2>/dev/null || true',
-        // Kill any Node.js processes on our port range
-        `lsof -ti:${ports[0]}-${ports[ports.length-1]} | xargs -r kill -9 2>/dev/null || true`
+        'pkill -f "ts-node-dev" 2>/dev/null || true'
+        // Removed problematic commands that might kill parent process
       ];
       
       for (const cmd of aggressiveKillCommands) {
@@ -412,17 +409,17 @@ async function main() {
   
   const aggressiveShutdown = async (signal) => {
     if (isShuttingDown) {
-      console.log('\\n⚡ Force shutdown - killing all processes immediately...');
+      console.log('\n⚡ Force shutdown - killing all processes immediately...');
       const ports = SERVICES.map(s => s.port);
       await serviceManager.killPortProcesses(ports);
       process.exit(1);
     }
     
     isShuttingDown = true;
-    console.log(`\\n🛑 Received ${signal}, shutting down immediately...`);
+    console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
     
     try {
-      // Kill all processes aggressively
+      // Kill all processes gracefully
       await serviceManager.stopServices();
       console.log('✅ Service manager shutdown completed');
       process.exit(0);
