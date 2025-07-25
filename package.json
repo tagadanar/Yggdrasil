@@ -9,40 +9,41 @@
   ],
   "scripts": {
     "dev": "exec npm run dev --workspace=@yggdrasil/testing-utilities",
-    "dev:stop": "npm run dev:stop --workspace=@yggdrasil/testing-utilities", 
+    "dev:stop": "npm run dev:stop --workspace=@yggdrasil/testing-utilities",
     "dev:health": "npm run dev:health --workspace=@yggdrasil/testing-utilities",
-    
     "build": "npm run build --workspaces",
     "build:frontend": "npm run build --workspace=@yggdrasil/frontend",
     "build:services": "npm run build --workspaces --workspace=packages/api-services/*",
-    
     "test:quiet": "npm run test:quiet --workspace=@yggdrasil/testing-utilities",
     "test:single": "npm run test:single --workspace=@yggdrasil/testing-utilities --",
     "test:debug": "npm run test:debug --workspace=@yggdrasil/testing-utilities --",
     "test:unit": "npm run test:unit --workspaces --if-present",
-    
     "lint": "npm run lint --workspaces",
     "lint:fix": "npm run lint:fix --workspaces",
     "typecheck": "npm run typecheck --workspaces",
-    
     "setup:db": "npm run setup:db --workspace=@yggdrasil/database-schemas",
     "migrate": "npm run migrate --workspace=@yggdrasil/database-schemas",
     "seed": "npm run seed --workspace=@yggdrasil/database-schemas",
-    
+    "security:generate-secrets": "./scripts/generate-dev-secrets.sh",
+    "security:migrate-mongo": "./scripts/migrate-to-auth-mongo.sh",
     "clean": "npm run clean --workspaces && rm -rf node_modules",
     "reset": "npm run clean && npm install",
-    
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@types/node": "^20.10.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
     "eslint": "^8.54.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
     "prettier": "^3.1.0",
     "typescript": "^5.3.0"
   },
@@ -63,5 +64,17 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yggdrasil/platform.git"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "**/*.ts": [
+      "bash -c 'npm run typecheck'"
+    ]
   }
 }
