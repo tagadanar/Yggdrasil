@@ -1,12 +1,27 @@
-// packages/frontend/src/app/profile/page.tsx
-// User profile page
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AnimatedCard } from '@/components/ui/AnimatedCard';
+import { AnimatedInput } from '@/components/ui/AnimatedInput';
+import { AnimatedButton } from '@/components/ui/AnimatedButton';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { motion } from 'framer-motion';
+import { 
+  UserIcon, 
+  EnvelopeIcon, 
+  PhoneIcon, 
+  BuildingOfficeIcon,
+  DocumentTextIcon,
+  AcademicCapIcon,
+  ClockIcon,
+  StarIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -58,7 +73,6 @@ export default function ProfilePage() {
     try {
       const { userApi } = await import('@/lib/api/client');
       
-      // Prepare profile update data
       const profileUpdateData: any = {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -71,26 +85,17 @@ export default function ProfilePage() {
         }
       };
       
-      // Handle specialties (convert comma-separated string to array)
       if (formData.specialties) {
         profileUpdateData.specialties = formData.specialties.split(',').map(s => s.trim()).filter(s => s);
       }
       
-      console.log('Sending profile update data:', profileUpdateData);
-      
       const result = await userApi.updateProfile(profileUpdateData);
       
-      console.log('Profile update result:', result);
-      
       if (result.success) {
-        // Update the user context with new data if available
-        // Note: AuthProvider will need to refresh user data
         setIsEditing(false);
-      } else {
-        console.error('Profile update failed:', result.error);
       }
     } catch (error) {
-      console.error('Profile update error:', error);
+      // Handle error silently for now
     }
   };
 
@@ -131,233 +136,207 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <div className="max-w-4xl mx-auto py-6">
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-                {!isEditing ? (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="btn-primary"
+        <div className="max-w-4xl mx-auto space-y-6">
+          <PageHeader
+            title="My Profile"
+            subtitle="Manage your personal information and preferences"
+            icon={<UserIcon className="w-10 h-10 text-primary-600" />}
+            actions={
+              !isEditing ? (
+                <AnimatedButton
+                  onClick={() => setIsEditing(true)}
+                  icon={<PencilIcon className="w-5 h-5" />}
+                  variant="primary"
+                >
+                  Edit Profile
+                </AnimatedButton>
+              ) : (
+                <div className="flex gap-2">
+                  <AnimatedButton
+                    onClick={handleCancel}
+                    icon={<XMarkIcon className="w-5 h-5" />}
+                    variant="secondary"
                   >
-                    Edit Profile
-                  </button>
-                ) : (
-                  <div className="space-x-2">
-                    <button
-                      onClick={handleCancel}
-                      className="btn-secondary"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      form="profile-form"
-                      className="btn-primary"
-                    >
-                      Save Changes
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+                    Cancel
+                  </AnimatedButton>
+                  <AnimatedButton
+                    type="submit"
+                    form="profile-form"
+                    icon={<CheckIcon className="w-5 h-5" />}
+                    variant="primary"
+                  >
+                    Save Changes
+                  </AnimatedButton>
+                </div>
+              )
+            }
+          />
 
-            <div className="px-6 py-4">
-              {/* User Name Display */}
-              <div className="mb-6 pb-4 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900" data-testid="profile-name">
+          {/* Profile Header Card */}
+          <AnimatedCard delay={0.1}>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center">
+                <UserIcon className="w-8 h-8 text-primary-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900" data-testid="profile-name">
                   {formData.firstName && formData.lastName ? `${formData.firstName} ${formData.lastName}` : 'User Profile'}
                 </h2>
-                <p className="text-sm text-gray-600 mt-1" data-testid="profile-email">
+                <p className="text-lg text-gray-600" data-testid="profile-email">
                   {formData.email}
                 </p>
-              </div>
-              
-              <form id="profile-form" onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Basic Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Basic Information</h3>
-                    
-                    <div>
-                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        id="firstName"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        id="lastName"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                        Role
-                      </label>
-                      <div className="mt-1 flex items-center">
-                        <select
-                          id="role"
-                          name="role"
-                          value={formData.role}
-                          onChange={handleInputChange}
-                          disabled={true} // Role cannot be changed by user
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50"
-                        >
-                          <option value="admin">Admin</option>
-                          <option value="staff">Staff</option>
-                          <option value="teacher">Teacher</option>
-                          <option value="student">Student</option>
-                        </select>
-                        <span className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(formData.role)}`}>
-                          {formData.role.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Role-specific Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Role-specific Information</h3>
-                    
-                    {user?.role === 'student' && (
-                      <div>
-                        <label htmlFor="studentId" className="block text-sm font-medium text-gray-700">
-                          Student ID
-                        </label>
-                        <input
-                          type="text"
-                          id="studentId"
-                          name="studentId"
-                          value={formData.studentId}
-                          onChange={handleInputChange}
-                          disabled={!isEditing}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50"
-                        />
-                      </div>
-                    )}
-
-                    {user?.role === 'teacher' && (
-                      <>
-                        <div>
-                          <label htmlFor="specialties" className="block text-sm font-medium text-gray-700">
-                            Specialties (comma-separated)
-                          </label>
-                          <input
-                            type="text"
-                            id="specialties"
-                            name="specialties"
-                            value={formData.specialties}
-                            onChange={handleInputChange}
-                            disabled={!isEditing}
-                            placeholder="e.g., Mathematics, Computer Science, Physics"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50"
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="officeHours" className="block text-sm font-medium text-gray-700">
-                            Office Hours
-                          </label>
-                          <input
-                            type="text"
-                            id="officeHours"
-                            name="officeHours"
-                            value={formData.officeHours}
-                            onChange={handleInputChange}
-                            disabled={!isEditing}
-                            placeholder="e.g., Mon/Wed 2-4pm"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    <div>
-                      <label htmlFor="department" className="block text-sm font-medium text-gray-700">
-                        Department
-                      </label>
-                      <input
-                        type="text"
-                        id="department"
-                        name="department"
-                        value={formData.department}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50"
-                      />
-                    </div>
-
-                    {(user?.role === 'teacher' || user?.role === 'staff') && (
-                      <div>
-                        <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
-                          Bio
-                        </label>
-                        <textarea
-                          id="bio"
-                          name="bio"
-                          rows={4}
-                          value={formData.bio}
-                          onChange={handleInputChange}
-                          disabled={!isEditing}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:bg-gray-50"
-                        />
-                      </div>
-                    )}
-                  </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getRoleColor(formData.role)}`}>
+                    {formData.role.toUpperCase()}
+                  </span>
                 </div>
-              </form>
+              </div>
             </div>
-          </div>
+          </AnimatedCard>
+
+          <form id="profile-form" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Basic Information */}
+              <AnimatedCard delay={0.2}>
+                <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                  <UserIcon className="w-6 h-6 text-primary-600" />
+                  Basic Information
+                </h3>
+                
+                <div className="space-y-4">
+                  <AnimatedInput
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    label="First Name"
+                    icon={<UserIcon className="w-5 h-5" />}
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+
+                  <AnimatedInput
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    label="Last Name"
+                    icon={<UserIcon className="w-5 h-5" />}
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+
+                  <AnimatedInput
+                    id="email"
+                    name="email"
+                    type="email"
+                    label="Email Address"
+                    icon={<EnvelopeIcon className="w-5 h-5" />}
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+
+                  <AnimatedInput
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    label="Phone Number"
+                    icon={<PhoneIcon className="w-5 h-5" />}
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </AnimatedCard>
+              {/* Role-specific Information */}
+              <AnimatedCard delay={0.3}>
+                <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                  <BuildingOfficeIcon className="w-6 h-6 text-primary-600" />
+                  Professional Information
+                </h3>
+                
+                <div className="space-y-4">
+                  <AnimatedInput
+                    id="department"
+                    name="department"
+                    type="text"
+                    label="Department"
+                    icon={<BuildingOfficeIcon className="w-5 h-5" />}
+                    value={formData.department}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+
+                  {user?.role === 'student' && (
+                    <AnimatedInput
+                      id="studentId"
+                      name="studentId"
+                      type="text"
+                      label="Student ID"
+                      icon={<AcademicCapIcon className="w-5 h-5" />}
+                      value={formData.studentId}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                  )}
+
+                  {user?.role === 'teacher' && (
+                    <>
+                      <AnimatedInput
+                        id="specialties"
+                        name="specialties"
+                        type="text"
+                        label="Specialties"
+                        icon={<StarIcon className="w-5 h-5" />}
+                        value={formData.specialties}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        placeholder="e.g., Mathematics, Computer Science, Physics"
+                        helperText="Separate multiple specialties with commas"
+                      />
+
+                      <AnimatedInput
+                        id="officeHours"
+                        name="officeHours"
+                        type="text"
+                        label="Office Hours"
+                        icon={<ClockIcon className="w-5 h-5" />}
+                        value={formData.officeHours}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        placeholder="e.g., Mon/Wed 2-4pm"
+                      />
+                    </>
+                  )}
+
+                  {(user?.role === 'teacher' || user?.role === 'staff') && (
+                    <motion.div
+                      className="form-group"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                    >
+                      <label className="form-label flex items-center gap-2">
+                        <DocumentTextIcon className="w-5 h-5 text-gray-400" />
+                        Bio
+                      </label>
+                      <textarea
+                        id="bio"
+                        name="bio"
+                        rows={4}
+                        value={formData.bio}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        className="input"
+                        placeholder="Tell us about yourself..."
+                      />
+                    </motion.div>
+                  )}
+                </div>
+              </AnimatedCard>
+            </div>
+          </form>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
