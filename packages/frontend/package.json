@@ -28,7 +28,6 @@
     "axios": "^1.6.2",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
-    "framer-motion": "^12.23.9",
     "js-cookie": "^3.0.5",
     "next": "^14.0.4",
     "postcss": "^8.4.32",

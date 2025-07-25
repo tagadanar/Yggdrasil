@@ -129,7 +129,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const roundedStyles = rounded ? 'rounded-full' : 'rounded-xl';
     const fullWidthStyles = fullWidth ? 'w-full' : '';
-    const glowStyles = glow ? 'animate-glow' : '';
+    const glowStyles = '';
 
     const LoadingSpinner = () => (
       <svg

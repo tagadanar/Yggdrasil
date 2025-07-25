@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
 
 interface PageHeaderProps {
@@ -12,20 +11,14 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, icon, actions }: PageHeaderProps) {
   return (
-    <motion.div
+    <div
       className="flex items-center justify-between mb-8"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
     >
       <div className="flex items-center gap-4">
         {icon && (
-          <motion.div
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
+          <div>
             {icon}
-          </motion.div>
+          </div>
         )}
         <div>
           <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
@@ -35,14 +28,10 @@ export function PageHeader({ title, subtitle, icon, actions }: PageHeaderProps) 
         </div>
       </div>
       {actions && (
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <div>
           {actions}
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 }

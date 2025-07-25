@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { twMerge } from 'tailwind-merge';
 
 interface LoadingSpinnerProps {
@@ -25,27 +24,19 @@ export function LoadingSpinner({ size = 'md', text, className }: LoadingSpinnerP
   };
 
   return (
-    <motion.div
+    <div
       className={twMerge('flex flex-col items-center justify-center gap-3', className)}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
     >
-      <motion.div
-        className={twMerge('border-4 border-gray-200 border-t-primary-600 rounded-full', sizes[size])}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      <div
+        className={twMerge('border-4 border-gray-200 border-t-primary-600 rounded-full animate-spin', sizes[size])}
       />
       {text && (
-        <motion.p
+        <p
           className={twMerge('text-gray-600', textSizes[size])}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
         >
           {text}
-        </motion.p>
+        </p>
       )}
-    </motion.div>
+    </div>
   );
 }

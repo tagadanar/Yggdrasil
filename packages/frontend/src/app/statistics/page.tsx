@@ -13,7 +13,6 @@ import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
 import { ErrorBoundary } from '@/components/dashboard/ErrorBoundary';
 import { LoadingState } from '@/components/dashboard/LoadingState';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { motion } from 'framer-motion';
 import { ChartBarIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 export default function StatisticsPage() {
@@ -58,16 +57,13 @@ export default function StatisticsPage() {
       
       default:
         return (
-          <motion.div 
+          <div 
             className="text-center py-12"
             data-testid="error-state"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
           >
             <ExclamationTriangleIcon className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
             <div className="text-gray-600 dark:text-gray-400">Unable to determine dashboard type for your role: {user.role}</div>
-          </motion.div>
+          </div>
         );
     }
   };
@@ -82,13 +78,9 @@ export default function StatisticsPage() {
             icon={<ChartBarIcon className="w-10 h-10 text-primary-600" />}
           />
           
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
+          <div>
             {renderDashboard()}
-          </motion.div>
+          </div>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
