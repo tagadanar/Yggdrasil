@@ -1,12 +1,19 @@
-// packages/frontend/src/app/dashboard/page.tsx
-// Main dashboard page for authenticated users
-
 'use client';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
-import Link from 'next/link';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { AnimatedLink } from '@/components/ui/AnimatedLink';
+import { motion } from 'framer-motion';
+import { 
+  UserGroupIcon, 
+  AcademicCapIcon, 
+  CalendarIcon, 
+  ChartBarIcon,
+  DocumentTextIcon,
+  XCircleIcon
+} from '@heroicons/react/24/outline';
 
 function DashboardPageContent() {
   const { user, isLoading, logout } = useAuth();
@@ -46,63 +53,159 @@ function DashboardPageContent() {
     switch (user.role) {
       case 'admin':
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Admin Dashboard</h2>
+          <motion.div 
+            className="space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <UserGroupIcon className="w-10 h-10 text-primary-600" />
+              Admin Dashboard
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
+              <AnimatedLink
+                href="/admin/users"
+                variant="card"
+                icon={<UserGroupIcon className="w-8 h-8 text-blue-600" />}
+              >
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
-                <p className="text-gray-600 mb-4">Manage users, roles, and permissions</p>
-                <Link href="/admin/users" className="btn-primary">
-                  Manage Users
-                </Link>
-              </div>
+                <p className="text-gray-600">Manage users, roles, and permissions</p>
+              </AnimatedLink>
+              <AnimatedLink
+                href="/statistics"
+                variant="card"
+                icon={<ChartBarIcon className="w-8 h-8 text-purple-600" />}
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Platform Statistics</h3>
+                <p className="text-gray-600">View platform analytics and reports</p>
+              </AnimatedLink>
+              <AnimatedLink
+                href="/courses"
+                variant="card"
+                icon={<AcademicCapIcon className="w-8 h-8 text-green-600" />}
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Course Overview</h3>
+                <p className="text-gray-600">Monitor all courses and enrollments</p>
+              </AnimatedLink>
             </div>
-          </div>
+          </motion.div>
         );
       case 'teacher':
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Teacher Dashboard</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
+          <motion.div 
+            className="space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <AcademicCapIcon className="w-10 h-10 text-blue-600" />
+              Teacher Dashboard
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatedLink
+                href="/courses"
+                variant="card"
+                icon={<AcademicCapIcon className="w-8 h-8 text-green-600" />}
+              >
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">My Courses</h3>
-                <p className="text-gray-600 mb-4">Manage your courses and lessons</p>
-                <Link href="/courses" className="btn-primary">
-                  View Courses
-                </Link>
-              </div>
+                <p className="text-gray-600">Manage your courses and lessons</p>
+              </AnimatedLink>
+              <AnimatedLink
+                href="/statistics"
+                variant="card"
+                icon={<ChartBarIcon className="w-8 h-8 text-purple-600" />}
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Class Statistics</h3>
+                <p className="text-gray-600">View student progress and grades</p>
+              </AnimatedLink>
+              <AnimatedLink
+                href="/planning"
+                variant="card"
+                icon={<CalendarIcon className="w-8 h-8 text-blue-600" />}
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Schedule</h3>
+                <p className="text-gray-600">View your teaching schedule</p>
+              </AnimatedLink>
             </div>
-          </div>
+          </motion.div>
         );
       case 'staff':
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Staff Dashboard</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
+          <motion.div 
+            className="space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <CalendarIcon className="w-10 h-10 text-orange-600" />
+              Staff Dashboard
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatedLink
+                href="/planning"
+                variant="card"
+                icon={<CalendarIcon className="w-8 h-8 text-blue-600" />}
+              >
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Academic Planning</h3>
-                <p className="text-gray-600 mb-4">Manage schedules and academic calendar</p>
-                <Link href="/planning" className="btn-primary">
-                  View Planning
-                </Link>
-              </div>
+                <p className="text-gray-600">Manage schedules and academic calendar</p>
+              </AnimatedLink>
+              <AnimatedLink
+                href="/news"
+                variant="card"
+                icon={<DocumentTextIcon className="w-8 h-8 text-orange-600" />}
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Announcements</h3>
+                <p className="text-gray-600">Create and manage platform news</p>
+              </AnimatedLink>
+              <AnimatedLink
+                href="/courses"
+                variant="card"
+                icon={<AcademicCapIcon className="w-8 h-8 text-green-600" />}
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Course Management</h3>
+                <p className="text-gray-600">Oversee course offerings</p>
+              </AnimatedLink>
             </div>
-          </div>
+          </motion.div>
         );
       case 'student':
         return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Student Dashboard</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">My Enrollments</h3>
-                <p className="text-gray-600 mb-4">View your enrolled courses</p>
-                <Link href="/courses" className="btn-primary">
-                  View Courses
-                </Link>
-              </div>
+          <motion.div 
+            className="space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <AcademicCapIcon className="w-10 h-10 text-green-600" />
+              Student Dashboard
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatedLink
+                href="/courses"
+                variant="card"
+                icon={<AcademicCapIcon className="w-8 h-8 text-green-600" />}
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">My Courses</h3>
+                <p className="text-gray-600">View your enrolled courses</p>
+              </AnimatedLink>
+              <AnimatedLink
+                href="/planning"
+                variant="card"
+                icon={<CalendarIcon className="w-8 h-8 text-blue-600" />}
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Class Schedule</h3>
+                <p className="text-gray-600">View your class timetable</p>
+              </AnimatedLink>
+              <AnimatedLink
+                href="/statistics"
+                variant="card"
+                icon={<ChartBarIcon className="w-8 h-8 text-purple-600" />}
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">My Progress</h3>
+                <p className="text-gray-600">Track your academic performance</p>
+              </AnimatedLink>
             </div>
-          </div>
+          </motion.div>
         );
       default:
         return (
@@ -115,63 +218,38 @@ function DashboardPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-gray-900">
-                🌳 Yggdrasil
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                Welcome, {user.profile.firstName} {user.profile.lastName}
+    <DashboardLayout>
+      <div className="space-y-6">
+        {showAccessDenied && (
+          <motion.div 
+            className="bg-red-50 border border-red-200 rounded-lg p-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <XCircleIcon className="h-5 w-5 text-red-400" />
               </div>
-              <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                {user.role.toUpperCase()}
-              </div>
-              <button
-                onClick={() => logout()}
-                className="text-sm text-gray-600 hover:text-gray-900"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {showAccessDenied && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-red-800">Access Denied</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>You don't have permission to access the requested page.</p>
                 </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">Access Denied</h3>
-                  <div className="mt-2 text-sm text-red-700">
-                    <p>You don't have permission to access the requested page.</p>
-                  </div>
-                  <div className="mt-4">
-                    <button
-                      onClick={() => setShowAccessDenied(false)}
-                      className="text-sm bg-red-100 text-red-800 px-3 py-1 rounded hover:bg-red-200"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => setShowAccessDenied(false)}
+                    className="text-sm bg-red-100 text-red-800 px-3 py-1 rounded hover:bg-red-200 transition-colors"
+                  >
+                    Dismiss
+                  </button>
                 </div>
               </div>
             </div>
-          )}
-          {getDashboardContent()}
-        </div>
-      </main>
-    </div>
+          </motion.div>
+        )}
+        {getDashboardContent()}
+      </div>
+    </DashboardLayout>
   );
 }
 
