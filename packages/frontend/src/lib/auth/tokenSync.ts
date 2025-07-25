@@ -15,7 +15,6 @@ class TokenSyncManager {
     
     // Disable token sync in test environment to prevent cross-test interference
     if (typeof window !== 'undefined' && (window as any).tokenSyncDisabled) {
-      console.log('Token sync disabled for testing');
       this.initialized = true;
       return;
     }

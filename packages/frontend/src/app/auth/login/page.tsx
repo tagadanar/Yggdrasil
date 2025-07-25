@@ -7,8 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoginRequestSchema, LoginRequestType } from '@yggdrasil/shared-utilities';
 import { authFlowManager } from '@/lib/auth/AuthFlowManager';
-import { AnimatedButton } from '@/components/ui/AnimatedButton';
-import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/Button';
 import { EnvelopeIcon, LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';
 
 export default function LoginPage() {
@@ -79,19 +78,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-12 px-4 sm:px-6 lg:px-8">
-      <motion.div 
-        className="max-w-md w-full space-y-8"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+      <div className="max-w-md w-full space-y-8">
         {/* Header */}
-        <motion.div 
-          className="text-center"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <div className="text-center">
           <div className="flex items-center justify-center mb-4">
             <UserIcon className="w-16 h-16 text-primary-600" />
           </div>
@@ -101,15 +90,10 @@ export default function LoginPage() {
           <p className="text-lg text-gray-600">
             Sign in to your account
           </p>
-        </motion.div>
+        </div>
 
         {/* Form */}
-        <motion.div 
-          className="bg-white rounded-xl shadow-lg border border-gray-200 p-8"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate data-testid="login-form">
             {/* Email Field */}
             <div className="form-group">
@@ -130,13 +114,9 @@ export default function LoginPage() {
                 <EnvelopeIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
               </div>
               {errors.email && (
-                <motion.p 
-                  className="form-error"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
+                <p className="form-error">
                   {errors.email.message}
-                </motion.p>
+                </p>
               )}
             </div>
 
@@ -159,29 +139,21 @@ export default function LoginPage() {
                 <LockClosedIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
               </div>
               {errors.password && (
-                <motion.p 
-                  className="form-error"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
+                <p className="form-error">
                   {errors.password.message}
-                </motion.p>
+                </p>
               )}
             </div>
 
             {/* Submit Error */}
             {submitError && (
-              <motion.div 
-                className="bg-error-50 border border-error-200 rounded-md p-3"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
+              <div className="bg-error-50 border border-error-200 rounded-md p-3">
                 <p className="text-error-700 text-sm">{submitError}</p>
-              </motion.div>
+              </div>
             )}
 
             {/* Submit Button */}
-            <AnimatedButton
+            <Button
               type="submit"
               disabled={isSubmitting || isLoading}
               data-testid="login-button"
@@ -191,26 +163,19 @@ export default function LoginPage() {
               icon={isSubmitting ? null : <UserIcon className="w-5 h-5" />}
             >
               {isSubmitting ? 'Signing in...' : 'Sign in'}
-            </AnimatedButton>
+            </Button>
           </form>
-        </motion.div>
+        </div>
 
         {/* Demo Accounts */}
-        <motion.div 
-          className="bg-white rounded-xl shadow-lg border border-gray-200 p-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Quick Demo Login</h3>
           <div className="space-y-3">
-            <motion.button
+            <button
               onClick={() => handleDemoLogin('admin@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting || isLoading}
               data-testid="demo-admin-button"
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg border border-blue-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
             >
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
@@ -222,15 +187,13 @@ export default function LoginPage() {
                 </div>
               </div>
               <div className="text-xs text-blue-600 font-semibold">Login →</div>
-            </motion.button>
+            </button>
             
-            <motion.button
+            <button
               onClick={() => handleDemoLogin('teacher@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting || isLoading}
               data-testid="demo-teacher-button"
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg border border-green-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
             >
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
@@ -242,15 +205,13 @@ export default function LoginPage() {
                 </div>
               </div>
               <div className="text-xs text-green-600 font-semibold">Login →</div>
-            </motion.button>
+            </button>
             
-            <motion.button
+            <button
               onClick={() => handleDemoLogin('staff@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting || isLoading}
               data-testid="demo-staff-button"
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-lg border border-orange-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
             >
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mr-3">
@@ -262,15 +223,13 @@ export default function LoginPage() {
                 </div>
               </div>
               <div className="text-xs text-orange-600 font-semibold">Login →</div>
-            </motion.button>
+            </button>
             
-            <motion.button
+            <button
               onClick={() => handleDemoLogin('student@yggdrasil.edu', 'Admin123!')}
               disabled={isSubmitting || isLoading}
               data-testid="demo-student-button"
               className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg border border-purple-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
             >
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
@@ -282,10 +241,10 @@ export default function LoginPage() {
                 </div>
               </div>
               <div className="text-xs text-purple-600 font-semibold">Login →</div>
-            </motion.button>
+            </button>
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

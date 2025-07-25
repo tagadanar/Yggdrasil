@@ -155,39 +155,59 @@ export class CleanAuthHelper {
    */
   async clearAuthState(): Promise<void> {
     try {
-      // Clear browser storage - handle SecurityError gracefully
-      await this.page.evaluate(() => {
-        try {
-          // Clear localStorage if available
-          if (typeof localStorage !== 'undefined' && localStorage) {
-            localStorage.clear();
+      // Check if page is still available before attempting to clear storage
+      if (this.page.isClosed()) {
+        console.log('🔐 CLEAN AUTH: Page already closed, skipping storage cleanup');
+        return;
+      }
+      
+      // Clear browser storage - handle SecurityError and navigation errors gracefully
+      try {
+        await this.page.evaluate(() => {
+          try {
+            // Clear localStorage if available
+            if (typeof localStorage !== 'undefined' && localStorage) {
+              localStorage.clear();
+            }
+            
+            // Clear sessionStorage if available
+            if (typeof sessionStorage !== 'undefined' && sessionStorage) {
+              sessionStorage.clear();
+            }
+            
+            // Clear all cookies
+            if (document && document.cookie) {
+              document.cookie.split(";").forEach(cookie => {
+                const eqPos = cookie.indexOf("=");
+                const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
+              });
+            }
+          } catch (securityError) {
+            // Ignore security errors for localStorage/sessionStorage access
+            console.warn('Could not clear storage due to security restrictions:', securityError.message);
           }
-          
-          // Clear sessionStorage if available
-          if (typeof sessionStorage !== 'undefined' && sessionStorage) {
-            sessionStorage.clear();
-          }
-          
-          // Clear all cookies
-          if (document && document.cookie) {
-            document.cookie.split(";").forEach(cookie => {
-              const eqPos = cookie.indexOf("=");
-              const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-              document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-              document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
-            });
-          }
-        } catch (securityError) {
-          // Ignore security errors for localStorage/sessionStorage access
-          console.warn('Could not clear storage due to security restrictions:', securityError.message);
+        });
+      } catch (navigationError) {
+        // Handle execution context destroyed errors gracefully
+        if (navigationError.message && navigationError.message.includes('Execution context was destroyed')) {
+          console.log('🔐 CLEAN AUTH: Page navigated during cleanup, auth state likely already cleared');
+          return;
         }
-      });
+        throw navigationError;
+      }
 
       // Use centralized auth helper cleanup
       await this.authHelper.clearAuthState();
       
       console.log('🔐 CLEAN AUTH: Authentication state cleared successfully');
     } catch (error) {
+      // Handle execution context destroyed errors gracefully
+      if (error.message && error.message.includes('Execution context was destroyed')) {
+        console.log('🔐 CLEAN AUTH: Page navigated during cleanup, auth state likely already cleared');
+        return;
+      }
       console.error('🔐 CLEAN AUTH: Failed to clear auth state:', error);
       throw error;
     }

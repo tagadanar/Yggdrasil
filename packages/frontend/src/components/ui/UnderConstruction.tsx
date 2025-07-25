@@ -18,7 +18,7 @@ export function UnderConstruction({
 }: UnderConstructionProps) {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+      <div className="max-w-md w-full bg-white dark:bg-secondary-800 rounded-lg shadow-lg p-8 text-center border border-secondary-200 dark:border-secondary-700">
         {/* Construction Icon */}
         <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
           <svg 

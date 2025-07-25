@@ -80,12 +80,11 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
       eventData.recurrence = {
         pattern: formData.recurrence.pattern,
         interval: formData.recurrence.interval,
-        endDate: formData.recurrence.endDate ? convertToISO(formData.recurrence.endDate) : undefined,
+        endDate: formData.recurrence.endDate ? new Date(formData.recurrence.endDate).toISOString() : undefined,
         days: formData.recurrence.days.length > 0 ? formData.recurrence.days : undefined
       };
     }
 
-    console.log('Submitting event data:', eventData); // Debug log
     onSubmit(eventData);
   };
 

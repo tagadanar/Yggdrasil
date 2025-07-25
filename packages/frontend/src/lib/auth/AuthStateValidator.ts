@@ -29,20 +29,11 @@ export class AuthStateValidator {
    * Validate current authentication state consistency
    */
   static validateAuthState(user: User | null, currentRoute?: string): AuthStateValidationResult {
-    console.log('🔒 AUTH VALIDATOR: Starting auth state validation');
-    
     const hasTokens = this.hasValidTokens();
     const route = currentRoute || (typeof window !== 'undefined' ? window.location.pathname : '/');
     const isOnLoginPage = route === '/auth/login' || route.startsWith('/auth/login');
     const isAuthenticated = !!user;
     
-    console.log('🔒 AUTH VALIDATOR: Current state:', {
-      isAuthenticated,
-      hasTokens,
-      currentRoute: route,
-      isOnLoginPage,
-      userRole: user?.role
-    });
 
     const issues: string[] = [];
     let isConsistent = true;
@@ -85,11 +76,6 @@ export class AuthStateValidator {
       };
     }
 
-    console.log('🔒 AUTH VALIDATOR: Validation result:', {
-      isConsistent,
-      issues,
-      correctedState
-    });
 
     return {
       isConsistent,
@@ -107,30 +93,25 @@ export class AuthStateValidator {
     forceCorrection = false
   ): Promise<boolean> {
     if (!validationResult.correctedState) {
-      console.log('🔒 AUTH VALIDATOR: No correction needed');
       return true;
     }
 
     if (!validationResult.isConsistent || forceCorrection) {
-      console.log('🔒 AUTH VALIDATOR: Applying auth state correction:', validationResult.correctedState);
       
       const { shouldBeAuthenticated, recommendedRoute } = validationResult.correctedState;
       
       try {
         if (!shouldBeAuthenticated) {
           // Clear invalid auth state
-          console.log('🔒 AUTH VALIDATOR: Clearing invalid auth state');
           tokenStorage.clearTokens();
           
           // Redirect to login if not already there
           if (recommendedRoute !== window.location.pathname) {
-            console.log('🔒 AUTH VALIDATOR: Redirecting to:', recommendedRoute);
             router.push(recommendedRoute);
           }
         } else {
           // Navigate to recommended route for authenticated users
           if (recommendedRoute !== window.location.pathname) {
-            console.log('🔒 AUTH VALIDATOR: Navigating authenticated user to:', recommendedRoute);
             router.push(recommendedRoute);
           }
         }
@@ -158,15 +139,11 @@ export class AuthStateValidator {
   ): () => void {
     const { intervalMs = 30000, autoCorrect = false } = options; // Check every 30 seconds by default
     
-    console.log('🔒 AUTH VALIDATOR: Starting auth state monitor');
-    
     const checkAuthState = () => {
       const user = getUserState();
       const validation = this.validateAuthState(user);
       
       if (!validation.isConsistent) {
-        console.warn('🔒 AUTH VALIDATOR: Auth state inconsistency detected:', validation.issues);
-        
         if (autoCorrect) {
           this.correctAuthState(validation, router, false);
         }
@@ -181,7 +158,6 @@ export class AuthStateValidator {
     
     // Return cleanup function
     return () => {
-      console.log('🔒 AUTH VALIDATOR: Stopping auth state monitor');
       clearInterval(intervalId);
     };
   }
@@ -254,7 +230,6 @@ export class AuthStateValidator {
     issues: string[];
     recommendations: string[];
   }> {
-    console.log('🔒 AUTH VALIDATOR: Performing comprehensive health check');
     
     const issues: string[] = [];
     const recommendations: string[] = [];
@@ -293,12 +268,6 @@ export class AuthStateValidator {
     }
     
     const healthy = issues.length === 0;
-    
-    console.log('🔒 AUTH VALIDATOR: Health check result:', {
-      healthy,
-      issueCount: issues.length,
-      recommendationCount: recommendations.length
-    });
     
     return {
       healthy,

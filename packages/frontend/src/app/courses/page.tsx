@@ -11,6 +11,8 @@ import { CourseList } from '@/components/courses/CourseList';
 import { CourseForm } from '@/components/courses/CourseForm';
 import { CourseDetail } from '@/components/courses/CourseDetail';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { AcademicCapIcon, ChartBarIcon, UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'detail';
 
@@ -134,6 +136,7 @@ export default function CoursesPage() {
               onClick={handleBackToList}
               variant="primary"
               className="mt-4"
+              icon={<AcademicCapIcon className="w-5 h-5" />}
             >
               Back to Courses
             </Button>
@@ -157,13 +160,18 @@ export default function CoursesPage() {
       <DashboardLayout>
         <div className="max-w-7xl mx-auto py-6">
           {viewMode === 'list' && (
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">{getTitleBasedOnRole()}</h1>
-              <p className="text-secondary-600 dark:text-secondary-400">{getDescriptionBasedOnRole()}</p>
-            </div>
+            <PageHeader
+              title={getTitleBasedOnRole()}
+              subtitle={getDescriptionBasedOnRole()}
+              icon={user?.role === 'student' ? <UserGroupIcon className="w-10 h-10 text-primary-600" /> : 
+                    user?.role === 'teacher' ? <AcademicCapIcon className="w-10 h-10 text-primary-600" /> :
+                    <ChartBarIcon className="w-10 h-10 text-primary-600" />}
+            />
           )}
           
-          {renderContent()}
+          <div>
+            {renderContent()}
+          </div>
         </div>
       </DashboardLayout>
     </ProtectedRoute>

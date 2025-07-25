@@ -227,7 +227,6 @@ export const ExerciseSubmission: React.FC<ExerciseSubmissionProps> = ({
       }));
 
       // Display results in a modal or results panel
-      console.log('Test results:', testResults);
     } catch (error: any) {
       setError(error.message || 'Failed to run tests');
     } finally {

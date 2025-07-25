@@ -12,6 +12,9 @@ import { TeacherDashboard } from '@/components/dashboard/TeacherDashboard';
 import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
 import { ErrorBoundary } from '@/components/dashboard/ErrorBoundary';
 import { LoadingState } from '@/components/dashboard/LoadingState';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { motion } from 'framer-motion';
+import { ChartBarIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 export default function StatisticsPage() {
   const { user } = useAuth();
@@ -25,7 +28,7 @@ export default function StatisticsPage() {
       case 'student':
         return (
           <ErrorBoundary
-            onError={(error) => console.error('Student dashboard error:', error)}
+            onError={(error) => { /* Handle error silently */ }}
             testId="student-error-boundary"
           >
             <StudentDashboard />
@@ -35,7 +38,7 @@ export default function StatisticsPage() {
       case 'teacher':
         return (
           <ErrorBoundary
-            onError={(error) => console.error('Teacher dashboard error:', error)}
+            onError={(error) => { /* Handle error silently */ }}
             testId="teacher-error-boundary"
           >
             <TeacherDashboard />
@@ -46,7 +49,7 @@ export default function StatisticsPage() {
       case 'staff':
         return (
           <ErrorBoundary
-            onError={(error) => console.error('Admin dashboard error:', error)}
+            onError={(error) => { /* Handle error silently */ }}
             testId="admin-error-boundary"
           >
             <AdminDashboard />
@@ -55,9 +58,16 @@ export default function StatisticsPage() {
       
       default:
         return (
-          <div className="text-center py-12" data-testid="error-state">
+          <motion.div 
+            className="text-center py-12"
+            data-testid="error-state"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <ExclamationTriangleIcon className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
             <div className="text-gray-600 dark:text-gray-400">Unable to determine dashboard type for your role: {user.role}</div>
-          </div>
+          </motion.div>
         );
     }
   };
@@ -66,7 +76,19 @@ export default function StatisticsPage() {
     <ProtectedRoute>
       <DashboardLayout>
         <div className="space-y-6" data-testid="statistics-page">
-          {renderDashboard()}
+          <PageHeader
+            title="Statistics & Analytics"
+            subtitle="Monitor your progress and performance metrics"
+            icon={<ChartBarIcon className="w-10 h-10 text-primary-600" />}
+          />
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            {renderDashboard()}
+          </motion.div>
         </div>
       </DashboardLayout>
     </ProtectedRoute>

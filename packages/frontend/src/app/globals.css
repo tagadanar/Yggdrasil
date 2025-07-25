@@ -67,7 +67,6 @@
     @apply inline-flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-200;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2;
     @apply disabled:opacity-50 disabled:pointer-events-none;
-    @apply transform-gpu active:scale-95;
     @apply select-none;
   }
   
@@ -148,7 +147,7 @@
   }
   
   .card-hover {
-    @apply card hover:scale-[1.02] hover:-translate-y-1;
+    @apply card;
     @apply hover:shadow-strong dark:hover:shadow-dark-medium;
   }
   
@@ -180,7 +179,7 @@
   .nav-link-active {
     @apply flex items-center px-4 py-3 text-sm font-medium rounded-xl;
     @apply transition-all duration-200;
-    @apply hover:shadow-md transform hover:scale-[1.02];
+    @apply hover:shadow-md;
     @apply bg-gradient-to-r from-primary-500 to-primary-600;
     @apply text-white shadow-lg shadow-primary-500/25;
     @apply dark:from-primary-400 dark:to-primary-500;
@@ -190,7 +189,7 @@
   .nav-link-inactive {
     @apply flex items-center px-4 py-3 text-sm font-medium rounded-xl;
     @apply transition-all duration-200;
-    @apply hover:shadow-md transform hover:scale-[1.02];
+    @apply hover:shadow-md;
     @apply text-secondary-700 dark:text-secondary-200;
     @apply hover:bg-secondary-100 dark:hover:bg-secondary-700;
     @apply hover:text-secondary-900 dark:hover:text-secondary-50;
@@ -260,10 +259,6 @@
     @apply border border-white/20 dark:border-white/10;
   }
   
-  .glow-effect {
-    @apply shadow-glow;
-    @apply animate-glow;
-  }
 
   /* Scrollbar Styling */
   .scrollbar-thin {
@@ -303,18 +298,6 @@
   }
 
   /* Animation Classes */
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-  
-  .animate-bounce-subtle {
-    animation: bounceSubtle 0.6s ease-in-out;
-  }
-  
-  .animate-glow {
-    animation: glow 2s ease-in-out infinite alternate;
-  }
-  
   .animate-shimmer {
     animation: shimmer 2s linear infinite;
   }
@@ -326,21 +309,6 @@
   .animate-scale-in {
     animation: scaleIn 0.2s ease-out;
   }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
-}
-
-@keyframes bounceSubtle {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-@keyframes glow {
-  from { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
-  to { box-shadow: 0 0 30px rgba(59, 130, 246, 0.6); }
 }
 
 @keyframes shimmer {

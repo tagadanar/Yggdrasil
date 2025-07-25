@@ -4,11 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { AnimatedCard } from '@/components/ui/AnimatedCard';
-import { AnimatedInput } from '@/components/ui/AnimatedInput';
-import { AnimatedButton } from '@/components/ui/AnimatedButton';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { motion } from 'framer-motion';
 import { 
   UserIcon, 
   EnvelopeIcon, 
@@ -143,37 +142,37 @@ export default function ProfilePage() {
             icon={<UserIcon className="w-10 h-10 text-primary-600" />}
             actions={
               !isEditing ? (
-                <AnimatedButton
+                <Button
                   onClick={() => setIsEditing(true)}
                   icon={<PencilIcon className="w-5 h-5" />}
                   variant="primary"
                 >
                   Edit Profile
-                </AnimatedButton>
+                </Button>
               ) : (
                 <div className="flex gap-2">
-                  <AnimatedButton
+                  <Button
                     onClick={handleCancel}
                     icon={<XMarkIcon className="w-5 h-5" />}
                     variant="secondary"
                   >
                     Cancel
-                  </AnimatedButton>
-                  <AnimatedButton
+                  </Button>
+                  <Button
                     type="submit"
                     form="profile-form"
                     icon={<CheckIcon className="w-5 h-5" />}
                     variant="primary"
                   >
                     Save Changes
-                  </AnimatedButton>
+                  </Button>
                 </div>
               )
             }
           />
 
           {/* Profile Header Card */}
-          <AnimatedCard delay={0.1}>
+          <Card>
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center">
                 <UserIcon className="w-8 h-8 text-primary-600" />
@@ -192,19 +191,19 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-          </AnimatedCard>
+          </Card>
 
           <form id="profile-form" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Basic Information */}
-              <AnimatedCard delay={0.2}>
+              <Card>
                 <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
                   <UserIcon className="w-6 h-6 text-primary-600" />
                   Basic Information
                 </h3>
                 
                 <div className="space-y-4">
-                  <AnimatedInput
+                  <Input
                     id="firstName"
                     name="firstName"
                     type="text"
@@ -215,7 +214,7 @@ export default function ProfilePage() {
                     disabled={!isEditing}
                   />
 
-                  <AnimatedInput
+                  <Input
                     id="lastName"
                     name="lastName"
                     type="text"
@@ -226,7 +225,7 @@ export default function ProfilePage() {
                     disabled={!isEditing}
                   />
 
-                  <AnimatedInput
+                  <Input
                     id="email"
                     name="email"
                     type="email"
@@ -237,7 +236,7 @@ export default function ProfilePage() {
                     disabled={!isEditing}
                   />
 
-                  <AnimatedInput
+                  <Input
                     id="phone"
                     name="phone"
                     type="tel"
@@ -248,16 +247,16 @@ export default function ProfilePage() {
                     disabled={!isEditing}
                   />
                 </div>
-              </AnimatedCard>
+              </Card>
               {/* Role-specific Information */}
-              <AnimatedCard delay={0.3}>
+              <Card>
                 <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
                   <BuildingOfficeIcon className="w-6 h-6 text-primary-600" />
                   Professional Information
                 </h3>
                 
                 <div className="space-y-4">
-                  <AnimatedInput
+                  <Input
                     id="department"
                     name="department"
                     type="text"
@@ -269,7 +268,7 @@ export default function ProfilePage() {
                   />
 
                   {user?.role === 'student' && (
-                    <AnimatedInput
+                    <Input
                       id="studentId"
                       name="studentId"
                       type="text"
@@ -283,7 +282,7 @@ export default function ProfilePage() {
 
                   {user?.role === 'teacher' && (
                     <>
-                      <AnimatedInput
+                      <Input
                         id="specialties"
                         name="specialties"
                         type="text"
@@ -296,7 +295,7 @@ export default function ProfilePage() {
                         helperText="Separate multiple specialties with commas"
                       />
 
-                      <AnimatedInput
+                      <Input
                         id="officeHours"
                         name="officeHours"
                         type="text"
@@ -311,12 +310,7 @@ export default function ProfilePage() {
                   )}
 
                   {(user?.role === 'teacher' || user?.role === 'staff') && (
-                    <motion.div
-                      className="form-group"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    >
+                    <div className="form-group">
                       <label className="form-label flex items-center gap-2">
                         <DocumentTextIcon className="w-5 h-5 text-gray-400" />
                         Bio
@@ -331,10 +325,10 @@ export default function ProfilePage() {
                         className="input"
                         placeholder="Tell us about yourself..."
                       />
-                    </motion.div>
+                    </div>
                   )}
                 </div>
-              </AnimatedCard>
+              </Card>
             </div>
           </form>
         </div>

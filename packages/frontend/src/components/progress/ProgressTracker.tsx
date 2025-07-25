@@ -104,7 +104,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
 
   if (compact) {
     return (
-      <div className="bg-white rounded-lg border p-4" data-testid="progress-tracker-compact">
+      <div className="bg-white dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-700 p-4" data-testid="progress-tracker-compact">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-900">{courseTitle}</h3>
           <span className="text-sm text-gray-600">
@@ -144,7 +144,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg border" data-testid="progress-tracker">
+    <div className="bg-white dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-700" data-testid="progress-tracker">
       {/* Header */}
       <div className="p-6 border-b">
         <div className="flex items-center justify-between mb-4">

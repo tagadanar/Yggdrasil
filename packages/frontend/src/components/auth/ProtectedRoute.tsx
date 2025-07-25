@@ -33,21 +33,12 @@ export function ProtectedRoute({
         document.cookie.includes('yggdrasil_refresh_token')
       );
       
-      console.log('🛡️ PROTECTED ROUTE: Auth check:', {
-        requireAuth,
-        hasUser: !!user,
-        hasStoredTokens,
-        hasCookieTokens,
-        userEmail: user?.email,
-        tokensObject: !!tokens
-      });
       
       // Only redirect if we truly have no authentication tokens anywhere
       const hasAnyAuth = user || hasStoredTokens || hasCookieTokens;
       
       // Redirect to login if authentication is required but no tokens exist
       if (requireAuth && !hasAnyAuth) {
-        console.log('🛡️ PROTECTED ROUTE: No auth found, redirecting to login');
         router.push('/auth/login');
         return;
       }

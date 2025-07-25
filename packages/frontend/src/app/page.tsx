@@ -4,8 +4,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { AnimatedLink } from '@/components/ui/AnimatedLink';
-import { motion } from 'framer-motion';
+import { Link } from '@/components/ui/Link';
 import { 
   AcademicCapIcon, 
   ChartBarIcon, 
@@ -40,17 +39,17 @@ export default function HomePage() {
     }
   }, [user, isLoading, router]);
 
+  // Show nothing while redirecting unauthenticated users
+  if (!user) {
+    return null;
+  }
+
   // For authenticated users, render the full dashboard
   return (
     <DashboardLayout>
       <div className="space-y-8">
         {/* Welcome Section */}
-        <motion.div 
-          className="card text-center"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <div className="card text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4 flex items-center justify-center gap-3">
             <AcademicCapIcon className="w-12 h-12 text-primary-600" />
             Welcome to Yggdrasil Educational Platform
@@ -59,15 +58,10 @@ export default function HomePage() {
             A modern educational platform for IT schools built with clean architecture,
             TDD principles, and comprehensive role-based access control.
           </p>
-        </motion.div>
+        </div>
 
         {/* User Info Section */}
-        <motion.div 
-          className="card"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <div className="card">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
             <UsersIcon className="w-8 h-8 text-primary-600" />
             Your Authentication Information
@@ -127,99 +121,73 @@ export default function HomePage() {
         </div>
 
         {/* Platform Features */}
-        <motion.div 
-          className="card"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        <div className="card">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
             <CubeIcon className="w-8 h-8 text-primary-600" />
             Platform Features
           </h2>
           <div className="grid md:grid-cols-3 gap-6">
-            <motion.div 
-              className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-sm"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
+            <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-sm">
               <LockClosedIcon className="w-12 h-12 text-blue-600 mx-auto mb-3" />
               <h3 className="font-semibold mb-2">JWT Authentication</h3>
               <p className="text-sm text-gray-600">
                 Secure authentication with access and refresh tokens
               </p>
-            </motion.div>
-            <motion.div 
-              className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-sm"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
+            </div>
+            <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-sm">
               <UsersIcon className="w-12 h-12 text-green-600 mx-auto mb-3" />
               <h3 className="font-semibold mb-2">Role-Based Access</h3>
               <p className="text-sm text-gray-600">
                 Admin, Staff, Teacher, and Student roles with permissions
               </p>
-            </motion.div>
-            <motion.div 
-              className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow-sm"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
+            </div>
+            <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow-sm">
               <CubeIcon className="w-12 h-12 text-purple-600 mx-auto mb-3" />
               <h3 className="font-semibold mb-2">Clean Architecture</h3>
               <p className="text-sm text-gray-600">
                 Monorepo structure with TypeScript and TDD practices
               </p>
-            </motion.div>
+            </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Quick Navigation */}
-        <motion.div 
-          className="card"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        <div className="card">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
             <SparklesIcon className="w-8 h-8 text-primary-600" />
             Quick Navigation
           </h2>
           <div className="grid md:grid-cols-4 gap-4">
-            <AnimatedLink 
+            <Link 
               href="/dashboard" 
-              variant="card"
-              icon={<ChartBarIcon className="w-8 h-8 text-primary-600" />}
-              className="text-center"
+              className="text-center block p-6 bg-white dark:bg-secondary-800 rounded-xl shadow-lg hover:shadow-xl transition-all border border-secondary-200 dark:border-secondary-700"
             >
+              <ChartBarIcon className="w-8 h-8 text-primary-600 mx-auto mb-2" />
               <span className="font-medium text-gray-900">Dashboard</span>
-            </AnimatedLink>
-            <AnimatedLink 
+            </Link>
+            <Link 
               href="/courses" 
-              variant="card"
-              icon={<AcademicCapIcon className="w-8 h-8 text-green-600" />}
-              className="text-center"
+              className="text-center block p-6 bg-white dark:bg-secondary-800 rounded-xl shadow-lg hover:shadow-xl transition-all border border-secondary-200 dark:border-secondary-700"
             >
+              <AcademicCapIcon className="w-8 h-8 text-green-600 mx-auto mb-2" />
               <span className="font-medium text-gray-900">Courses</span>
-            </AnimatedLink>
-            <AnimatedLink 
+            </Link>
+            <Link 
               href="/profile" 
-              variant="card"
-              icon={<Cog6ToothIcon className="w-8 h-8 text-blue-600" />}
-              className="text-center"
+              className="text-center block p-6 bg-white dark:bg-secondary-800 rounded-xl shadow-lg hover:shadow-xl transition-all border border-secondary-200 dark:border-secondary-700"
             >
+              <Cog6ToothIcon className="w-8 h-8 text-blue-600 mx-auto mb-2" />
               <span className="font-medium text-gray-900">Settings</span>
-            </AnimatedLink>
-            <AnimatedLink 
+            </Link>
+            <Link 
               href="/statistics" 
-              variant="card"
-              icon={<ChartBarIcon className="w-8 h-8 text-purple-600" />}
-              className="text-center"
+              className="text-center block p-6 bg-white dark:bg-secondary-800 rounded-xl shadow-lg hover:shadow-xl transition-all border border-secondary-200 dark:border-secondary-700"
             >
+              <ChartBarIcon className="w-8 h-8 text-purple-600 mx-auto mb-2" />
               <span className="font-medium text-gray-900">Statistics</span>
-            </AnimatedLink>
+            </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
     </DashboardLayout>
   );

@@ -93,7 +93,6 @@ export const AdminDashboard: React.FC = () => {
         setError(response.error || 'Failed to load dashboard data');
       }
     } catch (err) {
-      console.error('Error loading admin dashboard:', err);
       setError('An unexpected error occurred while loading the dashboard');
     } finally {
       setLoading(false);
@@ -129,7 +128,6 @@ export const AdminDashboard: React.FC = () => {
 
   const handleExport = (format: string) => {
     // In a real implementation, this would trigger data export
-    console.log(`Exporting data as ${format}`);
     setExportMenuOpen(false);
   };
 

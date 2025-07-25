@@ -174,7 +174,6 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
       } else {
         // If no progress data found, user might not be enrolled
         setIsEnrolled(false);
-        console.log('No progress data found, user may not be enrolled');
       }
     } catch (err: any) {
       console.error('Error loading progress data:', err);
@@ -286,7 +285,6 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
   };
 
   const handleExerciseSubmissionComplete = (submission: any) => {
-    console.log('Exercise submission completed:', submission);
     // Could update progress tracking here
   };
 
@@ -794,7 +792,6 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                 estimatedTimeRemaining={progressData.estimatedTimeRemaining}
                 onItemClick={async (itemId, itemType) => {
                   // Handle item click - mark progress and navigate
-                  console.log('Progress item clicked:', { itemId, itemType });
                   
                   if (user?._id) {
                     try {

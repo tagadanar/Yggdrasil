@@ -144,7 +144,6 @@ export default function PlanningPage() {
       }
 
     } catch (err: any) {
-      console.error('Error loading planning data:', err);
       setError(err.message || 'Failed to load calendar events');
     } finally {
       setLoading(false);
@@ -182,7 +181,6 @@ export default function PlanningPage() {
   // Handle event creation
   const handleCreateEvent = async (eventData: any) => {
     try {
-      console.log('HandleCreateEvent called with:', eventData); // Debug log
       
       // Check for conflicts first
       if (eventData.location) {
@@ -205,7 +203,6 @@ export default function PlanningPage() {
 
       await createEvent(eventData);
     } catch (error) {
-      console.error('Error in handleCreateEvent:', error);
       setError(error instanceof Error ? error.message : 'Failed to create event');
     }
   };
@@ -213,27 +210,20 @@ export default function PlanningPage() {
   // Actually create the event
   const createEvent = async (eventData: any) => {
     try {
-      console.log('CreateEvent called with:', eventData); // Debug log
       const response = await planningApi.createEvent(eventData);
-      console.log('API Response:', response); // Debug log
       
       if (response.success) {
-        console.log('Event created successfully, reloading data...'); // Debug log
         await loadData(); // Reload events
         setShowCreateModal(false);
         // Set appropriate success message based on event type
         const message = eventData.recurrence ? 'Recurring event created successfully' : 'Event created successfully';
         setSuccessMessage(message);
-        console.log('Success message set:', message); // Debug log
         // Auto-hide success message after 3 seconds
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        console.error('API returned error:', response.error); // Debug log
         throw new Error(response.error || 'Failed to create event');
       }
     } catch (error: any) {
-      console.error('Error creating event:', error);
-      console.error('Error details:', error.response?.data); // Debug log
       setError(error.response?.data?.error || error.message || 'Failed to create event');
     }
   };
@@ -259,7 +249,6 @@ export default function PlanningPage() {
         throw new Error(response.error || 'Failed to update event');
       }
     } catch (error: any) {
-      console.error('Error updating event:', error);
       setError(error.message || 'Failed to update event');
     }
   };
@@ -283,7 +272,6 @@ export default function PlanningPage() {
         throw new Error(response.error || 'Failed to delete event');
       }
     } catch (error: any) {
-      console.error('Error deleting event:', error);
       setError(error.message || 'Failed to delete event');
     }
   };
@@ -316,7 +304,6 @@ export default function PlanningPage() {
         throw new Error(response.error || 'Failed to create event');
       }
     } catch (error: any) {
-      console.error('Error creating event with conflicts:', error);
       setError(error.message || 'Failed to create event');
     }
   };
@@ -338,7 +325,6 @@ export default function PlanningPage() {
       
       setShowExportModal(false);
     } catch (error: any) {
-      console.error('Error exporting calendar:', error);
       setError(error.message || 'Failed to export calendar');
     }
   };
@@ -353,7 +339,6 @@ export default function PlanningPage() {
       
       await handleUpdateEvent(eventId, updateData);
     } catch (error: any) {
-      console.error('Error moving event:', error);
       setError(error.message || 'Failed to move event');
     }
   };
@@ -368,7 +353,6 @@ export default function PlanningPage() {
       
       await handleUpdateEvent(eventId, updateData);
     } catch (error: any) {
-      console.error('Error resizing event:', error);
       setError(error.message || 'Failed to resize event');
     }
   };

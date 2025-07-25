@@ -71,7 +71,7 @@ export const tokenStorage = {
     const cookieConfig = {
       expires: process.env.NODE_ENV === 'test' ? 1 : 1/12, // Longer expiration in tests
       secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'test' ? 'lax' : 'lax', // Use lax for better test compatibility
+      sameSite: 'lax' as const, // Use lax for better test compatibility
       path: '/',
       // Remove explicit domain in test mode for better Playwright compatibility
       domain: process.env.NODE_ENV === 'production' ? undefined : undefined,

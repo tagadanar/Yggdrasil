@@ -86,15 +86,12 @@ function NewsPageContent() {
             }));
             setArticles(transformedArticles);
           } else {
-            console.error('Failed to load articles:', data.message);
             setArticles([]);
           }
         } else {
-          console.error('Failed to fetch articles:', response.status);
           setArticles([]);
         }
       } catch (error) {
-        console.error('Error loading news articles:', error);
         setArticles([]);
       } finally {
         setLoading(false);
@@ -143,7 +140,6 @@ function NewsPageContent() {
     setIsSubmitting(true);
     try {
       const token = tokenStorage.getAccessToken();
-      console.log('Token for create article:', token ? 'Token found' : 'Token not found');
       
       if (!token) {
         alert('Authentication token not found. Please login again.');
@@ -182,16 +178,13 @@ function NewsPageContent() {
             content: ''
           });
         } else {
-          console.error('Create article failed:', data);
           alert('Failed to create article: ' + data.message);
         }
       } else {
         const errorData = await response.json();
-        console.error('Create article HTTP error:', response.status, errorData);
         alert('Failed to create article: ' + (errorData.message || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Error creating article:', error);
       alert('An error occurred while creating the article');
     } finally {
       setIsSubmitting(false);
@@ -218,7 +211,6 @@ function NewsPageContent() {
     setIsSubmitting(true);
     try {
       const token = tokenStorage.getAccessToken();
-      console.log('Token for update article:', token ? 'Token found' : 'Token not found');
       
       if (!token) {
         alert('Authentication token not found. Please login again.');
@@ -260,16 +252,13 @@ function NewsPageContent() {
             content: ''
           });
         } else {
-          console.error('Update article failed:', data);
           alert('Failed to update article: ' + data.message);
         }
       } else {
         const errorData = await response.json();
-        console.error('Update article HTTP error:', response.status, errorData);
         alert('Failed to update article: ' + (errorData.message || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Error updating article:', error);
       alert('An error occurred while updating the article');
     } finally {
       setIsSubmitting(false);
@@ -283,7 +272,6 @@ function NewsPageContent() {
 
     try {
       const token = tokenStorage.getAccessToken();
-      console.log('Token for delete article:', token ? 'Token found' : 'Token not found');
       
       if (!token) {
         alert('Authentication token not found. Please login again.');
@@ -304,16 +292,13 @@ function NewsPageContent() {
           // Remove the article from the list
           setArticles(articles.filter(article => article.id !== articleId));
         } else {
-          console.error('Delete article failed:', data);
           alert('Failed to delete article: ' + data.message);
         }
       } else {
         const errorData = await response.json();
-        console.error('Delete article HTTP error:', response.status, errorData);
         alert('Failed to delete article: ' + (errorData.message || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Error deleting article:', error);
       alert('An error occurred while deleting the article');
     }
   };
@@ -397,7 +382,7 @@ function NewsPageContent() {
               </div>
             ) : (
               filteredArticles.map((article) => (
-                <article key={article.id} className="bg-white rounded-lg shadow-md overflow-hidden" data-testid="news-article">
+                <article key={article.id} className="bg-white dark:bg-secondary-800 rounded-lg shadow-md overflow-hidden border border-secondary-200 dark:border-secondary-700" data-testid="news-article">
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(article.category)}`}>
@@ -479,7 +464,7 @@ function NewsPageContent() {
           {/* Create News Form Modal */}
           {showCreateForm && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+              <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 w-full max-w-2xl border border-secondary-200 dark:border-secondary-700">
                 <h2 className="text-xl font-bold mb-4">Create News Article</h2>
                 <form className="space-y-4">
                   <div>
@@ -565,7 +550,7 @@ function NewsPageContent() {
           {/* Edit News Form Modal */}
           {showEditForm && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+              <div className="bg-white dark:bg-secondary-800 rounded-lg p-6 w-full max-w-2xl border border-secondary-200 dark:border-secondary-700">
                 <h2 className="text-xl font-bold mb-4">Edit News Article</h2>
                 <form className="space-y-4">
                   <div>
