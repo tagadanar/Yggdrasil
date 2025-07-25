@@ -202,4 +202,18 @@ export class UserController {
       res.status(errorResponse.statusCode).json(errorResponse);
     }
   }
+
+  // Admin Only: Full user update
+  static async updateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const userData = req.body;
+      
+      const result = await UserService.updateUser(id, userData);
+      UserController.handleServiceResult(res, result, 'User updated successfully');
+    } catch (error) {
+      const errorResponse = ResponseHelper.error('Internal server error');
+      res.status(errorResponse.statusCode).json(errorResponse);
+    }
+  }
 }

@@ -9,20 +9,12 @@ import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
 test.describe('News Management', () => {
   // Removed global auth helpers - each test manages its own cleanup
 
-  test.beforeEach(async ({ page }) => {
-    // No global setup needed - each test handles its own initialization
-  });
-
-  test.afterEach(async ({ page }) => {
-    // No global cleanup needed - each test handles its own cleanup
-  });
-
   // =============================================================================
   // ROLE-BASED ACCESS TESTS (split by role for stability)
   // =============================================================================
   
   test('Admin news access and permissions', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Admin news access and permissions');
+    const cleanup = await TestCleanup.ensureCleanStart('Admin news access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -57,7 +49,7 @@ test.describe('News Management', () => {
   });
 
   test('Staff news access and permissions', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Staff news access and permissions');
+    const cleanup = await TestCleanup.ensureCleanStart('Staff news access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -92,7 +84,7 @@ test.describe('News Management', () => {
   });
 
   test('Teacher news access and permissions', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Teacher news access and permissions');
+    const cleanup = await TestCleanup.ensureCleanStart('Teacher news access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -127,7 +119,7 @@ test.describe('News Management', () => {
   });
 
   test('Student news access and permissions', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Student news access and permissions');
+    const cleanup = await TestCleanup.ensureCleanStart('Student news access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -165,7 +157,7 @@ test.describe('News Management', () => {
   // TEST 2: NEWS ARTICLE CREATION AND MANAGEMENT
   // =============================================================================
   test('Complete article lifecycle - create, edit, publish, archive', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Complete article lifecycle - create, edit, publish, archive');
+    const cleanup = await TestCleanup.ensureCleanStart('Complete article lifecycle - create, edit, publish, archive');
     const authHelper = new CleanAuthHelper(page);
     let createdArticleTitle: string | null = null;
     
@@ -240,7 +232,7 @@ test.describe('News Management', () => {
   // TEST 3: NEWS CATEGORY FILTERING
   // =============================================================================
   test('News filtering and content discovery', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('News filtering and content discovery');
+    const cleanup = await TestCleanup.ensureCleanStart('News filtering and content discovery');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -276,13 +268,13 @@ test.describe('News Management', () => {
   // TEST 4: NEWS PAGE LOADING AND ERROR HANDLING
   // =============================================================================
   test('News page loading states and error handling', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('News page loading states and error handling');
+    const cleanup = await TestCleanup.ensureCleanStart('News page loading states and error handling');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsAdmin();
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Verify page structure
     await expect(page.locator('h1:has-text("News & Announcements")')).toBeVisible();
@@ -321,7 +313,7 @@ test.describe('News Management', () => {
   // TEST 5: ACCESS DENIED FUNCTIONALITY
   // =============================================================================
   test('Access denied message functionality', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Access denied message functionality');
+    const cleanup = await TestCleanup.ensureCleanStart('Access denied message functionality');
     const authHelper = new CleanAuthHelper(page);
     
     try {

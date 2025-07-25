@@ -25,7 +25,7 @@ export const {
   requireOwnershipOrTeacher // Ownership OR teacher access
 } = serviceAuth;
 
-// Main authentication middleware (legacy compatibility)
+// Main authentication middleware (full auth with DB lookup)
 export const authenticate = authenticateToken;
 
 // Export request type for controllers

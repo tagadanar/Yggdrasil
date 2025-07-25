@@ -4,6 +4,7 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/AuthController';
 import { authenticateToken } from '../middleware/auth';
+import { verifyToken } from '@yggdrasil/shared-utilities';
 
 export const authRoutes = Router();
 
@@ -14,5 +15,5 @@ authRoutes.post('/refresh', AuthController.refresh);
 authRoutes.get('/registration-status', AuthController.registrationStatus);
 
 // Protected routes (authentication required)
-authRoutes.post('/logout', authenticateToken, AuthController.logout);
+authRoutes.post('/logout', verifyToken, AuthController.logout);
 authRoutes.get('/me', authenticateToken, AuthController.me);

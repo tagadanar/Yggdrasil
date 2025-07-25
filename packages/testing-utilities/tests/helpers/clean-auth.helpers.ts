@@ -12,73 +12,120 @@ import { AuthTestHelper, TestInitializer, QuickAuth, type AuthResult } from '@yg
 export class CleanAuthHelper {
   private authHelper: AuthTestHelper;
   private page: Page;
+  private maxRetries = 1; // OPTIMIZED: Reduced retries for faster tests
 
   constructor(page: Page) {
     this.page = page;
     this.authHelper = new AuthTestHelper(page, {
-      debug: true,
-      timeout: 45000, // MANDATORY: 45s timeout per CLAUDE.md
+      debug: false, // OPTIMIZED: Disable debug for faster execution
+      timeout: 8000, // OPTIMIZED: Reduced from 15s to 8s for faster tests
+      maxRetries: 1,  // OPTIMIZED: Reduced retries to speed up tests
     });
   }
 
   /**
-   * Login as admin user with proper state tracking
+   * Retry wrapper for authentication operations
+   */
+  private async retryAuth<T>(operation: () => Promise<T>, operationName: string): Promise<T> {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        console.log(`🔐 CLEAN AUTH: ${operationName} - Attempt ${attempt}/${this.maxRetries}`);
+        const result = await operation();
+        if (attempt > 1) {
+          console.log(`🔐 CLEAN AUTH: ${operationName} succeeded on retry ${attempt}`);
+        }
+        return result;
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`🔐 CLEAN AUTH: ${operationName} failed on attempt ${attempt}: ${error}`);
+        
+        if (attempt < this.maxRetries) {
+          // Wait before retrying (exponential backoff)
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`🔐 CLEAN AUTH: Waiting ${delay}ms before retry...`);
+          await this.page.waitForTimeout(delay);
+          
+          // Clear auth state before retry
+          try {
+            await this.clearAuthState();
+          } catch (clearError) {
+            console.warn('🔐 CLEAN AUTH: Failed to clear auth state during retry:', clearError);
+          }
+        }
+      }
+    }
+    
+    throw new Error(`🔐 CLEAN AUTH: ${operationName} failed after ${this.maxRetries} attempts. Last error: ${lastError?.message}`);
+  }
+
+  /**
+   * Login as admin user with proper state tracking and retry logic
    */
   async loginAsAdmin(): Promise<AuthResult> {
-    await TestInitializer.quickSetup();
-    const result = await this.authHelper.authenticateAs('admin');
-    
-    if (!result.success) {
-      throw new Error(`🔐 CLEAN AUTH: Admin authentication failed: ${result.error}`);
-    }
-    
-    console.log('🔐 CLEAN AUTH: Admin authentication successful');
-    return result;
+    return this.retryAuth(async () => {
+      await TestInitializer.quickSetup();
+      const result = await this.authHelper.authenticateAs('admin');
+      
+      if (!result.success) {
+        throw new Error(`Admin authentication failed: ${result.error}`);
+      }
+      
+      console.log('🔐 CLEAN AUTH: Admin authentication successful');
+      return result;
+    }, 'Admin Login');
   }
 
   /**
-   * Login as teacher user with proper state tracking
+   * Login as teacher user with proper state tracking and retry logic
    */
   async loginAsTeacher(): Promise<AuthResult> {
-    await TestInitializer.quickSetup();
-    const result = await this.authHelper.authenticateAs('teacher');
-    
-    if (!result.success) {
-      throw new Error(`🔐 CLEAN AUTH: Teacher authentication failed: ${result.error}`);
-    }
-    
-    console.log('🔐 CLEAN AUTH: Teacher authentication successful');
-    return result;
+    return this.retryAuth(async () => {
+      await TestInitializer.quickSetup();
+      const result = await this.authHelper.authenticateAs('teacher');
+      
+      if (!result.success) {
+        throw new Error(`Teacher authentication failed: ${result.error}`);
+      }
+      
+      console.log('🔐 CLEAN AUTH: Teacher authentication successful');
+      return result;
+    }, 'Teacher Login');
   }
 
   /**
-   * Login as staff user with proper state tracking
+   * Login as staff user with proper state tracking and retry logic
    */
   async loginAsStaff(): Promise<AuthResult> {
-    await TestInitializer.quickSetup();
-    const result = await this.authHelper.authenticateAs('staff');
-    
-    if (!result.success) {
-      throw new Error(`🔐 CLEAN AUTH: Staff authentication failed: ${result.error}`);
-    }
-    
-    console.log('🔐 CLEAN AUTH: Staff authentication successful');
-    return result;
+    return this.retryAuth(async () => {
+      await TestInitializer.quickSetup();
+      const result = await this.authHelper.authenticateAs('staff');
+      
+      if (!result.success) {
+        throw new Error(`Staff authentication failed: ${result.error}`);
+      }
+      
+      console.log('🔐 CLEAN AUTH: Staff authentication successful');
+      return result;
+    }, 'Staff Login');
   }
 
   /**
-   * Login as student user with proper state tracking
+   * Login as student user with proper state tracking and retry logic
    */
   async loginAsStudent(): Promise<AuthResult> {
-    await TestInitializer.quickSetup();
-    const result = await this.authHelper.authenticateAs('student');
-    
-    if (!result.success) {
-      throw new Error(`🔐 CLEAN AUTH: Student authentication failed: ${result.error}`);
-    }
-    
-    console.log('🔐 CLEAN AUTH: Student authentication successful');
-    return result;
+    return this.retryAuth(async () => {
+      await TestInitializer.quickSetup();
+      const result = await this.authHelper.authenticateAs('student');
+      
+      if (!result.success) {
+        throw new Error(`Student authentication failed: ${result.error}`);
+      }
+      
+      console.log('🔐 CLEAN AUTH: Student authentication successful');
+      return result;
+    }, 'Student Login');
   }
 
   /**
@@ -142,6 +189,88 @@ export class CleanAuthHelper {
       console.log('🔐 CLEAN AUTH: Authentication state cleared successfully');
     } catch (error) {
       console.error('🔐 CLEAN AUTH: Failed to clear auth state:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Complete authentication state transition - prevents cycling issues
+   * This method ensures complete cleanup and UI reset before new authentication
+   */
+  async transitionAuthState(targetRole: 'admin' | 'teacher' | 'staff' | 'student'): Promise<void> {
+    try {
+      console.log(`🔐 CLEAN AUTH: Starting auth state transition to ${targetRole}`);
+      
+      // Step 1: Complete cleanup with verification
+      await this.clearAuthState();
+      
+      // Step 2: Wait for auth UI to reset (critical for cycling)
+      await this.page.waitForTimeout(800);
+      
+      // Step 3: Navigate to clean login page to ensure fresh state
+      await this.page.goto('/auth/login');
+      await this.page.waitForLoadState('networkidle');
+      
+      // Step 4: Verify we're on clean login page
+      await this.page.waitForSelector('[data-testid="login-form"], .login-form', { timeout: 5000 });
+      
+      // Step 5: Execute target authentication
+      switch (targetRole) {
+        case 'admin':
+          await this.loginAsAdmin();
+          break;
+        case 'teacher':
+          await this.loginAsTeacher();
+          break;
+        case 'staff':
+          await this.loginAsStaff();
+          break;
+        case 'student':
+          await this.loginAsStudent();
+          break;
+      }
+      
+      console.log(`🔐 CLEAN AUTH: Auth state transition to ${targetRole} completed successfully`);
+    } catch (error) {
+      console.error(`🔐 CLEAN AUTH: Auth state transition to ${targetRole} failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Safe authentication method that handles cycling issues
+   * Use this instead of direct login methods when switching between users
+   */
+  async switchToRole(targetRole: 'admin' | 'teacher' | 'staff' | 'student'): Promise<void> {
+    try {
+      // Check if we're already authenticated as the target role
+      const currentAuth = await this.page.evaluate(() => {
+        const cookies = document.cookie;
+        if (cookies.includes('yggdrasil_access_token')) {
+          // Try to decode the token to check role (simplified check)
+          const tokenMatch = cookies.match(/yggdrasil_access_token=([^;]+)/);
+          if (tokenMatch) {
+            try {
+              const payload = JSON.parse(atob(tokenMatch[1].split('.')[1]));
+              return payload.role;
+            } catch (e) {
+              return null;
+            }
+          }
+        }
+        return null;
+      });
+
+      if (currentAuth === targetRole) {
+        console.log(`🔐 CLEAN AUTH: Already authenticated as ${targetRole}, skipping transition`);
+        return;
+      }
+
+      console.log(`🔐 CLEAN AUTH: Switching from ${currentAuth || 'none'} to ${targetRole}`);
+      await this.transitionAuthState(targetRole);
+      
+    } catch (error) {
+      console.error(`🔐 CLEAN AUTH: Failed to switch to role ${targetRole}:`, error);
       throw error;
     }
   }

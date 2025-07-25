@@ -138,7 +138,7 @@ export class CourseDataFactory extends BaseDataFactory {
     options: {
       title?: string,
       status?: 'draft' | 'published' | 'archived',
-      difficulty?: 'beginner' | 'intermediate' | 'advanced',
+      level?: 'beginner' | 'intermediate' | 'advanced',
       estimatedDuration?: number,
       withContent?: boolean
     } = {}
@@ -148,6 +148,7 @@ export class CourseDataFactory extends BaseDataFactory {
     const testId = this.generateTestId();
     
     const courseData = {
+      code: `TST${testId.toUpperCase()}`,
       title: options.title || `Test Course ${testId}`,
       description: 'A comprehensive test course created for automated testing scenarios',
       instructor: {
@@ -158,7 +159,7 @@ export class CourseDataFactory extends BaseDataFactory {
       status: options.status || 'published',
       category: 'Technology',
       subject: 'Programming',
-      difficulty: options.difficulty || 'intermediate',
+      level: options.level || 'intermediate',
       estimatedDuration: options.estimatedDuration || 40, // hours
       tags: ['testing', 'automation', 'education'],
       isPublic: true,

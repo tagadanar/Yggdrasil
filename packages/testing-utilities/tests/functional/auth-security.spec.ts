@@ -9,19 +9,11 @@ import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 test.describe('Authentication Security - Comprehensive Workflows', () => {
   // Removed global auth helpers - each test manages its own cleanup
 
-  test.beforeEach(async ({ page }) => {
-    // No global setup needed - each test handles its own initialization
-  });
-
-  test.afterEach(async ({ page }) => {
-    // No global cleanup needed - each test handles its own cleanup
-  });
-
   // =============================================================================
   // AUTH-001: Complete JWT Security Lifecycle
   // =============================================================================
   test('Complete JWT Security Lifecycle', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('AUTH-001: Complete JWT Security Lifecycle');
+    const cleanup = await TestCleanup.ensureCleanStart('AUTH-001: Complete JWT Security Lifecycle');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -30,7 +22,8 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     
     // Wait for navigation to complete after login and ensure we're on a stable page
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000); // Give React time to hydrate
+    // Wait for authentication to complete
+    await page.waitForFunction(() => !window.location.pathname.includes('/auth/login'), { timeout: 5000 });
     
     // Debug: Check current URL and authentication state
     console.log('🔍 TEST DEBUG: Current URL after login:', page.url());
@@ -94,7 +87,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     // Verify successful login by checking for course page content (student sees "My Enrollments")
     // Wait for React to hydrate and load the course content
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000); // Allow time for dynamic content loading
+    await page.waitForLoadState('domcontentloaded');
     
     // Check for any of the possible course page headings based on user role
     const coursePageHeadings = [
@@ -131,7 +124,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       } catch (error) {
         console.log(`🔍 TEST DEBUG: Heading check attempt ${attempt}/3 failed`);
         if (attempt < 3) {
-          await page.waitForTimeout(2000);
+          await page.waitForLoadState('domcontentloaded');
           await page.waitForLoadState('networkidle');
         }
       }
@@ -150,7 +143,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       // If we're on the right page but content isn't loaded, wait a bit more
       if (currentUrl.includes('/courses')) {
         console.log('🔍 TEST DEBUG: On courses page but content not ready, waiting...');
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         await page.waitForLoadState('networkidle');
         
         // Try to find headings again
@@ -274,7 +267,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   // AUTH-002: Multi-Device Session Management
   // =============================================================================
   test('Multi-Device Session Management', async ({ page, context }) => {
-    const cleanup = TestCleanup.getInstance('AUTH-002: Multi-Device Session Management');
+    const cleanup = await TestCleanup.ensureCleanStart('AUTH-002: Multi-Device Session Management');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -325,8 +318,8 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       // Simple reload without manual cookie manipulation
       await page.reload({ waitUntil: 'networkidle' });
       
-      // Give time for auth state to reinitialize
-      await page.waitForTimeout(2000);
+      // Wait for auth state to reinitialize
+      await page.waitForLoadState('domcontentloaded');
       
       // Check if authentication is still valid using the same logic as login
       const sessionPersisted = await page.evaluate(() => {
@@ -392,7 +385,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
 
       // Device B should also be logged in - use simplified session check
       await deviceBPage.reload({ waitUntil: 'networkidle' });
-      await deviceBPage.waitForTimeout(2000);
+      await deviceBPage.waitForLoadState('domcontentloaded');
       
       // Check Device B session persistence
       const deviceBSessionPersisted = await deviceBPage.evaluate(() => {
@@ -455,7 +448,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   // AUTH-003: Role-Based Authorization Matrix
   // =============================================================================
   test('AUTH-003a: Admin Authorization Matrix', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('AUTH-003a: Admin Authorization Matrix');
+    const cleanup = await TestCleanup.ensureCleanStart('AUTH-003a: Admin Authorization Matrix');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -507,7 +500,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   });
 
   test('AUTH-003b: Staff Authorization Matrix', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('AUTH-003b: Staff Authorization Matrix');
+    const cleanup = await TestCleanup.ensureCleanStart('AUTH-003b: Staff Authorization Matrix');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -559,7 +552,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   });
 
   test('AUTH-003c: Teacher Authorization Matrix', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('AUTH-003c: Teacher Authorization Matrix');
+    const cleanup = await TestCleanup.ensureCleanStart('AUTH-003c: Teacher Authorization Matrix');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -622,7 +615,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   });
 
   test('AUTH-003d: Student Authorization Matrix', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('AUTH-003d: Student Authorization Matrix');
+    const cleanup = await TestCleanup.ensureCleanStart('AUTH-003d: Student Authorization Matrix');
     const authHelper = new CleanAuthHelper(page);
     
     try {

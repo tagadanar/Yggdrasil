@@ -218,7 +218,7 @@ export function generateTestArticle(overrides: Partial<any> = {}) {
     title: `Test Article ${Date.now()}`,
     content: 'This is test article content with some meaningful information.',
     category: 'announcement',
-    published: true,
+    isPublished: true,
     ...overrides
   };
 }

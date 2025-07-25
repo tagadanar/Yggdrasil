@@ -12,32 +12,80 @@ export default function HomePage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        // Redirect unauthenticated users to login
-        router.push('/auth/login');
-      } else {
-        // Redirect authenticated users to news page (homepage)
-        router.push('/news');
-      }
-    }
-  }, [user, isLoading, router]);
-
+  // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Yggdrasil Platform...</p>
+        </div>
       </div>
     );
   }
 
-  // Show landing page for unauthenticated users (though they should be redirected)
+  // Landing page for unauthenticated users
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white">
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center mb-12">
+            <h1 className="text-6xl font-bold text-gray-900 mb-6">
+              🌳 Yggdrasil
+            </h1>
+            <h2 className="text-3xl font-semibold text-gray-700 mb-4">
+              Educational Platform
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              A modern educational platform for IT schools built with clean architecture,
+              TDD principles, and comprehensive role-based access control.
+            </p>
+          </div>
+          
+          <div className="flex justify-center space-x-4 mb-16">
+            <button 
+              onClick={() => router.push('/auth/login')}
+              className="px-8 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold"
+            >
+              Sign In
+            </button>
+            <button 
+              onClick={() => router.push('/auth/register')}
+              className="px-8 py-3 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-semibold"
+            >
+              Register
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="text-center p-8 bg-white rounded-xl shadow-lg">
+              <div className="text-5xl mb-4">🔐</div>
+              <h3 className="text-xl font-semibold mb-4">Secure Authentication</h3>
+              <p className="text-gray-600">
+                JWT-based authentication with role-based access control for students, teachers, staff, and administrators.
+              </p>
+            </div>
+            <div className="text-center p-8 bg-white rounded-xl shadow-lg">
+              <div className="text-5xl mb-4">📚</div>
+              <h3 className="text-xl font-semibold mb-4">Course Management</h3>
+              <p className="text-gray-600">
+                Comprehensive course creation, enrollment, and progress tracking with modern educational tools.
+              </p>
+            </div>
+            <div className="text-center p-8 bg-white rounded-xl shadow-lg">
+              <div className="text-5xl mb-4">📊</div>
+              <h3 className="text-xl font-semibold mb-4">Analytics & Insights</h3>
+              <p className="text-gray-600">
+                Detailed statistics and reporting for student progress, course effectiveness, and platform usage.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  // Main page for authenticated users
+  // For authenticated users, render the full dashboard
   return (
     <DashboardLayout>
       <div className="space-y-8">

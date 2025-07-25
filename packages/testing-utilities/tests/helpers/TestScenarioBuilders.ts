@@ -293,6 +293,67 @@ export class TeacherScenarioBuilder {
   }
 
   /**
+   * SCENARIO: Basic teacher with minimal data (performance optimized)
+   */
+  async createBasicTeacher(): Promise<{
+    teacher: any,
+    courses: any[],
+    students: any[],
+    enrollments: any[],
+    submissions: any[],
+    hasData: true,
+    scenario: 'basic_teacher'
+  }> {
+    const teacher = await this.factory.users.createUser('teacher', {
+      profile: { firstName: 'Basic', lastName: 'Teacher' }
+    });
+
+    // Create only 2 courses (minimal but functional)
+    const courses = await this.factory.courses.createCoursesForTeacher(teacher._id.toString(), 2);
+
+    // Create only 5 students (lightweight)
+    const students = [];
+    for (let i = 0; i < 5; i++) {
+      const student = await this.factory.users.createUser('student');
+      students.push(student);
+    }
+
+    // Create minimal enrollment and submission data
+    const enrollments = [];
+    const submissions = [];
+    
+    for (const student of students) {
+      // Each student enrolls in just 1 course (minimal viable data)
+      const course = courses[Math.floor(Math.random() * courses.length)];
+      const enrollment = await this.factory.enrollments.createEnrollment(
+        student._id.toString(),
+        course._id.toString()
+      );
+      enrollments.push(enrollment);
+
+      // Create just 2-3 submissions per student (minimal activity)
+      const studentSubmissions = await this.factory.submissions.createSubmissions(
+        student._id.toString(),
+        course._id.toString(),
+        2 + Math.floor(Math.random() * 2) // 2-3 submissions
+      );
+      submissions.push(...studentSubmissions);
+    }
+
+    console.log(`👨‍🏫 SCENARIO: Created basic teacher with ${courses.length} courses, ${students.length} students, ${submissions.length} submissions - ${teacher.email}`);
+    
+    return {
+      teacher,
+      courses,
+      students,
+      enrollments,
+      submissions,
+      hasData: true,
+      scenario: 'basic_teacher'
+    };
+  }
+
+  /**
    * SCENARIO: Experienced teacher with large classroom (stress testing)
    */
   async createExperiencedTeacher(): Promise<{
@@ -364,6 +425,86 @@ export class AdminScenarioBuilder {
 
   constructor(testName: string) {
     this.factory = new TestDataFactory(testName);
+  }
+
+  /**
+   * SCENARIO: Basic admin with minimal platform data (performance optimized)
+   */
+  async createBasicPlatform(): Promise<{
+    admin: any,
+    teachers: any[],
+    students: any[],
+    courses: any[],
+    enrollments: any[],
+    submissions: any[],
+    hasData: true,
+    scenario: 'basic_platform'
+  }> {
+    // Create admin
+    const admin = await this.factory.users.createUser('admin', {
+      profile: { firstName: 'Basic', lastName: 'Admin' }
+    });
+
+    // Create minimal user base (2 teachers, 8 students)
+    const teachers = [];
+    for (let i = 0; i < 2; i++) {
+      const teacher = await this.factory.users.createUser('teacher');
+      teachers.push(teacher);
+    }
+
+    const students = [];
+    for (let i = 0; i < 8; i++) {
+      const student = await this.factory.users.createUser('student');
+      students.push(student);
+    }
+
+    // Create 3 courses total (minimal but diverse)
+    const courses = [];
+    for (const teacher of teachers) {
+      const teacherCourses = await this.factory.courses.createCoursesForTeacher(
+        teacher._id.toString(),
+        Math.floor(Math.random() * 2) + 1 // 1-2 courses per teacher
+      );
+      courses.push(...teacherCourses);
+    }
+
+    // Create minimal enrollments and submissions
+    const enrollments = [];
+    const submissions = [];
+    
+    for (const student of students) {
+      // Each student enrolls in 1-2 courses (realistic but minimal)
+      const coursesToEnroll = courses.slice(0, Math.floor(Math.random() * 2) + 1);
+      
+      for (const course of coursesToEnroll) {
+        const enrollment = await this.factory.enrollments.createEnrollment(
+          student._id.toString(),
+          course._id.toString()
+        );
+        enrollments.push(enrollment);
+
+        // 1-3 submissions per course per student (minimal activity)
+        const studentSubmissions = await this.factory.submissions.createSubmissions(
+          student._id.toString(),
+          course._id.toString(),
+          Math.floor(Math.random() * 3) + 1
+        );
+        submissions.push(...studentSubmissions);
+      }
+    }
+
+    console.log(`🏛️ SCENARIO: Created basic platform with ${teachers.length} teachers, ${students.length} students, ${courses.length} courses, ${submissions.length} submissions - ${admin.email}`);
+    
+    return {
+      admin,
+      teachers,
+      students,
+      courses,
+      enrollments,
+      submissions,
+      hasData: true,
+      scenario: 'basic_platform'
+    };
   }
 
   /**

@@ -9,20 +9,12 @@ import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
 test.describe('Course Management', () => {
   // Removed global auth helpers - each test manages its own cleanup
 
-  test.beforeEach(async ({ page }) => {
-    // No global setup needed - each test handles its own initialization
-  });
-
-  test.afterEach(async ({ page }) => {
-    // No global cleanup needed - each test handles its own cleanup
-  });
-
   // =============================================================================
   // ROLE-BASED ACCESS TESTS (split by role for stability)
   // =============================================================================
   
   test('Admin course access and permissions', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Admin course access and permissions');
+    const cleanup = await TestCleanup.ensureCleanStart('Admin course access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -57,7 +49,7 @@ test.describe('Course Management', () => {
   });
 
   test('Teacher course access and permissions', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Teacher course access and permissions');
+    const cleanup = await TestCleanup.ensureCleanStart('Teacher course access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -93,7 +85,7 @@ test.describe('Course Management', () => {
   });
 
   test('Staff course access and permissions', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Staff course access and permissions');
+    const cleanup = await TestCleanup.ensureCleanStart('Staff course access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -128,7 +120,7 @@ test.describe('Course Management', () => {
   });
 
   test('Student course access and permissions', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Student course access and permissions');
+    const cleanup = await TestCleanup.ensureCleanStart('Student course access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -166,7 +158,7 @@ test.describe('Course Management', () => {
   // TEST 2: BASIC COURSE PAGE FUNCTIONALITY  
   // =============================================================================
   test('Course page basic functionality and navigation', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Course page basic functionality and navigation');
+    const cleanup = await TestCleanup.ensureCleanStart('Course page basic functionality and navigation');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -203,7 +195,7 @@ test.describe('Course Management', () => {
   // TEST 3: STUDENT COURSE VIEW
   // =============================================================================
   test('Student course page view and basic functionality', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Student course page view and basic functionality');
+    const cleanup = await TestCleanup.ensureCleanStart('Student course page view and basic functionality');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -229,7 +221,7 @@ test.describe('Course Management', () => {
   // TEST 4: TEACHER COURSE VIEW
   // =============================================================================
   test('Teacher course page view and basic functionality', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Teacher course page view and basic functionality');
+    const cleanup = await TestCleanup.ensureCleanStart('Teacher course page view and basic functionality');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -239,7 +231,7 @@ test.describe('Course Management', () => {
     
     // Teachers should see either "My Courses" or "Courses" title
     const heading = await page.locator('h1').first();
-    await expect(heading).toBeVisible({ timeout: 15000 });
+    await expect(heading).toBeVisible({ timeout: 5000 });
     const headingText = await heading.textContent();
     expect(headingText).toMatch(/Courses|My Courses/);
     
@@ -249,7 +241,7 @@ test.describe('Course Management', () => {
     
     // Teachers should have create button access - wait for it to appear
     const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course"), .btn-primary');
-    await createButton.first().waitFor({ state: 'visible', timeout: 10000 });
+    await createButton.first().waitFor({ state: 'visible', timeout: 3000 });
     expect(await createButton.count()).toBeGreaterThan(0);
     
     } finally {
@@ -262,7 +254,7 @@ test.describe('Course Management', () => {
   // COURSE-001: Complete Course Creation & Publishing Workflow
   // =============================================================================
   test('Complete Course Creation & Publishing Workflow', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('COURSE-001: Complete Course Creation & Publishing Workflow');
+    const cleanup = await TestCleanup.ensureCleanStart('COURSE-001: Complete Course Creation & Publishing Workflow');
     const authHelper = new CleanAuthHelper(page);
     let createdCourseTitle: string | null = null;
     
@@ -274,7 +266,7 @@ test.describe('Course Management', () => {
     await page.waitForLoadState('networkidle');
     
     const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course"), .btn-primary');
-    await createButton.first().waitFor({ state: 'visible', timeout: 10000 });
+    await createButton.first().waitFor({ state: 'visible', timeout: 3000 });
     await createButton.first().click();
     
     // Wait for form fields to appear
@@ -282,7 +274,7 @@ test.describe('Course Management', () => {
     const courseDescInput = page.locator('textarea[name="description"], textarea[placeholder*="description"]');
     
     // Wait for form to be ready for input
-    await courseTitleInput.first().waitFor({ state: 'visible', timeout: 10000 });
+    await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
     
     createdCourseTitle = `Test Course ${Date.now()}`;
     
@@ -437,9 +429,9 @@ test.describe('Course Management', () => {
       await createButton.first().click();
       
       const newCourseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
-      await newCourseTitleInput.first().waitFor({ state: 'visible', timeout: 10000 });
+      await newCourseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
       if (await newCourseTitleInput.count() > 0) {
-        await newCourseTitleInput.fill(uniqueCourseTitle); // Same title
+        await newCourseTitleInput.fill(createdCourseTitle); // Same title
         
         const saveButton = page.locator('button:has-text("Save"), button[type="submit"]');
         if (await saveButton.count() > 0) {
@@ -469,7 +461,7 @@ test.describe('Course Management', () => {
   // COURSE-002: Exercise Submission & Automated Grading
   // =============================================================================
   test('Exercise Submission & Automated Grading', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('COURSE-002: Exercise Submission & Automated Grading');
+    const cleanup = await TestCleanup.ensureCleanStart('COURSE-002: Exercise Submission & Automated Grading');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -484,7 +476,7 @@ test.describe('Course Management', () => {
       await createButton.first().click();
       
       const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
-      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 10000 });
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
       if (await courseTitleInput.count() > 0) {
         await courseTitleInput.fill(`Exercise Course ${Date.now()}`);
       }
@@ -603,7 +595,7 @@ test.describe('Course Management', () => {
   // COURSE-003: Quiz System & Assessment Workflows
   // =============================================================================
   test('Quiz System & Assessment Workflows', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('COURSE-003: Quiz System & Assessment Workflows');
+    const cleanup = await TestCleanup.ensureCleanStart('COURSE-003: Quiz System & Assessment Workflows');
     const authHelper = new CleanAuthHelper(page);
     let createdQuizCourse: string | null = null;
     
@@ -619,7 +611,7 @@ test.describe('Course Management', () => {
       await createButton.first().click();
       
       const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
-      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 10000 });
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
       if (await courseTitleInput.count() > 0) {
         createdQuizCourse = `Quiz Course ${Date.now()}`;
         await courseTitleInput.fill(createdQuizCourse);

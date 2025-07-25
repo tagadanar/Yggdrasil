@@ -57,11 +57,30 @@ export default function ProfilePage() {
     
     try {
       const { userApi } = await import('@/lib/api/client');
-      const result = await userApi.updateUser(user._id, {
+      
+      // Prepare profile update data
+      const profileUpdateData: any = {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
-      });
+        department: formData.department,
+        bio: formData.bio,
+        officeHours: formData.officeHours,
+        studentId: formData.studentId,
+        contactInfo: {
+          phone: formData.phone
+        }
+      };
+      
+      // Handle specialties (convert comma-separated string to array)
+      if (formData.specialties) {
+        profileUpdateData.specialties = formData.specialties.split(',').map(s => s.trim()).filter(s => s);
+      }
+      
+      console.log('Sending profile update data:', profileUpdateData);
+      
+      const result = await userApi.updateProfile(profileUpdateData);
+      
+      console.log('Profile update result:', result);
       
       if (result.success) {
         // Update the user context with new data if available
@@ -133,7 +152,8 @@ export default function ProfilePage() {
                       Cancel
                     </button>
                     <button
-                      onClick={handleSubmit}
+                      type="submit"
+                      form="profile-form"
                       className="btn-primary"
                     >
                       Save Changes
@@ -154,7 +174,7 @@ export default function ProfilePage() {
                 </p>
               </div>
               
-              <form onSubmit={handleSubmit}>
+              <form id="profile-form" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Basic Information */}
                   <div className="space-y-4">

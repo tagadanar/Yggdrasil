@@ -7,7 +7,16 @@ import { UserModel } from '@yggdrasil/database-schemas';
 // Re-export shared middleware with user lookup for auth service
 export const authenticateToken = AuthMiddleware.verifyTokenWithUserLookup(
   async (id: string) => {
-    return await UserModel.findById(id);
+    const user = await UserModel.findById(id);
+    console.log('🔍 AUTH MIDDLEWARE: UserModel.findById() returned:', {
+      email: user?.email,
+      role: user?.role,
+      hasProfile: !!user?.profile,
+      profileFirstName: user?.profile?.firstName,
+      profileLastName: user?.profile?.lastName,
+      profileKeys: user?.profile ? Object.keys(user.profile) : 'no profile'
+    });
+    return user;
   }
 );
 

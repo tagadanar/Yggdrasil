@@ -126,6 +126,15 @@ export class EnhancedAuthMiddleware {
         const userId = verification.data!.userId || verification.data!.id;
         const dbUser = await userLookupFn(userId);
         
+        console.log('🔍 AUTH MIDDLEWARE: Database user lookup result:', {
+          userId,
+          hasDbUser: !!dbUser,
+          dbUserEmail: dbUser?.email,
+          dbUserHasProfile: !!dbUser?.profile,
+          dbUserProfileKeys: dbUser?.profile ? Object.keys(dbUser.profile) : 'no profile',
+          dbUserProfileFirstName: dbUser?.profile?.firstName
+        });
+        
         if (!dbUser) {
           const response = ResponseHelper.unauthorized('User not found');
           res.status(response.statusCode!).json(response);
@@ -167,6 +176,14 @@ export class EnhancedAuthMiddleware {
           _id: dbUser._id  // Raw MongoDB ID for services that need it
         };
         req.userId = userId;
+        
+        console.log('🔍 AUTH MIDDLEWARE: Created req.user object:', {
+          email: req.user.email,
+          role: req.user.role,
+          hasProfile: !!req.user.profile,
+          profileFirstName: req.user.profile?.firstName,
+          profileKeys: req.user.profile ? Object.keys(req.user.profile) : 'no profile'
+        });
         
         next();
       } catch (error) {

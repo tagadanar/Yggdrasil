@@ -200,9 +200,19 @@ CourseEnrollmentSchema.index({ studentId: 1, status: 1 });
 CourseEnrollmentSchema.index({ courseId: 1, status: 1 });
 CourseEnrollmentSchema.index({ enrolledAt: -1 });
 
+// OPTIMIZED: Additional indexes for Statistics Service time-based queries
+CourseEnrollmentSchema.index({ studentId: 1, updatedAt: -1 });
+CourseEnrollmentSchema.index({ courseId: 1, updatedAt: -1 });
+CourseEnrollmentSchema.index({ updatedAt: -1, status: 1 });
+
 ExerciseSubmissionSchema.index({ exerciseId: 1, studentId: 1 });
 ExerciseSubmissionSchema.index({ studentId: 1, submittedAt: -1 });
 ExerciseSubmissionSchema.index({ exerciseId: 1, submittedAt: -1 });
+
+// OPTIMIZED: Additional indexes for Statistics Service performance queries
+ExerciseSubmissionSchema.index({ studentId: 1, submittedAt: -1, exerciseId: 1 });
+ExerciseSubmissionSchema.index({ exerciseId: 1, submittedAt: -1, studentId: 1 });
+ExerciseSubmissionSchema.index({ submittedAt: -1 }); // For time-range queries
 
 // Instance methods for CourseEnrollment
 CourseEnrollmentSchema.methods.calculateOverallProgress = function(): number {

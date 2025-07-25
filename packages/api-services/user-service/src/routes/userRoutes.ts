@@ -39,6 +39,9 @@ userRoutes.delete('/:id', requireRole(['admin']), UserController.deleteUser);
 // Admins can view any profile
 userRoutes.get('/:id', requireOwnershipOrTeacherRole, UserController.getUserById);
 
+// PUT /api/users/:id - Full user update (admin only)
+userRoutes.put('/:id', requireRole(['admin']), UserController.updateUser);
+
 // PATCH /api/users/:id/profile - Update user profile
 // Only the user themselves or admins can modify profiles
 userRoutes.patch('/:id/profile', requireOwnershipForModification, UserController.updateUserProfile);

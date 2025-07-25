@@ -1,20 +1,16 @@
 // Direct planning page test to validate modern calendar functionality
 
 import { test, expect } from '@playwright/test';
+import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 
 test.describe('Planning Page Direct Access', () => {
-  let authHelper: CleanAuthHelper;
-
-  test.beforeEach(async ({ page }) => {
-    authHelper = new CleanAuthHelper(page);
-  });
-
-  test.afterEach(async ({ page }) => {
-    await authHelper.clearAuthState();
-  });
-
   test('Should load planning page with authentication', async ({ page }) => {
+    const cleanup = await TestCleanup.ensureCleanStart('Planning Page Authentication Test');
+    let auth: CleanAuthHelper | undefined = undefined;
+    
+    try {
+      auth = new CleanAuthHelper(page);
     console.log('=== DIRECT PLANNING PAGE TEST ===');
     
     // Navigate to the login page first
@@ -87,9 +83,19 @@ test.describe('Planning Page Direct Access', () => {
     if (errors.length > 0) {
       console.log('JavaScript errors found:', errors);
     }
+    
+    } finally {
+      if (auth) await auth.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   test('Should test modern calendar components', async ({ page }) => {
+    const cleanup = await TestCleanup.ensureCleanStart('Modern Calendar Components Test');
+    let auth: CleanAuthHelper | undefined = undefined;
+    
+    try {
+      auth = new CleanAuthHelper(page);
     console.log('=== MODERN CALENDAR COMPONENTS TEST ===');
     
     // Navigate to the login page first
@@ -148,5 +154,10 @@ test.describe('Planning Page Direct Access', () => {
     
     // Focus on content loading rather than strict 404 check
     expect(content.length).toBeGreaterThan(1000);
+    
+    } finally {
+      if (auth) await auth.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 });

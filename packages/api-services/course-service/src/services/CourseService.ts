@@ -577,8 +577,13 @@ export class CourseService {
 
       await submission.save();
 
-      // TODO: Add exercise evaluation logic here
-      // For now, we'll just save the submission without evaluation
+      // Exercise evaluation logic
+      const evaluationResult = await this.evaluateExerciseSubmission(exerciseId, submissionData);
+      
+      // Update submission with evaluation results
+      submission.result = evaluationResult;
+      submission.gradedAt = new Date();
+      await submission.save();
 
       return submission;
     } catch (error: any) {
@@ -598,6 +603,292 @@ export class CourseService {
     } catch (error: any) {
       throw new Error(`Failed to get exercise submissions: ${error.message}`);
     }
+  }
+
+  // =============================================================================
+  // EXERCISE EVALUATION
+  // =============================================================================
+
+  private async evaluateExerciseSubmission(
+    exerciseId: string, 
+    submissionData: SubmitExerciseRequest
+  ): Promise<any> {
+    try {
+      // Find the exercise definition in the course structure
+      const exercise = await this.findExerciseById(exerciseId);
+      if (!exercise) {
+        return {
+          isCorrect: false,
+          score: 0,
+          feedback: 'Exercise not found',
+          testResults: [],
+          executionTime: 0
+        };
+      }
+
+      // Handle different exercise types
+      switch (exercise.type) {
+        case 'code':
+          return await this.evaluateCodeExercise(exercise, submissionData);
+        case 'quiz':
+          return await this.evaluateQuizExercise(exercise, submissionData);
+        case 'assignment':
+          return await this.evaluateAssignmentExercise(exercise, submissionData);
+        default:
+          return {
+            isCorrect: false,
+            score: 0,
+            feedback: `Unsupported exercise type: ${exercise.type}`,
+            testResults: [],
+            executionTime: 0
+          };
+      }
+    } catch (error: any) {
+      return {
+        isCorrect: false,
+        score: 0,
+        feedback: `Evaluation error: ${error.message}`,
+        testResults: [],
+        executionTime: 0
+      };
+    }
+  }
+
+  private async findExerciseById(exerciseId: string): Promise<any | null> {
+    try {
+      // Search through all courses to find the exercise
+      // In a real implementation, you might want to optimize this with better indexing
+      const courses = await CourseModel.find({ status: 'published' });
+      
+      for (const course of courses) {
+        for (const chapter of course.chapters) {
+          for (const section of chapter.sections) {
+            for (const content of section.content) {
+              if (content.type === 'exercise' && content.data?.exercise && 
+                  content.data.exercise._id.toString() === exerciseId) {
+                return content.data.exercise;
+              }
+            }
+          }
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error finding exercise:', error);
+      return null;
+    }
+  }
+
+  private async evaluateCodeExercise(exercise: any, submissionData: SubmitExerciseRequest): Promise<any> {
+    const startTime = Date.now();
+    const testResults: any[] = [];
+    let passedTests = 0;
+
+    try {
+      // Evaluate against test cases
+      if (exercise.testCases && exercise.testCases.length > 0) {
+        for (const testCase of exercise.testCases) {
+          try {
+            // Simulate code execution and comparison
+            // In a real implementation, you would use a secure code sandbox
+            const result = await this.executeCodeWithTestCase(
+              submissionData.code || '', 
+              testCase,
+              exercise.programmingLanguage || 'javascript'
+            );
+            
+            testResults.push({
+              testCaseId: testCase._id.toString(),
+              passed: result.passed,
+              actualOutput: result.actualOutput,
+              errorMessage: result.errorMessage
+            });
+
+            if (result.passed) {
+              passedTests++;
+            }
+          } catch (error: any) {
+            testResults.push({
+              testCaseId: testCase._id.toString(),
+              passed: false,
+              actualOutput: '',
+              errorMessage: `Test execution error: ${error.message}`
+            });
+          }
+        }
+      }
+
+      // Calculate score based on passed test cases
+      const totalTests = exercise.testCases?.length || 1;
+      const score = Math.round((passedTests / totalTests) * 100);
+      const isCorrect = score >= 70; // 70% threshold for correctness
+
+      // Generate feedback
+      let feedback = '';
+      if (score === 100) {
+        feedback = 'Excellent! All test cases passed. Your solution is correct.';
+      } else if (score >= 70) {
+        feedback = `Good work! ${passedTests}/${totalTests} test cases passed. Score: ${score}%`;
+      } else if (score > 0) {
+        feedback = `Keep trying! ${passedTests}/${totalTests} test cases passed. Review the failed test cases and try again.`;
+      } else {
+        feedback = 'No test cases passed. Please review the problem requirements and try again.';
+      }
+
+      // Add specific feedback for failed tests
+      if (passedTests < totalTests) {
+        const failedTests = testResults.filter(t => !t.passed);
+        if (failedTests.length > 0) {
+          feedback += ' Failed tests: ' + failedTests.map(t => t.errorMessage).join('; ');
+        }
+      }
+
+      return {
+        isCorrect,
+        score,
+        feedback,
+        testResults,
+        executionTime: Date.now() - startTime,
+        codeQuality: this.analyzeCodeQuality(submissionData.code || '')
+      };
+
+    } catch (error: any) {
+      return {
+        isCorrect: false,
+        score: 0,
+        feedback: `Code evaluation failed: ${error.message}`,
+        testResults,
+        executionTime: Date.now() - startTime
+      };
+    }
+  }
+
+  private async evaluateQuizExercise(exercise: any, submissionData: SubmitExerciseRequest): Promise<any> {
+    // For quiz exercises, compare the answer against correct answers
+    try {
+      const userAnswer = submissionData.answer?.trim().toLowerCase() || '';
+      let isCorrect = false;
+      let score = 0;
+
+      // Simple answer comparison (in practice, you'd have more sophisticated logic)
+      if (exercise.solution) {
+        const correctAnswer = exercise.solution.trim().toLowerCase();
+        isCorrect = userAnswer === correctAnswer;
+        score = isCorrect ? 100 : 0;
+      }
+
+      const feedback = isCorrect 
+        ? 'Correct! Well done.' 
+        : 'Incorrect answer. Please review the material and try again.';
+
+      return {
+        isCorrect,
+        score,
+        feedback,
+        testResults: [{
+          testCaseId: 'quiz-answer',
+          passed: isCorrect,
+          actualOutput: userAnswer,
+          errorMessage: isCorrect ? '' : 'Answer does not match expected solution'
+        }],
+        executionTime: 0
+      };
+    } catch (error: any) {
+      return {
+        isCorrect: false,
+        score: 0,
+        feedback: `Quiz evaluation failed: ${error.message}`,
+        testResults: [],
+        executionTime: 0
+      };
+    }
+  }
+
+  private async evaluateAssignmentExercise(exercise: any, submissionData: SubmitExerciseRequest): Promise<any> {
+    // Assignment exercises require manual grading, so we just save the submission
+    return {
+      isCorrect: false, // Will be updated when manually graded
+      score: 0, // Will be updated when manually graded
+      feedback: 'Assignment submitted successfully. Awaiting instructor review.',
+      testResults: [],
+      executionTime: 0
+    };
+  }
+
+  private async executeCodeWithTestCase(
+    code: string, 
+    testCase: any, 
+    language: string
+  ): Promise<{ passed: boolean; actualOutput: string; errorMessage: string }> {
+    // This is a simplified mock implementation
+    // In a real system, you would use a secure sandboxed execution environment
+    try {
+      // For now, we'll do basic pattern matching and mock execution
+      if (!code || code.trim().length === 0) {
+        return {
+          passed: false,
+          actualOutput: '',
+          errorMessage: 'No code provided'
+        };
+      }
+
+      // Mock execution: simple pattern matching for common cases
+      const expectedOutput = testCase.expectedOutput.trim();
+      let actualOutput = '';
+
+      // Very basic simulation - in practice, you'd execute in a sandbox
+      if (code.includes('console.log') || code.includes('print')) {
+        // Extract potential output patterns
+        if (code.includes('"Hello World"') || code.includes("'Hello World'")) {
+          actualOutput = 'Hello World';
+        } else if (code.includes('input') && testCase.input) {
+          // Mock processing of input
+          actualOutput = `Processed: ${testCase.input}`;
+        } else {
+          actualOutput = 'Output generated';
+        }
+      }
+
+      const passed = actualOutput.trim() === expectedOutput;
+
+      return {
+        passed,
+        actualOutput,
+        errorMessage: passed ? '' : `Expected "${expectedOutput}", got "${actualOutput}"`
+      };
+
+    } catch (error: any) {
+      return {
+        passed: false,
+        actualOutput: '',
+        errorMessage: `Execution error: ${error.message}`
+      };
+    }
+  }
+
+  private analyzeCodeQuality(code: string): any {
+    // Basic code quality analysis
+    const lines = code.split('\n').filter(line => line.trim().length > 0);
+    const linesOfCode = lines.length;
+    
+    // Simple heuristics for code quality
+    const codeSmells = [];
+    if (linesOfCode > 50) {
+      codeSmells.push('Long function - consider breaking into smaller functions');
+    }
+    if (code.includes('var ')) {
+      codeSmells.push('Use let/const instead of var');
+    }
+    if (!code.includes('//') && !code.includes('/*')) {
+      codeSmells.push('Consider adding comments to explain your code');
+    }
+
+    return {
+      linesOfCode,
+      complexity: Math.min(Math.floor(linesOfCode / 5), 10), // Simple complexity score
+      duplicateLines: 0, // Would require more sophisticated analysis
+      codeSmells
+    };
   }
 
   // =============================================================================

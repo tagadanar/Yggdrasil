@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { StatisticsController } from '../controllers/StatisticsController';
 import { 
-  authenticateToken, 
+  authenticateToken,
   requireRole,
   requireOwnershipOrAdmin,
   requireAdminOnly,

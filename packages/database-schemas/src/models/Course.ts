@@ -531,6 +531,12 @@ CourseSchema.index({ status: 1, 'settings.isPublic': 1 });
 CourseSchema.index({ createdAt: -1 });
 CourseSchema.index({ lastModified: -1 });
 
+// OPTIMIZED: Additional indexes for Statistics Service time-based queries
+CourseSchema.index({ updatedAt: -1, status: 1 });
+CourseSchema.index({ 'instructor._id': 1, updatedAt: -1 });
+CourseSchema.index({ 'collaborators._id': 1, updatedAt: -1 });
+CourseSchema.index({ updatedAt: -1 }); // For time-range queries
+
 // Pre-save middleware to generate slug
 CourseSchema.pre<CourseDocument>('save', function(next) {
   const course = this;

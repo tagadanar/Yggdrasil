@@ -32,6 +32,15 @@ export interface UserServiceResult {
 export interface ProfileUpdateData {
   firstName?: string;
   lastName?: string;
+  department?: string;
+  studentId?: string;
+  bio?: string;
+  officeHours?: string;
+  specialties?: string[];
+  contactInfo?: {
+    phone?: string;
+    address?: string;
+  };
 }
 
 export interface CreateUserData {
@@ -125,8 +134,11 @@ export class UserService {
   }
 
   static async updateUserProfile(userId: string, profileData: ProfileUpdateData): Promise<UserServiceResult> {
+    console.log('🔄 UPDATE PROFILE: Received data:', JSON.stringify(profileData, null, 2));
+    
     // REFACTOR: Use extracted error message
     if (!ValidationHelper.isValidObjectId(userId)) {
+      console.log('❌ UPDATE PROFILE: Invalid user ID:', userId);
       return {
         success: false,
         error: ERROR_MESSAGES.INVALID_USER_ID
@@ -136,6 +148,7 @@ export class UserService {
     // REFACTOR: Use extracted validation method
     const validationError = this.validateProfileData(profileData);
     if (validationError) {
+      console.log('❌ UPDATE PROFILE: Validation error:', validationError);
       return {
         success: false,
         error: validationError
@@ -153,9 +166,24 @@ export class UserService {
       }
 
       // REFACTOR: Cleaner update data building
-      const updateData: Record<string, string> = {};
-      if (profileData.firstName) updateData['profile.firstName'] = profileData.firstName;
-      if (profileData.lastName) updateData['profile.lastName'] = profileData.lastName;
+      const updateData: Record<string, any> = {};
+      
+      // Basic profile fields
+      if (profileData.firstName !== undefined) updateData['profile.firstName'] = profileData.firstName;
+      if (profileData.lastName !== undefined) updateData['profile.lastName'] = profileData.lastName;
+      if (profileData.department !== undefined) updateData['profile.department'] = profileData.department;
+      if (profileData.studentId !== undefined) updateData['profile.studentId'] = profileData.studentId;
+      if (profileData.bio !== undefined) updateData['profile.bio'] = profileData.bio;
+      if (profileData.officeHours !== undefined) updateData['profile.officeHours'] = profileData.officeHours;
+      if (profileData.specialties !== undefined) updateData['profile.specialties'] = profileData.specialties;
+      
+      // Contact info fields
+      if (profileData.contactInfo) {
+        if (profileData.contactInfo.phone !== undefined) updateData['profile.contactInfo.phone'] = profileData.contactInfo.phone;
+        if (profileData.contactInfo.address !== undefined) updateData['profile.contactInfo.address'] = profileData.contactInfo.address;
+      }
+      
+      console.log('🔄 UPDATE PROFILE: Update data to save:', JSON.stringify(updateData, null, 2));
 
       const updatedUser = await UserModel.findByIdAndUpdate(
         userId,
@@ -164,11 +192,14 @@ export class UserService {
       );
 
       if (!updatedUser) {
+        console.log('❌ UPDATE PROFILE: Update failed - user not found after update');
         return {
           success: false,
           error: ERROR_MESSAGES.UPDATE_FAILED
         };
       }
+      
+      console.log('✅ UPDATE PROFILE: Update successful for user:', updatedUser.email);
 
       // REFACTOR: Use extracted transformation method
       return {
@@ -344,6 +375,86 @@ export class UserService {
       return {
         success: true,
         data: {}
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: ERROR_MESSAGES.INTERNAL_ERROR
+      };
+    }
+  }
+
+  // Admin Only: Full user update (role, email, profile, active status)
+  static async updateUser(userId: string, userData: Partial<CreateUserData>): Promise<UserServiceResult> {
+    if (!ValidationHelper.isValidObjectId(userId)) {
+      return {
+        success: false,
+        error: ERROR_MESSAGES.INVALID_USER_ID
+      };
+    }
+
+    try {
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return {
+          success: false,
+          error: ERROR_MESSAGES.USER_NOT_FOUND
+        };
+      }
+
+      const updateData: any = {};
+
+      // Update email if provided
+      if (userData.email && userData.email !== user.email) {
+        const existingUser = await UserModel.findByEmail(userData.email);
+        if (existingUser && existingUser._id.toString() !== userId) {
+          return {
+            success: false,
+            error: ERROR_MESSAGES.USER_ALREADY_EXISTS
+          };
+        }
+        updateData.email = userData.email;
+      }
+
+      // Update role if provided
+      if (userData.role) {
+        updateData.role = userData.role;
+      }
+
+      // Update profile if provided
+      if (userData.profile) {
+        updateData.profile = { ...user.profile, ...userData.profile };
+      }
+
+      // Update active status if provided
+      if (typeof userData.isActive === 'boolean') {
+        updateData.isActive = userData.isActive;
+      }
+
+      // Update password if provided
+      if (userData.password) {
+        updateData.password = await bcrypt.hash(userData.password, 12);
+      }
+
+      const updatedUser = await UserModel.findByIdAndUpdate(
+        userId,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedUser) {
+        return {
+          success: false,
+          error: ERROR_MESSAGES.UPDATE_FAILED
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          user: this.transformUserDocument(updatedUser)
+        }
       };
 
     } catch (error) {

@@ -170,14 +170,41 @@ export const userApi = {
     return response.data;
   },
 
-  // Update user profile
+  // Update user profile by ID (requires ownership or admin)
   async updateUser(userId: string, profileData: {
     firstName?: string;
     lastName?: string;
     email?: string;
     role?: string;
+    department?: string;
+    studentId?: string;
+    bio?: string;
+    officeHours?: string;
+    specialties?: string[];
+    contactInfo?: {
+      phone?: string;
+      address?: string;
+    };
   }) {
     const response = await userApiClient.patch(`/users/${userId}/profile`, profileData);
+    return response.data;
+  },
+
+  // Update current user's profile
+  async updateProfile(profileData: {
+    firstName?: string;
+    lastName?: string;
+    department?: string;
+    studentId?: string;
+    bio?: string;
+    officeHours?: string;
+    specialties?: string[];
+    contactInfo?: {
+      phone?: string;
+      address?: string;
+    };
+  }) {
+    const response = await userApiClient.put('/users/profile', profileData);
     return response.data;
   },
 

@@ -65,21 +65,76 @@ class ServiceManager {
   }
 
   async killPortProcesses(ports) {
-    console.log(`🧹 Aggressively cleaning ports: ${ports.join(', ')}`);
+    console.log(`🧹 Cleaning up development processes and test browsers...`);
     
     try {
-      // Kill processes using lsof with SIGKILL
-      const command = `lsof -ti:${ports.join(',')} | xargs -r kill -9 2>/dev/null || true`;
-      execSync(command, { stdio: 'ignore' });
+      // First, kill Node.js processes on these ports (but not browsers)
+      // Use lsof to find processes, then filter by command name
+      for (const port of ports) {
+        try {
+          // Get detailed process info for this port
+          const processInfo = execSync(`lsof -i:${port} -n -P 2>/dev/null || true`, { encoding: 'utf8' });
+          
+          if (processInfo) {
+            // Parse lsof output to find Node.js processes only
+            const lines = processInfo.split('\n').slice(1); // Skip header
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              
+              const parts = line.split(/\s+/);
+              const command = parts[0];
+              const pid = parts[1];
+              
+              // Only kill Node.js processes, not browsers
+              if (command && (command.includes('node') || command.includes('ts-node'))) {
+                console.log(`  Killing ${command} process (PID: ${pid}) on port ${port}`);
+                try {
+                  execSync(`kill -9 ${pid} 2>/dev/null || true`, { stdio: 'ignore' });
+                } catch (e) {
+                  // Process might already be dead
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // Port might be free
+        }
+      }
       
-      // Aggressive cleanup for development tools that spawn child processes
-      const aggressiveKillCommands = [
+      // Kill development tools
+      const devToolKillCommands = [
         'pkill -f "next-server" 2>/dev/null || true',
         'pkill -f "ts-node-dev" 2>/dev/null || true'
-        // Removed problematic commands that might kill parent process
       ];
       
-      for (const cmd of aggressiveKillCommands) {
+      for (const cmd of devToolKillCommands) {
+        try {
+          execSync(cmd, { stdio: 'ignore', timeout: 2000 });
+        } catch (e) {
+          // Ignore errors - processes might not exist
+        }
+      }
+      
+      // Kill Playwright browsers ONLY - these are browsers launched by Playwright for testing
+      // They have specific signatures that distinguish them from user browsers
+      console.log('  Cleaning up Playwright test browsers...');
+      
+      // Playwright browsers are launched from specific paths
+      const playwrightBrowserKillCommands = [
+        // Kill browsers from ms-playwright cache directory
+        'pkill -f "ms-playwright/chromium" 2>/dev/null || true',
+        'pkill -f "ms-playwright/firefox" 2>/dev/null || true',
+        'pkill -f "ms-playwright/webkit" 2>/dev/null || true',
+        // Kill browsers with Playwright-specific flags
+        'pkill -f "firefox.*-marionette.*-profile" 2>/dev/null || true',
+        'pkill -f "chromium.*--remote-debugging-pipe" 2>/dev/null || true',
+        'pkill -f "webkit.*--automation" 2>/dev/null || true',
+        // Kill browsers with specific test automation flags
+        'pkill -f "--enable-automation" 2>/dev/null || true',
+        'pkill -f "--no-startup-window" 2>/dev/null || true'
+      ];
+      
+      for (const cmd of playwrightBrowserKillCommands) {
         try {
           execSync(cmd, { stdio: 'ignore', timeout: 2000 });
         } catch (e) {
@@ -90,10 +145,11 @@ class ServiceManager {
       // Wait for processes to die
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      console.log('✅ Aggressive port cleanup completed');
+      console.log('✅ Cleanup completed - development processes and test browsers killed');
+      console.log('   (User browsers on localhost:3000 preserved)');
       
     } catch (error) {
-      console.log('⚠️ Port cleanup completed (some ports may have been free)');
+      console.log('⚠️ Cleanup completed with warnings:', error.message);
     }
   }
 

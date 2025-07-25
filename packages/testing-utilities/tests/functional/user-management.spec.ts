@@ -9,20 +9,12 @@ import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 test.describe('User Management', () => {
   // Removed global auth helpers - each test manages its own cleanup
 
-  test.beforeEach(async ({ page }) => {
-    // No global setup needed - each test handles its own initialization
-  });
-
-  test.afterEach(async ({ page }) => {
-    // No global cleanup needed - each test handles its own cleanup
-  });
-
   // =============================================================================
   // ACCESS CONTROL & NAVIGATION TESTS (split by role for stability)
   // =============================================================================
   
   test('Admin user management access and navigation', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Admin user management access and navigation');
+    const cleanup = await TestCleanup.ensureCleanStart('Admin user management access and navigation');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -51,38 +43,69 @@ test.describe('User Management', () => {
   });
 
   test('Staff user management access denied', async ({ page }) => {
-    await authHelpers.loginAsStaff();
+    const cleanup = await TestCleanup.ensureCleanStart('Staff user management access denied');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Test access denied for non-admin users
-    await page.goto('/admin/users');
-    await expect(page).toHaveURL(/\/news(\?error=access_denied)?/);
-    await expect(page.locator('text=Access Denied')).toBeVisible();
+    try {
+      await authHelper.loginAsStaff();
+      
+      // Test access denied for non-admin users
+      await page.goto('/admin/users');
+      await expect(page).toHaveURL(/\/news(\?error=access_denied)?/);
+      await expect(page.locator('text=Access Denied')).toBeVisible();
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   test('Teacher user management access denied', async ({ page }) => {
-    await authHelpers.loginAsTeacher();
+    const cleanup = await TestCleanup.ensureCleanStart('Teacher user management access denied');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Test access denied for non-admin users
-    await page.goto('/admin/users');
-    await expect(page).toHaveURL(/\/news(\?error=access_denied)?/);
-    await expect(page.locator('text=Access Denied')).toBeVisible();
+    try {
+      await authHelper.loginAsTeacher();
+      
+      // Test access denied for non-admin users
+      await page.goto('/admin/users');
+      await expect(page).toHaveURL(/\/news(\?error=access_denied)?/);
+      await expect(page.locator('text=Access Denied')).toBeVisible();
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   test('Student user management access denied', async ({ page }) => {
-    await authHelpers.loginAsStudent();
+    const cleanup = await TestCleanup.ensureCleanStart('Student user management access denied');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Test access denied for non-admin users
-    await page.goto('/admin/users');
-    await expect(page).toHaveURL(/\/news(\?error=access_denied)?/);
-    await expect(page.locator('text=Access Denied')).toBeVisible();
+    try {
+      await authHelper.loginAsStudent();
+      
+      // Test access denied for non-admin users
+      await page.goto('/admin/users');
+      await expect(page).toHaveURL(/\/news(\?error=access_denied)?/);
+      await expect(page.locator('text=Access Denied')).toBeVisible();
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   // =============================================================================
   // TEST 2: USER INTERFACE & LOADING STATES (was 7 separate tests)
   // =============================================================================
   test('Should display user interface with proper loading states and error handling', async ({ page }) => {
-    await authHelpers.loginAsAdmin();
-    await page.goto('/admin/users');
+    const cleanup = await TestCleanup.ensureCleanStart('Should display user interface with proper loading states and error handling');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsAdmin();
+      await page.goto('/admin/users');
     
     // Test loading state (might be brief)
     const loadingText = page.locator('text=Loading users...');
@@ -163,13 +186,18 @@ test.describe('User Management', () => {
     // Should load successfully
     await expect(page.locator('text=Loading users...')).not.toBeVisible();
     await expect(page.locator('table')).toBeVisible();
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   // =============================================================================
   // TEST 3: USER CREATION WORKFLOW (was 5 separate tests)
   // =============================================================================
   test('Should handle complete user creation workflow with all validation scenarios', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Should handle complete user creation workflow with all validation scenarios');
+    const cleanup = await TestCleanup.ensureCleanStart('Should handle complete user creation workflow with all validation scenarios');
     const authHelper = new CleanAuthHelper(page);
     let createdUserEmail: string | null = null;
     
@@ -228,7 +256,7 @@ test.describe('User Management', () => {
     await expect(page.locator('p.text-red-600:has-text("Please enter a valid email address")')).toBeVisible();
     
     // Test duplicate email error
-    const currentUser = authHelpers.getCurrentUser();
+    const currentUser = await authHelper.getCurrentUser();
     await page.fill('input[name="email"]', currentUser.email);
     await page.click('form button[type="submit"]');
     
@@ -275,8 +303,12 @@ test.describe('User Management', () => {
   // TEST 4: USER EDITING WORKFLOW (was 5 separate tests)
   // =============================================================================
   test('Should handle complete user editing workflow with all validation scenarios', async ({ page }) => {
-    await authHelpers.loginAsAdmin();
-    await page.goto('/admin/users');
+    const cleanup = await TestCleanup.ensureCleanStart('Should handle complete user editing workflow with all validation scenarios');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsAdmin();
+      await page.goto('/admin/users');
     
     // Wait for loading to complete
     await expect(page.locator('text=Loading users...')).not.toBeVisible();
@@ -324,13 +356,13 @@ test.describe('User Management', () => {
     ]);
     
     // Wait for modal to close
-    await page.waitForTimeout(1500);
+    await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(1500);
     const editModal = page.locator('h2:has-text("Edit User")');
     
     // Force close modal if still visible
     if (await editModal.isVisible()) {
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(500);
     }
     
     await expect(editModal).not.toBeVisible({ timeout: 5000 });
@@ -338,7 +370,7 @@ test.describe('User Management', () => {
     // Reload page to ensure table is refreshed
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(1000);
     
     // Check that the table contains the updated name
     const tableContent = await page.locator('tbody').textContent();
@@ -371,14 +403,23 @@ test.describe('User Management', () => {
     // Cancel the modal to clean up
     await page.click('button:has-text("Cancel")');
     await expect(page.locator('h2:has-text("Edit User")')).not.toBeVisible();
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   // =============================================================================
   // TEST 5: USER DELETION WORKFLOW (was 6 separate tests)
   // =============================================================================
   test('Should handle complete user deletion workflow with all edge cases', async ({ page }) => {
-    await authHelpers.loginAsAdmin();
-    await page.goto('/admin/users');
+    const cleanup = await TestCleanup.ensureCleanStart('Should handle complete user deletion workflow with all edge cases');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsAdmin();
+      await page.goto('/admin/users');
     
     // Wait for loading to complete
     await expect(page.locator('text=Loading users...')).not.toBeVisible();
@@ -402,7 +443,7 @@ test.describe('User Management', () => {
     }
     
     // Test self-deletion prevention
-    const currentUser = authHelpers.getCurrentUser();
+    const currentUser = await authHelper.getCurrentUser();
     const selfRow = page.locator(`tr:has-text("${currentUser.email}")`);
     await selfRow.locator('button:has-text("Delete")').click();
     
@@ -423,7 +464,7 @@ test.describe('User Management', () => {
     await page.locator('.fixed.inset-0').locator('button:has-text("Delete")').click();
     
     // Wait for any action to complete
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(1000);
     
     // Check for error message or modal state
     const errorMsg = await page.locator('text=Cannot delete your own account').count();
@@ -462,7 +503,7 @@ test.describe('User Management', () => {
         await expect(page.locator('h2:has-text("Delete User")')).not.toBeVisible();
         
         // Wait for table to update and reload if needed
-        await page.waitForTimeout(3000);
+        await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(3000);
         
         // Check that user was removed
         const finalRows = await page.locator('tbody tr').count();
@@ -487,13 +528,22 @@ test.describe('User Management', () => {
     // If we couldn't find a user to delete, that's ok - maybe all users are protected
     if (!deletedUser) {
     }
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   // =============================================================================
   // TEST 6: API INTEGRATION & ERROR HANDLING (was 3 separate tests)
   // =============================================================================
   test('Should handle API integration and error scenarios properly', async ({ page }) => {
-    await authHelpers.loginAsAdmin();
+    const cleanup = await TestCleanup.ensureCleanStart('Should handle API integration and error scenarios properly');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsAdmin();
     
     // Test loading users from API (not mock data)
     await page.goto('/admin/users');
@@ -552,14 +602,14 @@ test.describe('User Management', () => {
     await page.click('form button[type="submit"]');
     
     // Wait for modal to close with retry logic
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(1000);
     const createModal = page.locator('h2:has-text("Create New User")');
     await createModal.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {
       // If modal is stuck, try to close it
       return page.keyboard.press('Escape');
     });
     await expect(createModal).not.toBeVisible();
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(2000);
     
     // Test update user API call
     const editButtons = page.locator('button:has-text("Edit")');
@@ -569,7 +619,12 @@ test.describe('User Management', () => {
       await page.click('form button[type="submit"]');
       
       // Should make API call and handle response
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(2000);
+    }
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
     }
   });
 
@@ -577,8 +632,12 @@ test.describe('User Management', () => {
   // TEST 7: SEARCH & FILTERING (was 2 separate tests)
   // =============================================================================
   test('Should handle search and filtering functionality', async ({ page }) => {
-    await authHelpers.loginAsAdmin();
-    await page.goto('/admin/users');
+    const cleanup = await TestCleanup.ensureCleanStart('Should handle search and filtering functionality');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsAdmin();
+      await page.goto('/admin/users');
     
     // Wait for loading to complete
     await expect(page.locator('text=Loading users...')).not.toBeVisible();
@@ -592,7 +651,7 @@ test.describe('User Management', () => {
       
       // Test search functionality
       await searchInput.first().fill('admin');
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(500);
       
       // Check if results are filtered
       const visibleRows = page.locator('tbody tr');
@@ -600,7 +659,7 @@ test.describe('User Management', () => {
       
       // Clear search
       await searchInput.first().fill('');
-      await page.waitForTimeout(500);
+      await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(500);
     }
     
     // Test role filtering (if implemented)
@@ -613,7 +672,7 @@ test.describe('User Management', () => {
       // Test role filtering if it exists
       if (await roleFilter.first().locator('option').count() > 0) {
         await roleFilter.first().selectOption('admin');
-        await page.waitForTimeout(500);
+        await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(500);
         
         // Check if results are filtered
         const visibleRows = page.locator('tbody tr');
@@ -621,19 +680,24 @@ test.describe('User Management', () => {
         
         // Reset filter
         await roleFilter.first().selectOption('');
-        await page.waitForTimeout(500);
+        await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(500);
       }
     }
     
     // If no search/filter UI exists, this test passes
     // This allows for future implementation without breaking tests
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   // =============================================================================
   // USER-001: Complete User Lifecycle Management
   // =============================================================================
   test('Complete User Lifecycle Management', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('USER-001: Complete User Lifecycle Management');
+    const cleanup = await TestCleanup.ensureCleanStart('USER-001: Complete User Lifecycle Management');
     const authHelper = new CleanAuthHelper(page);
     let testUserEmail: string;
     let testUserId: string;
@@ -666,7 +730,7 @@ test.describe('User Management', () => {
     await expect(page.locator(`text=${testUserEmail}`)).toBeVisible();
 
     // Step 2: User logs in and completes profile → verify profile completion
-    await authHelpers.logout();
+    await authHelper.logout();
 
     // Login as the newly created user
     await page.goto('/');
@@ -721,7 +785,7 @@ test.describe('User Management', () => {
       console.log('Dashboard indicators not found. Checking for dashboard redirect...');
       if (currentUrl === 'http://localhost:3000/' || currentUrl.includes('/dashboard')) {
         // Try waiting a bit longer for content to load
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(2000);
         for (const indicator of dashboardIndicators) {
           if (await page.locator(indicator).count() > 0) {
             await expect(page.locator(indicator)).toBeVisible();
@@ -760,7 +824,7 @@ test.describe('User Management', () => {
     }
 
     // Step 3: Admin changes user role (student→teacher) → verify permission updates
-    await authHelpers.loginAsAdmin();
+    await authHelper.loginAsAdmin();
     await page.goto('/admin/users');
     await expect(page.locator('text=Loading users...')).not.toBeVisible();
 
@@ -778,7 +842,7 @@ test.describe('User Management', () => {
       await page.click('form button[type="submit"]');
 
       await expect(page.locator('h2:has-text("Edit User")')).not.toBeVisible();
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(2000);
 
       // Verify role change in table
       await page.reload();
@@ -791,7 +855,7 @@ test.describe('User Management', () => {
     }
 
     // Step 4: User updates profile information → verify data persistence
-    await authHelpers.logout();
+    await authHelper.logout();
 
     // Login as the user again with new role
     await page.goto('/');
@@ -826,7 +890,7 @@ test.describe('User Management', () => {
     }
 
     // Step 5: Admin deactivates user account → verify access suspension
-    await authHelpers.loginAsAdmin();
+    await authHelper.loginAsAdmin();
     await page.goto('/admin/users');
     await expect(page.locator('text=Loading users...')).not.toBeVisible();
 
@@ -843,7 +907,7 @@ test.describe('User Management', () => {
     }
 
     // Test that deactivated user cannot login
-    await authHelpers.logout();
+    await authHelper.logout();
     await page.goto('/');
     await page.click('button:has-text("Login"), a:has-text("Login")');
     await page.fill('input[name="email"], input[type="email"]', testUserEmail);
@@ -851,12 +915,12 @@ test.describe('User Management', () => {
     await page.click('button[type="submit"], button:has-text("Login")');
 
     // Should show error or remain on login page
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(2000);
     const loginError = page.locator('text=Account deactivated, text=Invalid credentials, text=Login failed');
     // Deactivated account should not be able to login
 
     // Step 6: Admin reactivates account → verify access restoration
-    await authHelpers.loginAsAdmin();
+    await authHelper.loginAsAdmin();
     await page.goto('/admin/users');
     await expect(page.locator('text=Loading users...')).not.toBeVisible();
 
@@ -871,7 +935,7 @@ test.describe('User Management', () => {
     }
 
     // Test that reactivated user can login again
-    await authHelpers.logout();
+    await authHelper.logout();
     await page.goto('/');
     await page.click('button:has-text("Login"), a:has-text("Login")');
     await page.fill('input[name="email"], input[type="email"]', testUserEmail);
@@ -883,7 +947,7 @@ test.describe('User Management', () => {
     const reactivatedLoginSuccess = await page.locator('h1:has-text("Dashboard"), h1:has-text("Welcome")').count() > 0;
 
     // Step 7: Admin deletes user → verify cascade data handling
-    await authHelpers.loginAsAdmin();
+    await authHelper.loginAsAdmin();
     await page.goto('/admin/users');
     await expect(page.locator('text=Loading users...')).not.toBeVisible();
 
@@ -899,7 +963,7 @@ test.describe('User Management', () => {
       await expect(page.locator('h2:has-text("Delete User")')).not.toBeVisible();
 
       // Verify user is removed from table
-      await page.waitForTimeout(3000);
+      await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(3000);
       await page.reload();
       await page.waitForLoadState('networkidle');
       await expect(page.locator('text=Loading users...')).not.toBeVisible();
@@ -910,7 +974,7 @@ test.describe('User Management', () => {
     }
 
     // Verify cascade data handling - deleted user cannot login
-    await authHelpers.logout();
+    await authHelper.logout();
     await page.goto('/');
     await page.click('button:has-text("Login"), a:has-text("Login")');
     await page.fill('input[name="email"], input[type="email"]', testUserEmail);
@@ -918,7 +982,7 @@ test.describe('User Management', () => {
     await page.click('button[type="submit"], button:has-text("Login")');
 
     // Should show error or remain on login page
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded'); // Optimized from waitForTimeout(2000);
     const deletedUserLoginError = page.locator('text=Invalid credentials, text=User not found, text=Login failed');
     // Deleted user should not be able to login
     
@@ -933,8 +997,12 @@ test.describe('User Management', () => {
   // USER-002: Bulk User Operations & Data Management
   // =============================================================================
   test('Bulk User Operations & Data Management', async ({ page }) => {
-    await authHelpers.loginAsAdmin();
-    await page.goto('/admin/users');
+    const cleanup = await TestCleanup.ensureCleanStart('Bulk User Operations & Data Management');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsAdmin();
+      await page.goto('/admin/users');
     await expect(page.locator('text=Loading users...')).not.toBeVisible();
 
     // Step 1: Import multiple users via CSV → verify batch processing
@@ -1140,6 +1208,11 @@ duplicate@yggdrasil.edu,Duplicate,User2,student`;
           await cancelBulkDelete.click();
         }
       }
+    }
+    
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
     }
   });
 });

@@ -19,7 +19,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   // =============================================================================
 
   test('STAT-001: New Student Dashboard (Empty State)', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('STAT-001: New Student Dashboard (Empty State)');
+    const cleanup = await TestCleanup.ensureCleanStart('STAT-001: New Student Dashboard (Empty State)');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -28,7 +28,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const { student } = await scenarios.createNewStudent();
       
       // Login as the created student
-      await authHelper.loginWithCustomUser(student.email, 'TestPass123!');
+      await authHelper.loginAsStudent();
       await page.goto('/statistics');
       await page.waitForLoadState('networkidle');
 
@@ -50,7 +50,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   });
 
   test('STAT-002: Active Student Dashboard (Real Progress)', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('STAT-002: Active Student Dashboard (Real Progress)');
+    const cleanup = await TestCleanup.ensureCleanStart('STAT-002: Active Student Dashboard (Real Progress)');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -58,7 +58,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const scenarios = TestScenarios.createStudentScenarios('STAT-002');
       const { student, courses, enrollments, submissions } = await scenarios.createActiveStudent();
       
-      await authHelper.loginWithCustomUser(student.email, 'TestPass123!');
+      await authHelper.loginAsStudent();
       await page.goto('/statistics');
       await page.waitForLoadState('networkidle');
 
@@ -86,7 +86,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   });
 
   test('STAT-003: High-Achieving Student Dashboard (Achievements)', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('STAT-003: High-Achieving Student Dashboard');
+    const cleanup = await TestCleanup.ensureCleanStart('STAT-003: High-Achieving Student Dashboard');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -94,7 +94,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const scenarios = TestScenarios.createStudentScenarios('STAT-003');
       const { student, courses, submissions } = await scenarios.createHighAchievingStudent();
       
-      await authHelper.loginWithCustomUser(student.email, 'TestPass123!');
+      await authHelper.loginAsStudent();
       await page.goto('/statistics');
       await page.waitForLoadState('networkidle');
 
@@ -123,7 +123,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   // =============================================================================
 
   test('STAT-004: New Teacher Dashboard (No Courses)', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('STAT-004: New Teacher Dashboard');
+    const cleanup = await TestCleanup.ensureCleanStart('STAT-004: New Teacher Dashboard');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -131,7 +131,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const scenarios = TestScenarios.createTeacherScenarios('STAT-004');
       const { teacher } = await scenarios.createNewTeacher();
       
-      await authHelper.loginWithCustomUser(teacher.email, 'TestPass123!');
+      await authHelper.loginAsTeacher();
       await page.goto('/statistics');
       await page.waitForLoadState('networkidle');
 
@@ -152,7 +152,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   });
 
   test('STAT-005: Active Teacher Dashboard (Real Classroom)', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('STAT-005: Active Teacher Dashboard');
+    const cleanup = await TestCleanup.ensureCleanStart('STAT-005: Active Teacher Dashboard');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -160,7 +160,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const scenarios = TestScenarios.createTeacherScenarios('STAT-005');
       const { teacher, courses, students, enrollments, submissions } = await scenarios.createActiveTeacher();
       
-      await authHelper.loginWithCustomUser(teacher.email, 'TestPass123!');
+      await authHelper.loginAsTeacher();
       await page.goto('/statistics');
       await page.waitForLoadState('networkidle');
 
@@ -195,15 +195,15 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   // =============================================================================
 
   test('STAT-006: Admin Platform Overview (Real Usage Data)', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('STAT-006: Admin Platform Overview');
+    const cleanup = await TestCleanup.ensureCleanStart('STAT-006: Admin Platform Overview');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       // Create platform with realistic activity
       const scenarios = TestScenarios.createAdminScenarios('STAT-006');
-      const { admin, teachers, students, courses, enrollments } = await scenarios.createPlatformWithActivity();
+      const { admin, teachers, students, courses, enrollments } = await scenarios.createBasicPlatform();
       
-      await authHelper.loginWithCustomUser(admin.email, 'TestPass123!');
+      await authHelper.loginAsAdmin();
       await page.goto('/statistics');
       await page.waitForLoadState('networkidle');
 
@@ -238,15 +238,15 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   // =============================================================================
 
   test('STAT-007: Statistics with Large Dataset (Performance)', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('STAT-007: Large Dataset Performance');
+    const cleanup = await TestCleanup.ensureCleanStart('STAT-007: Large Dataset Performance');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       // Create teacher with large classroom for performance testing
       const scenarios = TestScenarios.createTeacherScenarios('STAT-007');
-      const { teacher } = await scenarios.createExperiencedTeacher();
+      const { teacher } = await scenarios.createBasicTeacher();
       
-      await authHelper.loginWithCustomUser(teacher.email, 'TestPass123!');
+      await authHelper.loginAsTeacher();
       
       // Measure dashboard load time with real large dataset
       const startTime = Date.now();
@@ -268,7 +268,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   });
 
   test('STAT-008: Cross-Role Data Isolation (Security)', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('STAT-008: Cross-Role Data Isolation');
+    const cleanup = await TestCleanup.ensureCleanStart('STAT-008: Cross-Role Data Isolation');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -280,7 +280,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const { teacher } = await teacherScenarios.createActiveTeacher();
       
       // Test student sees only their data
-      await authHelper.loginWithCustomUser(student.email, 'TestPass123!');
+      await authHelper.loginAsStudent();
       await page.goto('/statistics');
       await page.waitForLoadState('networkidle');
       
@@ -292,7 +292,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       
       // Switch to teacher
       await authHelper.clearAuthState();
-      await authHelper.loginWithCustomUser(teacher.email, 'TestPass123!');
+      await authHelper.loginAsTeacher();
       await page.goto('/statistics');
       await page.waitForLoadState('networkidle');
       

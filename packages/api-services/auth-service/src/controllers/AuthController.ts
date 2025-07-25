@@ -144,6 +144,18 @@ export class AuthController {
     try {
       const user = (req as any).user;
       
+      console.log('🔍 AUTH CONTROLLER /me: User from middleware:', {
+        email: user?.email,
+        role: user?.role,
+        hasProfile: !!user?.profile,
+        profileData: user?.profile ? {
+          firstName: user.profile.firstName,
+          lastName: user.profile.lastName,
+          department: user.profile.department,
+          keys: Object.keys(user.profile)
+        } : 'no profile'
+      });
+      
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
           ResponseHelper.unauthorized('User not authenticated')

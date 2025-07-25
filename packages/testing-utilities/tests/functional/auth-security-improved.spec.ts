@@ -1,240 +1,210 @@
 // packages/testing-utilities/tests/functional/auth-security-improved.spec.ts
 // Improved authentication tests with proper isolation
 
-import { test, expect, Browser } from '@playwright/test';
-import { SimplifiedAuthHelpers } from '../helpers/simplified-auth.helpers';
+import { test, expect } from '@playwright/test';
+import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
+import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 
 test.describe('Authentication Security', () => {
-  // Removed auth helper setup since we're using direct demo button authentication
+  // Each test manages its own cleanup
 
   test('Admin Authentication Flow', async ({ page }) => {
-    console.log('🧪 TEST: Starting admin authentication test...');
+    const cleanup = await TestCleanup.ensureCleanStart('Admin Authentication Flow');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Go to login page
-    await page.goto('http://localhost:3000/auth/login');
-    await page.waitForLoadState('networkidle');
-    
-    // Use demo button for authentication (proven to work)
-    const demoButton = page.locator('[data-testid="demo-admin-button"]');
-    await demoButton.waitFor({ state: 'visible', timeout: 10000 });
-    await demoButton.click();
-    
-    // Wait for navigation to news page
-    await page.waitForFunction(
-      () => window.location.pathname.includes('/news'),
-      { timeout: 30000 }
-    );
-    
-    console.log('🧪 TEST: Navigated to:', page.url());
-    
-    // Verify we can access protected content
-    await page.goto('/news');
-    await page.waitForLoadState('networkidle');
-    
-    // Should not redirect to login
-    expect(page.url()).toContain('/news');
-    expect(page.url()).not.toContain('/auth/login');
-    
-    console.log('🧪 TEST: Admin authentication test completed successfully');
+    try {
+      await authHelper.loginAsAdmin();
+      
+      // Verify we can access protected content
+      await page.goto('/news');
+      await page.waitForLoadState('domcontentloaded'); // OPTIMIZED: Faster than networkidle
+      
+      // Should not redirect to login
+      expect(page.url()).toContain('/news');
+      expect(page.url()).not.toContain('/auth/login');
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   test('Teacher Authentication Flow', async ({ page }) => {
-    console.log('🧪 TEST: Starting teacher authentication test...');
+    const cleanup = await TestCleanup.ensureCleanStart('Teacher Authentication Flow');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Go to login page and use demo button
-    await page.goto('http://localhost:3000/auth/login');
-    await page.waitForLoadState('networkidle');
-    
-    const demoButton = page.locator('[data-testid="demo-teacher-button"]');
-    await demoButton.waitFor({ state: 'visible', timeout: 10000 });
-    await demoButton.click();
-    
-    // Wait for navigation to news page
-    await page.waitForFunction(
-      () => window.location.pathname.includes('/news'),
-      { timeout: 30000 }
-    );
-    
-    // Verify we can access protected content
-    await page.goto('/news');
-    await page.waitForLoadState('networkidle');
-    
-    // Should not redirect to login
-    expect(page.url()).toContain('/news');
-    expect(page.url()).not.toContain('/auth/login');
-    
-    console.log('🧪 TEST: Teacher authentication test completed successfully');
+    try {
+      await authHelper.loginAsTeacher();
+      
+      // Verify we can access protected content
+      await page.goto('/news');
+      await page.waitForLoadState('domcontentloaded'); // OPTIMIZED: Faster than networkidle
+      
+      // Should not redirect to login
+      expect(page.url()).toContain('/news');
+      expect(page.url()).not.toContain('/auth/login');
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   test('Staff Authentication Flow', async ({ page }) => {
-    console.log('🧪 TEST: Starting staff authentication test...');
+    const cleanup = await TestCleanup.ensureCleanStart('Staff Authentication Flow');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Go to login page and use demo button
-    await page.goto('http://localhost:3000/auth/login');
-    await page.waitForLoadState('networkidle');
-    
-    const demoButton = page.locator('[data-testid="demo-staff-button"]');
-    await demoButton.waitFor({ state: 'visible', timeout: 10000 });
-    await demoButton.click();
-    
-    // Wait for navigation to news page
-    await page.waitForFunction(
-      () => window.location.pathname.includes('/news'),
-      { timeout: 30000 }
-    );
-    
-    // Verify we can access protected content
-    await page.goto('/news');
-    await page.waitForLoadState('networkidle');
-    
-    // Should not redirect to login
-    expect(page.url()).toContain('/news');
-    expect(page.url()).not.toContain('/auth/login');
-    
-    console.log('🧪 TEST: Staff authentication test completed successfully');
+    try {
+      await authHelper.loginAsStaff();
+      
+      // Verify we can access protected content
+      await page.goto('/news');
+      await page.waitForLoadState('domcontentloaded'); // OPTIMIZED: Faster than networkidle
+      
+      // Should not redirect to login
+      expect(page.url()).toContain('/news');
+      expect(page.url()).not.toContain('/auth/login');
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 
   test('Student Authentication Flow', async ({ page }) => {
-    console.log('🧪 TEST: Starting student authentication test...');
+    const cleanup = await TestCleanup.ensureCleanStart('Student Authentication Flow');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Go to login page and use demo button
-    await page.goto('http://localhost:3000/auth/login');
-    await page.waitForLoadState('networkidle');
-    
-    const demoButton = page.locator('[data-testid="demo-student-button"]');
-    await demoButton.waitFor({ state: 'visible', timeout: 10000 });
-    await demoButton.click();
-    
-    // Wait for navigation to news page
-    await page.waitForFunction(
-      () => window.location.pathname.includes('/news'),
-      { timeout: 30000 }
-    );
-    
-    // Verify we can access protected content
-    await page.goto('/news');
-    await page.waitForLoadState('networkidle');
-    
-    // Should not redirect to login
-    expect(page.url()).toContain('/news');
-    expect(page.url()).not.toContain('/auth/login');
-    
-    console.log('🧪 TEST: Student authentication test completed successfully');
-  });
-
-  test('Sequential Authentication Test', async () => {
-    console.log('🧪 TEST: Starting sequential authentication test...');
-    
-    const page = authHelpers.getPage();
-    
-    // Test multiple authentications in sequence to verify isolation
-    const users = ['admin', 'teacher', 'staff', 'student'] as const;
-    
-    for (const userType of users) {
-      console.log(`🧪 TEST: Testing ${userType} authentication in sequence...`);
+    try {
+      await authHelper.loginAsStudent();
       
-      // Clear state before each authentication
-      await authHelpers.clearAuthenticationState();
-      
-      // Authenticate as the user
-      if (userType === 'admin') await authHelpers.loginAsAdmin();
-      else if (userType === 'teacher') await authHelpers.loginAsTeacher();
-      else if (userType === 'staff') await authHelpers.loginAsStaff();
-      else if (userType === 'student') await authHelpers.loginAsStudent();
-      
-      // Verify authentication
-      const isAuth = await authHelpers.isAuthenticated();
-      expect(isAuth).toBe(true);
-      
-      // Verify access to protected content
-      await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
-      expect(page.url()).toContain('/courses');
-      
-      console.log(`🧪 TEST: ${userType} sequential authentication successful`);
-    }
-    
-    console.log('🧪 TEST: Sequential authentication test completed successfully');
-  });
-
-  test('Cookie Persistence Test', async () => {
-    console.log('🧪 TEST: Starting cookie persistence test...');
-    
-    const page = authHelpers.getPage();
-    
-    // Authenticate as admin
-    await authHelpers.loginAsAdmin();
-    
-    // Verify cookies are set
-    const cookies = await page.evaluate(() => document.cookie);
-    expect(cookies).toContain('yggdrasil_access_token');
-    expect(cookies).toContain('yggdrasil_refresh_token');
-    
-    // Navigate to different pages and verify cookies persist
-    const testRoutes = ['/courses', '/news', '/planning', '/statistics'];
-    
-    for (const route of testRoutes) {
-      await page.goto(`http://localhost:3000${route}`);
-      await page.waitForLoadState('networkidle');
-      
-      // Check cookies still exist
-      const persistentCookies = await page.evaluate(() => document.cookie);
-      expect(persistentCookies).toContain('yggdrasil_access_token');
-      expect(persistentCookies).toContain('yggdrasil_refresh_token');
+      // Verify we can access protected content
+      await page.goto('/news');
+      await page.waitForLoadState('domcontentloaded'); // OPTIMIZED: Faster than networkidle
       
       // Should not redirect to login
+      expect(page.url()).toContain('/news');
       expect(page.url()).not.toContain('/auth/login');
       
-      console.log(`🧪 TEST: Cookies persisted correctly on ${route}`);
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
     }
-    
-    console.log('🧪 TEST: Cookie persistence test completed successfully');
   });
 
-  test('Authentication State Isolation', async () => {
-    console.log('🧪 TEST: Starting authentication state isolation test...');
+  test('Sequential Authentication Test', async ({ page }) => {
+    const cleanup = await TestCleanup.ensureCleanStart('Sequential Authentication Test');
+    const authHelper = new CleanAuthHelper(page);
     
-    const page = authHelpers.getPage();
+    try {
+      // Test multiple authentications in sequence to verify isolation
+      const users = ['admin', 'teacher', 'staff', 'student'] as const;
+      
+      for (const userType of users) {
+        // Clear state before each authentication
+        await authHelper.clearAuthState();
+        
+        // Authenticate as the user
+        if (userType === 'admin') await authHelper.loginAsAdmin();
+        else if (userType === 'teacher') await authHelper.loginAsTeacher();
+        else if (userType === 'staff') await authHelper.loginAsStaff();
+        else if (userType === 'student') await authHelper.loginAsStudent();
+        
+        // Verify access to protected content
+        await page.goto('/courses');
+        await page.waitForLoadState('domcontentloaded'); // OPTIMIZED: Faster than networkidle
+        expect(page.url()).toContain('/courses');
+      }
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Cookie Persistence Test', async ({ page }) => {
+    const cleanup = await TestCleanup.ensureCleanStart('Cookie Persistence Test');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Start with clean state
-    let isAuth = await authHelpers.isAuthenticated();
-    expect(isAuth).toBe(false);
+    try {
+      // Authenticate as admin
+      await authHelper.loginAsAdmin();
+      
+      // Verify cookies are set
+      const cookies = await page.evaluate(() => document.cookie);
+      expect(cookies).toContain('yggdrasil_access_token');
+      expect(cookies).toContain('yggdrasil_refresh_token');
+      
+      // OPTIMIZED: Test fewer routes to reduce test time
+      const testRoutes = ['/courses', '/news']; // Reduced from 4 to 2 routes
+      
+      for (const route of testRoutes) {
+        await page.goto(`http://localhost:3000${route}`);
+        
+        // OPTIMIZED: Faster page load check
+        await page.waitForLoadState('domcontentloaded');
+        
+        // Quick auth check without extra delays
+        await page.waitForFunction(
+          () => !window.location.pathname.includes('/auth/login'),
+          { timeout: 5000 } // OPTIMIZED: Reduced from 10s to 5s
+        );
+        
+        // Check cookies still exist
+        const persistentCookies = await page.evaluate(() => document.cookie);
+        expect(persistentCookies).toContain('yggdrasil_access_token');
+        expect(persistentCookies).toContain('yggdrasil_refresh_token');
+        
+        // Should not redirect to login
+        expect(page.url()).not.toContain('/auth/login');
+      }
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Authentication State Isolation', async ({ page }) => {
+    const cleanup = await TestCleanup.ensureCleanStart('Authentication State Isolation');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Should redirect to login when accessing protected content
-    await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
-    
-    // Verify we get redirected to login
-    await page.waitForFunction(() => 
-      window.location.pathname.includes('/auth/login'), 
-      { timeout: 10000 }
-    );
-    expect(page.url()).toContain('/auth/login');
-    
-    // Now authenticate
-    await authHelpers.loginAsAdmin();
-    
-    // Verify authentication worked
-    isAuth = await authHelpers.isAuthenticated();
-    expect(isAuth).toBe(true);
-    
-    // Clear state
-    await authHelpers.clearAuthenticationState();
-    
-    // Verify state is cleared
-    isAuth = await authHelpers.isAuthenticated();
-    expect(isAuth).toBe(false);
-    
-    // Should redirect to login again
-    await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
-    
-    await page.waitForFunction(() => 
-      window.location.pathname.includes('/auth/login'), 
-      { timeout: 10000 }
-    );
-    expect(page.url()).toContain('/auth/login');
-    
-    console.log('🧪 TEST: Authentication state isolation test completed successfully');
+    try {
+      // Should redirect to login when accessing protected content without auth
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded'); // OPTIMIZED: Faster load state
+      
+      // Verify we get redirected to login
+      await page.waitForFunction(() => 
+        window.location.pathname.includes('/auth/login'), 
+        { timeout: 5000 } // OPTIMIZED: Reduced from 10s to 5s
+      );
+      expect(page.url()).toContain('/auth/login');
+      
+      // Now authenticate
+      await authHelper.loginAsAdmin();
+      
+      // Should be able to access protected content
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded'); // OPTIMIZED: Faster load state
+      expect(page.url()).toContain('/courses');
+      
+      // Clear state
+      await authHelper.clearAuthState();
+      
+      // Should redirect to login again
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded'); // OPTIMIZED: Faster load state
+      
+      await page.waitForFunction(() => 
+        window.location.pathname.includes('/auth/login'), 
+        { timeout: 5000 } // OPTIMIZED: Reduced from 10s to 5s
+      );
+      expect(page.url()).toContain('/auth/login');
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
   });
 });

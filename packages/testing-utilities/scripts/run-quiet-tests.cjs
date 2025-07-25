@@ -30,6 +30,7 @@ function formatElapsedTime(startTime) {
   return `${seconds}s`;
 }
 
+
 // Helper function to clean test names (remove file paths)
 function cleanTestName(testName) {
   if (!testName) return testName;
@@ -84,6 +85,63 @@ async function runTests() {
   let errorBuffer = '';
   let testStartTime = null;
   let testLineNumber = 0; // Line counter for test results
+  let liveTimerInterval = null; // Live timer for current test
+  let isShowingLiveTimer = false; // Track if we're showing live timer
+  let currentDisplayName = null; // Current test name being displayed
+  let currentSuiteContext = null; // Current test suite/file context
+
+  // Start live timer for current test
+  function startCurrentTestTimer(testName = null) {
+    if (liveTimerInterval) {
+      clearInterval(liveTimerInterval);
+    }
+    
+    isShowingLiveTimer = true;
+    testStartTime = Date.now();
+    
+    // Store display name - use suite context when available
+    if (testName) {
+      currentDisplayName = testName;
+    } else if (currentSuiteContext) {
+      currentDisplayName = `${currentSuiteContext} (${testProgress.total + 1}/${totalTestsEstimate})`;
+    } else {
+      currentDisplayName = `Running tests... (${testProgress.total + 1}/${totalTestsEstimate})`;
+    }
+    process.stdout.write(`[1s] ${currentDisplayName}`);
+    
+    liveTimerInterval = setInterval(() => {
+      if (isShowingLiveTimer && testStartTime) {
+        const elapsed = Math.floor((Date.now() - testStartTime) / 1000);
+        
+        // Simply overwrite the line from the beginning
+        process.stdout.write(`\r[${elapsed}s] ${currentDisplayName}`);
+      }
+    }, 1000);
+  }
+
+  // Update the display name without restarting timer
+  function updateTestName(testName) {
+    if (isShowingLiveTimer && testName) {
+      currentDisplayName = cleanTestName(testName);
+      // Immediately update the display with new name
+      if (testStartTime) {
+        const elapsed = Math.floor((Date.now() - testStartTime) / 1000);
+        process.stdout.write(`\r[${elapsed}s] ${currentDisplayName}`);
+      }
+    }
+  }
+
+  // Stop live timer and replace with result
+  function stopAndReplaceWithResult(resultLine) {
+    if (liveTimerInterval) {
+      clearInterval(liveTimerInterval);
+      liveTimerInterval = null;
+    }
+    isShowingLiveTimer = false;
+    
+    // Replace the live timer line with result
+    process.stdout.write(`\r${resultLine}\n`); // Overwrite line and add newline
+  }
 
   try {
     // Use Playwright with list reporter for live updates
@@ -131,14 +189,17 @@ async function runTests() {
             }
           }
           
-          // Test execution detection
-          if (line.includes('Running') && line.includes('test')) {
+          // Test execution detection - start timer when first test begins
+          if (line.includes('Running') && line.includes('test') && !line.includes('tests using')) {
             if (!testsStarted) {
               console.log(`🧪 Test execution starting... [${formatElapsedTime(startTime)}]\n`);
               testsStarted = true;
+              
+              // Start timer for first test (no name yet)
+              startCurrentTestTimer();
             }
             
-            // Extract test suite name
+            // Extract test suite name for context
             const suiteMatch = line.match(/\[(.*?)\]/);
             if (suiteMatch) {
               const newSuite = suiteMatch[1];
@@ -147,12 +208,32 @@ async function runTests() {
                 console.log(`\n📋 Running: ${currentTestSuite} [${formatElapsedTime(startTime)}]`);
               }
             }
+          }
+          
+          // Extract suite context from correct part of Playwright output
+          if ((line.includes('✓') || line.includes('✗')) && line.includes('›')) {
+            const parts = line.split('›');
             
-            // Extract test name from the line and start timing
-            const testNameMatch = line.match(/Running.*?test\s+(.+?)$/);
-            if (testNameMatch) {
-              currentTestName = cleanTestName(testNameMatch[1].trim());
-              testStartTime = Date.now();
+            // Format: ✓ 1 [chromium] › file.spec.ts:6:7 › Debug: Basic Page Loading › Should load root page (706ms)
+            // parts[0]: browser info, parts[1]: file info, parts[2]: SUITE NAME, parts[3]: test name
+            
+            if (parts.length >= 3) {
+              const suiteName = parts[2].trim(); // "Debug: Basic Page Loading"
+              
+              if (suiteName && suiteName.length > 2 && suiteName !== currentSuiteContext) {
+                currentSuiteContext = suiteName;
+                console.log(`🔍 SUITE CONTEXT: Set to "${suiteName}"`);
+                
+                // Update current timer display if showing generic info
+                if (isShowingLiveTimer && currentDisplayName && 
+                    (currentDisplayName.includes('Running tests') || 
+                     currentDisplayName.includes('✓') || 
+                     currentDisplayName.includes('(') && currentDisplayName.includes('/'))) {
+                  const betterName = `${suiteName} (${testProgress.total + 1}/${totalTestsEstimate})`;
+                  currentDisplayName = betterName;
+                  updateTestName(betterName);
+                }
+              }
             }
           }
           
@@ -192,24 +273,57 @@ async function runTests() {
               testDuration = ` (${Math.round(duration / 10) / 100}s)`;
             }
             
+            // Extract test name from result line
+            let testName = currentTestName || 'Test';
+            
+            // Enhanced result parsing - target Playwright list output
+            const resultPatterns = [
+              /✓\s+(.+?)\s+\(\d+/,       // ✓ test name (123ms)
+              /✗\s+(.+?)\s+\(\d+/,       // ✗ test name (123ms)
+              /\]\s+(.+?)\s+\(\d+/,      // [suite] test name (123ms)
+              /›\s+(.+?)\s+\(\d+/,       // › test name (123ms)
+              /(.+?)\s+\(\d+\.?\d*m?s\)$/ // fallback: name (time)
+            ];
+            
+            for (const pattern of resultPatterns) {
+              const match = line.match(pattern);
+              if (match) {
+                const extracted = cleanTestName(match[1].trim());
+                if (extracted && extracted.length > 3) {
+                  testName = extracted;
+                  break;
+                }
+              }
+            }
+            
             // Progress counter with elapsed time
             const progressInfo = `[${testProgress.total}/${totalTestsEstimate}] [${formatElapsedTime(startTime)}]${testDuration}`;
             
+            // Create result line
+            const resultLine = isPass ? 
+              `✓ ${progressInfo} ${testName}` : 
+              `✗ ${progressInfo} ${testName}`;
+            
             if (isPass) {
               testProgress.passed++;
-              console.log(`✓ ${progressInfo} ${currentTestName || 'Test'}`);
             } else {
               testProgress.failed++;
-              console.log(`✗ ${progressInfo} ${currentTestName || 'Test'}`);
-              
               // Start collecting error details for failed test
               collectingError = true;
               errorBuffer = '';
             }
             
+            // Stop current timer and replace with result
+            stopAndReplaceWithResult(resultLine);
+            
+            // Start timer for next test (if not the last test)
+            if (testProgress.total < totalTestsEstimate) {
+              testStartTime = Date.now(); // Reset start time for next test
+              startCurrentTestTimer(); // Will use currentSuiteContext if available
+            }
+            
             // Reset for next test
             currentTestName = '';
-            testStartTime = null;
           }
           
           // Collect error details if we're tracking a failed test
@@ -266,12 +380,22 @@ async function runTests() {
 
       // Handle Ctrl+C gracefully
       process.on('SIGINT', () => {
+        if (liveTimerInterval) {
+          clearInterval(liveTimerInterval);
+          process.stdout.write('\r'); // Just go to start of line
+        }
         console.log('\n🛑 Test execution interrupted by user (Ctrl+C)');
         playwrightProcess.kill('SIGINT');
         setTimeout(() => process.exit(0), 1000);
       });
     });
 
+    // Ensure live timer is stopped at the end
+    if (liveTimerInterval) {
+      clearInterval(liveTimerInterval);
+      process.stdout.write('\r'); // Just go to start of line
+    }
+    
     const totalExecutionTime = formatElapsedTime(startTime);
     console.log(`\n\n📊 Generating final test overview... [Total: ${totalExecutionTime}]`);
     
@@ -371,6 +495,12 @@ async function runTests() {
     }
     
   } catch (error) {
+    // Ensure live timer is stopped on error
+    if (liveTimerInterval) {
+      clearInterval(liveTimerInterval);
+      process.stdout.write('\r'); // Just go to start of line
+    }
+    
     if (error.signal === 'SIGINT') {
       console.log('\n🛑 Test execution interrupted by user (Ctrl+C)');
       process.exit(0);
