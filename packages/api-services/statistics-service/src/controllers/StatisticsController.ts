@@ -2,7 +2,7 @@
 // HTTP request handlers for statistics endpoints
 
 import { Request, Response } from 'express';
-import { ResponseHelper, HTTP_STATUS, type AuthRequest } from '@yggdrasil/shared-utilities';
+import { ResponseHelper, HTTP_STATUS, type AuthRequest, statsLogger as logger } from '@yggdrasil/shared-utilities';
 import { StatisticsService } from '../services/StatisticsService';
 
 export class StatisticsController {
@@ -73,7 +73,7 @@ export class StatisticsController {
    * Get admin dashboard data
    * GET /api/statistics/dashboard/admin
    */
-  static async getAdminDashboard(req: AuthRequest, res: Response): Promise<void> {
+  static async getAdminDashboard(_req: AuthRequest, res: Response): Promise<void> {
     try {
       const dashboardData = await StatisticsService.getAdminDashboard();
 
@@ -255,7 +255,7 @@ export class StatisticsController {
    * Get platform-wide analytics
    * GET /api/statistics/analytics/platform
    */
-  static async getPlatformAnalytics(req: AuthRequest, res: Response): Promise<void> {
+  static async getPlatformAnalytics(_req: AuthRequest, res: Response): Promise<void> {
     try {
       // For now, return the same data as admin dashboard
       // In a real implementation, this could be more detailed
@@ -320,7 +320,7 @@ export class StatisticsController {
    */
   static async markExerciseComplete(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const { userId, courseId, exerciseId, score } = req.body;
+      const { userId, courseId, exerciseId, score: _score } = req.body;
 
       if (!userId || !courseId || !exerciseId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
@@ -386,7 +386,7 @@ export class StatisticsController {
    * Health check for statistics calculations
    * GET /api/statistics/health-check
    */
-  static async healthCheck(req: Request, res: Response): Promise<void> {
+  static async healthCheck(_req: Request, res: Response): Promise<void> {
     try {
       // Test database connectivity and basic operations
       const { UserModel } = require('@yggdrasil/database-schemas');

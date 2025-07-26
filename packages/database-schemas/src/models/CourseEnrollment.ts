@@ -5,8 +5,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 import { 
   CourseEnrollment, 
   CourseProgress,
-  ExerciseSubmission,
-  ExerciseResult
+  ExerciseSubmission
 } from '@yggdrasil/shared-utilities';
 
 // Extend interfaces with Mongoose Document
@@ -215,14 +214,14 @@ ExerciseSubmissionSchema.index({ exerciseId: 1, submittedAt: -1, studentId: 1 })
 ExerciseSubmissionSchema.index({ submittedAt: -1 }); // For time-range queries
 
 // Instance methods for CourseEnrollment
-CourseEnrollmentSchema.methods.calculateOverallProgress = function(): number {
+CourseEnrollmentSchema.methods['calculateOverallProgress'] = function(): number {
   const enrollment = this as CourseEnrollmentDocument;
   // This would calculate progress based on completed sections, exercises, quizzes
   // For now, return the stored progress
   return enrollment.progress.overallProgress;
 };
 
-CourseEnrollmentSchema.methods.updateProgress = async function(): Promise<void> {
+CourseEnrollmentSchema.methods['updateProgress'] = async function(): Promise<void> {
   const enrollment = this as CourseEnrollmentDocument;
   
   // Calculate overall progress based on completed items
@@ -245,39 +244,39 @@ CourseEnrollmentSchema.methods.updateProgress = async function(): Promise<void> 
 };
 
 // Static methods for CourseEnrollment
-CourseEnrollmentSchema.statics.findByStudent = function(studentId: string) {
+CourseEnrollmentSchema.statics['findByStudent'] = function(studentId: string) {
   return this.find({ studentId }).populate('courseId').sort({ enrolledAt: -1 });
 };
 
-CourseEnrollmentSchema.statics.findByCourse = function(courseId: string) {
+CourseEnrollmentSchema.statics['findByCourse'] = function(courseId: string) {
   return this.find({ courseId }).populate('studentId').sort({ enrolledAt: -1 });
 };
 
-CourseEnrollmentSchema.statics.findEnrollment = function(courseId: string, studentId: string) {
+CourseEnrollmentSchema.statics['findEnrollment'] = function(courseId: string, studentId: string) {
   return this.findOne({ courseId, studentId });
 };
 
-CourseEnrollmentSchema.statics.getStudentProgress = async function(courseId: string, studentId: string) {
+CourseEnrollmentSchema.statics['getStudentProgress'] = async function(courseId: string, studentId: string) {
   const enrollment = await this.findOne({ courseId, studentId });
   return enrollment ? enrollment.progress : null;
 };
 
 // Static methods for ExerciseSubmission
-ExerciseSubmissionSchema.statics.findByStudent = function(studentId: string) {
+ExerciseSubmissionSchema.statics['findByStudent'] = function(studentId: string) {
   return this.find({ studentId }).sort({ submittedAt: -1 });
 };
 
-ExerciseSubmissionSchema.statics.findByExercise = function(exerciseId: string) {
+ExerciseSubmissionSchema.statics['findByExercise'] = function(exerciseId: string) {
   return this.find({ exerciseId }).populate('studentId').sort({ submittedAt: -1 });
 };
 
-ExerciseSubmissionSchema.statics.findLatestSubmission = function(exerciseId: string, studentId: string) {
+ExerciseSubmissionSchema.statics['findLatestSubmission'] = function(exerciseId: string, studentId: string) {
   return this.findOne({ exerciseId, studentId }).sort({ submittedAt: -1 });
 };
 
 // Transform output to match our interface
 CourseEnrollmentSchema.set('toJSON', {
-  transform: function(doc: any, ret: any) {
+  transform: function(_doc: any, ret: any) {
     ret._id = ret._id.toString();
     ret.courseId = ret.courseId.toString();
     ret.studentId = ret.studentId.toString();
@@ -295,7 +294,7 @@ CourseEnrollmentSchema.set('toJSON', {
 });
 
 ExerciseSubmissionSchema.set('toJSON', {
-  transform: function(doc: any, ret: any) {
+  transform: function(_doc: any, ret: any) {
     ret._id = ret._id.toString();
     ret.exerciseId = ret.exerciseId.toString();
     ret.studentId = ret.studentId.toString();

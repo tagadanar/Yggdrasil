@@ -30,12 +30,12 @@ export class DatabaseConnection {
     try {
       const defaultOptions: mongoose.ConnectOptions = {
         // Connection optimization options
-        maxPoolSize: process.env.NODE_ENV === 'test' ? 50 : 10,
+        maxPoolSize: process.env['NODE_ENV'] === 'test' ? 50 : 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
         bufferCommands: false,
-        minPoolSize: process.env.NODE_ENV === 'test' ? 5 : 0,
-        maxIdleTimeMS: process.env.NODE_ENV === 'test' ? 30000 : 30000,
+        minPoolSize: process.env['NODE_ENV'] === 'test' ? 5 : 0,
+        maxIdleTimeMS: process.env['NODE_ENV'] === 'test' ? 30000 : 30000,
         
         // Authentication options
         authSource: config.MONGO_DATABASE || 'yggdrasil-dev',

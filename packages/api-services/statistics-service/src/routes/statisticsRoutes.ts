@@ -21,7 +21,7 @@ const router = Router();
  * Root statistics endpoint - admin only access
  * GET /api/statistics
  */
-router.get('/', authenticateToken, requireAdminOnly, (_req, res) => {
+router.get('/', authenticateToken, requireAdminOnly, (req, res) => {
   res.json({
     service: 'statistics-service',
     message: 'Statistics service is running',

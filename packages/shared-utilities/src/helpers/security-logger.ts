@@ -1,4 +1,6 @@
-import { logger } from '@yggdrasil/shared-utilities';
+import { LoggerFactory } from '../logging/logger';
+
+const logger = LoggerFactory.createLogger('security');
 
 // packages/shared-utilities/src/helpers/security-logger.ts
 // Security-aware logging helper to prevent sensitive data leakage

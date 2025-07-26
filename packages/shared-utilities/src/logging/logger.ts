@@ -1,6 +1,5 @@
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import { config } from '../config/env-validator';
 
 // Define log levels
 const logLevels = {
@@ -52,9 +51,9 @@ export class LoggerFactory {
 
     const logger = winston.createLogger({
       levels: logLevels,
-      level: config.LOG_LEVEL || 'info',
+      level: process.env['LOG_LEVEL'] || 'info',
       defaultMeta: { service },
-      format: config.NODE_ENV === 'production' ? prodFormat : devFormat,
+      format: process.env['NODE_ENV'] === 'production' ? prodFormat : devFormat,
       transports: this.createTransports(service),
       exitOnError: false,
     });
@@ -79,7 +78,7 @@ export class LoggerFactory {
     }));
 
     // File transports (production only)
-    if (config.NODE_ENV === 'production') {
+    if (process.env['NODE_ENV'] === 'production') {
       // Error logs
       transports.push(new DailyRotateFile({
         filename: `logs/${service}-error-%DATE%.log`,

@@ -3,8 +3,8 @@
 
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
-import { User, UserRole } from '@yggdrasil/shared-utilities';
-import { PASSWORD_CONFIG, SecurityLogger } from '@yggdrasil/shared-utilities';
+import { UserRole } from '@yggdrasil/shared-utilities';
+import { PASSWORD_CONFIG, SecurityLogger, logger } from '@yggdrasil/shared-utilities';
 
 // User Document interface extending the shared User type with password and Mongoose methods
 export interface UserDocument extends Document {
@@ -198,7 +198,7 @@ UserSchema.pre('save', async function(next) {
 });
 
 // Instance method to compare password
-UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+UserSchema.methods['comparePassword'] = async function(candidatePassword: string): Promise<boolean> {
   const user = this as UserDocument;
   
   SecurityLogger.logAuthOperation('password_verify', user.email);
@@ -214,7 +214,7 @@ UserSchema.methods.comparePassword = async function(candidatePassword: string): 
 };
 
 // Static method to find user by email
-UserSchema.statics.findByEmail = async function(email: string) {
+UserSchema.statics['findByEmail'] = async function(email: string) {
   try {
     logger.info(`🔍 USER MODEL: Finding user by email: ${email}`);
     const normalizedEmail = email.toLowerCase().trim();
@@ -235,7 +235,7 @@ UserSchema.statics.findByEmail = async function(email: string) {
 };
 
 // Static method to find user by ID
-UserSchema.statics.findById = async function(id: string) {
+UserSchema.statics['findById'] = async function(id: string) {
   try {
     logger.info(`🔍 USER MODEL: Finding user by ID: ${id}`);
     
@@ -254,16 +254,16 @@ UserSchema.statics.findById = async function(id: string) {
   }
 };
 
-UserSchema.statics.findActiveUsers = function() {
+UserSchema.statics['findActiveUsers'] = function() {
   return this.find({ isActive: true });
 };
 
-UserSchema.statics.findByRole = function(role: UserRole) {
+UserSchema.statics['findByRole'] = function(role: UserRole) {
   return this.find({ role, isActive: true });
 };
 
 // Instance method to increment token version (for logout functionality)
-UserSchema.methods.incrementTokenVersion = async function() {
+UserSchema.methods['incrementTokenVersion'] = async function() {
   const user = this as UserDocument;
   user.tokenVersion += 1;
   await user.save();
@@ -288,7 +288,7 @@ export function createUserModel(): UserModelType {
 }
 
 // Helper function to set default model (for backwards compatibility)
-export function setDefaultUserModel(model: UserModelType): void {
+export function setDefaultUserModel(_model: UserModelType): void {
   logger.info(`🏗️ USER MODEL: Default model set`);
 }
 

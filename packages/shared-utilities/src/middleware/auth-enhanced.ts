@@ -4,8 +4,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { SharedJWTHelper } from '../helpers/jwt';
 import { ResponseHelper } from '../helpers/response';
-import { logger } from '@yggdrasil/shared-utilities';
+import { LoggerFactory } from '../logging/logger';
 // import { JWTPayload } from '../types/auth'; // Unused import
+
+const logger = LoggerFactory.createLogger('auth-enhanced');
 
 // Standard user interface for all services
 export interface AuthenticatedUser {

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { PlanningService } from '../services/PlanningService';
 import { ResponseHelper } from '@yggdrasil/shared-utilities';
 import { planningValidationSchemas } from '@yggdrasil/shared-utilities';
@@ -31,7 +31,7 @@ export class PlanningController {
     try {
       const validation = planningValidationSchemas.createEvent.safeParse(req.body);
       if (!validation.success) {
-        const errorResponse = ResponseHelper.badRequest(validation.error.errors[0].message);
+        const errorResponse = ResponseHelper.badRequest(validation.error.errors[0]!.message);
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
@@ -60,7 +60,7 @@ export class PlanningController {
     try {
       const { eventId } = req.params;
       
-      const event = await PlanningController.planningService.getEvent(eventId);
+      const event = await PlanningController.planningService.getEvent(eventId!);
 
       if (!event) {
         const errorResponse = ResponseHelper.notFound('Event not found');
@@ -80,12 +80,12 @@ export class PlanningController {
       const { eventId } = req.params;
       const validation = planningValidationSchemas.updateEvent.safeParse(req.body);
       if (!validation.success) {
-        const errorResponse = ResponseHelper.badRequest(validation.error.errors[0].message);
+        const errorResponse = ResponseHelper.badRequest(validation.error.errors[0]!.message);
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
       const event = await PlanningController.planningService.updateEvent(
-        eventId,
+        eventId!,
         validation.data,
         req.user!
       );
@@ -110,7 +110,7 @@ export class PlanningController {
     try {
       const { eventId } = req.params;
 
-      await PlanningController.planningService.deleteEvent(eventId, req.user!);
+      await PlanningController.planningService.deleteEvent(eventId!, req.user!);
 
       const successResponse = ResponseHelper.success(null, 'Event deleted successfully');
       return res.status(200).json(successResponse);
@@ -156,7 +156,7 @@ export class PlanningController {
     try {
       const validation = planningValidationSchemas.exportCalendar.safeParse(req.body);
       if (!validation.success) {
-        const errorResponse = ResponseHelper.badRequest(validation.error.errors[0].message);
+        const errorResponse = ResponseHelper.badRequest(validation.error.errors[0]!.message);
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
@@ -181,7 +181,7 @@ export class PlanningController {
       const { eventId } = req.params;
       
       const instances = await PlanningController.planningService.generateRecurringInstances(
-        eventId,
+        eventId!,
         req.user!
       );
 

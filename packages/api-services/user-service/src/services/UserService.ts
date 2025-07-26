@@ -2,7 +2,7 @@
 // TDD: REFACTOR phase - Clean implementation while keeping tests green
 
 import { UserModel, UserDocument } from '@yggdrasil/database-schemas';
-import { ValidationHelper } from '@yggdrasil/shared-utilities';
+import { ValidationHelper, userLogger as logger } from '@yggdrasil/shared-utilities';
 import bcrypt from 'bcrypt';
 
 // REFACTOR: Better type definitions

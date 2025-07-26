@@ -15,7 +15,7 @@ router.get('/', authenticate, (req: any, res) => {
     });
   }
   
-  res.json({
+  return res.json({
     service: 'news-service',
     message: 'News service is running',
     user: req.user ? { id: req.user._id, role: req.user.role } : null,

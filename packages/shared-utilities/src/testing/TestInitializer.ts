@@ -2,7 +2,9 @@
 // Centralized test initialization with automatic setup
 
 import { DemoUserManager } from './DemoUserManager';
-import { logger } from '@yggdrasil/shared-utilities';
+import { LoggerFactory } from '../logging/logger';
+
+const logger = LoggerFactory.createLogger('test-initializer');
 
 export interface TestInitializationOptions {
   ensureDemoUsers?: boolean;

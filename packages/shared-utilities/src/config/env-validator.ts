@@ -2,7 +2,9 @@
 // Environment validation system to prevent hardcoded secrets and ensure proper configuration
 
 import { z } from 'zod';
-import { logger } from '@yggdrasil/shared-utilities';
+import { LoggerFactory } from '../logging/logger';
+
+const logger = LoggerFactory.createLogger('env-validator');
 
 const envSchema = z.object({
   // Required in all environments

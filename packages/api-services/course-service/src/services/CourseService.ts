@@ -10,7 +10,6 @@ import {
   type ExerciseSubmissionDocument
 } from '@yggdrasil/database-schemas';
 import { 
-  Course, 
   CreateCourseRequest, 
   UpdateCourseRequest,
   CreateChapterRequest,
@@ -19,13 +18,12 @@ import {
   UpdateSectionRequest,
   CreateContentRequest,
   UpdateContentRequest,
-  CreateExerciseRequest,
   SubmitExerciseRequest,
   CourseFilters,
   CourseSearchResult,
   UserRole
 } from '@yggdrasil/shared-utilities';
-import { ResponseHelper } from '@yggdrasil/shared-utilities';
+import { courseLogger as logger } from '@yggdrasil/shared-utilities';
 
 export class CourseService {
   // =============================================================================
@@ -804,7 +802,7 @@ export class CourseService {
     }
   }
 
-  private async evaluateAssignmentExercise(exercise: any, submissionData: SubmitExerciseRequest): Promise<any> {
+  private async evaluateAssignmentExercise(_exercise: any, _submissionData: SubmitExerciseRequest): Promise<any> {
     // Assignment exercises require manual grading, so we just save the submission
     return {
       isCorrect: false, // Will be updated when manually graded
@@ -818,7 +816,7 @@ export class CourseService {
   private async executeCodeWithTestCase(
     code: string, 
     testCase: any, 
-    language: string
+    _language: string
   ): Promise<{ passed: boolean; actualOutput: string; errorMessage: string }> {
     // This is a simplified mock implementation
     // In a real system, you would use a secure sandboxed execution environment
@@ -917,13 +915,4 @@ export class CourseService {
     return false;
   }
 
-  private canViewCourse(course: CourseDocument, userId: string, userRole: UserRole): boolean {
-    // Public published courses can be viewed by anyone
-    if (course.status === 'published' && course.settings.isPublic) {
-      return true;
-    }
-
-    // Non-public courses require permission to modify or enrollment
-    return this.canModifyCourse(course, userId, userRole);
-  }
 }

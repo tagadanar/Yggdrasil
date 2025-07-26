@@ -1,15 +1,13 @@
 // packages/api-services/statistics-service/src/services/StatisticsService.ts
 // Core business logic for statistics and analytics
 
-import mongoose from 'mongoose';
 import { 
   CourseModel, 
   CourseEnrollmentModel, 
   ExerciseSubmissionModel, 
-  UserModel, 
-  NewsArticleModel 
+  UserModel
 } from '@yggdrasil/database-schemas';
-import { ResponseHelper, type CourseProgress } from '@yggdrasil/shared-utilities';
+import { type CourseProgress, statsLogger as logger } from '@yggdrasil/shared-utilities';
 
 interface StudentDashboardData {
   learningStats: {
@@ -186,7 +184,7 @@ export class StatisticsService {
   }
 
   private static async calculateStudentLearningStats(
-    userId: string, 
+    _userId: string, 
     enrollments: any[], 
     submissions: any[]
   ) {
@@ -265,7 +263,7 @@ export class StatisticsService {
     });
   }
 
-  private static async getStudentRecentActivity(userId: string, submissions: any[]) {
+  private static async getStudentRecentActivity(_userId: string, submissions: any[]) {
     // Get recent exercise submissions with real course and exercise data
     const recentSubmissions = await Promise.all(
       submissions.slice(0, 10).map(async (submission) => {
@@ -330,7 +328,7 @@ export class StatisticsService {
                 this.exerciseCache.set(exerciseId, result);
                 if (this.exerciseCache.size > 30) { // Smaller cache
                   const firstKey = this.exerciseCache.keys().next().value;
-                  this.exerciseCache.delete(firstKey);
+                  this.exerciseCache.delete(firstKey!);
                 }
                 
                 return result;
@@ -361,7 +359,7 @@ export class StatisticsService {
     }
   }
 
-  private static async getStudentAchievements(userId: string, learningStats: any) {
+  private static async getStudentAchievements(_userId: string, learningStats: any) {
     const achievements = [];
 
     // First exercise achievement
@@ -670,7 +668,7 @@ export class StatisticsService {
       this.exerciseIdCache.set(courseId, exerciseIds);
       if (this.exerciseIdCache.size > 100) {
         const firstKey = this.exerciseIdCache.keys().next().value;
-        this.exerciseIdCache.delete(firstKey);
+        this.exerciseIdCache.delete(firstKey!);
       }
       
       return exerciseIds;
@@ -962,12 +960,6 @@ export class StatisticsService {
     try {
       const course = await CourseModel.findById(courseId);
       const enrollments = await CourseEnrollmentModel.find({ courseId });
-      
-      // Get exercise IDs for this course and then find submissions
-      const exerciseIds = await this.getExerciseIdsForCourse(courseId);
-      const submissions = await ExerciseSubmissionModel.find({ 
-        exerciseId: { $in: exerciseIds } 
-      });
 
       const totalEnrollments = enrollments.length;
       const activeEnrollments = enrollments.filter(e => e.status === 'active').length;
@@ -1032,16 +1024,6 @@ export class StatisticsService {
     });
 
     return ranges;
-  }
-
-  private static calculateAverageScore(submissions: any[]): number {
-    const scores = submissions
-      .filter(s => s.result?.score !== undefined)
-      .map(s => s.result.score);
-    
-    return scores.length > 0 
-      ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
-      : 0;
   }
 
   private static calculateAverageTimeSpent(enrollments: any[]): number {

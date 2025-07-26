@@ -424,12 +424,12 @@ export const addCommonResponses = (
   };
 
   if (includeAuth) {
-    responses['401'] = { $ref: '#/components/responses/UnauthorizedError' };
-    responses['403'] = { $ref: '#/components/responses/ForbiddenError' };
+    (responses as any)['401'] = { $ref: '#/components/responses/UnauthorizedError' };
+    (responses as any)['403'] = { $ref: '#/components/responses/ForbiddenError' };
   }
 
   if (includeNotFound) {
-    responses['404'] = { $ref: '#/components/responses/NotFoundError' };
+    (responses as any)['404'] = { $ref: '#/components/responses/NotFoundError' };
   }
 
   return {

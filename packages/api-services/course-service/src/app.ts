@@ -7,7 +7,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { connectDatabase } from '@yggdrasil/database-schemas';
-import { ResponseHelper } from '@yggdrasil/shared-utilities';
+import { ResponseHelper, courseLogger as logger } from '@yggdrasil/shared-utilities';
 import courseRoutes from './routes/courseRoutes';
 
 // Load environment variables
@@ -106,13 +106,13 @@ export const initializeDatabase = async (): Promise<void> => {
 // =============================================================================
 
 // Health check endpoint
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json(
     ResponseHelper.success({
       service: 'course-service',
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: process.env.npm_package_version || '1.0.0'
+      version: process.env['npm_package_version'] || '1.0.0'
     }, 'Course service is healthy')
   );
 });
@@ -121,11 +121,11 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/api/courses', courseRoutes);
 
 // Root endpoint
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
   res.status(200).json(
     ResponseHelper.success({
       service: 'course-service',
-      version: process.env.npm_package_version || '1.0.0',
+      version: process.env['npm_package_version'] || '1.0.0',
       description: 'Course management service for the Yggdrasil educational platform',
       endpoints: {
         health: '/health',
@@ -148,7 +148,7 @@ app.use('*', (req: Request, res: Response) => {
 });
 
 // Global error handler
-app.use((error: any, req: Request, res: Response, next: any) => {
+app.use((error: any, _req: Request, res: Response, _next: any) => {
   logger.error('❌ Course Service Error:', error);
   
   // Handle specific error types

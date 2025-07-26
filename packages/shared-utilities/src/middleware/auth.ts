@@ -8,7 +8,9 @@ import { ResponseHelper } from '../helpers/response';
 // import { JWTPayload } from '../types/auth'; // Unused import
 import { EnhancedAuthMiddleware, AuthFactory, AuthenticatedUser } from './auth-enhanced';
 import { AuthRequest } from '../types/auth';
-import { logger } from '@yggdrasil/shared-utilities';
+import { LoggerFactory } from '../logging/logger';
+
+const logger = LoggerFactory.createLogger('auth-middleware');
 
 // Request interface is extended in auth-enhanced.ts
 

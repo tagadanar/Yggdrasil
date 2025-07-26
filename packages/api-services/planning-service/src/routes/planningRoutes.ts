@@ -8,11 +8,11 @@ const router = Router();
 router.use(authenticate);
 
 // Root route - authenticated users can access planning service
-router.get('/', (_req, res) => {
-  res.json({
+router.get('/', (req, res) => {
+  return res.json({
     service: 'planning-service',
     message: 'Planning service is running',
-    user: req.user ? { id: req.user._id, role: req.user.role } : null,
+    user: (req as any).user ? { id: (req as any).user._id, role: (req as any).user.role } : null,
     endpoints: {
       'GET /events': 'List all events',
       'POST /events': 'Create event (admin/staff)',
@@ -27,10 +27,10 @@ router.get('/', (_req, res) => {
 
 // Events routes
 router.get('/events', PlanningController.getEvents);
-router.post('/events', requireRole(['admin', 'staff']), PlanningController.createEvent);
+router.post('/events', requireRole('admin'), PlanningController.createEvent);
 router.get('/events/:eventId', PlanningController.getEvent);
-router.put('/events/:eventId', requireRole(['admin', 'staff']), PlanningController.updateEvent);
-router.delete('/events/:eventId', requireRole(['admin', 'staff']), PlanningController.deleteEvent);
+router.put('/events/:eventId', requireRole('admin'), PlanningController.updateEvent);
+router.delete('/events/:eventId', requireRole('admin'), PlanningController.deleteEvent);
 
 // Conflict detection
 router.get('/conflicts', PlanningController.checkConflicts);
@@ -39,6 +39,6 @@ router.get('/conflicts', PlanningController.checkConflicts);
 router.post('/export', PlanningController.exportCalendar);
 
 // Recurring events
-router.post('/events/:eventId/instances', requireRole(['admin', 'staff']), PlanningController.generateRecurringInstances);
+router.post('/events/:eventId/instances', requireRole('admin'), PlanningController.generateRecurringInstances);
 
 export default router;

@@ -9,8 +9,8 @@ import {
   GetNewsArticlesQueryType,
   NewsArticle,
   NewsArticleListItem,
-  PaginatedResponse,
   ApiResponse,
+  newsLogger as logger,
 } from '@yggdrasil/shared-utilities';
 
 export interface NewsResult extends ApiResponse {
@@ -49,7 +49,7 @@ export class NewsService {
   /**
    * Check if user can edit specific article (author, admin, or staff)
    */
-  private static canEditArticle(article: NewsArticleDocument, userId: string, userRole: string, userDepartment?: string): boolean {
+  private static canEditArticle(article: NewsArticleDocument, userId: string, userRole: string, _userDepartment?: string): boolean {
     // Author can always edit their own content
     if (article.author.userId.toString() === userId.toString()) {
       return true;
@@ -77,8 +77,7 @@ export class NewsService {
       if (!mongoose.Types.ObjectId.isValid(userId)) {
         return {
           success: false,
-          error: 'User not found',
-          timestamp: new Date().toISOString(),
+          error: { message: 'User not found' },
         };
       }
 
@@ -87,16 +86,14 @@ export class NewsService {
       if (!user) {
         return {
           success: false,
-          error: 'User not found',
-          timestamp: new Date().toISOString(),
+          error: { message: 'User not found' },
         };
       }
 
       if (!this.canModifyNews(user.role)) {
         return {
           success: false,
-          error: 'Insufficient permissions to create news articles',
-          timestamp: new Date().toISOString(),
+          error: { message: 'Insufficient permissions to create news articles' },
         };
       }
 
@@ -122,14 +119,12 @@ export class NewsService {
       return {
         success: true,
         article: this.articleDocumentToArticle(savedArticle),
-        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       logger.error('Error creating article:', error);
       return {
         success: false,
-        error: 'Failed to create article',
-        timestamp: new Date().toISOString(),
+        error: { message: 'Failed to create article' },
       };
     }
   }
@@ -148,8 +143,7 @@ export class NewsService {
       if (!article) {
         return {
           success: false,
-          error: 'Article not found',
-          timestamp: new Date().toISOString(),
+          error: { message: 'Article not found' },
         };
       }
 
@@ -158,16 +152,14 @@ export class NewsService {
       if (!user) {
         return {
           success: false,
-          error: 'User not found',
-          timestamp: new Date().toISOString(),
+          error: { message: 'User not found' },
         };
       }
 
       if (!this.canEditArticle(article, userId, user.role, user.profile?.department)) {
         return {
           success: false,
-          error: 'Insufficient permissions to update this article',
-          timestamp: new Date().toISOString(),
+          error: { message: 'Insufficient permissions to update this article' },
         };
       }
 
@@ -184,14 +176,12 @@ export class NewsService {
       return {
         success: true,
         article: this.articleDocumentToArticle(updatedArticle),
-        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       logger.error('Error updating article:', error);
       return {
         success: false,
-        error: 'Failed to update article',
-        timestamp: new Date().toISOString(),
+        error: { message: 'Failed to update article' },
       };
     }
   }
@@ -206,8 +196,7 @@ export class NewsService {
       if (!article) {
         return {
           success: false,
-          error: 'Article not found',
-          timestamp: new Date().toISOString(),
+          error: { message: 'Article not found' },
         };
       }
 
@@ -216,16 +205,14 @@ export class NewsService {
       if (!user) {
         return {
           success: false,
-          error: 'User not found',
-          timestamp: new Date().toISOString(),
+          error: { message: 'User not found' },
         };
       }
 
       if (!this.canEditArticle(article, userId, user.role, user.profile?.department)) {
         return {
           success: false,
-          error: 'Insufficient permissions to delete this article',
-          timestamp: new Date().toISOString(),
+          error: { message: 'Insufficient permissions to delete this article' },
         };
       }
 
@@ -234,15 +221,12 @@ export class NewsService {
 
       return {
         success: true,
-        message: 'Article deleted successfully',
-        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       logger.error('Error deleting article:', error);
       return {
         success: false,
-        error: 'Failed to delete article',
-        timestamp: new Date().toISOString(),
+        error: { message: 'Failed to delete article' },
       };
     }
   }
@@ -256,8 +240,7 @@ export class NewsService {
       if (!mongoose.Types.ObjectId.isValid(articleId)) {
         return {
           success: false,
-          error: 'Invalid article ID format',
-          timestamp: new Date().toISOString(),
+          error: { message: 'Invalid article ID format' },
         };
       }
 
@@ -265,8 +248,7 @@ export class NewsService {
       if (!article) {
         return {
           success: false,
-          error: 'Article not found',
-          timestamp: new Date().toISOString(),
+          error: { message: 'Article not found' },
         };
       }
 
@@ -276,14 +258,12 @@ export class NewsService {
       return {
         success: true,
         article: this.articleDocumentToArticle(article),
-        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       logger.error('Error getting article by ID:', error);
       return {
         success: false,
-        error: 'Failed to get article',
-        timestamp: new Date().toISOString(),
+        error: { message: 'Failed to get article' },
       };
     }
   }
@@ -297,8 +277,7 @@ export class NewsService {
       if (!article) {
         return {
           success: false,
-          error: 'Article not found',
-          timestamp: new Date().toISOString(),
+          error: { message: 'Article not found' },
         };
       }
 
@@ -308,14 +287,12 @@ export class NewsService {
       return {
         success: true,
         article: this.articleDocumentToArticle(article),
-        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       logger.error('Error getting article by slug:', error);
       return {
         success: false,
-        error: 'Failed to get article',
-        timestamp: new Date().toISOString(),
+        error: { message: 'Failed to get article' },
       };
     }
   }
@@ -371,7 +348,7 @@ export class NewsService {
         
         if (searchWords.length === 1) {
           // Single word search - look for the word anywhere in text (handles hyphens, etc.)
-          const wordPattern = searchWords[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex chars
+          const wordPattern = searchWords[0]!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex chars
           filter.$or = [
             { title: { $regex: wordPattern, $options: 'i' } },
             { content: { $regex: wordPattern, $options: 'i' } },
@@ -436,15 +413,13 @@ export class NewsService {
         success: true,
         articles: articleList,
         pagination,
-        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       logger.error('Error getting articles:', error);
       return {
         success: false,
         articles: [],
-        error: 'Failed to get articles',
-        timestamp: new Date().toISOString(),
+        error: { message: 'Failed to get articles' },
       };
     }
   }
@@ -482,7 +457,7 @@ export class NewsService {
   async createArticle(articleData: CreateNewsArticleType, user: any): Promise<any> {
     const result = await NewsService.createArticle(articleData, user._id || user.id);
     if (!result.success) {
-      throw new Error(result.error);
+      throw new Error(result.error?.message || 'Unknown error');
     }
     return result.article;
   }
@@ -490,7 +465,7 @@ export class NewsService {
   async updateArticle(articleId: string, updateData: UpdateNewsArticleType, user: any): Promise<any> {
     const result = await NewsService.updateArticle(articleId, updateData, user._id || user.id);
     if (!result.success) {
-      throw new Error(result.error);
+      throw new Error(result.error?.message || 'Unknown error');
     }
     return result.article;
   }
@@ -498,10 +473,10 @@ export class NewsService {
   async deleteArticle(articleId: string, user: any): Promise<boolean> {
     const result = await NewsService.deleteArticle(articleId, user._id || user.id);
     if (!result.success) {
-      if (result.error === 'Article not found') {
+      if (result.error?.message === 'Article not found') {
         return false; // Return false for not found instead of throwing
       }
-      throw new Error(result.error);
+      throw new Error(result.error?.message || 'Unknown error');
     }
     return true;
   }
@@ -525,7 +500,7 @@ export class NewsService {
   async listArticles(query: any): Promise<any> {
     const result = await NewsService.getArticles(query);
     if (!result.success) {
-      throw new Error(result.error);
+      throw new Error(result.error?.message || 'Unknown error');
     }
     // Return the articles data structure that the controller expects
     return {
@@ -541,7 +516,7 @@ export class NewsService {
   async publishArticle(articleId: string, user: any): Promise<any> {
     const result = await NewsService.publishArticle(articleId, user._id || user.id);
     if (!result.success) {
-      throw new Error(result.error);
+      throw new Error(result.error?.message || 'Unknown error');
     }
     return result.article;
   }
@@ -549,7 +524,7 @@ export class NewsService {
   async unpublishArticle(articleId: string, user: any): Promise<any> {
     const result = await NewsService.unpublishArticle(articleId, user._id || user.id);
     if (!result.success) {
-      throw new Error(result.error);
+      throw new Error(result.error?.message || 'Unknown error');
     }
     return result.article;
   }
@@ -557,7 +532,7 @@ export class NewsService {
   async pinArticle(articleId: string, user: any): Promise<any> {
     const result = await NewsService.pinArticle(articleId, user._id || user.id);
     if (!result.success) {
-      throw new Error(result.error);
+      throw new Error(result.error?.message || 'Unknown error');
     }
     return result.article;
   }
@@ -565,7 +540,7 @@ export class NewsService {
   async unpinArticle(articleId: string, user: any): Promise<any> {
     const result = await NewsService.unpinArticle(articleId, user._id || user.id);
     if (!result.success) {
-      throw new Error(result.error);
+      throw new Error(result.error?.message || 'Unknown error');
     }
     return result.article;
   }

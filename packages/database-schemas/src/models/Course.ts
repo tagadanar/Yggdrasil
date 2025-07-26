@@ -8,14 +8,7 @@ import {
   Section, 
   Content, 
   Exercise, 
-  Quiz, 
-  CourseResource,
-  CourseSettings,
-  CourseStats,
-  CourseStatus,
-  CourseLevel,
-  ContentType,
-  ExerciseType
+  Quiz
 } from '@yggdrasil/shared-utilities';
 
 // Extend interfaces with Mongoose Document
@@ -550,7 +543,7 @@ CourseSchema.pre<CourseDocument>('save', function(next) {
 });
 
 // Instance method to generate slug from title
-CourseSchema.methods.generateSlug = function(): string {
+CourseSchema.methods['generateSlug'] = function(): string {
   const course = this as CourseDocument;
   return course.title
     .toLowerCase()
@@ -562,7 +555,7 @@ CourseSchema.methods.generateSlug = function(): string {
 };
 
 // Instance method to increment version
-CourseSchema.methods.incrementVersion = async function(): Promise<void> {
+CourseSchema.methods['incrementVersion'] = async function(): Promise<void> {
   const course = this as CourseDocument;
   course.version += 1;
   course.lastModified = new Date();
@@ -570,7 +563,7 @@ CourseSchema.methods.incrementVersion = async function(): Promise<void> {
 };
 
 // Instance method to update statistics
-CourseSchema.methods.updateStats = async function(): Promise<void> {
+CourseSchema.methods['updateStats'] = async function(): Promise<void> {
   const course = this as CourseDocument;
   // This would typically aggregate data from enrollments, progress, etc.
   // For now, just update the lastAccessed timestamp
@@ -580,7 +573,7 @@ CourseSchema.methods.updateStats = async function(): Promise<void> {
 
 // Transform output to match our interface
 CourseSchema.set('toJSON', {
-  transform: function(doc: any, ret: any) {
+  transform: function(_doc: any, ret: any) {
     ret._id = ret._id.toString();
     
     // Transform nested ObjectIds to strings
@@ -618,22 +611,22 @@ CourseSchema.set('toJSON', {
 });
 
 // Static methods
-CourseSchema.statics.findBySlug = function(slug: string) {
+CourseSchema.statics['findBySlug'] = function(slug: string) {
   return this.findOne({ slug: slug.toLowerCase() });
 };
 
-CourseSchema.statics.findPublished = function() {
+CourseSchema.statics['findPublished'] = function() {
   return this.find({ 
     status: 'published', 
     'settings.isPublic': true 
   }).sort({ createdAt: -1 });
 };
 
-CourseSchema.statics.findByInstructor = function(instructorId: string) {
+CourseSchema.statics['findByInstructor'] = function(instructorId: string) {
   return this.find({ 'instructor._id': instructorId }).sort({ lastModified: -1 });
 };
 
-CourseSchema.statics.findByCategory = function(category: string) {
+CourseSchema.statics['findByCategory'] = function(category: string) {
   return this.find({ 
     category: category, 
     status: 'published',
@@ -641,7 +634,7 @@ CourseSchema.statics.findByCategory = function(category: string) {
   }).sort({ createdAt: -1 });
 };
 
-CourseSchema.statics.searchCourses = function(query: string, filters: any = {}) {
+CourseSchema.statics['searchCourses'] = function(query: string, filters: any = {}) {
   const searchCriteria: any = {
     status: 'published',
     'settings.isPublic': true

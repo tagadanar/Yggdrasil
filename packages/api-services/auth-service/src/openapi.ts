@@ -4,7 +4,7 @@
  */
 
 import { OpenAPIV3 } from 'openapi-types';
-import { createOpenAPIDocument, addCommonResponses } from '@yggdrasil/shared-utilities/src/openapi';
+import { createOpenAPIDocument, addCommonResponses } from '@yggdrasil/shared-utilities';
 
 export const createAuthServiceOpenAPI = (): OpenAPIV3.Document => {
   const doc = createOpenAPIDocument(

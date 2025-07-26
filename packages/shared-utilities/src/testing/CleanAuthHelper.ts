@@ -3,7 +3,9 @@
 
 import { Page } from '@playwright/test';
 import { DemoUserManager } from './DemoUserManager';
-import { logger } from '@yggdrasil/shared-utilities';
+import { LoggerFactory } from '../logging/logger';
+
+const logger = LoggerFactory.createLogger('clean-auth-helper');
 // import { type DemoUser } from './DemoUserManager'; // Unused import
 
 export interface CleanAuthResult {

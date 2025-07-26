@@ -196,7 +196,7 @@ router.patch(
   '/:courseId/publish',
   authenticateToken,
   requireTeacherOrAdmin,
-  async (_req, res) => {
+  async (req, res) => {
     try {
       const { publish } = req.body;
       const modifiedReq = {
@@ -214,7 +214,7 @@ router.patch(
 router.patch(
   '/:courseId/archive',
   authenticateToken,
-  async (_req, res) => {
+  async (req, res) => {
     try {
       const { archive } = req.body;
       const modifiedReq = {

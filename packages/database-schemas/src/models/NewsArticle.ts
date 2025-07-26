@@ -183,14 +183,14 @@ NewsArticleSchema.pre('save', async function(next) {
 });
 
 // Instance method to increment view count
-NewsArticleSchema.methods.incrementViewCount = async function(): Promise<void> {
+NewsArticleSchema.methods['incrementViewCount'] = async function(): Promise<void> {
   const article = this as NewsArticleDocument;
   article.viewCount += 1;
   await article.save();
 };
 
 // Instance method to publish article
-NewsArticleSchema.methods.publish = async function(): Promise<void> {
+NewsArticleSchema.methods['publish'] = async function(): Promise<void> {
   const article = this as NewsArticleDocument;
   article.isPublished = true;
   article.publishedAt = new Date();
@@ -198,7 +198,7 @@ NewsArticleSchema.methods.publish = async function(): Promise<void> {
 };
 
 // Instance method to unpublish article
-NewsArticleSchema.methods.unpublish = async function(): Promise<void> {
+NewsArticleSchema.methods['unpublish'] = async function(): Promise<void> {
   const article = this as NewsArticleDocument;
   article.isPublished = false;
   article.publishedAt = undefined;
@@ -207,7 +207,7 @@ NewsArticleSchema.methods.unpublish = async function(): Promise<void> {
 
 // Transform output to match our interface
 NewsArticleSchema.set('toJSON', {
-  transform: function(doc: any, ret: any) {
+  transform: function(_doc: any, ret: any) {
     ret._id = ret._id.toString();
     if (ret.author && ret.author.userId) {
       ret.author.userId = ret.author.userId.toString();
@@ -218,7 +218,7 @@ NewsArticleSchema.set('toJSON', {
 });
 
 NewsArticleSchema.set('toObject', {
-  transform: function(doc: any, ret: any) {
+  transform: function(_doc: any, ret: any) {
     ret._id = ret._id.toString();
     if (ret.author && ret.author.userId) {
       ret.author.userId = ret.author.userId.toString();
@@ -229,22 +229,22 @@ NewsArticleSchema.set('toObject', {
 });
 
 // Static methods
-NewsArticleSchema.statics.findPublished = function() {
+NewsArticleSchema.statics['findPublished'] = function() {
   return this.find({ isPublished: true })
     .sort({ publishedAt: -1 });
 };
 
-NewsArticleSchema.statics.findPinned = function() {
+NewsArticleSchema.statics['findPinned'] = function() {
   return this.find({ isPinned: true, isPublished: true })
     .sort({ publishedAt: -1 });
 };
 
-NewsArticleSchema.statics.findByCategory = function(category: string) {
+NewsArticleSchema.statics['findByCategory'] = function(category: string) {
   return this.find({ category, isPublished: true })
     .sort({ publishedAt: -1 });
 };
 
-NewsArticleSchema.statics.searchArticles = function(query: string) {
+NewsArticleSchema.statics['searchArticles'] = function(query: string) {
   return this.find({
     $and: [
       { isPublished: true },
@@ -260,14 +260,14 @@ NewsArticleSchema.statics.searchArticles = function(query: string) {
   }).sort({ publishedAt: -1 });
 };
 
-NewsArticleSchema.statics.findByTag = function(tag: string) {
+NewsArticleSchema.statics['findByTag'] = function(tag: string) {
   return this.find({ 
     tags: { $in: [tag] }, 
     isPublished: true 
   }).sort({ publishedAt: -1 });
 };
 
-NewsArticleSchema.statics.getRecent = function(limit: number = 10) {
+NewsArticleSchema.statics['getRecent'] = function(limit: number = 10) {
   return this.find({ isPublished: true })
     .sort({ publishedAt: -1 })
     .limit(limit);

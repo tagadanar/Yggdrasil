@@ -2,7 +2,7 @@
 // Planning service with business logic
 
 import mongoose from 'mongoose';
-import { EventModel, UserModel, EventDocument } from '@yggdrasil/database-schemas';
+import { EventModel, EventDocument } from '@yggdrasil/database-schemas';
 import { 
   CreateEventType,
   UpdateEventType,
@@ -281,7 +281,6 @@ export class PlanningService {
       return {
         success: true,
         conflicts,
-        timestamp: new Date().toISOString()
       };
     } catch (error) {
       throw new Error(`Failed to check conflicts: ${error}`);

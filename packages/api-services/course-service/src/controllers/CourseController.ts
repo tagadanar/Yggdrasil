@@ -3,7 +3,7 @@
 
 import { Request, Response } from 'express';
 import { CourseService } from '../services/CourseService';
-import { ResponseHelper, HTTP_STATUS } from '@yggdrasil/shared-utilities';
+import { ResponseHelper, HTTP_STATUS, courseLogger as logger } from '@yggdrasil/shared-utilities';
 import { 
   CreateCourseSchema,
   UpdateCourseSchema,
@@ -13,7 +13,6 @@ import {
   UpdateSectionSchema,
   CreateContentSchema,
   UpdateContentSchema,
-  CreateExerciseSchema,
   SubmitExerciseSchema,
   CourseSearchSchema,
   EnrollCourseSchema,
@@ -78,7 +77,7 @@ export class CourseController {
     try {
       const { courseId } = req.params;
       
-      const course = await this.courseService.getCourseById(courseId);
+      const course = await this.courseService.getCourseById(courseId!);
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
           ResponseHelper.notFound('Course')
@@ -100,7 +99,7 @@ export class CourseController {
     try {
       const { slug } = req.params;
       
-      const course = await this.courseService.getCourseBySlug(slug);
+      const course = await this.courseService.getCourseBySlug(slug!);
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
           ResponseHelper.notFound('Course')
@@ -139,7 +138,7 @@ export class CourseController {
       }
 
       const course = await this.courseService.updateCourse(
-        courseId,
+        courseId!,
         validation.data as any,
         user.userId,
         user.role
@@ -180,7 +179,7 @@ export class CourseController {
 
       const { courseId } = req.params;
 
-      const success = await this.courseService.deleteCourse(courseId, user.userId, user.role);
+      const success = await this.courseService.deleteCourse(courseId!, user.userId, user.role);
       if (!success) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
           ResponseHelper.notFound('Course')
@@ -231,7 +230,7 @@ export class CourseController {
     }
   };
 
-  getPublishedCourses = async (req: Request, res: Response): Promise<void> => {
+  getPublishedCourses = async (_req: Request, res: Response): Promise<void> => {
     try {
       const courses = await this.courseService.getPublishedCourses();
       res.status(HTTP_STATUS.OK).json(
@@ -298,7 +297,7 @@ export class CourseController {
       }
 
       const course = await this.courseService.addChapter(
-        courseId,
+        courseId!,
         validation.data,
         user.userId,
         user.role
@@ -347,8 +346,8 @@ export class CourseController {
       }
 
       const course = await this.courseService.updateChapter(
-        courseId,
-        chapterId,
+        courseId!,
+        chapterId!,
         validation.data,
         user.userId,
         user.role
@@ -389,8 +388,8 @@ export class CourseController {
 
       const { courseId, chapterId } = req.params;
       const course = await this.courseService.deleteChapter(
-        courseId,
-        chapterId,
+        courseId!,
+        chapterId!,
         user.userId,
         user.role
       );
@@ -442,8 +441,8 @@ export class CourseController {
       }
 
       const course = await this.courseService.addSection(
-        courseId,
-        chapterId,
+        courseId!,
+        chapterId!,
         validation.data,
         user.userId,
         user.role
@@ -492,9 +491,9 @@ export class CourseController {
       }
 
       const course = await this.courseService.updateSection(
-        courseId,
-        chapterId,
-        sectionId,
+        courseId!,
+        chapterId!,
+        sectionId!,
         validation.data,
         user.userId,
         user.role
@@ -547,9 +546,9 @@ export class CourseController {
       }
 
       const course = await this.courseService.addContent(
-        courseId,
-        chapterId,
-        sectionId,
+        courseId!,
+        chapterId!,
+        sectionId!,
         validation.data,
         user.userId,
         user.role
@@ -598,10 +597,10 @@ export class CourseController {
       }
 
       const course = await this.courseService.updateContent(
-        courseId,
-        chapterId,
-        sectionId,
-        contentId,
+        courseId!,
+        chapterId!,
+        sectionId!,
+        contentId!,
         validation.data,
         user.userId,
         user.role
@@ -709,7 +708,7 @@ export class CourseController {
         return;
       }
 
-      const enrollments = await this.courseService.getCourseEnrollments(courseId);
+      const enrollments = await this.courseService.getCourseEnrollments(courseId!);
       res.status(HTTP_STATUS.OK).json(
         ResponseHelper.success(enrollments, 'Course enrollments retrieved successfully')
       );
@@ -752,7 +751,7 @@ export class CourseController {
       }
 
       const submission = await this.courseService.submitExercise(
-        exerciseId,
+        exerciseId!,
         user.userId,
         validation.data
       );
@@ -782,10 +781,10 @@ export class CourseController {
       let submissions;
       if (user.role === 'student') {
         // Students can only see their own submissions
-        submissions = await this.courseService.getExerciseSubmissions(exerciseId, user.userId);
+        submissions = await this.courseService.getExerciseSubmissions(exerciseId!, user.userId);
       } else if (['teacher', 'staff', 'admin'].includes(user.role)) {
         // Teachers/staff/admins can see all submissions
-        submissions = await this.courseService.getExerciseSubmissions(exerciseId);
+        submissions = await this.courseService.getExerciseSubmissions(exerciseId!);
       } else {
         res.status(HTTP_STATUS.FORBIDDEN).json(
           ResponseHelper.forbidden('Insufficient permissions to view submissions')

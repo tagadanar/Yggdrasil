@@ -4,7 +4,9 @@
 import { Page } from '@playwright/test';
 // import { Browser } from '@playwright/test'; // Unused import
 import { DemoUserManager } from './DemoUserManager';
-import { logger } from '@yggdrasil/shared-utilities';
+import { LoggerFactory } from '../logging/logger';
+
+const logger = LoggerFactory.createLogger('auth-test-helper');
 // import { DEMO_USERS, type DemoUser } from './DemoUserManager'; // Unused imports
 
 export interface AuthTestOptions {

@@ -8,7 +8,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { connectDatabase } from '@yggdrasil/database-schemas';
-import { ResponseHelper } from '@yggdrasil/shared-utilities';
+import { ResponseHelper, statsLogger as logger } from '@yggdrasil/shared-utilities';
 import statisticsRoutes from './routes/statisticsRoutes';
 
 // Load environment variables
@@ -100,13 +100,13 @@ connectDatabase()
 // =============================================================================
 
 // Health check endpoint
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json(
     ResponseHelper.success({
       service: 'statistics-service',
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: process.env.npm_package_version || '1.0.0',
+      version: process.env['npm_package_version'] || '1.0.0',
       uptime: process.uptime(),
       memory: process.memoryUsage()
     }, 'Statistics service is healthy')
@@ -117,11 +117,11 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/api/statistics', statisticsRoutes);
 
 // Root endpoint
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
   res.status(200).json(
     ResponseHelper.success({
       service: 'statistics-service',
-      version: process.env.npm_package_version || '1.0.0',
+      version: process.env['npm_package_version'] || '1.0.0',
       description: 'Statistics and analytics service for the Yggdrasil educational platform',
       endpoints: {
         health: '/health',
@@ -156,7 +156,7 @@ app.use('*', (req: Request, res: Response) => {
 });
 
 // Global error handler
-app.use((error: any, req: Request, res: Response, next: any) => {
+app.use((error: any, _req: Request, res: Response, _next: any) => {
   logger.error('❌ Statistics Service Error:', error);
   
   // Handle specific error types

@@ -39,6 +39,7 @@ export class NewsController {
   async updateArticle(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
+      // Type assertion: id is required by route definition
       const validation = newsValidationSchemas.updateArticle.safeParse(req.body);
       if (!validation.success) {
         const errorResponse = ResponseHelper.badRequest(validation.error.errors[0]!.message);
@@ -46,7 +47,7 @@ export class NewsController {
       }
 
       const article = await this.newsService.updateArticle(
-        id,
+        id!,
         validation.data,
         req.user!
       );
@@ -71,8 +72,9 @@ export class NewsController {
   async deleteArticle(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
+      // Type assertion: id is required by route definition
       
-      const success = await this.newsService.deleteArticle(id, req.user!);
+      const success = await this.newsService.deleteArticle(id!, req.user!);
 
       if (!success) {
         const errorResponse = ResponseHelper.notFound('Article');
@@ -94,7 +96,8 @@ export class NewsController {
   async getArticleById(req: Request, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
-      const article = await this.newsService.getArticleById(id);
+      // Type assertion: id is required by route definition
+      const article = await this.newsService.getArticleById(id!);
 
       if (!article) {
         const errorResponse = ResponseHelper.notFound('Article');
@@ -112,7 +115,8 @@ export class NewsController {
   async getArticleBySlug(req: Request, res: Response): Promise<Response> {
     try {
       const { slug } = req.params;
-      const article = await this.newsService.getArticleBySlug(slug);
+      // Type assertion: slug is required by route definition
+      const article = await this.newsService.getArticleBySlug(slug!);
 
       if (!article) {
         const errorResponse = ResponseHelper.notFound('Article');
@@ -148,8 +152,9 @@ export class NewsController {
   async publishArticle(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
+      // Type assertion: id is required by route definition
       
-      const article = await this.newsService.publishArticle(id, req.user!);
+      const article = await this.newsService.publishArticle(id!, req.user!);
 
       if (!article) {
         const errorResponse = ResponseHelper.notFound('Article');
@@ -171,8 +176,9 @@ export class NewsController {
   async unpublishArticle(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
+      // Type assertion: id is required by route definition
       
-      const article = await this.newsService.unpublishArticle(id, req.user!);
+      const article = await this.newsService.unpublishArticle(id!, req.user!);
 
       if (!article) {
         const errorResponse = ResponseHelper.notFound('Article');
@@ -194,8 +200,9 @@ export class NewsController {
   async pinArticle(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
+      // Type assertion: id is required by route definition
       
-      const article = await this.newsService.pinArticle(id, req.user!);
+      const article = await this.newsService.pinArticle(id!, req.user!);
 
       if (!article) {
         const errorResponse = ResponseHelper.notFound('Article');
@@ -217,8 +224,9 @@ export class NewsController {
   async unpinArticle(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const { id } = req.params;
+      // Type assertion: id is required by route definition
       
-      const article = await this.newsService.unpinArticle(id, req.user!);
+      const article = await this.newsService.unpinArticle(id!, req.user!);
 
       if (!article) {
         const errorResponse = ResponseHelper.notFound('Article');

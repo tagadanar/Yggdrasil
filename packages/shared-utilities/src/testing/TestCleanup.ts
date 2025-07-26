@@ -5,7 +5,9 @@ import mongoose from 'mongoose';
 import { connectDatabase } from '@yggdrasil/database-schemas';
 import { DemoUserManager } from './DemoUserManager';
 import { BrowserContext, Page } from 'playwright';
-import { logger } from '@yggdrasil/shared-utilities';
+import { LoggerFactory } from '../logging/logger';
+
+const logger = LoggerFactory.createLogger('test-cleanup');
 
 export interface CleanupTracker {
   collections: Map<string, Set<string>>; // collection -> ids to delete

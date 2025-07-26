@@ -6,7 +6,9 @@
 import { Express, Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { OpenAPIV3 } from 'openapi-types';
-import { logger } from '@yggdrasil/shared-utilities';
+import { LoggerFactory } from '../logging/logger';
+
+const logger = LoggerFactory.createLogger('swagger');
 
 /**
  * Setup Swagger UI for an Express app
@@ -118,7 +120,7 @@ export const combineOpenAPIDocs = (
       // Add operations with service tag
       Object.entries(pathItem as OpenAPIV3.PathItemObject).forEach(([method, operation]) => {
         if (typeof operation === 'object' && 'tags' in operation) {
-          combinedDoc.paths[prefixedPath][method] = {
+          (combinedDoc.paths[prefixedPath] as any)[method] = {
             ...operation,
             tags: [name, ...(operation.tags || [])],
           };
@@ -130,8 +132,8 @@ export const combineOpenAPIDocs = (
     if (doc.components) {
       Object.entries(doc.components).forEach(([componentType, components]) => {
         if (components && typeof components === 'object') {
-          combinedDoc.components![componentType] = {
-            ...combinedDoc.components![componentType],
+          (combinedDoc.components as any)![componentType] = {
+            ...(combinedDoc.components as any)![componentType],
             ...components,
           };
         }

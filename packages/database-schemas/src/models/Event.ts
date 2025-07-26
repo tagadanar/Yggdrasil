@@ -203,7 +203,7 @@ EventSchema.pre('save', function(next) {
 });
 
 // Instance method to add attendee
-EventSchema.methods.addAttendee = async function(userId: mongoose.Types.ObjectId, status: string = 'pending'): Promise<void> {
+EventSchema.methods['addAttendee'] = async function(userId: mongoose.Types.ObjectId, status: string = 'pending'): Promise<void> {
   const event = this as EventDocument;
   
   // Check if attendee already exists
@@ -231,7 +231,7 @@ EventSchema.methods.addAttendee = async function(userId: mongoose.Types.ObjectId
 };
 
 // Instance method to remove attendee
-EventSchema.methods.removeAttendee = async function(userId: mongoose.Types.ObjectId): Promise<void> {
+EventSchema.methods['removeAttendee'] = async function(userId: mongoose.Types.ObjectId): Promise<void> {
   const event = this as EventDocument;
   
   if (!event.attendees) {
@@ -249,7 +249,7 @@ EventSchema.methods.removeAttendee = async function(userId: mongoose.Types.Objec
 };
 
 // Instance method to update attendee status
-EventSchema.methods.updateAttendeeStatus = async function(userId: mongoose.Types.ObjectId, status: string): Promise<void> {
+EventSchema.methods['updateAttendeeStatus'] = async function(userId: mongoose.Types.ObjectId, status: string): Promise<void> {
   const event = this as EventDocument;
   
   if (!event.attendees) {
@@ -268,7 +268,7 @@ EventSchema.methods.updateAttendeeStatus = async function(userId: mongoose.Types
 };
 
 // Instance method to check for conflicts
-EventSchema.methods.checkConflicts = async function(): Promise<EventDocument[]> {
+EventSchema.methods['checkConflicts'] = async function(): Promise<EventDocument[]> {
   const event = this as EventDocument;
   
   if (!event.location) {
@@ -285,7 +285,7 @@ EventSchema.methods.checkConflicts = async function(): Promise<EventDocument[]> 
 
 // Transform output to match our interface
 EventSchema.set('toJSON', {
-  transform: function(doc: any, ret: any) {
+  transform: function(_doc: any, ret: any) {
     ret._id = ret._id.toString();
     if (ret.linkedCourse) {
       ret.linkedCourse = ret.linkedCourse.toString();
@@ -308,7 +308,7 @@ EventSchema.set('toJSON', {
 });
 
 EventSchema.set('toObject', {
-  transform: function(doc: any, ret: any) {
+  transform: function(_doc: any, ret: any) {
     ret._id = ret._id.toString();
     if (ret.linkedCourse) {
       ret.linkedCourse = ret.linkedCourse.toString();
@@ -331,7 +331,7 @@ EventSchema.set('toObject', {
 });
 
 // Static methods
-EventSchema.statics.findByDateRange = function(startDate: Date, endDate: Date) {
+EventSchema.statics['findByDateRange'] = function(startDate: Date, endDate: Date) {
   return this.find({
     $and: [
       { startDate: { $lte: endDate } },
@@ -340,15 +340,15 @@ EventSchema.statics.findByDateRange = function(startDate: Date, endDate: Date) {
   }).sort({ startDate: 1 });
 };
 
-EventSchema.statics.findByType = function(type: string) {
+EventSchema.statics['findByType'] = function(type: string) {
   return this.find({ type }).sort({ startDate: 1 });
 };
 
-EventSchema.statics.findByCourse = function(courseId: mongoose.Types.ObjectId) {
+EventSchema.statics['findByCourse'] = function(courseId: mongoose.Types.ObjectId) {
   return this.find({ linkedCourse: courseId }).sort({ startDate: 1 });
 };
 
-EventSchema.statics.findByLocation = function(location: string, startDate?: Date, endDate?: Date) {
+EventSchema.statics['findByLocation'] = function(location: string, startDate?: Date, endDate?: Date) {
   const query: any = { location };
   
   if (startDate && endDate) {
@@ -361,7 +361,7 @@ EventSchema.statics.findByLocation = function(location: string, startDate?: Date
   return this.find(query).sort({ startDate: 1 });
 };
 
-EventSchema.statics.findConflicts = function(
+EventSchema.statics['findConflicts'] = function(
   startDate: Date, 
   endDate: Date, 
   location?: string, 
@@ -385,11 +385,11 @@ EventSchema.statics.findConflicts = function(
   return this.find(query).sort({ startDate: 1 });
 };
 
-EventSchema.statics.findRecurring = function() {
+EventSchema.statics['findRecurring'] = function() {
   return this.find({ isRecurring: true }).sort({ startDate: 1 });
 };
 
-EventSchema.statics.findUpcoming = function(limit: number = 10) {
+EventSchema.statics['findUpcoming'] = function(limit: number = 10) {
   return this.find({ 
     startDate: { $gte: new Date() },
     isPublic: true 

@@ -30,7 +30,3 @@ export const authenticate = authenticateToken;
 
 // Export request type for controllers
 export type { AuthRequest };
-
-// Legacy compatibility exports
-export interface AuthenticatedRequest extends AuthRequest {}
-export type { AuthenticatedRequest };
