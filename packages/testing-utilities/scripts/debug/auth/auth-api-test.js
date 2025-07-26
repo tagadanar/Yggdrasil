@@ -90,7 +90,7 @@ async function testAuthAPI() {
   console.log('- If health check fails: auth service not running');
   console.log('- If health check passes but login fails with 404: routing issue');
   console.log('- If login returns 200: authentication working correctly');
-  console.log('- If login returns 401: check user credentials or password hashing');
+  console.log('- If login returns 401: check user credentials or credential verification');
 }
 
 // Run the test

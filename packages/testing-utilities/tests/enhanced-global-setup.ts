@@ -46,8 +46,7 @@ async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
   const env = {
     ...process.env,
     NODE_ENV: 'test',
-    MONGODB_URI: 'mongodb://localhost:27018/yggdrasil-dev',
-    // Clean testing approach - no worker-specific database naming
+    // Use authenticated MongoDB URI from environment
     WORKER_ID: workerId.toString(),
     PLAYWRIGHT_WORKER_ID: workerId.toString()
   };

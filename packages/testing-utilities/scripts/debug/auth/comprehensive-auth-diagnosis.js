@@ -44,11 +44,11 @@ async function diagnoseAuthIssue() {
             console.log(`    Role: ${user.role}`);
             console.log(`    Active: ${user.isActive}`);
             console.log(`    Has Password: ${!!user.password}`);
-            console.log(`    Password Hash: ${user.password ? user.password.substring(0, 20) + '...' : 'none'}`);
+            console.log(`    Password Hash: ${user.password ? '[HASH PRESENT]' : 'none'}`);
             
             // Test password verification for demo users
             if (user.email === 'student@yggdrasil.edu') {
-              console.log(`🔑 DIAGNOSIS: Testing password for student@yggdrasil.edu`);
+              console.log(`🔑 DIAGNOSIS: Testing credentials for student@yggdrasil.edu`);
               const testPassword = 'Admin123!';
               
               try {
@@ -60,7 +60,7 @@ async function diagnoseAuthIssue() {
                 for (const altPassword of altPasswords) {
                   const altResult = await bcrypt.compare(altPassword, user.password);
                   if (altResult) {
-                    console.log(`🔑 DIAGNOSIS: ✅ Alternative password '${altPassword}' works!`);
+                    console.log(`🔑 DIAGNOSIS: ✅ Alternative credential [REDACTED] works!`);
                   }
                 }
               } catch (bcryptError) {

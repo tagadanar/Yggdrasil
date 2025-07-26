@@ -52,7 +52,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     
     // 🔧 FIXED: Check what page we're on after authentication
     const currentUrl = page.url();
-    console.log('🔍 TEST DEBUG: Checking authentication result URL:', currentUrl);
+    console.log('🔍 TEST DEBUG: Checking navigation after authentication:', currentUrl);
     
     // If we're still on login page, authentication failed
     if (currentUrl.includes('/auth/login')) {

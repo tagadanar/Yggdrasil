@@ -12,10 +12,9 @@ out/
 
 # Environment variables
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+!.env.test.example
 
 # Testing
 coverage/
@@ -69,12 +68,33 @@ temp/
 mongod
 .mongorc.js
 
+# Security files
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+id_rsa*
+id_dsa*
+*.crt
+*.csr
+
 # Production secrets (dev-data is for development only)
 .secrets/
 production-data/
+backup/
+
+# Test artifacts (added for Phase 1)
+test-results-enhanced/
+debug-*.js
 
 # OS and misc
 .tern-port
 .serverless
 .fusebox/
 .dynamodb/
+
+# Additional security patterns
+security-audit-report.json
+*.backup
+*.bak

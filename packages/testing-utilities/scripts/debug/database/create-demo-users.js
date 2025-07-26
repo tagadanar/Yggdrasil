@@ -74,7 +74,7 @@ async function createDemoUsers() {
       // Hash the password
       const saltRounds = 12;
       const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-      console.log(`🔑 DEMO SETUP: Hashed password for ${userData.email}: ${hashedPassword.substring(0, 20)}...`);
+      console.log(`🔑 DEMO SETUP: Credentials hashed for ${userData.email}`);
       
       // Create user document
       const userDoc = {

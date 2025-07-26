@@ -6,13 +6,35 @@ services:
     container_name: yggdrasil-mongodb
     restart: unless-stopped
     ports:
-      - "27018:27017"  # Use different port to avoid conflict
+      - "27018:27017"
     environment:
-      MONGO_INITDB_DATABASE: yggdrasil-dev
+      # Root credentials (only for initial setup)
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-yggdrasil-dev}
+      # Application credentials
+      MONGO_APP_USERNAME: ${MONGO_APP_USERNAME}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD}
+      MONGO_READONLY_USERNAME: ${MONGO_READONLY_USERNAME}
+      MONGO_READONLY_PASSWORD: ${MONGO_READONLY_PASSWORD}
     volumes:
       - mongodb_data:/data/db
-      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    command: mongod --noauth --bind_ip_all
+      - ./scripts/mongo-init-secure.js:/docker-entrypoint-initdb.d/01-init-secure.js:ro
+      - ./scripts/mongo-init-indexes.js:/docker-entrypoint-initdb.d/02-init-indexes.js:ro
+      # Keep original init script for backwards compatibility during transition
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/99-legacy-init.js:ro
+    command: mongod --auth --bind_ip_all
+    healthcheck:
+      test: |
+        mongosh --eval "
+          db.adminCommand('ping').ok && 
+          db.getSiblingDB('${MONGO_DATABASE:-yggdrasil-dev}').runCommand('ping').ok
+        " --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   mongodb_data:
+    driver: local

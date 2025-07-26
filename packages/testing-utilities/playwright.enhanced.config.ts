@@ -1,6 +1,11 @@
 // packages/testing-utilities/playwright.enhanced.config.ts
 // Enhanced Playwright configuration for single-worker testing
 
+// Load environment variables before any other imports
+import { config } from 'dotenv';
+import path from 'path';
+config({ path: path.join(__dirname, '../../.env') });
+
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({

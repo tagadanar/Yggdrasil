@@ -13,7 +13,8 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:strict": "tsd"
   },
   "files": [
     "dist",
@@ -24,14 +25,33 @@
     "./testing": "./testing.ts"
   },
   "dependencies": {
-    "zod": "^3.22.4",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "swagger-ui-express": "^5.0.0",
+    "uuid": "^11.1.0",
+    "winston": "^3.17.0",
+    "winston-cloudwatch": "^6.3.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "winston-elasticsearch": "^0.19.0",
+    "winston-transport": "^4.9.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@eslint/js": "^9.32.0",
     "@types/jest": "^29.5.8",
     "@types/jsonwebtoken": "^9.0.5",
+    "@types/swagger-ui-express": "^4.1.6",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.32.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsdoc": "^51.4.1",
+    "eslint-plugin-security": "^3.0.1",
+    "eslint-plugin-sonarjs": "^3.0.4",
     "jest": "^29.7.0",
+    "openapi-types": "^12.1.3",
     "ts-jest": "^29.1.1",
+    "tsd": "^0.32.0",
     "typescript": "^5.3.0"
   },
   "peerDependencies": {

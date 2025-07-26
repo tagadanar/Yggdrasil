@@ -5,6 +5,9 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+// Load environment variables from project root
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
 // Simple clean architecture - use standard ports since we removed worker isolation
 const WORKER_ID = 0; // Clean architecture uses single worker
 const BASE_PORT = 3000; // Standard base port for clean architecture
@@ -225,6 +228,14 @@ class ServiceManager {
       PLAYWRIGHT_WORKER_ID: WORKER_ID.toString(),
       TEST_WORKER_INDEX: WORKER_ID.toString(),
       MONGODB_URI: 'mongodb://localhost:27018/yggdrasil-dev',
+      // Ensure JWT secrets are available (loaded from .env)
+      JWT_SECRET: process.env.JWT_SECRET,
+      JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+      // MongoDB authentication credentials for services
+      MONGO_APP_USERNAME: process.env.MONGO_APP_USERNAME,
+      MONGO_APP_PASSWORD: process.env.MONGO_APP_PASSWORD,
+      MONGO_ROOT_USERNAME: process.env.MONGO_ROOT_USERNAME,
+      MONGO_ROOT_PASSWORD: process.env.MONGO_ROOT_PASSWORD,
       // No DB_NAME or DB_COLLECTION_PREFIX - use clean dev database
       // Service URLs for inter-service communication
       AUTH_SERVICE_URL: `http://localhost:${BASE_PORT + 1}`,
