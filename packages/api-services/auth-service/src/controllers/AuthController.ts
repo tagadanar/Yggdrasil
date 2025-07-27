@@ -10,7 +10,7 @@ import {
   RefreshTokenSchema,
   HTTP_STATUS,
 } from '@yggdrasil/shared-utilities';
-import { authLogger as logger } from '@yggdrasil/shared-utilities/logging';
+import { authLogger as logger } from '@yggdrasil/shared-utilities';
 
 export class AuthController {
   /**
@@ -19,9 +19,14 @@ export class AuthController {
    */
   static async register(_req: Request, res: Response): Promise<void> {
     // Public registration is disabled
-    res.status(HTTP_STATUS.FORBIDDEN).json(
-      ResponseHelper.error('Public registration is disabled. User creation is restricted to administrators.', HTTP_STATUS.FORBIDDEN),
-    );
+    res
+      .status(HTTP_STATUS.FORBIDDEN)
+      .json(
+        ResponseHelper.error(
+          'Public registration is disabled. User creation is restricted to administrators.',
+          HTTP_STATUS.FORBIDDEN,
+        ),
+      );
   }
 
   /**
@@ -33,9 +38,9 @@ export class AuthController {
       // Validate request body
       const validation = ValidationHelper.validate(LoginRequestSchema, req.body);
       if (!validation.success) {
-        res.status(HTTP_STATUS.UNPROCESSABLE_ENTITY).json(
-          ResponseHelper.validationError(validation.errors!),
-        );
+        res
+          .status(HTTP_STATUS.UNPROCESSABLE_ENTITY)
+          .json(ResponseHelper.validationError(validation.errors!));
         return;
       }
 
@@ -43,28 +48,34 @@ export class AuthController {
       const result = await AuthService.login(validation.data!);
 
       if (result.success) {
-        res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'Login successful'),
-        );
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            ResponseHelper.success(
+              { user: result.user, tokens: result.tokens },
+              'Login successful',
+            ),
+          );
       } else {
         // Add debug information to the response in test environment
-        const debugInfo = process.env['NODE_ENV'] === 'test' ? {
-          debug: {
-            email: validation.data?.email,
-            error: result.error,
-            timestamp: new Date().toISOString(),
-          },
-        } : undefined;
+        const debugInfo =
+          process.env['NODE_ENV'] === 'test'
+            ? {
+                debug: {
+                  email: validation.data?.email,
+                  error: result.error,
+                  timestamp: new Date().toISOString(),
+                },
+              }
+            : undefined;
 
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.error(result.error!, HTTP_STATUS.UNAUTHORIZED, debugInfo),
-        );
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(ResponseHelper.error(result.error!, HTTP_STATUS.UNAUTHORIZED, debugInfo));
       }
     } catch (error) {
       logger.error('AUTH CONTROLLER: Exception during login:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Login failed'),
-      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(ResponseHelper.error('Login failed'));
     }
   }
 
@@ -77,9 +88,9 @@ export class AuthController {
       // Validate request body
       const validation = ValidationHelper.validate(RefreshTokenSchema, req.body);
       if (!validation.success) {
-        res.status(HTTP_STATUS.UNPROCESSABLE_ENTITY).json(
-          ResponseHelper.validationError(validation.errors!),
-        );
+        res
+          .status(HTTP_STATUS.UNPROCESSABLE_ENTITY)
+          .json(ResponseHelper.validationError(validation.errors!));
         return;
       }
 
@@ -87,18 +98,21 @@ export class AuthController {
       const result = await AuthService.refreshTokens(validation.data!.refreshToken);
 
       if (result.success) {
-        res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'Tokens refreshed successfully'),
-        );
+        res
+          .status(HTTP_STATUS.OK)
+          .json(
+            ResponseHelper.success(
+              { user: result.user, tokens: result.tokens },
+              'Tokens refreshed successfully',
+            ),
+          );
       } else {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized(result.error!),
-        );
+        res.status(HTTP_STATUS.UNAUTHORIZED).json(ResponseHelper.unauthorized(result.error!));
       }
     } catch (error) {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Token refresh failed'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Token refresh failed'));
     }
   }
 
@@ -111,9 +125,9 @@ export class AuthController {
       const userId = (req as any).user?._id;
 
       if (!userId) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('User not authenticated'),
-        );
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(ResponseHelper.unauthorized('User not authenticated'));
         return;
       }
 
@@ -121,18 +135,12 @@ export class AuthController {
       const result = await AuthService.logout(userId);
 
       if (result.success) {
-        res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success(null, 'Logout successful'),
-        );
+        res.status(HTTP_STATUS.OK).json(ResponseHelper.success(null, 'Logout successful'));
       } else {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.error(result.error!),
-        );
+        res.status(HTTP_STATUS.BAD_REQUEST).json(ResponseHelper.error(result.error!));
       }
     } catch (error) {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Logout failed'),
-      );
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(ResponseHelper.error('Logout failed'));
     }
   }
 
@@ -148,28 +156,30 @@ export class AuthController {
         email: user?.email,
         role: user?.role,
         hasProfile: !!user?.profile,
-        profileData: user?.profile ? {
-          firstName: user.profile.firstName,
-          lastName: user.profile.lastName,
-          department: user.profile.department,
-          keys: Object.keys(user.profile),
-        } : 'no profile',
+        profileData: user?.profile
+          ? {
+              firstName: user.profile.firstName,
+              lastName: user.profile.lastName,
+              department: user.profile.department,
+              keys: Object.keys(user.profile),
+            }
+          : 'no profile',
       });
 
       if (!user) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('User not authenticated'),
-        );
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(ResponseHelper.unauthorized('User not authenticated'));
         return;
       }
 
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success({ user }, 'User information retrieved'),
-      );
+      res
+        .status(HTTP_STATUS.OK)
+        .json(ResponseHelper.success({ user }, 'User information retrieved'));
     } catch (error) {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve user information'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Failed to retrieve user information'));
     }
   }
 
@@ -180,15 +190,19 @@ export class AuthController {
   static async registrationStatus(_req: Request, res: Response): Promise<void> {
     try {
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success({
-          registrationEnabled: false,
-          message: 'User creation is restricted to administrators. Please contact your system administrator to create new accounts.',
-        }, 'Registration status retrieved'),
+        ResponseHelper.success(
+          {
+            registrationEnabled: false,
+            message:
+              'User creation is restricted to administrators. Please contact your system administrator to create new accounts.',
+          },
+          'Registration status retrieved',
+        ),
       );
     } catch (error) {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve registration status'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Failed to retrieve registration status'));
     }
   }
 }

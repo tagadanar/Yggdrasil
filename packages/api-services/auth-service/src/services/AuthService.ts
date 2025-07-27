@@ -10,7 +10,7 @@ import {
   User,
   ERROR_MESSAGES,
 } from '@yggdrasil/shared-utilities';
-import { authLogger } from '@yggdrasil/shared-utilities/logging';
+import { authLogger } from '@yggdrasil/shared-utilities';
 import { JWTHelper } from '../utils/JWTHelper';
 import { v4 as uuidv4 } from 'uuid';
 import { performance } from 'perf_hooks';

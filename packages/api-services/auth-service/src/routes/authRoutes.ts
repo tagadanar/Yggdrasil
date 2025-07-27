@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/AuthController';
 import { authenticateToken } from '../middleware/auth';
-import { AuthMiddleware } from '@yggdrasil/shared-utilities/middleware';
+import { AuthMiddleware } from '@yggdrasil/shared-utilities';
 
 export const authRoutes = Router();
 

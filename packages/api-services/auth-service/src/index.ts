@@ -8,17 +8,21 @@ process.setMaxListeners(20);
 import dotenv from 'dotenv';
 import { createApp } from './app';
 import { connectDatabase } from '@yggdrasil/database-schemas';
-import { config } from '@yggdrasil/shared-utilities/config';
-import { initializeJWT } from '@yggdrasil/shared-utilities/jwt';
-import { authLogger as logger } from '@yggdrasil/shared-utilities/logging';
+import { config } from '@yggdrasil/shared-utilities';
+import { initializeJWT } from '@yggdrasil/shared-utilities';
+import { authLogger as logger } from '@yggdrasil/shared-utilities';
 
 // Load environment variables from project root
 dotenv.config({ path: '../../../.env' });
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {
-  const workerId = process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || process.env['TEST_WORKER_INDEX'] || '0';
-  const basePort = 3000 + (parseInt(workerId, 10) * 10);
+  const workerId =
+    process.env['WORKER_ID'] ||
+    process.env['PLAYWRIGHT_WORKER_ID'] ||
+    process.env['TEST_WORKER_INDEX'] ||
+    '0';
+  const basePort = 3000 + parseInt(workerId, 10) * 10;
   const authPort = basePort + 1; // Auth service is always basePort + 1
   return authPort;
 }
@@ -46,50 +50,60 @@ if (process.env['NODE_ENV'] === 'test' && process.env['PORT']) {
 const PORT = calculatedPort;
 // const _NODE_ENV = process.env['NODE_ENV'] || 'development';
 
-logger.debug(`🔧 AUTH SERVICE: Worker ID: ${process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || '0'}`);
+logger.debug(
+  `🔧 AUTH SERVICE: Worker ID: ${process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || '0'}`,
+);
 logger.debug(`🔧 AUTH SERVICE: Environment PORT: '${process.env['PORT']}'`);
-logger.debug(`🔧 AUTH SERVICE: Environment AUTH_SERVICE_PORT: '${process.env['AUTH_SERVICE_PORT']}'`);
+logger.debug(
+  `🔧 AUTH SERVICE: Environment AUTH_SERVICE_PORT: '${process.env['AUTH_SERVICE_PORT']}'`,
+);
 logger.debug(`🔧 AUTH SERVICE: Final PORT: ${PORT}`);
 
 async function startServer(): Promise<void> {
   try {
-    logger.info(`🚀 Starting Auth Service...`);
-    
+    logger.info('🚀 Starting Auth Service...');
+
     // Step 1: Validate environment
-    logger.debug(`🔐 Validating environment configuration...`);
+    logger.debug('🔐 Validating environment configuration...');
     // config is already validated by import
-    
+
     // Step 2: Initialize JWT system
-    logger.info(`🔑 Initializing JWT system...`);
+    logger.info('🔑 Initializing JWT system...');
     initializeJWT();
-    
+
     logger.debug(`🔧 AUTH SERVICE: NODE_ENV: ${config.NODE_ENV}`);
     logger.debug(`🔧 AUTH SERVICE: Received DB_NAME: ${process.env['DB_NAME']}`);
-    logger.debug(`🔧 AUTH SERVICE: Received DB_COLLECTION_PREFIX: ${process.env['DB_COLLECTION_PREFIX']}`);
-    logger.debug(`🔧 AUTH SERVICE: Received PLAYWRIGHT_WORKER_ID: ${process.env['PLAYWRIGHT_WORKER_ID']}`);
-    logger.debug(`🔧 AUTH SERVICE: Received TEST_WORKER_INDEX: ${process.env['TEST_WORKER_INDEX']}`);
+    logger.debug(
+      `🔧 AUTH SERVICE: Received DB_COLLECTION_PREFIX: ${process.env['DB_COLLECTION_PREFIX']}`,
+    );
+    logger.debug(
+      `🔧 AUTH SERVICE: Received PLAYWRIGHT_WORKER_ID: ${process.env['PLAYWRIGHT_WORKER_ID']}`,
+    );
+    logger.debug(
+      `🔧 AUTH SERVICE: Received TEST_WORKER_INDEX: ${process.env['TEST_WORKER_INDEX']}`,
+    );
     logger.debug(`🔧 AUTH SERVICE: Received WORKER_ID: ${process.env['WORKER_ID']}`);
-    
+
     // In test mode, use the dev database directly (no worker-specific naming)
     if (process.env['NODE_ENV'] === 'test') {
-      logger.debug(`🔧 AUTH SERVICE: Test mode detected - using dev database directly`);
-      logger.debug(`🔧 AUTH SERVICE: Clean testing approach - no worker isolation`);
-      
+      logger.debug('🔧 AUTH SERVICE: Test mode detected - using dev database directly');
+      logger.debug('🔧 AUTH SERVICE: Clean testing approach - no worker isolation');
+
       // Always use the dev database for testing
       // This ensures tests run against the same database structure as development
       if (!process.env['MONGODB_URI']) {
         process.env['MONGODB_URI'] = 'mongodb://localhost:27018/yggdrasil-dev';
       }
-      
-      logger.debug(`🔧 AUTH SERVICE: Using dev database for testing`);
+
+      logger.debug('🔧 AUTH SERVICE: Using dev database for testing');
     }
-    
+
     // Step 3: Connect to database
-    logger.info(`🗄️ Connecting to database...`);
-    logger.debug(`🔧 AUTH SERVICE: Final environment before database connection:`);
+    logger.info('🗄️ Connecting to database...');
+    logger.debug('🔧 AUTH SERVICE: Final environment before database connection:');
     logger.debug(`🔧 AUTH SERVICE: NODE_ENV: ${config.NODE_ENV}`);
     logger.debug(`🔧 AUTH SERVICE: MONGODB_URI: ${process.env['MONGODB_URI']}`);
-    
+
     await connectDatabase();
     logger.info('✅ Database connected successfully');
 
@@ -110,7 +124,6 @@ async function startServer(): Promise<void> {
         process.exit(0);
       });
     });
-
   } catch (error) {
     logger.error('❌ Failed to start auth service:', error);
     process.exit(1);

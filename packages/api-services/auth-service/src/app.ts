@@ -8,7 +8,7 @@ import rateLimit from 'express-rate-limit';
 import { authRoutes } from './routes/authRoutes';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
-import { setupSwagger } from '@yggdrasil/shared-utilities/openapi/setup-swagger';
+import { setupSwagger } from '@yggdrasil/shared-utilities';
 import { createAuthServiceOpenAPI } from './openapi';
 
 export const createApp = (): express.Application => {
@@ -16,12 +16,14 @@ export const createApp = (): express.Application => {
 
   // Security middleware
   app.use(helmet());
-  
+
   // CORS configuration
-  app.use(cors({
-    origin: process.env['FRONTEND_URL'] || 'http://localhost:3000',
-    credentials: true,
-  }));
+  app.use(
+    cors({
+      origin: process.env['FRONTEND_URL'] || 'http://localhost:3000',
+      credentials: true,
+    }),
+  );
 
   // Rate limiting - More permissive for test environments
   const limiter = rateLimit({
@@ -31,7 +33,7 @@ export const createApp = (): express.Application => {
     standardHeaders: true,
     legacyHeaders: false,
     // Skip rate limiting for test environments
-    skip: (_req) => process.env['NODE_ENV'] === 'test',
+    skip: _req => process.env['NODE_ENV'] === 'test',
   });
   app.use(limiter);
 
@@ -44,8 +46,8 @@ export const createApp = (): express.Application => {
 
   // Health check endpoint
   app.get('/health', (_req, res) => {
-    res.json({ 
-      status: 'ok', 
+    res.json({
+      status: 'ok',
       service: 'auth-service',
       timestamp: new Date().toISOString(),
     });

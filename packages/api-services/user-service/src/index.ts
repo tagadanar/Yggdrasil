@@ -8,15 +8,19 @@ process.setMaxListeners(20);
 import dotenv from 'dotenv';
 import { createApp } from './app';
 import { connectDatabase } from '@yggdrasil/database-schemas';
-import { logger } from '@yggdrasil/shared-utilities/logging';
+import { logger } from '@yggdrasil/shared-utilities';
 
 // Load environment variables from project root
 dotenv.config({ path: '../../../.env' });
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {
-  const workerId = process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || process.env['TEST_WORKER_INDEX'] || '0';
-  const basePort = 3000 + (parseInt(workerId, 10) * 10);
+  const workerId =
+    process.env['WORKER_ID'] ||
+    process.env['PLAYWRIGHT_WORKER_ID'] ||
+    process.env['TEST_WORKER_INDEX'] ||
+    '0';
+  const basePort = 3000 + parseInt(workerId, 10) * 10;
   const userPort = basePort + 2; // User service is always basePort + 2
   return userPort;
 }
@@ -43,39 +47,50 @@ if (process.env['NODE_ENV'] === 'test' && process.env['PORT']) {
 
 const PORT = calculatedPort;
 
-logger.debug(`🔧 USER SERVICE: Worker ID: ${process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || '0'}`);
+logger.debug(
+  `🔧 USER SERVICE: Worker ID: ${process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || '0'}`,
+);
 logger.debug(`🔧 USER SERVICE: Environment PORT: '${process.env['PORT']}'`);
-logger.debug(`🔧 USER SERVICE: Environment USER_SERVICE_PORT: '${process.env['USER_SERVICE_PORT']}'`);
+logger.debug(
+  `🔧 USER SERVICE: Environment USER_SERVICE_PORT: '${process.env['USER_SERVICE_PORT']}'`,
+);
 logger.debug(`🔧 USER SERVICE: Final PORT: ${PORT}`);
 
 async function startServer() {
   try {
-    logger.info(`🔧 USER SERVICE: Starting server...`);
+    logger.info('🔧 USER SERVICE: Starting server...');
     logger.debug(`🔧 USER SERVICE: NODE_ENV: ${process.env['NODE_ENV']}`);
     logger.debug(`🔧 USER SERVICE: Received DB_NAME: ${process.env['DB_NAME']}`);
-    logger.debug(`🔧 USER SERVICE: Received DB_COLLECTION_PREFIX: ${process.env['DB_COLLECTION_PREFIX']}`);
-    logger.debug(`🔧 USER SERVICE: Received PLAYWRIGHT_WORKER_ID: ${process.env['PLAYWRIGHT_WORKER_ID']}`);
-    logger.debug(`🔧 USER SERVICE: Received TEST_WORKER_INDEX: ${process.env['TEST_WORKER_INDEX']}`);
+    logger.debug(
+      `🔧 USER SERVICE: Received DB_COLLECTION_PREFIX: ${process.env['DB_COLLECTION_PREFIX']}`,
+    );
+    logger.debug(
+      `🔧 USER SERVICE: Received PLAYWRIGHT_WORKER_ID: ${process.env['PLAYWRIGHT_WORKER_ID']}`,
+    );
+    logger.debug(
+      `🔧 USER SERVICE: Received TEST_WORKER_INDEX: ${process.env['TEST_WORKER_INDEX']}`,
+    );
     logger.debug(`🔧 USER SERVICE: Received WORKER_ID: ${process.env['WORKER_ID']}`);
-    
+
     // In test mode, use worker-specific database configuration (same as auth-service)
     if (process.env['NODE_ENV'] === 'test') {
       // Use the worker ID that's already been set by the service manager
       const receivedWorkerId = process.env['WORKER_ID'];
-      const workerId = receivedWorkerId || 
-                      process.env['PLAYWRIGHT_WORKER_ID'] || 
-                      process.env['TEST_WORKER_INDEX'] || 
-                      '0'; // Default to worker 0 for single-worker tests
-      
+      const workerId =
+        receivedWorkerId ||
+        process.env['PLAYWRIGHT_WORKER_ID'] ||
+        process.env['TEST_WORKER_INDEX'] ||
+        '0'; // Default to worker 0 for single-worker tests
+
       // Set worker-specific database name only if not already set
       const workerPrefix = `w${workerId}`;
       const workerDatabase = process.env['DB_NAME'] || `yggdrasil_test_${workerPrefix}`;
-      
-      logger.debug(`🔧 USER SERVICE: Test mode detected`);
+
+      logger.debug('🔧 USER SERVICE: Test mode detected');
       logger.debug(`🔧 USER SERVICE: Using Worker ID: ${workerId}`);
       logger.debug(`🔧 USER SERVICE: Worker prefix: ${workerPrefix}`);
       logger.debug(`🔧 USER SERVICE: Worker database: ${workerDatabase}`);
-      
+
       // Only set environment variables if they're not already set by service manager
       if (!process.env['DB_NAME']) {
         process.env['DB_NAME'] = workerDatabase;
@@ -83,17 +98,19 @@ async function startServer() {
       }
       if (!process.env['DB_COLLECTION_PREFIX']) {
         process.env['DB_COLLECTION_PREFIX'] = `${workerPrefix}_`;
-        logger.debug(`🔧 USER SERVICE: Set DB_COLLECTION_PREFIX: ${process.env['DB_COLLECTION_PREFIX']}`);
+        logger.debug(
+          `🔧 USER SERVICE: Set DB_COLLECTION_PREFIX: ${process.env['DB_COLLECTION_PREFIX']}`,
+        );
       }
     }
-    
+
     // Connect to database
-    logger.debug(`🔧 USER SERVICE: Final environment before database connection:`);
+    logger.debug('🔧 USER SERVICE: Final environment before database connection:');
     logger.debug(`🔧 USER SERVICE: NODE_ENV: ${process.env['NODE_ENV']}`);
     logger.debug(`🔧 USER SERVICE: DB_NAME: ${process.env['DB_NAME']}`);
     logger.debug(`🔧 USER SERVICE: DB_COLLECTION_PREFIX: ${process.env['DB_COLLECTION_PREFIX']}`);
     logger.debug(`🔧 USER SERVICE: MONGODB_URI: ${process.env['MONGODB_URI']}`);
-    
+
     await connectDatabase();
     logger.info('✅ Connected to MongoDB for User Service');
 
@@ -118,7 +135,6 @@ async function startServer() {
 
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
   } catch (error) {
     logger.error('❌ Failed to start User Service:', error);
     process.exit(1);

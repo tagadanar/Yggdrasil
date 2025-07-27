@@ -3,7 +3,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { ResponseHelper, HTTP_STATUS } from '@yggdrasil/shared-utilities';
-import { authLogger as logger } from '@yggdrasil/shared-utilities/logging';
+import { authLogger as logger } from '@yggdrasil/shared-utilities';
 
 export const errorHandler = (
   error: Error,
@@ -22,11 +22,13 @@ export const errorHandler = (
   // Don't expose error details in production
   const isDevelopment = process.env['NODE_ENV'] === 'development';
 
-  res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-    ResponseHelper.error(
-      isDevelopment ? error.message : 'Internal server error',
-      HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      isDevelopment ? { stack: error.stack } : undefined,
-    ),
-  );
+  res
+    .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+    .json(
+      ResponseHelper.error(
+        isDevelopment ? error.message : 'Internal server error',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        isDevelopment ? { stack: error.stack } : undefined,
+      ),
+    );
 };
