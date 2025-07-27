@@ -19,6 +19,15 @@ const envSchema = z.object({
   // Database
   MONGODB_URI: z.string().url().or(z.string().startsWith('mongodb://')),
 
+  // Phase 4.1: Service-specific database URIs (optional, defaults to MONGODB_URI)
+  AUTH_DB_URI: z.string().optional(),
+  USER_DB_URI: z.string().optional(),
+  COURSE_DB_URI: z.string().optional(),
+  ENROLLMENT_DB_URI: z.string().optional(),
+  NEWS_DB_URI: z.string().optional(),
+  PLANNING_DB_URI: z.string().optional(),
+  STATS_DB_URI: z.string().optional(),
+
   // MongoDB Authentication (optional for development without auth)
   MONGO_ROOT_USERNAME: z.string().optional(),
   MONGO_ROOT_PASSWORD: z.string().optional(),

@@ -155,3 +155,78 @@ export { OpenAPIGenerator, RouteDocumenter, documentAuthRoutes, APIExplorer } fr
 
 // Security utilities (server-side only)
 export { RateLimiter, DistributedRateLimiter, setupSecurityHeaders, setupCORS } from './security';
+
+// Phase 4.1: Database Per Service Pattern
+export { SyncStrategy, syncConfigurations } from './patterns/data-sync';
+export type { DataSyncConfig, RetryPolicy } from './patterns/data-sync';
+
+export { ServiceClient, ServiceClientFactory, ServiceClientError } from './patterns/service-client';
+export type { ServiceClientOptions } from './patterns/service-client';
+
+export { DataAggregator, dataAggregator, AggregationError } from './services/DataAggregator';
+
+// Phase 4.2: Event-Driven Architecture
+export { EventBus, createEventBus } from './events/event-bus';
+export type { Event, EventHandler, EventBusOptions } from './events/event-bus';
+export type { Events } from './events/event-bus';
+
+export { EventStore } from './events/event-store';
+export type { EventQuery } from './events/event-store';
+
+export { Saga, SagaOrchestrator, createSaga } from './patterns/saga';
+export type { SagaStep, SagaResult, SagaOptions } from './patterns/saga';
+
+export {
+  CourseEnrollmentSaga,
+  createCourseEnrollmentSaga,
+  EnrollmentSagaUtils,
+} from './patterns/course-enrollment-saga';
+export type { CourseEnrollmentData } from './patterns/course-enrollment-saga';
+
+export { CommandBus, QueryBus, CQRSFactory, CQRSMiddleware } from './patterns/cqrs';
+export type {
+  Command,
+  Query,
+  CommandResult,
+  QueryResult,
+  CommandHandler,
+  QueryHandler,
+} from './patterns/cqrs';
+
+export {
+  ProjectionEngine,
+  ProjectionHandlers,
+  createProjectionEngine,
+} from './events/projection-engine';
+export type {
+  ProjectionHandler,
+  ProjectionEngineOptions,
+  ProjectionStats,
+} from './events/projection-engine';
+
+// Phase 4.3: Service Mesh & Advanced Patterns
+export { ServiceDiscovery, createServiceDiscovery } from './mesh/service-discovery';
+export type { ServiceInstance, ServiceRegistration } from './mesh/service-discovery';
+
+export { DistributedCache, createDistributedCache } from './cache/distributed-cache';
+export type { CacheOptions, CacheMetrics } from './cache/distributed-cache';
+
+export {
+  AdvancedCircuitBreaker,
+  CircuitBreakerRegistry,
+  circuitBreakerRegistry,
+  createCircuitBreaker,
+  CircuitState,
+} from './resilience/advanced-circuit-breaker';
+export type {
+  CircuitBreakerOptions,
+  CircuitBreakerMetrics,
+} from './resilience/advanced-circuit-breaker';
+
+export {
+  ConnectionPool,
+  PoolManager,
+  poolManager,
+  createConnectionPool,
+} from './resources/connection-pool';
+export type { PoolOptions, PooledResource, PoolStats } from './resources/connection-pool';
