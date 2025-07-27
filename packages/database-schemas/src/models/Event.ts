@@ -177,109 +177,109 @@ EventSchema.index({ createdBy: 1 }); // Filter by creator
 EventSchema.index({ isRecurring: 1 }); // Filter recurring events
 EventSchema.index({ parentEvent: 1 }); // Find event instances
 EventSchema.index({ isPublic: 1 }); // Public events
-EventSchema.index({ 
-  title: 'text', 
-  description: 'text' 
-}, { 
-  weights: { 
-    title: 10, 
-    description: 1 
-  } 
+EventSchema.index({
+  title: 'text',
+  description: 'text',
+}, {
+  weights: {
+    title: 10,
+    description: 1,
+  },
 }); // Text search
 
 // Validation: endDate must be after startDate
 EventSchema.pre('save', function(next) {
   const event = this as EventDocument;
-  
+
   if (event.endDate <= event.startDate) {
     const error = new Error('End date must be after start date');
     return next(error);
   }
-  
+
   // Set isRecurring based on recurrence data
   event.isRecurring = !!event.recurrence;
-  
+
   next();
 });
 
 // Instance method to add attendee
 EventSchema.methods['addAttendee'] = async function(userId: mongoose.Types.ObjectId, status: string = 'pending'): Promise<void> {
   const event = this as EventDocument;
-  
+
   // Check if attendee already exists
   const existingAttendee = event.attendees?.find(a => a.userId.toString() === userId.toString());
   if (existingAttendee) {
     throw new Error('User is already an attendee');
   }
-  
+
   // Check capacity
   if (event.capacity && event.attendees && event.attendees.length >= event.capacity) {
     throw new Error('Event is at full capacity');
   }
-  
+
   if (!event.attendees) {
     event.attendees = [];
   }
-  
+
   event.attendees.push({
     userId,
     status: status as 'pending' | 'accepted' | 'declined',
     responseDate: new Date(),
   });
-  
+
   await event.save();
 };
 
 // Instance method to remove attendee
 EventSchema.methods['removeAttendee'] = async function(userId: mongoose.Types.ObjectId): Promise<void> {
   const event = this as EventDocument;
-  
+
   if (!event.attendees) {
     throw new Error('No attendees to remove');
   }
-  
+
   const initialLength = event.attendees.length;
   event.attendees = event.attendees.filter(a => a.userId.toString() !== userId.toString());
-  
+
   if (event.attendees.length === initialLength) {
     throw new Error('User is not an attendee');
   }
-  
+
   await event.save();
 };
 
 // Instance method to update attendee status
 EventSchema.methods['updateAttendeeStatus'] = async function(userId: mongoose.Types.ObjectId, status: string): Promise<void> {
   const event = this as EventDocument;
-  
+
   if (!event.attendees) {
     throw new Error('No attendees found');
   }
-  
+
   const attendee = event.attendees.find(a => a.userId.toString() === userId.toString());
   if (!attendee) {
     throw new Error('User is not an attendee');
   }
-  
+
   attendee.status = status as 'pending' | 'accepted' | 'declined';
   attendee.responseDate = new Date();
-  
+
   await event.save();
 };
 
 // Instance method to check for conflicts
 EventSchema.methods['checkConflicts'] = async function(): Promise<EventDocument[]> {
   const event = this as EventDocument;
-  
+
   if (!event.location) {
     return [];
   }
-  
+
   return EventModel.findConflicts(
     event.startDate,
     event.endDate,
     event.location,
-    event._id
+    event._id,
   );
 };
 
@@ -304,7 +304,7 @@ EventSchema.set('toJSON', {
     }
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
 EventSchema.set('toObject', {
@@ -327,7 +327,7 @@ EventSchema.set('toObject', {
     }
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
 // Static methods
@@ -335,8 +335,8 @@ EventSchema.statics['findByDateRange'] = function(startDate: Date, endDate: Date
   return this.find({
     $and: [
       { startDate: { $lte: endDate } },
-      { endDate: { $gte: startDate } }
-    ]
+      { endDate: { $gte: startDate } },
+    ],
   }).sort({ startDate: 1 });
 };
 
@@ -350,38 +350,38 @@ EventSchema.statics['findByCourse'] = function(courseId: mongoose.Types.ObjectId
 
 EventSchema.statics['findByLocation'] = function(location: string, startDate?: Date, endDate?: Date) {
   const query: any = { location };
-  
+
   if (startDate && endDate) {
     query.$and = [
       { startDate: { $lte: endDate } },
-      { endDate: { $gte: startDate } }
+      { endDate: { $gte: startDate } },
     ];
   }
-  
+
   return this.find(query).sort({ startDate: 1 });
 };
 
 EventSchema.statics['findConflicts'] = function(
-  startDate: Date, 
-  endDate: Date, 
-  location?: string, 
-  excludeId?: mongoose.Types.ObjectId
+  startDate: Date,
+  endDate: Date,
+  location?: string,
+  excludeId?: mongoose.Types.ObjectId,
 ) {
   const query: any = {
     $and: [
       { startDate: { $lt: endDate } },
-      { endDate: { $gt: startDate } }
-    ]
+      { endDate: { $gt: startDate } },
+    ],
   };
-  
+
   if (location) {
     query.location = location;
   }
-  
+
   if (excludeId) {
     query._id = { $ne: excludeId };
   }
-  
+
   return this.find(query).sort({ startDate: 1 });
 };
 
@@ -390,9 +390,9 @@ EventSchema.statics['findRecurring'] = function() {
 };
 
 EventSchema.statics['findUpcoming'] = function(limit: number = 10) {
-  return this.find({ 
+  return this.find({
     startDate: { $gte: new Date() },
-    isPublic: true 
+    isPublic: true,
   })
     .sort({ startDate: 1 })
     .limit(limit);

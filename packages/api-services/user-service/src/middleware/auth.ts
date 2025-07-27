@@ -22,7 +22,7 @@ export const {
   requireOwnership,         // Resource ownership validation
   requireOwnershipOrAdmin,  // Ownership OR admin access
   requireOwnershipOrStaff,  // Ownership OR staff access
-  requireOwnershipOrTeacher // Ownership OR teacher access
+  requireOwnershipOrTeacher, // Ownership OR teacher access
 } = serviceAuth;
 
 // Export the main authentication middleware (full auth with DB lookup)

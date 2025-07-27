@@ -5,6 +5,7 @@
 import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Authentication Security - Comprehensive Workflows', () => {
   // Removed global auth helpers - each test manages its own cleanup
@@ -13,7 +14,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   // AUTH-001: Complete JWT Security Lifecycle
   // =============================================================================
   test('Complete JWT Security Lifecycle', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('AUTH-001: Complete JWT Security Lifecycle');
+    const cleanup = TestCleanup.getInstance('AUTH-001: Complete JWT Security Lifecycle');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -21,9 +22,9 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       await authHelper.loginAsStudent();
     
     // Wait for navigation to complete after login and ensure we're on a stable page
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     // Wait for authentication to complete
-    await page.waitForFunction(() => !window.location.pathname.includes('/auth/login'), { timeout: 5000 });
+    await page.waitForFunction(() => !window.location.pathname.includes('/auth/login'), { timeout: 2000 });
     
     // Debug: Check current URL and authentication state
     console.log('🔍 TEST DEBUG: Current URL after login:', page.url());
@@ -63,7 +64,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     if (currentUrl === 'http://localhost:3000/' || currentUrl === 'http://localhost:3000') {
       console.log('🔍 TEST DEBUG: On home page, navigating to courses...');
       await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     } else {
       // We're already on a protected page (e.g., /news) - authentication worked!
       console.log('🔍 TEST DEBUG: Already on protected page:', currentUrl);
@@ -71,7 +72,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       
       // Test that we can access another protected page
       await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // If we get redirected back to login, authentication state was lost
       if (page.url().includes('/auth/login')) {
@@ -86,7 +87,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     
     // Verify successful login by checking for course page content (student sees "My Enrollments")
     // Wait for React to hydrate and load the course content
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     await page.waitForLoadState('domcontentloaded');
     
     // Check for any of the possible course page headings based on user role
@@ -118,14 +119,14 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     let headingFound = false;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        await expect(page.locator(coursePageHeadings.join(', '))).toBeVisible({ timeout: 5000 });
+        await expect(page.locator(coursePageHeadings.join(', '))).toBeVisible({ timeout: 2000 });
         headingFound = true;
         break;
       } catch (error) {
         console.log(`🔍 TEST DEBUG: Heading check attempt ${attempt}/3 failed`);
         if (attempt < 3) {
           await page.waitForLoadState('domcontentloaded');
-          await page.waitForLoadState('networkidle');
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         }
       }
     }
@@ -144,7 +145,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       if (currentUrl.includes('/courses')) {
         console.log('🔍 TEST DEBUG: On courses page but content not ready, waiting...');
         await page.waitForLoadState('domcontentloaded');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Try to find headings again
         for (const heading of coursePageHeadings) {
@@ -167,7 +168,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     // Step 2: Verify authenticated access to protected pages
     // Test access to profile page (requires authentication)
     await page.goto('/profile');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Should be able to access profile page when authenticated
     const profilePageIndicators = [
@@ -199,7 +200,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
 
     // Try to access protected page after session cleared
     await page.goto('/profile');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Should be redirected to login or show access denied
     const sessionExpiredIndicators = [
@@ -221,20 +222,20 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
 
     // Step 8: Logout from all devices → verify all tokens invalidated
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Look for logout button and click it
     const logoutButton = page.locator('button:has-text("Logout"), a:has-text("Logout"), button:has-text("Sign Out")');
     if (await logoutButton.count() > 0) {
       await logoutButton.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     }
 
     // Step 4: Verify logout functionality and session cleanup
 
     // Verify redirect to login page after logout
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Should be redirected to login or see login form
     const loginIndicators = [
@@ -267,14 +268,14 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   // AUTH-002: Multi-Device Session Management
   // =============================================================================
   test('Multi-Device Session Management', async ({ page, context }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('AUTH-002: Multi-Device Session Management');
+    const cleanup = TestCleanup.getInstance('AUTH-002: Multi-Device Session Management');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       // Step 1: Login from device A → verify session creation
       await authHelper.loginAsStudent();
       await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       await expect(page.locator('h1:has-text("My Enrollments"), h1:has-text("Courses")')).toBeVisible();
 
     // Step 2: Login from device B with same user → verify concurrent sessions
@@ -288,7 +289,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       await deviceBAuthHelper.loginAsStudent();
       cleanup.trackAuthSession('student-device-b');
       await deviceBPage.goto('/courses');
-      await deviceBPage.waitForLoadState('networkidle');
+      await deviceBPage.waitForLoadState('domcontentloaded', { timeout: 10000 });
       await expect(deviceBPage.locator('h1:has-text("My Enrollments"), h1:has-text("Courses")')).toBeVisible();
 
       // Step 3: Verify both sessions are active
@@ -316,7 +317,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       console.log('🔍 TEST DEBUG: Testing session persistence with page reload');
       
       // Simple reload without manual cookie manipulation
-      await page.reload({ waitUntil: 'networkidle' });
+      await page.reload({ waitUntil: 'domcontentloaded' });
       
       // Wait for auth state to reinitialize
       await page.waitForLoadState('domcontentloaded');
@@ -349,7 +350,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       if (!sessionPersisted.sessionValid) {
         console.log('🔄 TEST DEBUG: Session lost after reload, re-authenticating...');
         await authHelper.loginAsStudent();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       }
       
       // Debug: Check auth state after reload
@@ -384,7 +385,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       await expect(page.locator('h1:has-text("My Enrollments"), h1:has-text("Courses")')).toBeVisible();
 
       // Device B should also be logged in - use simplified session check
-      await deviceBPage.reload({ waitUntil: 'networkidle' });
+      await deviceBPage.reload({ waitUntil: 'domcontentloaded' });
       await deviceBPage.waitForLoadState('domcontentloaded');
       
       // Check Device B session persistence
@@ -398,7 +399,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       if (!deviceBSessionPersisted) {
         console.log('🔄 TEST DEBUG: Device B session lost, re-authenticating...');
         await deviceBAuthHelper.loginAsStudent();
-        await deviceBPage.waitForLoadState('networkidle');
+        await deviceBPage.waitForLoadState('domcontentloaded', { timeout: 10000 });
       }
       await expect(deviceBPage.locator('h1:has-text("My Enrollments"), h1:has-text("Courses")')).toBeVisible();
 
@@ -406,12 +407,12 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
       const logoutButtonA = page.locator('button:has-text("Logout"), a:has-text("Logout"), button:has-text("Sign Out")');
       if (await logoutButtonA.count() > 0) {
         await logoutButtonA.first().click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       }
 
       // Device A should be logged out
       await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       const loginIndicators = [
         'input[type="email"]',
         'input[name="email"]',
@@ -429,7 +430,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
 
       // Device B should still be active (depending on implementation)
       await deviceBPage.goto('/courses');
-      await deviceBPage.waitForLoadState('networkidle');
+      await deviceBPage.waitForLoadState('domcontentloaded', { timeout: 10000 });
       // Note: This might fail if the system implements single-session mode
       // In that case, both devices would be logged out
 
@@ -448,7 +449,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   // AUTH-003: Role-Based Authorization Matrix
   // =============================================================================
   test('AUTH-003a: Admin Authorization Matrix', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('AUTH-003a: Admin Authorization Matrix');
+    const cleanup = TestCleanup.getInstance('AUTH-003a: Admin Authorization Matrix');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -500,7 +501,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   });
 
   test('AUTH-003b: Staff Authorization Matrix', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('AUTH-003b: Staff Authorization Matrix');
+    const cleanup = TestCleanup.getInstance('AUTH-003b: Staff Authorization Matrix');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -552,7 +553,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   });
 
   test('AUTH-003c: Teacher Authorization Matrix', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('AUTH-003c: Teacher Authorization Matrix');
+    const cleanup = TestCleanup.getInstance('AUTH-003c: Teacher Authorization Matrix');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -615,7 +616,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   });
 
   test('AUTH-003d: Student Authorization Matrix', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('AUTH-003d: Student Authorization Matrix');
+    const cleanup = TestCleanup.getInstance('AUTH-003d: Student Authorization Matrix');
     const authHelper = new CleanAuthHelper(page);
     
     try {

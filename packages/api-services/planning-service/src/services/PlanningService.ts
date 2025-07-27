@@ -3,7 +3,7 @@
 
 import mongoose from 'mongoose';
 import { EventModel, EventDocument } from '@yggdrasil/database-schemas';
-import { 
+import {
   CreateEventType,
   UpdateEventType,
   GetEventsQueryType,
@@ -70,14 +70,14 @@ export class PlanningService {
       // Date range filtering
       if (query.startDate || query.endDate) {
         filter.$or = [];
-        
+
         if (query.startDate && query.endDate) {
           // Events that overlap with the date range
           filter.$or.push({
             $and: [
               { startDate: { $lte: new Date(query.endDate) } },
-              { endDate: { $gte: new Date(query.startDate) } }
-            ]
+              { endDate: { $gte: new Date(query.startDate) } },
+            ],
           });
         } else if (query.startDate) {
           filter.endDate = { $gte: new Date(query.startDate) };
@@ -121,7 +121,7 @@ export class PlanningService {
         const conflicts = await this.checkConflicts({
           startDate: new Date(eventData.startDate),
           endDate: new Date(eventData.endDate),
-          location: eventData.location
+          location: eventData.location,
         });
 
         if (conflicts.conflicts.length > 0) {
@@ -133,12 +133,12 @@ export class PlanningService {
         ...eventData,
         createdBy: user._id,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
 
       const savedEvent = await eventDoc.save();
       await savedEvent.populate('createdBy', 'email profile.firstName profile.lastName');
-      
+
       if (savedEvent.linkedCourse) {
         await savedEvent.populate('linkedCourse', 'title');
       }
@@ -192,7 +192,7 @@ export class PlanningService {
           startDate: updateData.startDate ? new Date(updateData.startDate) : event.startDate,
           endDate: updateData.endDate ? new Date(updateData.endDate) : event.endDate,
           location: updateData.location || event.location,
-          excludeEventId: eventId
+          excludeEventId: eventId,
         };
 
         const conflicts = await this.checkConflicts(conflictData);
@@ -203,11 +203,11 @@ export class PlanningService {
 
       const updatedEvent = await EventModel.findByIdAndUpdate(
         eventId,
-        { 
-          ...updateData, 
-          updatedAt: new Date() 
+        {
+          ...updateData,
+          updatedAt: new Date(),
         },
-        { new: true }
+        { new: true },
       )
         .populate('createdBy', 'email profile.firstName profile.lastName')
         .populate('linkedCourse', 'title');
@@ -255,8 +255,8 @@ export class PlanningService {
       const filter: any = {
         $and: [
           { startDate: { $lt: params.endDate } },
-          { endDate: { $gt: params.startDate } }
-        ]
+          { endDate: { $gt: params.startDate } },
+        ],
       };
 
       if (params.location) {
@@ -275,7 +275,7 @@ export class PlanningService {
         title: event.title,
         location: event.location || '',
         startDate: event.startDate,
-        endDate: event.endDate
+        endDate: event.endDate,
       }));
 
       return {
@@ -296,7 +296,7 @@ export class PlanningService {
         startDate: exportData.startDate,
         endDate: exportData.endDate,
         type: exportData.eventType,
-        userId: user._id.toString()
+        userId: user._id.toString(),
       });
 
       switch (exportData.format) {
@@ -316,11 +316,11 @@ export class PlanningService {
    * Generate iCal format
    */
   private generateICalFormat(events: Event[], exportData: ExportCalendarType): ExportResult {
-    let icalContent = [
+    const icalContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
       'PRODID:-//Yggdrasil//Planning Service//EN',
-      'CALSCALE:GREGORIAN'
+      'CALSCALE:GREGORIAN',
     ];
 
     events.forEach(event => {
@@ -344,7 +344,7 @@ export class PlanningService {
     return {
       content: icalContent.join('\r\n'),
       filename: `calendar_${exportData.startDate}_${exportData.endDate}.ics`,
-      mimeType: 'text/calendar'
+      mimeType: 'text/calendar',
     };
   }
 
@@ -362,7 +362,7 @@ export class PlanningService {
         `"${new Date(event.endDate).toISOString()}"`,
         `"${event.location || ''}"`,
         `"${event.type}"`,
-        `"${event.description || ''}"`
+        `"${event.description || ''}"`,
       ];
       csvContent += row.join(',') + '\n';
     });
@@ -370,7 +370,7 @@ export class PlanningService {
     return {
       content: csvContent,
       filename: `calendar_${exportData.startDate}_${exportData.endDate}.csv`,
-      mimeType: 'text/csv'
+      mimeType: 'text/csv',
     };
   }
 
@@ -401,7 +401,7 @@ export class PlanningService {
         freq: this.mapFrequency(event.recurrence.pattern),
         interval: event.recurrence.interval || 1,
         until: event.recurrence.endDate ? new Date(event.recurrence.endDate) : undefined,
-        count: event.recurrence.count || undefined
+        count: event.recurrence.count || undefined,
       });
 
       const instances = rule.all();
@@ -416,7 +416,7 @@ export class PlanningService {
           startDate: instanceDate.toISOString(),
           endDate: new Date(instanceDate.getTime() + (event.endDate.getTime() - event.startDate.getTime())).toISOString(),
           linkedCourse: event.linkedCourse?.toString(),
-          parentEvent: event._id.toString()
+          parentEvent: event._id.toString(),
         };
 
         const instance = await this.createEvent(instanceData, user);
@@ -437,7 +437,7 @@ export class PlanningService {
       'daily': RRule.DAILY,
       'weekly': RRule.WEEKLY,
       'monthly': RRule.MONTHLY,
-      'yearly': RRule.YEARLY
+      'yearly': RRule.YEARLY,
     };
 
     return frequencyMap[pattern] || RRule.WEEKLY;

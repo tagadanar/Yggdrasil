@@ -4,12 +4,13 @@
 import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Authentication Security', () => {
   // Each test manages its own cleanup
 
   test('Admin Authentication Flow', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Admin Authentication Flow');
+    const cleanup = TestCleanup.getInstance('Admin Authentication Flow');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -30,7 +31,7 @@ test.describe('Authentication Security', () => {
   });
 
   test('Teacher Authentication Flow', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Teacher Authentication Flow');
+    const cleanup = TestCleanup.getInstance('Teacher Authentication Flow');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -51,7 +52,7 @@ test.describe('Authentication Security', () => {
   });
 
   test('Staff Authentication Flow', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Staff Authentication Flow');
+    const cleanup = TestCleanup.getInstance('Staff Authentication Flow');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -72,7 +73,7 @@ test.describe('Authentication Security', () => {
   });
 
   test('Student Authentication Flow', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Student Authentication Flow');
+    const cleanup = TestCleanup.getInstance('Student Authentication Flow');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -93,7 +94,7 @@ test.describe('Authentication Security', () => {
   });
 
   test('Sequential Authentication Test', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Sequential Authentication Test');
+    const cleanup = TestCleanup.getInstance('Sequential Authentication Test');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -123,7 +124,7 @@ test.describe('Authentication Security', () => {
   });
 
   test('Cookie Persistence Test', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Cookie Persistence Test');
+    const cleanup = TestCleanup.getInstance('Cookie Persistence Test');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -147,7 +148,7 @@ test.describe('Authentication Security', () => {
         // Quick auth check without extra delays
         await page.waitForFunction(
           () => !window.location.pathname.includes('/auth/login'),
-          { timeout: 5000 } // OPTIMIZED: Reduced from 10s to 5s
+          { timeout: 2000 } // OPTIMIZED: Reduced from 10s to 5s
         );
         
         // Check cookies still exist
@@ -166,7 +167,7 @@ test.describe('Authentication Security', () => {
   });
 
   test('Authentication State Isolation', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Authentication State Isolation');
+    const cleanup = TestCleanup.getInstance('Authentication State Isolation');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -177,7 +178,7 @@ test.describe('Authentication Security', () => {
       // Verify we get redirected to login
       await page.waitForFunction(() => 
         window.location.pathname.includes('/auth/login'), 
-        { timeout: 5000 } // OPTIMIZED: Reduced from 10s to 5s
+        { timeout: 2000 } // OPTIMIZED: Reduced from 10s to 5s
       );
       expect(page.url()).toContain('/auth/login');
       
@@ -198,7 +199,7 @@ test.describe('Authentication Security', () => {
       
       await page.waitForFunction(() => 
         window.location.pathname.includes('/auth/login'), 
-        { timeout: 5000 } // OPTIMIZED: Reduced from 10s to 5s
+        { timeout: 2000 } // OPTIMIZED: Reduced from 10s to 5s
       );
       expect(page.url()).toContain('/auth/login');
       

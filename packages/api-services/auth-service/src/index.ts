@@ -1,10 +1,16 @@
 // packages/api-services/auth-service/src/index.ts
 // Main entry point for auth service
 
+// Increase max listeners to prevent EventEmitter memory leak warnings
+// Auth service needs listeners for: shutdown, database, JWT, testing framework
+process.setMaxListeners(20);
+
 import dotenv from 'dotenv';
 import { createApp } from './app';
 import { connectDatabase } from '@yggdrasil/database-schemas';
-import { config, initializeJWT, authLogger as logger } from '@yggdrasil/shared-utilities';
+import { config } from '@yggdrasil/shared-utilities/config';
+import { initializeJWT } from '@yggdrasil/shared-utilities/jwt';
+import { authLogger as logger } from '@yggdrasil/shared-utilities/logging';
 
 // Load environment variables from project root
 dotenv.config({ path: '../../../.env' });

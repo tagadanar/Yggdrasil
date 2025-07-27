@@ -1,7 +1,7 @@
 // packages/frontend/src/lib/auth/tokenStorage.ts
 // Token storage utilities for browser
 
-import { AuthTokens } from '@yggdrasil/shared-utilities';
+import { AuthTokens } from '@yggdrasil/shared-utilities/client';
 import Cookies from 'js-cookie';
 
 const ACCESS_TOKEN_KEY = 'yggdrasil_access_token';
@@ -38,8 +38,8 @@ export const tokenStorage = {
     const accessToken = Cookies.get(ACCESS_TOKEN_KEY);
     const refreshToken = Cookies.get(REFRESH_TOKEN_KEY);
 
-    // If we have no refresh token, we're truly logged out
-    if (!refreshToken) {
+    // If we have no refresh token or it's empty, we're truly logged out
+    if (!refreshToken || refreshToken.trim() === '') {
       return null;
     }
 
@@ -52,11 +52,13 @@ export const tokenStorage = {
   },
 
   getAccessToken(): string | null {
-    return Cookies.get(ACCESS_TOKEN_KEY) || null;
+    const token = Cookies.get(ACCESS_TOKEN_KEY);
+    return (token && token.trim() !== '') ? token : null;
   },
 
   getRefreshToken(): string | null {
-    return Cookies.get(REFRESH_TOKEN_KEY) || null;
+    const token = Cookies.get(REFRESH_TOKEN_KEY);
+    return (token && token.trim() !== '') ? token : null;
   },
 
   clearTokens(): void {

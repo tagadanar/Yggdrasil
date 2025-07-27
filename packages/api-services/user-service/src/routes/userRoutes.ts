@@ -3,11 +3,11 @@
 
 import { Router } from 'express';
 import { UserController } from '../controllers/UserController';
-import { 
-  requireAuth, 
-  requireOwnershipOrTeacherRole, 
+import {
+  requireAuth,
+  requireOwnershipOrTeacherRole,
   requireOwnershipForModification,
-  requireRole
+  requireRole,
 } from '../middleware/auth';
 
 export const userRoutes = Router();

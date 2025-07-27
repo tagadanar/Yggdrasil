@@ -59,7 +59,7 @@ export class SimplifiedAuthHelpers {
   /**
    * Initialize with a fresh browser context using clean architecture
    */
-  async initializeWithContext(browser: Browser): Promise<Page> {
+  async initializeWithContext(_browser: Browser): Promise<Page> {
     await this.initialize();
     
     if (!this.page) {
@@ -220,16 +220,7 @@ export class SimplifiedAuthHelpers {
 
   // Legacy compatibility methods for existing code
   
-  /**
-   * @deprecated Use authenticateAs directly
-   */
-  private async authenticateAs(userType: 'admin' | 'teacher' | 'staff' | 'student'): Promise<void> {
-    await this.ensureInitialized();
-    const result = await this.authHelper!.authenticateAs(userType);
-    if (!result.success) {
-      throw new Error(`🔐 SIMPLIFIED AUTH: Authentication failed for ${userType}: ${result.error}`);
-    }
-  }
+  // Removed deprecated _authenticateAs method
 
   /**
    * Get demo user credentials (for debugging/info purposes)

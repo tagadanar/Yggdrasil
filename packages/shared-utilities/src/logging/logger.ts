@@ -1,5 +1,22 @@
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
+import { EventEmitter } from 'events';
+
+// Increase EventEmitter default max listeners to prevent memory leak warnings
+// Multiple services add uncaughtException/unhandledRejection handlers
+EventEmitter.defaultMaxListeners = 50;
+
+// Increase console max listeners to prevent EventEmitter memory leak warnings
+// Winston Console transport adds listeners for exception/rejection handling
+// Only available in Node.js environment
+if (typeof (console as any).setMaxListeners === 'function') {
+  (console as any).setMaxListeners(50);
+}
+
+// Also increase process max listeners for global error handlers
+if (typeof process.setMaxListeners === 'function') {
+  process.setMaxListeners(50);
+}
 
 // Define log levels
 const logLevels = {
@@ -72,9 +89,11 @@ export class LoggerFactory {
     const transports: winston.transport[] = [];
 
     // Console transport (always enabled)
+    // In test mode, disable handleExceptions/handleRejections to prevent listener leaks
+    const isTestMode = process.env['NODE_ENV'] === 'test';
     transports.push(new winston.transports.Console({
-      handleExceptions: true,
-      handleRejections: true,
+      handleExceptions: !isTestMode,
+      handleRejections: !isTestMode,
     }));
 
     // File transports (production only)

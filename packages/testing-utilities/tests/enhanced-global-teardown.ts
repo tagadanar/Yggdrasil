@@ -39,14 +39,28 @@ async function stopWorkerServices(workerId: number): Promise<void> {
       resolve();
     });
     
-    // Force stop after 30 seconds
-    setTimeout(() => {
+    // Graceful shutdown timeout - first try SIGTERM, then SIGKILL
+    const gracefulTimeout = setTimeout(() => {
       if (!stopProcess.killed) {
-        stopProcess.kill('SIGKILL');
-        console.log(`⚡ GLOBAL TEARDOWN: Force killed Worker ${workerId} services`);
-        resolve();
+        console.log(`📝 GLOBAL TEARDOWN: Sending SIGTERM to Worker ${workerId} services`);
+        stopProcess.kill('SIGTERM');
+        
+        // Wait 5 seconds then force kill if needed
+        const forceTimeout = setTimeout(() => {
+          if (!stopProcess.killed) {
+            console.log(`⚡ GLOBAL TEARDOWN: Force killed Worker ${workerId} services`);
+            stopProcess.kill('SIGKILL');
+            resolve();
+          }
+        }, 5000);
+        
+        // Clear force timeout if process exits gracefully
+        stopProcess.on('exit', () => clearTimeout(forceTimeout));
       }
-    }, 30000);
+    }, 25000); // Start graceful shutdown after 25 seconds
+    
+    // Clear timeout if process exits normally
+    stopProcess.on('exit', () => clearTimeout(gracefulTimeout));
   });
 }
 
@@ -57,14 +71,25 @@ async function stopServicesForSingleWorker(): Promise<void> {
     // Get service processes from global setup
     const serviceProcesses = (global as any).__serviceProcesses || [];
     
-    // Kill any running processes first
+    // Kill any running processes first with proper graceful shutdown
     for (const worker of serviceProcesses) {
       for (const process of worker.processes) {
         if (!process.killed) {
-          process.kill('SIGTERM');
-          await sleep(1000);
-          if (!process.killed) {
-            process.kill('SIGKILL');
+          try {
+            // 1. Send SIGTERM first for graceful shutdown
+            console.log(`📝 Sending SIGTERM to process ${process.pid}`);
+            process.kill('SIGTERM');
+            
+            // 2. Wait 5 seconds for graceful exit
+            await sleep(5000);
+            
+            // 3. Send SIGKILL only if process still alive
+            if (!process.killed) {
+              console.log(`⚡ Force killing process ${process.pid} with SIGKILL`);
+              process.kill('SIGKILL');
+            }
+          } catch (error) {
+            console.error(`❌ Error killing process ${process.pid}:`, error.message);
           }
         }
       }
@@ -80,7 +105,7 @@ async function stopServicesForSingleWorker(): Promise<void> {
   }
 }
 
-async function globalTeardown(config: FullConfig) {
+async function globalTeardown(_config: FullConfig) {
   console.log('🧹 Starting clean global teardown...');
   console.log('🔧 Using clean testing architecture...');
   

@@ -47,35 +47,36 @@ export * from './validation/planning';
 // Constants
 export * from './constants';
 
-// Helpers - explicit exports to avoid ValidationResult conflict
+// Helpers - client-safe only
 export { ResponseHelper } from './helpers/response';
-export { ValidationHelper } from './helpers/validation'; // Avoid ValidationResult conflict
-export { SharedJWTHelper, initializeJWT } from './helpers/jwt';
+export { ValidationHelper } from './helpers/validation'; 
+// Note: SharedJWTHelper and initializeJWT not exported from main index due to config/logger dependency
+// Use: import { SharedJWTHelper, initializeJWT } from '@yggdrasil/shared-utilities/jwt' for server-side code
+// SecurityLogger - TEMPORARILY added back for backend services ONLY  
+// Frontend should use @yggdrasil/shared-utilities/client
 export { SecurityLogger } from './helpers/security-logger';
 
-// Logging
-export * from './logging/logger';
+// Logging utilities - TEMPORARILY added back for backend services ONLY
+// Frontend should use @yggdrasil/shared-utilities/client
+export { logger, userLogger, courseLogger, statsLogger } from './logging/logger';
 
-// Error handling
+// Error handling (basic types only, not Node.js modules)
 export * from './errors/AppError';
-export * from './errors/error-monitor';
-export * from './errors/circuit-breaker';
 
-// Configuration
-export * from './config/env-validator';
+// Configuration - TEMPORARILY added back for backend services ONLY
+// Frontend should use @yggdrasil/shared-utilities/client
+export { config } from './config/env-validator';
 
-// Middleware - explicit exports to avoid ErrorHandler conflict
-export { AuthMiddleware, AuthFactory } from './middleware/auth';
-export { attachRequestId, logRequest } from './middleware/request-logger';
-export { ErrorHandler as ErrorHandlerMiddleware } from './middleware/error-handler';
-
-// Legacy middleware exports for backward compatibility
-export { AuthMiddleware as verifyToken } from './middleware/auth';
+// Middleware - TEMPORARILY added back for backend services ONLY
+// Frontend should use @yggdrasil/shared-utilities/client  
+export { AuthFactory } from './middleware/auth-enhanced';
 
 // Testing utilities are exported separately to avoid Node.js dependencies in browser builds
 // Use: import { ... } from '@yggdrasil/shared-utilities/testing' for test infrastructure
 
-// OpenAPI utilities
+// OpenAPI utilities (server-side only)
+// Note: OpenAPI utilities with Node.js dependencies are not exported from main index
+// Use: import { setupSwagger } from '@yggdrasil/shared-utilities/openapi' for server-side code
 export {
   createOpenAPIDocument,
   getSharedSchemas,
@@ -84,4 +85,3 @@ export {
   addCommonResponses,
   createPaginatedResponse
 } from './openapi';
-export { setupSwagger, combineOpenAPIDocs, documentRoute } from './openapi/setup-swagger';

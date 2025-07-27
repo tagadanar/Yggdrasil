@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { TestDataFactory } from '../helpers/TestDataFactory';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 // Helper function to wait for module content with flexible selectors
 async function waitForModuleContent(page: any, module: any): Promise<void> {
@@ -11,7 +12,7 @@ async function waitForModuleContent(page: any, module: any): Promise<void> {
   let contentFound = false;
   for (const selector of selectors) {
     try {
-      await expect(page.locator(selector)).toBeVisible({ timeout: 5000 });
+      await expect(page.locator(selector)).toBeVisible({ timeout: 2000 });
       contentFound = true;
       break;
     } catch (error) {
@@ -27,7 +28,7 @@ async function waitForModuleContent(page: any, module: any): Promise<void> {
 
 test.describe('UI States and Error Handling', () => {
   test('UI-001: Loading and Error States Across All Modules', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('UI-001');
+    const cleanup = TestCleanup.getInstance('UI-001');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
     
@@ -88,7 +89,7 @@ test.describe('UI States and Error Handling', () => {
         // Set up promise to catch loading state
         const loadingPromise = page.waitForSelector(module.loadingSelector, { 
           state: 'visible',
-          timeout: 5000 
+          timeout: 2000 
         }).catch(() => null);
         
         // Navigate to the page
@@ -218,7 +219,7 @@ test.describe('UI States and Error Handling', () => {
       }
       
       // Verify content loads after retry (users table should be visible for admin)
-      await expect(retryPage.locator('[data-testid="users-table"]')).toBeVisible({ timeout: 15000 });
+      await expect(retryPage.locator('[data-testid="users-table"]')).toBeVisible({ timeout: 5000 });
       console.log('    ✓ Content loaded successfully after retry');
       
       await retryPage.close();
@@ -230,7 +231,7 @@ test.describe('UI States and Error Handling', () => {
   });
   
   test('UI-002: Empty States and No Data Scenarios', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('UI-002');
+    const cleanup = TestCleanup.getInstance('UI-002');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
     
@@ -246,7 +247,7 @@ test.describe('UI States and Error Handling', () => {
       
       // Test courses empty state (teacher with no courses)
       await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const emptyStateSelectors = [
         '[data-testid="no-courses-message"]',
@@ -271,7 +272,7 @@ test.describe('UI States and Error Handling', () => {
       
       // Test statistics empty state (teacher with no data)
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const noDataSelectors = [
         '[data-testid="error-state"]',

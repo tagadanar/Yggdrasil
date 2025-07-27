@@ -21,7 +21,7 @@ export class NewsController {
 
       const article = await this.newsService.createArticle(
         validation.data,
-        req.user!
+        req.user!,
       );
 
       const successResponse = ResponseHelper.success(article, 'Article created successfully');
@@ -49,7 +49,7 @@ export class NewsController {
       const article = await this.newsService.updateArticle(
         id!,
         validation.data,
-        req.user!
+        req.user!,
       );
 
       if (!article) {
@@ -73,7 +73,7 @@ export class NewsController {
     try {
       const { id } = req.params;
       // Type assertion: id is required by route definition
-      
+
       const success = await this.newsService.deleteArticle(id!, req.user!);
 
       if (!success) {
@@ -153,7 +153,7 @@ export class NewsController {
     try {
       const { id } = req.params;
       // Type assertion: id is required by route definition
-      
+
       const article = await this.newsService.publishArticle(id!, req.user!);
 
       if (!article) {
@@ -177,7 +177,7 @@ export class NewsController {
     try {
       const { id } = req.params;
       // Type assertion: id is required by route definition
-      
+
       const article = await this.newsService.unpublishArticle(id!, req.user!);
 
       if (!article) {
@@ -201,7 +201,7 @@ export class NewsController {
     try {
       const { id } = req.params;
       // Type assertion: id is required by route definition
-      
+
       const article = await this.newsService.pinArticle(id!, req.user!);
 
       if (!article) {
@@ -225,7 +225,7 @@ export class NewsController {
     try {
       const { id } = req.params;
       // Type assertion: id is required by route definition
-      
+
       const article = await this.newsService.unpinArticle(id!, req.user!);
 
       if (!article) {

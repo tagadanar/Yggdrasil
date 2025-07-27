@@ -4,7 +4,7 @@ import { logger } from '../logging/logger';
 
 /**
  * Request logging data structure for comprehensive HTTP request tracking.
- * 
+ *
  * Contains all relevant information for request correlation, performance
  * monitoring, and security auditing across the platform.
  */
@@ -40,19 +40,19 @@ declare global {
 
 /**
  * Attach unique request ID to all incoming HTTP requests.
- * 
+ *
  * Generates or reuses request correlation ID for distributed tracing.
  * The ID is returned in response headers for client-side correlation.
- * 
+ *
  * @param req - Express request object
- * @param res - Express response object  
+ * @param res - Express response object
  * @param next - Next middleware function
- * 
+ *
  * @example
  * ```typescript
  * // In Express app setup
  * app.use(attachRequestId);
- * 
+ *
  * // Request ID available in subsequent middleware
  * app.use((req, res, next) => {
  *   console.log('Request ID:', req.id);
@@ -68,22 +68,22 @@ export function attachRequestId(req: Request, res: Response, next: NextFunction)
 
 /**
  * Comprehensive HTTP request and response logging middleware.
- * 
+ *
  * Captures detailed request information, measures response time, and logs
  * based on response status. Includes automatic slow request detection
  * and security-relevant information tracking.
- * 
+ *
  * Features:
  * - Request/response correlation with timing
  * - Status-based log levels (error 5xx, warn 4xx, info 2xx/3xx)
  * - Slow request detection (>1000ms threshold)
  * - User context when authenticated
  * - Security audit trail with IP and user agent
- * 
+ *
  * @param req - Express request object (must have req.id from attachRequestId)
  * @param res - Express response object
  * @param next - Next middleware function
- * 
+ *
  * @example
  * ```typescript
  * // Proper middleware order
@@ -144,18 +144,18 @@ export function logRequest(req: Request, res: Response, next: NextFunction) {
 
 /**
  * Error logging middleware for unhandled request errors.
- * 
+ *
  * Captures complete error context including stack traces, request details,
  * and user information for debugging and security monitoring.
- * 
+ *
  * Must be placed after all route handlers to catch unhandled errors.
  * Logs errors and passes them to the next error handler.
- * 
+ *
  * @param err - Error object that was thrown or passed to next()
  * @param req - Express request object
  * @param _res - Express response object (unused, prefixed with _)
  * @param next - Next middleware function (forwards error)
- * 
+ *
  * @example
  * ```typescript
  * // Place after all routes

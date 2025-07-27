@@ -6,7 +6,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { UserRole } from '@yggdrasil/shared-utilities';
+import { UserRole } from '@yggdrasil/shared-utilities/client';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -24,20 +24,13 @@ export function ProtectedRoute({
 
   useEffect(() => {
     if (!isLoading) {
-      // 🔧 ENHANCED: Check for tokens in multiple places to avoid false redirects
+      // 🔧 FIXED: Rely primarily on AuthProvider state for consistency
       const hasStoredTokens = tokens !== null;
       
-      // Also check cookies directly to catch cases where AuthProvider hasn't loaded yet
-      const hasCookieTokens = typeof document !== 'undefined' && (
-        document.cookie.includes('yggdrasil_access_token') || 
-        document.cookie.includes('yggdrasil_refresh_token')
-      );
+      // Only redirect if we truly have no authentication from AuthProvider
+      const hasAnyAuth = user || hasStoredTokens;
       
-      
-      // Only redirect if we truly have no authentication tokens anywhere
-      const hasAnyAuth = user || hasStoredTokens || hasCookieTokens;
-      
-      // Redirect to login if authentication is required but no tokens exist
+      // Redirect to login if authentication is required but no auth state exists
       if (requireAuth && !hasAnyAuth) {
         router.push('/auth/login');
         return;
@@ -62,13 +55,8 @@ export function ProtectedRoute({
   }
 
   // Don't render children if auth check failed
-  // 🔧 ENHANCED: Check cookies as fallback to avoid false auth failures
-  const hasCookieTokens = typeof document !== 'undefined' && (
-    document.cookie.includes('yggdrasil_access_token') || 
-    document.cookie.includes('yggdrasil_refresh_token')
-  );
-  
-  const hasAnyAuth = user || tokens || hasCookieTokens;
+  // 🔧 FIXED: Rely on AuthProvider state only for consistency
+  const hasAnyAuth = user || tokens;
   
   if (requireAuth && !hasAnyAuth) {
     return null;

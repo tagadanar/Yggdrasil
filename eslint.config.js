@@ -35,7 +35,7 @@ export default [
     }
   },
   {
-    files: ['**/*.test.{js,ts}', '**/*.spec.{js,ts}', '**/__tests__/**/*.{js,ts}'],
+    files: ['**/*.test.{js,ts}', '**/*.spec.{js,ts}', '**/__tests__/**/*.{js,ts}', '**/testing-utilities/**/*.{js,ts}'],
     rules: {
       'no-console': 'off',
     }

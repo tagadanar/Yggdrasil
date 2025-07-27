@@ -22,7 +22,14 @@
   ],
   "exports": {
     ".": "./dist/index.js",
-    "./testing": "./testing.ts"
+    "./client": "./dist/client.js",
+    "./testing": "./testing.ts",
+    "./openapi/setup-swagger": "./dist/openapi/setup-swagger.js",
+    "./logging": "./dist/logging/logger.js",
+    "./config": "./dist/config/env-validator.js",
+    "./jwt": "./dist/helpers/jwt.js",
+    "./middleware": "./dist/middleware/auth.js",
+    "./security": "./dist/helpers/security-logger.js"
   },
   "dependencies": {
     "jsonwebtoken": "^9.0.2",

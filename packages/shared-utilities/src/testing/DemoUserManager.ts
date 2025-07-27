@@ -8,7 +8,7 @@ import { connectDatabase } from '@yggdrasil/database-schemas';
 
 /**
  * Demo user data structure for testing and development.
- * 
+ *
  * Represents a complete user account with authentication credentials
  * and basic profile information for consistent test scenarios.
  */
@@ -60,27 +60,27 @@ export const DEMO_USERS: DemoUser[] = [
 
 /**
  * Centralized demo user management for testing and development.
- * 
+ *
  * Singleton class that manages creation, validation, and cleanup of demo users
  * across the testing infrastructure. Ensures consistent authentication data
  * and proper password hashing for all test scenarios.
- * 
+ *
  * Features:
  * - Singleton pattern for consistent state across tests
  * - Automatic password hashing with bcrypt
  * - Database connection management
  * - Demo user validation and repair
  * - Clean initialization and cleanup
- * 
+ *
  * @example
  * ```typescript
  * const manager = DemoUserManager.getInstance();
  * await manager.initializeDemoUsers();
- * 
+ *
  * // Get demo user for tests
  * const admin = manager.getDemoUser('admin');
  * await loginAs(admin.email, admin.password);
- * 
+ *
  * // Cleanup after tests
  * await manager.cleanupDemoUsers();
  * ```
@@ -91,7 +91,7 @@ export class DemoUserManager {
 
   /**
    * Get singleton instance of DemoUserManager.
-   * 
+   *
    * @returns The singleton DemoUserManager instance
    */
   static getInstance(): DemoUserManager {
@@ -103,10 +103,10 @@ export class DemoUserManager {
 
   /**
    * Initialize demo users with default connection (alias for initializeDemoUsers).
-   * 
+   *
    * Convenience method that uses default database connection settings.
    * Equivalent to calling initializeDemoUsers() without parameters.
-   * 
+   *
    * @throws {Error} When database connection or user creation fails
    */
   async initialize(): Promise<void> {
@@ -115,19 +115,19 @@ export class DemoUserManager {
 
   /**
    * Initialize demo users in the database.
-   * 
+   *
    * Creates or updates all demo users with properly hashed passwords.
    * Handles database connection management and ensures idempotent operation.
    * Only runs once per instance unless reset() is called.
-   * 
+   *
    * @param connectionString - Optional MongoDB connection string
    * @throws {Error} When database connection or user creation fails
-   * 
+   *
    * @example
    * ```typescript
    * // Use default connection
    * await manager.initializeDemoUsers();
-   * 
+   *
    * // Use custom connection
    * await manager.initializeDemoUsers('mongodb://test:27017/test-db');
    * ```
@@ -264,20 +264,20 @@ export class DemoUserManager {
 
   /**
    * Get demo user credentials for testing.
-   * 
+   *
    * Retrieves demo user account information by role for use in test scenarios.
    * Returns user with plain text password that matches the hashed version in database.
-   * 
+   *
    * @param role - User role to retrieve (admin, teacher, staff, student)
    * @returns Demo user object or undefined if role not found
-   * 
+   *
    * @example
    * ```typescript
    * const admin = manager.getDemoUser('admin');
    * if (admin) {
    *   await authHelper.loginAs(admin.email, admin.password);
    * }
-   * 
+   *
    * const student = manager.getDemoUser('student');
    * // Use in test scenarios that require student permissions
    * ```

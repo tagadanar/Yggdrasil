@@ -2,10 +2,11 @@
 
 import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Debug: Basic Page Loading', () => {
   test('Should load root page', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Root Page Load Test');
+    const cleanup = TestCleanup.getInstance('Root Page Load Test');
     
     try {
       console.log('Navigating to root page...');
@@ -41,7 +42,7 @@ test.describe('Debug: Basic Page Loading', () => {
   });
 
   test('Should access frontend server directly', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Direct Server Access Test');
+    const cleanup = TestCleanup.getInstance('Direct Server Access Test');
     
     try {
       console.log('Testing direct server access...');

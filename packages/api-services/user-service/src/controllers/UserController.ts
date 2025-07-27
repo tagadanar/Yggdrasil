@@ -44,7 +44,7 @@ export class UserController {
     try {
       const { id } = req.params;
       const profileData = req.body;
-      
+
       const result = await UserService.updateUserProfile(id!, profileData);
       UserController.handleServiceResult(res, result, 'Profile updated successfully');
     } catch (error) {
@@ -77,7 +77,7 @@ export class UserController {
 
       const userData = req.body;
       const result = await UserService.createUser(userData);
-      
+
       if (result.success) {
         const response = ResponseHelper.success(result.data, 'User created successfully');
         res.status(HTTP_STATUS.CREATED).json(response);
@@ -113,9 +113,9 @@ export class UserController {
       const result = await UserService.listUsers({
         role: role as string,
         limit: limit ? parseInt(limit as string) : undefined,
-        offset: offset ? parseInt(offset as string) : undefined
+        offset: offset ? parseInt(offset as string) : undefined,
       });
-      
+
       if (result.success) {
         const response = ResponseHelper.success(result.data, 'Users retrieved successfully');
         res.status(HTTP_STATUS.OK).json(response);
@@ -140,16 +140,16 @@ export class UserController {
       }
 
       const { id } = req.params;
-      
+
       // Prevent self-deletion
       if (req.user.userId === id) {
         const errorResponse = ResponseHelper.forbidden('Cannot delete your own account');
         res.status(errorResponse.statusCode).json(errorResponse);
         return;
       }
-      
+
       const result = await UserService.deleteUser(id!);
-      
+
       if (result.success) {
         const response = ResponseHelper.success(null, 'User deleted successfully');
         res.status(HTTP_STATUS.OK).json(response);
@@ -208,7 +208,7 @@ export class UserController {
     try {
       const { id } = req.params;
       const userData = req.body;
-      
+
       const result = await UserService.updateUser(id!, userData);
       UserController.handleServiceResult(res, result, 'User updated successfully');
     } catch (error) {

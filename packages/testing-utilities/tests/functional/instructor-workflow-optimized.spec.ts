@@ -3,6 +3,7 @@ import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { TestDataFactory } from '../helpers/TestDataFactory';
 import { TestScenarios } from '../helpers/TestScenarioBuilders';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Instructor Teaching Workflow - Optimized', () => {
   // Split INTEGRATION-002 into focused workflow segments
@@ -11,7 +12,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
   // WORKFLOW-002a: Course Creation and Content Development (25s)
   // =============================================================================
   test('WORKFLOW-002a: Course Creation and Content Development', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('WORKFLOW-002a');
+    const cleanup = TestCleanup.getInstance('WORKFLOW-002a');
     const factory = new TestDataFactory('WORKFLOW-002a');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -26,7 +27,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       
       // Create new course
       await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const createButton = page.locator('button:has-text("Create Course"), button:has-text("Create")');
       await createButton.first().click();
@@ -49,10 +50,10 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       // Save as draft first
       const saveDraftButton = page.locator('button:has-text("Save Draft"), button:has-text("Save")');
       await saveDraftButton.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Verify course saved
-      await expect(page.locator(`text=${courseName}`)).toBeVisible({ timeout: 10000 });
+      await expect(page.locator(`text=${courseName}`)).toBeVisible({ timeout: 3000 });
       
       // Add course content structure
       const addChapterButton = page.locator('button:has-text("Add Chapter"), button:has-text("Chapter")');
@@ -67,7 +68,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
           const saveChapterButton = page.locator('button:has-text("Save Chapter"), button:has-text("Add")');
           if (await saveChapterButton.count() > 0) {
             await saveChapterButton.click();
-            await page.waitForTimeout(1000);
+            await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
           }
         }
       }
@@ -88,7 +89,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
             const saveExerciseButton = page.locator('button:has-text("Save Exercise"), button:has-text("Add")');
             if (await saveExerciseButton.count() > 0) {
               await saveExerciseButton.click();
-              await page.waitForTimeout(1000);
+              await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
             }
           }
         }
@@ -98,7 +99,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       const publishButton = page.locator('button:has-text("Publish"), button:has-text("Make Public")');
       if (await publishButton.count() > 0) {
         await publishButton.click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Verify published status
         const publishedIndicator = page.locator('.published, :has-text("Published"), .status-published');
@@ -117,7 +118,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
   // WORKFLOW-002b: Student Enrollment Management (20s)
   // =============================================================================
   test('WORKFLOW-002b: Student Enrollment and Management', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('WORKFLOW-002b');
+    const cleanup = TestCleanup.getInstance('WORKFLOW-002b');
     const factory = new TestDataFactory('WORKFLOW-002b');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -141,11 +142,11 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       
       // Navigate to course management
       await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const courseCard = page.locator(`:has-text("${course.title}")`);
       await courseCard.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Manage enrollments
       const enrollmentTab = page.locator('button:has-text("Enrollments"), a:has-text("Students"), tab:has-text("Students")');
@@ -178,7 +179,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
             
             const enrollButton = page.locator('button:has-text("Enroll"), button[type="submit"]');
             await enrollButton.click();
-            await page.waitForTimeout(2000);
+            await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
             
             // Verify enrollment
             await expect(page.locator(`text=${newStudent.email}`)).toBeVisible();
@@ -195,7 +196,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
           const confirmButton = page.locator('button:has-text("Confirm"), button:has-text("Yes")');
           if (await confirmButton.count() > 0) {
             await confirmButton.click();
-            await page.waitForTimeout(1000);
+            await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
             
             // Verify student removed
             const finalCount = await studentRows.count();
@@ -214,7 +215,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
   // WORKFLOW-002c: Grading and Assessment Management (20s)
   // =============================================================================
   test('WORKFLOW-002c: Assignment Grading and Feedback', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('WORKFLOW-002c');
+    const cleanup = TestCleanup.getInstance('WORKFLOW-002c');
     const factory = new TestDataFactory('WORKFLOW-002c');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -242,12 +243,12 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       await auth.loginAsTeacher();
       
       await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Enter course grading section
       const courseCard = page.locator(`:has-text("${course.title}")`);
       await courseCard.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const gradingTab = page.locator('button:has-text("Grading"), a:has-text("Submissions"), tab:has-text("Grading")');
       if (await gradingTab.count() > 0) {
@@ -278,7 +279,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
           const saveGradeButton = page.locator('button:has-text("Save Grade"), button:has-text("Submit Grade"), button:has-text("Save")');
           if (await saveGradeButton.count() > 0) {
             await saveGradeButton.click();
-            await page.waitForTimeout(2000);
+            await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
             
             // Verify grade saved
             const gradeConfirmation = page.locator('text=Grade saved, text=Success, .success-message');
@@ -299,7 +300,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
               const applyBulkButton = page.locator('button:has-text("Apply to All"), button:has-text("Bulk Apply")');
               if (await applyBulkButton.count() > 0) {
                 await applyBulkButton.click();
-                await page.waitForTimeout(2000);
+                await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
               }
             }
           }
@@ -316,7 +317,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
   // WORKFLOW-002d: News and Communication Management (15s)
   // =============================================================================
   test('WORKFLOW-002d: Course News and Student Communication', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('WORKFLOW-002d');
+    const cleanup = TestCleanup.getInstance('WORKFLOW-002d');
     const factory = new TestDataFactory('WORKFLOW-002d');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -341,7 +342,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       
       // Create course-related news announcement
       await page.goto('/news');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const createNewsButton = page.locator('button:has-text("Create"), button:has-text("New Article")');
       if (await createNewsButton.count() > 0) {
@@ -368,7 +369,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
         // Publish news
         const publishButton = page.locator('button:has-text("Publish"), button[type="submit"]');
         await publishButton.click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Verify news published
         await expect(page.locator(`text=${course.title}`)).toBeVisible();
@@ -392,7 +393,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
         const sendButton = page.locator('button:has-text("Send"), button:has-text("Send Message")');
         if (await sendButton.count() > 0) {
           await sendButton.click();
-          await page.waitForTimeout(1000);
+          await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
         }
       }
       
@@ -406,7 +407,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
   // WORKFLOW-002e: Analytics and Reporting (15s)
   // =============================================================================
   test('WORKFLOW-002e: Course Analytics and Performance Reports', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('WORKFLOW-002e');
+    const cleanup = TestCleanup.getInstance('WORKFLOW-002e');
     const factory = new TestDataFactory('WORKFLOW-002e');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -428,7 +429,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       
       // View instructor statistics
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Check course analytics section
       const analyticsSection = page.locator('.course-analytics, .instructor-dashboard, [data-testid="instructor-stats"]');
@@ -470,7 +471,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
           // Download report
           const downloadButton = page.locator('button:has-text("Download"), button:has-text("Generate")');
           if (await downloadButton.count() > 0) {
-            const downloadPromise = page.waitForEvent('download', { timeout: 5000 }).catch(() => null);
+            const downloadPromise = page.waitForEvent('download', { timeout: 2000 }).catch(() => null);
             await downloadButton.click();
             
             const download = await downloadPromise;
@@ -484,7 +485,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       
       // Verify access restrictions
       await page.goto('/admin/users');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const currentUrl = page.url();
       const isRedirected = !currentUrl.includes('/admin/users');

@@ -3,10 +3,11 @@
 import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Planning Page Direct Access', () => {
   test('Should load planning page with authentication', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Planning Page Authentication Test');
+    const cleanup = TestCleanup.getInstance('Planning Page Authentication Test');
     let auth: CleanAuthHelper | undefined = undefined;
     
     try {
@@ -15,20 +16,20 @@ test.describe('Planning Page Direct Access', () => {
     
     // Navigate to the login page first
     await page.goto('/auth/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Use the Quick Demo Login for Admin (be more specific)
     console.log('Clicking Admin Quick Demo Login...');
     const adminButton = page.locator('text=Admin Account').locator('..').locator('text=Click to login');
     await adminButton.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Wait a bit longer for authentication to complete
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
     
     console.log('Navigating directly to planning page...');
     await page.goto('/planning');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Take screenshot for debugging
     await page.screenshot({ path: 'debug-planning-direct.png' });
@@ -91,7 +92,7 @@ test.describe('Planning Page Direct Access', () => {
   });
 
   test('Should test modern calendar components', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Modern Calendar Components Test');
+    const cleanup = TestCleanup.getInstance('Modern Calendar Components Test');
     let auth: CleanAuthHelper | undefined = undefined;
     
     try {
@@ -100,22 +101,22 @@ test.describe('Planning Page Direct Access', () => {
     
     // Navigate to the login page first
     await page.goto('/auth/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Use the Quick Demo Login for Admin (be more specific)
     const adminButton = page.locator('text=Admin Account').locator('..').locator('text=Click to login');
     await adminButton.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Wait a bit longer for authentication to complete
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
     
     // Navigate to planning page
     await page.goto('/planning');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Wait for page to load completely
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
     
     // Check for modern calendar components
     const modernCalendar = page.locator('[data-testid="modern-calendar-view"]');

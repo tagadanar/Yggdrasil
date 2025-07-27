@@ -4,6 +4,12 @@
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { EventEmitter } = require('events');
+
+// Increase max listeners to prevent EventEmitter memory leak warnings
+// Set this BEFORE any services or listeners are created
+EventEmitter.defaultMaxListeners = 50;
+process.setMaxListeners(50);
 
 class EnhancedServiceManager {
   constructor() {

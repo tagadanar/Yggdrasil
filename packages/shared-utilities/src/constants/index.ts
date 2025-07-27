@@ -3,7 +3,7 @@
 
 /**
  * JWT Token Configuration Constants.
- * 
+ *
  * Defines token expiration times for both string format (JWT library)
  * and numeric format (manual calculations) to ensure consistency
  * across all authentication operations.
@@ -21,7 +21,7 @@ export const JWT_CONFIG = {
 
 /**
  * Password Security Configuration.
- * 
+ *
  * Defines security parameters for password handling including
  * strength requirements and bcrypt hashing settings.
  */
@@ -36,7 +36,7 @@ export const PASSWORD_CONFIG = {
 
 /**
  * User Role Constants.
- * 
+ *
  * Defines the four user roles supported by the platform.
  * Used for role-based access control and permission management.
  */
@@ -98,7 +98,7 @@ export const ROLE_PERMISSIONS = {
 
 /**
  * HTTP Status Code Constants.
- * 
+ *
  * Commonly used HTTP status codes for consistent API responses
  * across all services in the platform.
  */
@@ -127,7 +127,7 @@ export const HTTP_STATUS = {
 
 /**
  * Standardized Error Messages.
- * 
+ *
  * Provides consistent, user-friendly error messages across all services.
  * Organized by category for easy maintenance and localization support.
  */

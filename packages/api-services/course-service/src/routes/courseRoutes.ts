@@ -3,11 +3,11 @@
 
 import { Router } from 'express';
 import { CourseController } from '../controllers/CourseController';
-import { 
-  authenticateToken, 
-  optionalAuth, 
-  requireTeacherOrAdmin, 
-  requireStudentOnly 
+import {
+  authenticateToken,
+  optionalAuth,
+  requireTeacherOrAdmin,
+  requireStudentOnly,
 } from '../middleware/authMiddleware';
 import rateLimit from 'express-rate-limit';
 
@@ -20,7 +20,7 @@ const courseRateLimit = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many course requests from this IP, please try again later.',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 const createCourseRateLimit = rateLimit({
@@ -28,7 +28,7 @@ const createCourseRateLimit = rateLimit({
   max: 10, // limit course creation to 10 per hour per IP
   message: 'Too many course creation attempts, please try again later.',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 const submissionRateLimit = rateLimit({
@@ -36,7 +36,7 @@ const submissionRateLimit = rateLimit({
   max: 50, // limit submissions to 50 per 5 minutes per IP
   message: 'Too many submission attempts, please try again later.',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 // Apply rate limiting to all course routes
@@ -52,7 +52,7 @@ router.post(
   createCourseRateLimit,
   authenticateToken,
   requireTeacherOrAdmin,
-  courseController.createCourse
+  courseController.createCourse,
 );
 
 // Get course by ID (public for published courses, authenticated for others)
@@ -89,7 +89,7 @@ router.post(
   '/:courseId/chapters',
   authenticateToken,
   requireTeacherOrAdmin,
-  courseController.addChapter
+  courseController.addChapter,
 );
 
 // Update chapter
@@ -97,7 +97,7 @@ router.put(
   '/:courseId/chapters/:chapterId',
   authenticateToken,
   requireTeacherOrAdmin,
-  courseController.updateChapter
+  courseController.updateChapter,
 );
 
 // Delete chapter
@@ -105,7 +105,7 @@ router.delete(
   '/:courseId/chapters/:chapterId',
   authenticateToken,
   requireTeacherOrAdmin,
-  courseController.deleteChapter
+  courseController.deleteChapter,
 );
 
 // =============================================================================
@@ -117,7 +117,7 @@ router.post(
   '/:courseId/chapters/:chapterId/sections',
   authenticateToken,
   requireTeacherOrAdmin,
-  courseController.addSection
+  courseController.addSection,
 );
 
 // Update section
@@ -125,7 +125,7 @@ router.put(
   '/:courseId/chapters/:chapterId/sections/:sectionId',
   authenticateToken,
   requireTeacherOrAdmin,
-  courseController.updateSection
+  courseController.updateSection,
 );
 
 // =============================================================================
@@ -137,7 +137,7 @@ router.post(
   '/:courseId/chapters/:chapterId/sections/:sectionId/content',
   authenticateToken,
   requireTeacherOrAdmin,
-  courseController.addContent
+  courseController.addContent,
 );
 
 // Update content
@@ -145,7 +145,7 @@ router.put(
   '/:courseId/chapters/:chapterId/sections/:sectionId/content/:contentId',
   authenticateToken,
   requireTeacherOrAdmin,
-  courseController.updateContent
+  courseController.updateContent,
 );
 
 // =============================================================================
@@ -157,14 +157,14 @@ router.post(
   '/enroll',
   authenticateToken,
   requireStudentOnly,
-  courseController.enrollCourse
+  courseController.enrollCourse,
 );
 
 // Get course enrollments (instructors, admins only)
 router.get(
   '/:courseId/enrollments',
   authenticateToken,
-  courseController.getCourseEnrollments
+  courseController.getCourseEnrollments,
 );
 
 // =============================================================================
@@ -177,14 +177,14 @@ router.post(
   submissionRateLimit,
   authenticateToken,
   requireStudentOnly,
-  courseController.submitExercise
+  courseController.submitExercise,
 );
 
 // Get exercise submissions
 router.get(
   '/exercises/:exerciseId/submissions',
   authenticateToken,
-  courseController.getExerciseSubmissions
+  courseController.getExerciseSubmissions,
 );
 
 // =============================================================================
@@ -201,13 +201,13 @@ router.patch(
       const { publish } = req.body;
       const modifiedReq = {
         ...req,
-        body: { status: publish ? 'published' : 'draft' }
+        body: { status: publish ? 'published' : 'draft' },
       } as any;
       await courseController.updateCourse(modifiedReq, res);
     } catch (error) {
       res.status(500).json({ error: 'Failed to update course status' });
     }
-  }
+  },
 );
 
 // Archive/restore course (admins only)
@@ -219,13 +219,13 @@ router.patch(
       const { archive } = req.body;
       const modifiedReq = {
         ...req,
-        body: { status: archive ? 'archived' : 'published' }
+        body: { status: archive ? 'archived' : 'published' },
       } as any;
       await courseController.updateCourse(modifiedReq, res);
     } catch (error) {
       res.status(500).json({ error: 'Failed to update course status' });
     }
-  }
+  },
 );
 
 export default router;

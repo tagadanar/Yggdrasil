@@ -1,16 +1,16 @@
 // packages/api-services/course-service/src/services/CourseService.ts
 // Business logic for course management
 
-import { 
-  CourseModel, 
-  CourseEnrollmentModel, 
+import {
+  CourseModel,
+  CourseEnrollmentModel,
   ExerciseSubmissionModel,
   type CourseDocument,
   type CourseEnrollmentDocument,
-  type ExerciseSubmissionDocument
+  type ExerciseSubmissionDocument,
 } from '@yggdrasil/database-schemas';
-import { 
-  CreateCourseRequest, 
+import {
+  CreateCourseRequest,
   UpdateCourseRequest,
   CreateChapterRequest,
   UpdateChapterRequest,
@@ -21,7 +21,7 @@ import {
   SubmitExerciseRequest,
   CourseFilters,
   CourseSearchResult,
-  UserRole
+  UserRole,
 } from '@yggdrasil/shared-utilities';
 import { courseLogger as logger } from '@yggdrasil/shared-utilities';
 
@@ -31,17 +31,17 @@ export class CourseService {
   // =============================================================================
 
   async createCourse(
-    instructorId: string, 
-    instructorName: string, 
-    instructorEmail: string, 
-    courseData: CreateCourseRequest
+    instructorId: string,
+    instructorName: string,
+    instructorEmail: string,
+    courseData: CreateCourseRequest,
   ): Promise<CourseDocument> {
     try {
       // Convert string dates to Date objects if they exist
       const processedSettings = courseData.settings ? {
         ...courseData.settings,
         startDate: courseData.settings.startDate ? new Date(courseData.settings.startDate) : undefined,
-        endDate: courseData.settings.endDate ? new Date(courseData.settings.endDate) : undefined
+        endDate: courseData.settings.endDate ? new Date(courseData.settings.endDate) : undefined,
       } : undefined;
 
       const course = new CourseModel({
@@ -50,19 +50,19 @@ export class CourseService {
         instructor: {
           _id: instructorId,
           name: instructorName,
-          email: instructorEmail
+          email: instructorEmail,
         },
         chapters: [],
         resources: [],
-        collaborators: []
+        collaborators: [],
       });
 
       // Generate slug from title
       course.slug = course.generateSlug();
-      
+
       // Ensure slug is unique
       let slugCounter = 1;
-      let originalSlug = course.slug;
+      const originalSlug = course.slug;
       while (await CourseModel.findBySlug(course.slug)) {
         course.slug = `${originalSlug}-${slugCounter}`;
         slugCounter++;
@@ -92,10 +92,10 @@ export class CourseService {
   }
 
   async updateCourse(
-    courseId: string, 
-    updateData: UpdateCourseRequest, 
+    courseId: string,
+    updateData: UpdateCourseRequest,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<CourseDocument | null> {
     try {
       const course = await CourseModel.findById(courseId);
@@ -114,13 +114,13 @@ export class CourseService {
         processedUpdateData.settings = {
           ...processedUpdateData.settings,
           startDate: processedUpdateData.settings.startDate ? new Date(processedUpdateData.settings.startDate) : undefined,
-          endDate: processedUpdateData.settings.endDate ? new Date(processedUpdateData.settings.endDate) : undefined
+          endDate: processedUpdateData.settings.endDate ? new Date(processedUpdateData.settings.endDate) : undefined,
         };
       }
 
       // Update fields
       Object.assign(course, processedUpdateData);
-      
+
       // Increment version on significant changes
       if (updateData.title || updateData.description || updateData.status) {
         await course.incrementVersion();
@@ -146,10 +146,10 @@ export class CourseService {
       }
 
       await CourseModel.findByIdAndDelete(courseId);
-      
+
       // Clean up related data
       await CourseEnrollmentModel.deleteMany({ courseId });
-      
+
       return true;
     } catch (error: any) {
       throw new Error(`Failed to delete course: ${error.message}`);
@@ -177,7 +177,7 @@ export class CourseService {
         ...(otherFilters.category && { category: otherFilters.category }),
         ...(otherFilters.level && { level: otherFilters.level }),
         ...(otherFilters.instructor && { 'instructor._id': otherFilters.instructor }),
-        ...(otherFilters.tags && { tags: { $in: otherFilters.tags } })
+        ...(otherFilters.tags && { tags: { $in: otherFilters.tags } }),
       });
 
       logger.info('CourseService.searchCourses completed successfully');
@@ -186,7 +186,7 @@ export class CourseService {
         total,
         page,
         limit,
-        filters
+        filters,
       };
     } catch (error: any) {
       logger.error('CourseService.searchCourses error:', error);
@@ -215,10 +215,10 @@ export class CourseService {
   // =============================================================================
 
   async addChapter(
-    courseId: string, 
-    chapterData: CreateChapterRequest, 
+    courseId: string,
+    chapterData: CreateChapterRequest,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<CourseDocument | null> {
     try {
       const course = await CourseModel.findById(courseId);
@@ -236,7 +236,7 @@ export class CourseService {
         order: chapterData.order,
         sections: [],
         isPublished: false,
-        estimatedDuration: 0
+        estimatedDuration: 0,
       };
 
       course.chapters.push(newChapter as any);
@@ -250,11 +250,11 @@ export class CourseService {
   }
 
   async updateChapter(
-    courseId: string, 
-    chapterId: string, 
-    updateData: UpdateChapterRequest, 
+    courseId: string,
+    chapterId: string,
+    updateData: UpdateChapterRequest,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<CourseDocument | null> {
     try {
       const course = await CourseModel.findById(courseId);
@@ -282,10 +282,10 @@ export class CourseService {
   }
 
   async deleteChapter(
-    courseId: string, 
-    chapterId: string, 
+    courseId: string,
+    chapterId: string,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<CourseDocument | null> {
     try {
       const course = await CourseModel.findById(courseId);
@@ -320,11 +320,11 @@ export class CourseService {
   // =============================================================================
 
   async addSection(
-    courseId: string, 
-    chapterId: string, 
-    sectionData: CreateSectionRequest, 
+    courseId: string,
+    chapterId: string,
+    sectionData: CreateSectionRequest,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<CourseDocument | null> {
     try {
       const course = await CourseModel.findById(courseId);
@@ -347,7 +347,7 @@ export class CourseService {
         order: sectionData.order,
         content: [],
         isPublished: false,
-        estimatedDuration: 0
+        estimatedDuration: 0,
       };
 
       chapter.sections.push(newSection as any);
@@ -361,12 +361,12 @@ export class CourseService {
   }
 
   async updateSection(
-    courseId: string, 
-    chapterId: string, 
-    sectionId: string, 
-    updateData: UpdateSectionRequest, 
+    courseId: string,
+    chapterId: string,
+    sectionId: string,
+    updateData: UpdateSectionRequest,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<CourseDocument | null> {
     try {
       const course = await CourseModel.findById(courseId);
@@ -403,12 +403,12 @@ export class CourseService {
   // =============================================================================
 
   async addContent(
-    courseId: string, 
-    chapterId: string, 
-    sectionId: string, 
-    contentData: CreateContentRequest, 
+    courseId: string,
+    chapterId: string,
+    sectionId: string,
+    contentData: CreateContentRequest,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<CourseDocument | null> {
     try {
       const course = await CourseModel.findById(courseId);
@@ -435,7 +435,7 @@ export class CourseService {
         title: contentData.title,
         order: contentData.order,
         data: contentData.data,
-        isPublished: false
+        isPublished: false,
       };
 
       section.content.push(newContent as any);
@@ -449,13 +449,13 @@ export class CourseService {
   }
 
   async updateContent(
-    courseId: string, 
-    chapterId: string, 
-    sectionId: string, 
-    contentId: string, 
-    updateData: UpdateContentRequest, 
+    courseId: string,
+    chapterId: string,
+    sectionId: string,
+    contentId: string,
+    updateData: UpdateContentRequest,
     userId: string,
-    userRole: UserRole
+    userRole: UserRole,
   ): Promise<CourseDocument | null> {
     try {
       const course = await CourseModel.findById(courseId);
@@ -512,9 +512,9 @@ export class CourseService {
 
       // Check enrollment limits
       if (course.settings.maxStudents) {
-        const enrollmentCount = await CourseEnrollmentModel.countDocuments({ 
-          courseId, 
-          status: 'active' 
+        const enrollmentCount = await CourseEnrollmentModel.countDocuments({
+          courseId,
+          status: 'active',
         });
         if (enrollmentCount >= course.settings.maxStudents) {
           throw new Error('Course has reached maximum enrollment capacity');
@@ -524,7 +524,7 @@ export class CourseService {
       const enrollment = new CourseEnrollmentModel({
         courseId,
         studentId,
-        status: 'active'
+        status: 'active',
       });
 
       await enrollment.save();
@@ -560,9 +560,9 @@ export class CourseService {
   // =============================================================================
 
   async submitExercise(
-    exerciseId: string, 
-    studentId: string, 
-    submissionData: SubmitExerciseRequest
+    exerciseId: string,
+    studentId: string,
+    submissionData: SubmitExerciseRequest,
   ): Promise<ExerciseSubmissionDocument> {
     try {
       const submission = new ExerciseSubmissionModel({
@@ -570,14 +570,14 @@ export class CourseService {
         studentId,
         code: submissionData.code,
         answer: submissionData.answer,
-        files: submissionData.files || []
+        files: submissionData.files || [],
       });
 
       await submission.save();
 
       // Exercise evaluation logic
       const evaluationResult = await this.evaluateExerciseSubmission(exerciseId, submissionData);
-      
+
       // Update submission with evaluation results
       submission.result = evaluationResult;
       submission.gradedAt = new Date();
@@ -590,8 +590,8 @@ export class CourseService {
   }
 
   async getExerciseSubmissions(
-    exerciseId: string, 
-    studentId?: string
+    exerciseId: string,
+    studentId?: string,
   ): Promise<ExerciseSubmissionDocument[]> {
     try {
       if (studentId) {
@@ -608,8 +608,8 @@ export class CourseService {
   // =============================================================================
 
   private async evaluateExerciseSubmission(
-    exerciseId: string, 
-    submissionData: SubmitExerciseRequest
+    exerciseId: string,
+    submissionData: SubmitExerciseRequest,
   ): Promise<any> {
     try {
       // Find the exercise definition in the course structure
@@ -620,7 +620,7 @@ export class CourseService {
           score: 0,
           feedback: 'Exercise not found',
           testResults: [],
-          executionTime: 0
+          executionTime: 0,
         };
       }
 
@@ -638,7 +638,7 @@ export class CourseService {
             score: 0,
             feedback: `Unsupported exercise type: ${exercise.type}`,
             testResults: [],
-            executionTime: 0
+            executionTime: 0,
           };
       }
     } catch (error: any) {
@@ -647,7 +647,7 @@ export class CourseService {
         score: 0,
         feedback: `Evaluation error: ${error.message}`,
         testResults: [],
-        executionTime: 0
+        executionTime: 0,
       };
     }
   }
@@ -657,12 +657,12 @@ export class CourseService {
       // Search through all courses to find the exercise
       // In a real implementation, you might want to optimize this with better indexing
       const courses = await CourseModel.find({ status: 'published' });
-      
+
       for (const course of courses) {
         for (const chapter of course.chapters) {
           for (const section of chapter.sections) {
             for (const content of section.content) {
-              if (content.type === 'exercise' && content.data?.exercise && 
+              if (content.type === 'exercise' && content.data?.exercise &&
                   content.data.exercise._id.toString() === exerciseId) {
                 return content.data.exercise;
               }
@@ -690,16 +690,16 @@ export class CourseService {
             // Simulate code execution and comparison
             // In a real implementation, you would use a secure code sandbox
             const result = await this.executeCodeWithTestCase(
-              submissionData.code || '', 
+              submissionData.code || '',
               testCase,
-              exercise.programmingLanguage || 'javascript'
+              exercise.programmingLanguage || 'javascript',
             );
-            
+
             testResults.push({
               testCaseId: testCase._id.toString(),
               passed: result.passed,
               actualOutput: result.actualOutput,
-              errorMessage: result.errorMessage
+              errorMessage: result.errorMessage,
             });
 
             if (result.passed) {
@@ -710,7 +710,7 @@ export class CourseService {
               testCaseId: testCase._id.toString(),
               passed: false,
               actualOutput: '',
-              errorMessage: `Test execution error: ${error.message}`
+              errorMessage: `Test execution error: ${error.message}`,
             });
           }
         }
@@ -747,7 +747,7 @@ export class CourseService {
         feedback,
         testResults,
         executionTime: Date.now() - startTime,
-        codeQuality: this.analyzeCodeQuality(submissionData.code || '')
+        codeQuality: this.analyzeCodeQuality(submissionData.code || ''),
       };
 
     } catch (error: any) {
@@ -756,7 +756,7 @@ export class CourseService {
         score: 0,
         feedback: `Code evaluation failed: ${error.message}`,
         testResults,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -775,8 +775,8 @@ export class CourseService {
         score = isCorrect ? 100 : 0;
       }
 
-      const feedback = isCorrect 
-        ? 'Correct! Well done.' 
+      const feedback = isCorrect
+        ? 'Correct! Well done.'
         : 'Incorrect answer. Please review the material and try again.';
 
       return {
@@ -787,9 +787,9 @@ export class CourseService {
           testCaseId: 'quiz-answer',
           passed: isCorrect,
           actualOutput: userAnswer,
-          errorMessage: isCorrect ? '' : 'Answer does not match expected solution'
+          errorMessage: isCorrect ? '' : 'Answer does not match expected solution',
         }],
-        executionTime: 0
+        executionTime: 0,
       };
     } catch (error: any) {
       return {
@@ -797,7 +797,7 @@ export class CourseService {
         score: 0,
         feedback: `Quiz evaluation failed: ${error.message}`,
         testResults: [],
-        executionTime: 0
+        executionTime: 0,
       };
     }
   }
@@ -809,14 +809,14 @@ export class CourseService {
       score: 0, // Will be updated when manually graded
       feedback: 'Assignment submitted successfully. Awaiting instructor review.',
       testResults: [],
-      executionTime: 0
+      executionTime: 0,
     };
   }
 
   private async executeCodeWithTestCase(
-    code: string, 
-    testCase: any, 
-    _language: string
+    code: string,
+    testCase: any,
+    _language: string,
   ): Promise<{ passed: boolean; actualOutput: string; errorMessage: string }> {
     // This is a simplified mock implementation
     // In a real system, you would use a secure sandboxed execution environment
@@ -826,7 +826,7 @@ export class CourseService {
         return {
           passed: false,
           actualOutput: '',
-          errorMessage: 'No code provided'
+          errorMessage: 'No code provided',
         };
       }
 
@@ -852,14 +852,14 @@ export class CourseService {
       return {
         passed,
         actualOutput,
-        errorMessage: passed ? '' : `Expected "${expectedOutput}", got "${actualOutput}"`
+        errorMessage: passed ? '' : `Expected "${expectedOutput}", got "${actualOutput}"`,
       };
 
     } catch (error: any) {
       return {
         passed: false,
         actualOutput: '',
-        errorMessage: `Execution error: ${error.message}`
+        errorMessage: `Execution error: ${error.message}`,
       };
     }
   }
@@ -868,7 +868,7 @@ export class CourseService {
     // Basic code quality analysis
     const lines = code.split('\n').filter(line => line.trim().length > 0);
     const linesOfCode = lines.length;
-    
+
     // Simple heuristics for code quality
     const codeSmells = [];
     if (linesOfCode > 50) {
@@ -885,7 +885,7 @@ export class CourseService {
       linesOfCode,
       complexity: Math.min(Math.floor(linesOfCode / 5), 10), // Simple complexity score
       duplicateLines: 0, // Would require more sophisticated analysis
-      codeSmells
+      codeSmells,
     };
   }
 
@@ -908,7 +908,7 @@ export class CourseService {
 
       // Check if user is a collaborator
       return course.collaborators.some(
-        collaborator => collaborator._id.toString() === userId
+        collaborator => collaborator._id.toString() === userId,
       );
     }
 

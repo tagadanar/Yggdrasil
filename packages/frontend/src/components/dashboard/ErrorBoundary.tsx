@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Dashboard Error Boundary caught an error:', error, errorInfo);
     
     this.setState({
@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }
   }
 
-  componentWillUnmount() {
+  override componentWillUnmount() {
     if (this.retryTimeoutId) {
       clearTimeout(this.retryTimeoutId);
     }
@@ -107,7 +107,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     });
   };
 
-  render() {
+  override render() {
     const { hasError, error, errorInfo, retryCount } = this.state;
     const { children, fallback, maxRetries = 3, showErrorDetails = false, testId } = this.props;
 

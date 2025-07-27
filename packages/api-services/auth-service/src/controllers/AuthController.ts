@@ -3,14 +3,14 @@
 
 import { Request, Response } from 'express';
 import { AuthService } from '../services/AuthService';
-import { 
-  ValidationHelper, 
+import {
+  ValidationHelper,
   ResponseHelper,
   LoginRequestSchema,
   RefreshTokenSchema,
   HTTP_STATUS,
-  authLogger as logger
 } from '@yggdrasil/shared-utilities';
+import { authLogger as logger } from '@yggdrasil/shared-utilities/logging';
 
 export class AuthController {
   /**
@@ -20,7 +20,7 @@ export class AuthController {
   static async register(_req: Request, res: Response): Promise<void> {
     // Public registration is disabled
     res.status(HTTP_STATUS.FORBIDDEN).json(
-      ResponseHelper.error('Public registration is disabled. User creation is restricted to administrators.', HTTP_STATUS.FORBIDDEN)
+      ResponseHelper.error('Public registration is disabled. User creation is restricted to administrators.', HTTP_STATUS.FORBIDDEN),
     );
   }
 
@@ -34,7 +34,7 @@ export class AuthController {
       const validation = ValidationHelper.validate(LoginRequestSchema, req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.UNPROCESSABLE_ENTITY).json(
-          ResponseHelper.validationError(validation.errors!)
+          ResponseHelper.validationError(validation.errors!),
         );
         return;
       }
@@ -44,7 +44,7 @@ export class AuthController {
 
       if (result.success) {
         res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'Login successful')
+          ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'Login successful'),
         );
       } else {
         // Add debug information to the response in test environment
@@ -52,18 +52,18 @@ export class AuthController {
           debug: {
             email: validation.data?.email,
             error: result.error,
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         } : undefined;
-        
+
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.error(result.error!, HTTP_STATUS.UNAUTHORIZED, debugInfo)
+          ResponseHelper.error(result.error!, HTTP_STATUS.UNAUTHORIZED, debugInfo),
         );
       }
     } catch (error) {
       logger.error('AUTH CONTROLLER: Exception during login:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Login failed')
+        ResponseHelper.error('Login failed'),
       );
     }
   }
@@ -78,7 +78,7 @@ export class AuthController {
       const validation = ValidationHelper.validate(RefreshTokenSchema, req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.UNPROCESSABLE_ENTITY).json(
-          ResponseHelper.validationError(validation.errors!)
+          ResponseHelper.validationError(validation.errors!),
         );
         return;
       }
@@ -88,16 +88,16 @@ export class AuthController {
 
       if (result.success) {
         res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'Tokens refreshed successfully')
+          ResponseHelper.success({ user: result.user, tokens: result.tokens }, 'Tokens refreshed successfully'),
         );
       } else {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized(result.error!)
+          ResponseHelper.unauthorized(result.error!),
         );
       }
     } catch (error) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Token refresh failed')
+        ResponseHelper.error('Token refresh failed'),
       );
     }
   }
@@ -109,10 +109,10 @@ export class AuthController {
   static async logout(req: Request, res: Response): Promise<void> {
     try {
       const userId = (req as any).user?._id;
-      
+
       if (!userId) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('User not authenticated')
+          ResponseHelper.unauthorized('User not authenticated'),
         );
         return;
       }
@@ -122,16 +122,16 @@ export class AuthController {
 
       if (result.success) {
         res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success(null, 'Logout successful')
+          ResponseHelper.success(null, 'Logout successful'),
         );
       } else {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.error(result.error!)
+          ResponseHelper.error(result.error!),
         );
       }
     } catch (error) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Logout failed')
+        ResponseHelper.error('Logout failed'),
       );
     }
   }
@@ -143,8 +143,8 @@ export class AuthController {
   static async me(req: Request, res: Response): Promise<void> {
     try {
       const user = (req as any).user;
-      
-      console.log('🔍 AUTH CONTROLLER /me: User from middleware:', {
+
+      logger.info('🔍 AUTH CONTROLLER /me: User from middleware:', {
         email: user?.email,
         role: user?.role,
         hasProfile: !!user?.profile,
@@ -152,23 +152,23 @@ export class AuthController {
           firstName: user.profile.firstName,
           lastName: user.profile.lastName,
           department: user.profile.department,
-          keys: Object.keys(user.profile)
-        } : 'no profile'
+          keys: Object.keys(user.profile),
+        } : 'no profile',
       });
-      
+
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('User not authenticated')
+          ResponseHelper.unauthorized('User not authenticated'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success({ user }, 'User information retrieved')
+        ResponseHelper.success({ user }, 'User information retrieved'),
       );
     } catch (error) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve user information')
+        ResponseHelper.error('Failed to retrieve user information'),
       );
     }
   }
@@ -182,12 +182,12 @@ export class AuthController {
       res.status(HTTP_STATUS.OK).json(
         ResponseHelper.success({
           registrationEnabled: false,
-          message: 'User creation is restricted to administrators. Please contact your system administrator to create new accounts.'
-        }, 'Registration status retrieved')
+          message: 'User creation is restricted to administrators. Please contact your system administrator to create new accounts.',
+        }, 'Registration status retrieved'),
       );
     } catch (error) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve registration status')
+        ResponseHelper.error('Failed to retrieve registration status'),
       );
     }
   }

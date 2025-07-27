@@ -1,3 +1,7 @@
+// Increase max listeners to prevent EventEmitter memory leak warnings
+// News service needs listeners for: shutdown, database, testing framework
+process.setMaxListeners(20);
+
 import { createApp } from './app';
 import { logger } from '@yggdrasil/shared-utilities';
 

@@ -3,12 +3,12 @@
 
 import { Router } from 'express';
 import { StatisticsController } from '../controllers/StatisticsController';
-import { 
+import {
   authenticateToken,
   requireRole,
   requireOwnershipOrAdmin,
   requireAdminOnly,
-  requireTeacherOrAdmin
+  requireTeacherOrAdmin,
 } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -28,12 +28,12 @@ router.get('/', authenticateToken, requireAdminOnly, (req, res) => {
     user: req.user ? { id: req.user.userId || req.user.id, role: req.user.role } : null,
     endpoints: {
       'GET /dashboard/student/:userId': 'Student dashboard',
-      'GET /dashboard/teacher/:userId': 'Teacher dashboard', 
+      'GET /dashboard/teacher/:userId': 'Teacher dashboard',
       'GET /dashboard/admin': 'Admin dashboard',
       'GET /analytics/course/:courseId': 'Course analytics',
       'GET /analytics/platform': 'Platform analytics',
-      'GET /achievements/:userId': 'User achievements'
-    }
+      'GET /achievements/:userId': 'User achievements',
+    },
   });
 });
 
@@ -49,7 +49,7 @@ router.get(
   '/dashboard/student/:userId',
   authenticateToken,
   requireOwnershipOrAdmin('userId'),
-  StatisticsController.getStudentDashboard
+  StatisticsController.getStudentDashboard,
 );
 
 /**
@@ -61,7 +61,7 @@ router.get(
   authenticateToken,
   requireRole(['teacher', 'staff', 'admin']),
   requireOwnershipOrAdmin('userId'),
-  StatisticsController.getTeacherDashboard
+  StatisticsController.getTeacherDashboard,
 );
 
 /**
@@ -72,7 +72,7 @@ router.get(
   '/dashboard/admin',
   authenticateToken,
   requireRole(['staff', 'admin']),
-  StatisticsController.getAdminDashboard
+  StatisticsController.getAdminDashboard,
 );
 
 // =============================================================================
@@ -88,7 +88,7 @@ router.put(
   authenticateToken,
   requireRole(['student', 'teacher', 'staff', 'admin']),
   // Custom middleware to check if teacher can update this student's progress would go here
-  StatisticsController.updateStudentProgress
+  StatisticsController.updateStudentProgress,
 );
 
 /**
@@ -99,7 +99,7 @@ router.get(
   '/progress/student/:userId/course/:courseId',
   authenticateToken,
   requireOwnershipOrAdmin('userId'),
-  StatisticsController.getStudentCourseProgress
+  StatisticsController.getStudentCourseProgress,
 );
 
 /**
@@ -110,7 +110,7 @@ router.post(
   '/progress/section-complete',
   authenticateToken,
   requireRole(['student', 'teacher', 'staff', 'admin']),
-  StatisticsController.markSectionComplete
+  StatisticsController.markSectionComplete,
 );
 
 /**
@@ -121,7 +121,7 @@ router.post(
   '/progress/exercise-complete',
   authenticateToken,
   requireRole(['student', 'teacher', 'staff', 'admin']),
-  StatisticsController.markExerciseComplete
+  StatisticsController.markExerciseComplete,
 );
 
 // =============================================================================
@@ -136,7 +136,7 @@ router.get(
   '/analytics/course/:courseId',
   authenticateToken,
   requireTeacherOrAdmin,
-  StatisticsController.getCourseAnalytics
+  StatisticsController.getCourseAnalytics,
 );
 
 /**
@@ -147,7 +147,7 @@ router.get(
   '/analytics/platform',
   authenticateToken,
   requireAdminOnly,
-  StatisticsController.getPlatformAnalytics
+  StatisticsController.getPlatformAnalytics,
 );
 
 // =============================================================================
@@ -162,7 +162,7 @@ router.get(
   '/achievements/:userId',
   authenticateToken,
   requireOwnershipOrAdmin('userId'),
-  StatisticsController.getUserAchievements
+  StatisticsController.getUserAchievements,
 );
 
 // =============================================================================
@@ -175,7 +175,7 @@ router.get(
  */
 router.get(
   '/health-check',
-  StatisticsController.healthCheck
+  StatisticsController.healthCheck,
 );
 
 // =============================================================================
@@ -197,19 +197,19 @@ router.get('/docs', (_req, res) => {
           description: 'Get student dashboard data',
           authentication: 'required',
           authorization: 'student (own data) or admin',
-          parameters: { userId: 'string (required)' }
+          parameters: { userId: 'string (required)' },
         },
         'GET /dashboard/teacher/:userId': {
           description: 'Get teacher dashboard data',
           authentication: 'required',
           authorization: 'teacher (own data) or admin',
-          parameters: { userId: 'string (required)' }
+          parameters: { userId: 'string (required)' },
         },
         'GET /dashboard/admin': {
           description: 'Get admin dashboard data',
           authentication: 'required',
-          authorization: 'admin or staff only'
-        }
+          authorization: 'admin or staff only',
+        },
       },
       progress: {
         'PUT /progress/student/:userId/course/:courseId': {
@@ -217,66 +217,66 @@ router.get('/docs', (_req, res) => {
           authentication: 'required',
           authorization: 'student (own data), teacher, or admin',
           parameters: { userId: 'string', courseId: 'string' },
-          body: 'CourseProgress object'
+          body: 'CourseProgress object',
         },
         'GET /progress/student/:userId/course/:courseId': {
           description: 'Get student progress for a specific course',
           authentication: 'required',
           authorization: 'student (own data) or admin',
-          parameters: { userId: 'string', courseId: 'string' }
+          parameters: { userId: 'string', courseId: 'string' },
         },
         'POST /progress/section-complete': {
           description: 'Mark a section as completed',
           authentication: 'required',
-          body: { userId: 'string', courseId: 'string', sectionId: 'string' }
+          body: { userId: 'string', courseId: 'string', sectionId: 'string' },
         },
         'POST /progress/exercise-complete': {
           description: 'Mark an exercise as completed',
           authentication: 'required',
-          body: { userId: 'string', courseId: 'string', exerciseId: 'string', score: 'number (optional)' }
-        }
+          body: { userId: 'string', courseId: 'string', exerciseId: 'string', score: 'number (optional)' },
+        },
       },
       analytics: {
         'GET /analytics/course/:courseId': {
           description: 'Get course analytics and metrics',
           authentication: 'required',
           authorization: 'teacher or admin',
-          parameters: { courseId: 'string (required)' }
+          parameters: { courseId: 'string (required)' },
         },
         'GET /analytics/platform': {
           description: 'Get platform-wide analytics',
           authentication: 'required',
-          authorization: 'admin only'
-        }
+          authorization: 'admin only',
+        },
       },
       achievements: {
         'GET /achievements/:userId': {
           description: 'Get user achievements and badges',
           authentication: 'required',
           authorization: 'user (own data) or admin',
-          parameters: { userId: 'string (required)' }
-        }
+          parameters: { userId: 'string (required)' },
+        },
       },
       utility: {
         'GET /health-check': {
           description: 'Statistics service health check',
-          authentication: 'none'
+          authentication: 'none',
         },
         'GET /docs': {
           description: 'API documentation',
-          authentication: 'none'
-        }
-      }
+          authentication: 'none',
+        },
+      },
     },
     authentication: {
       type: 'Bearer Token',
       header: 'Authorization: Bearer <jwt_token>',
-      note: 'JWT tokens are verified using shared utilities'
+      note: 'JWT tokens are verified using shared utilities',
     },
     authorization: {
       roles: ['student', 'teacher', 'staff', 'admin'],
-      note: 'Role-based access control is enforced on protected endpoints'
-    }
+      note: 'Role-based access control is enforced on protected endpoints',
+    },
   });
 });
 

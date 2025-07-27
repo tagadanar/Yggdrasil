@@ -7,7 +7,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { createApp } from '../../src/app';
 import { NewsArticleModel, UserModel } from '@yggdrasil/database-schemas';
 import jwt from 'jsonwebtoken';
-import { SharedJWTHelper } from '@yggdrasil/shared-utilities';
+import { SharedJWTHelper } from '@yggdrasil/shared-utilities/jwt';
 
 describe('News Service - Real World Permissions', () => {
   let app: any;

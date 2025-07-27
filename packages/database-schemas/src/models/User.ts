@@ -4,7 +4,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { UserRole } from '@yggdrasil/shared-utilities';
-import { PASSWORD_CONFIG, SecurityLogger, logger } from '@yggdrasil/shared-utilities';
+import { PASSWORD_CONFIG, logger, SecurityLogger } from '@yggdrasil/shared-utilities';
 
 // User Document interface extending the shared User type with password and Mongoose methods
 export interface UserDocument extends Document {
@@ -76,8 +76,8 @@ const UserProfileSchema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   photo: { type: String },
-  studentId: { 
-    type: String, 
+  studentId: {
+    type: String,
     sparse: true,
     unique: true,
   },
@@ -98,10 +98,10 @@ const UserPreferencesSchema = new Schema({
   },
   accessibility: {
     colorblindMode: { type: Boolean, default: false },
-    fontSize: { 
-      type: String, 
-      enum: ['small', 'medium', 'large'], 
-      default: 'medium' 
+    fontSize: {
+      type: String,
+      enum: ['small', 'medium', 'large'],
+      default: 'medium',
     },
     highContrast: { type: Boolean, default: false },
   },
@@ -120,8 +120,8 @@ const UserSchema = new Schema<UserDocument>({
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
       },
-      message: 'Invalid email format'
-    }
+      message: 'Invalid email format',
+    },
   },
   password: {
     type: String,
@@ -166,7 +166,7 @@ const UserSchema = new Schema<UserDocument>({
   },
 }, {
   timestamps: true,
-  collection: 'users' // Always use 'users' collection
+  collection: 'users', // Always use 'users' collection
 });
 
 // Indexes for performance
@@ -185,11 +185,11 @@ UserSchema.pre('save', async function(next) {
 
   try {
     SecurityLogger.logAuthOperation('password_hash', user.email);
-    
+
     // Hash password with salt
     const salt = await bcrypt.genSalt(PASSWORD_CONFIG.SALT_ROUNDS);
     user.password = await bcrypt.hash(user.password, salt);
-    
+
     next();
   } catch (error) {
     SecurityLogger.logAuthOperation('password_hash_error', user.email);
@@ -200,9 +200,9 @@ UserSchema.pre('save', async function(next) {
 // Instance method to compare password
 UserSchema.methods['comparePassword'] = async function(candidatePassword: string): Promise<boolean> {
   const user = this as UserDocument;
-  
+
   SecurityLogger.logAuthOperation('password_verify', user.email);
-  
+
   try {
     const result = await bcrypt.compare(candidatePassword, user.password);
     // NEVER log the result!
@@ -218,18 +218,18 @@ UserSchema.statics['findByEmail'] = async function(email: string) {
   try {
     logger.info(`🔍 USER MODEL: Finding user by email: ${email}`);
     const normalizedEmail = email.toLowerCase().trim();
-    
+
     const user = await this.findOne({ email: normalizedEmail });
-    
+
     if (user) {
       logger.info(`✅ USER MODEL: Found user: ${normalizedEmail}`);
     } else {
       logger.error(`❌ USER MODEL: User not found: ${normalizedEmail}`);
     }
-    
+
     return user;
   } catch (error) {
-    logger.error(`💥 USER MODEL: Error in findByEmail:`, error);
+    logger.error('💥 USER MODEL: Error in findByEmail:', error);
     return null;
   }
 };
@@ -238,18 +238,18 @@ UserSchema.statics['findByEmail'] = async function(email: string) {
 UserSchema.statics['findById'] = async function(id: string) {
   try {
     logger.info(`🔍 USER MODEL: Finding user by ID: ${id}`);
-    
+
     const user = await this.findOne({ _id: id });
-    
+
     if (user) {
       logger.info(`✅ USER MODEL: Found user by ID: ${id}`);
     } else {
       logger.error(`❌ USER MODEL: User not found by ID: ${id}`);
     }
-    
+
     return user;
   } catch (error) {
-    logger.error(`💥 USER MODEL: Error in findById:`, error);
+    logger.error('💥 USER MODEL: Error in findById:', error);
     return null;
   }
 };
@@ -275,11 +275,11 @@ let UserModel: UserModelType;
 try {
   // Check if model already exists
   UserModel = mongoose.model<UserDocument, UserModelType>('User');
-  logger.info(`🏗️ USER MODEL: Reusing existing User model`);
+  logger.info('🏗️ USER MODEL: Reusing existing User model');
 } catch {
   // Create new model
   UserModel = mongoose.model<UserDocument, UserModelType>('User', UserSchema);
-  logger.info(`🏗️ USER MODEL: Created new User model`);
+  logger.info('🏗️ USER MODEL: Created new User model');
 }
 
 // Helper function to create user model (for backwards compatibility)
@@ -289,7 +289,7 @@ export function createUserModel(): UserModelType {
 
 // Helper function to set default model (for backwards compatibility)
 export function setDefaultUserModel(_model: UserModelType): void {
-  logger.info(`🏗️ USER MODEL: Default model set`);
+  logger.info('🏗️ USER MODEL: Default model set');
 }
 
 // Helper function to get default model (for backwards compatibility)

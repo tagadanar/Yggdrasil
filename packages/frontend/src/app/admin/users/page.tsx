@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { userApi } from '@/lib/api/client';
-import { User as SharedUser } from '@yggdrasil/shared-utilities';
+import { User as SharedUser } from '@yggdrasil/shared-utilities/client';
 import { Button } from '@/components/ui/Button';
 
 interface User {
@@ -86,25 +86,25 @@ export default function AdminUsersPage() {
     const errors: FormErrors = {};
     
     if (!data.email) {
-      errors.email = 'Email is required';
+      errors['email'] = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-      errors.email = 'Please enter a valid email address';
+      errors['email'] = 'Please enter a valid email address';
     }
     
     if (!data.firstName) {
-      errors.firstName = 'First name is required';
+      errors['firstName'] = 'First name is required';
     }
     
     if (!data.lastName) {
-      errors.lastName = 'Last name is required';
+      errors['lastName'] = 'Last name is required';
     }
     
     if (!showEditForm && !data.password) {
-      errors.password = 'Password is required';
+      errors['password'] = 'Password is required';
     }
     
     if (!data.role) {
-      errors.role = 'Role is required';
+      errors['role'] = 'Role is required';
     }
     
     return errors;
@@ -112,10 +112,23 @@ export default function AdminUsersPage() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Get form data directly from the form elements to avoid state timing issues
+    const form = e.target as HTMLFormElement;
+    const formElements = form.elements as HTMLFormControlsCollection;
+    
+    const currentFormData = {
+      email: (formElements.namedItem('email') as HTMLInputElement)?.value || '',
+      firstName: (formElements.namedItem('firstName') as HTMLInputElement)?.value || '',
+      lastName: (formElements.namedItem('lastName') as HTMLInputElement)?.value || '',
+      password: (formElements.namedItem('password') as HTMLInputElement)?.value || '',
+      role: (formElements.namedItem('role') as HTMLSelectElement)?.value || 'student',
+    } as UserFormData;
+    
     setIsSubmitting(true);
     setFormErrors({});
     
-    const errors = validateForm(formData);
+    const errors = validateForm(currentFormData);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       setIsSubmitting(false);
@@ -124,12 +137,12 @@ export default function AdminUsersPage() {
     
     try {
       const response = await userApi.createUser({
-        email: formData.email,
-        password: formData.password,
-        role: formData.role,
+        email: currentFormData.email,
+        password: currentFormData.password,
+        role: currentFormData.role,
         profile: {
-          firstName: formData.firstName,
-          lastName: formData.lastName
+          firstName: currentFormData.firstName,
+          lastName: currentFormData.lastName
         }
       });
       
@@ -431,9 +444,9 @@ export default function AdminUsersPage() {
                 <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Create New User</h2>
                 
                 <form onSubmit={handleCreateUser}>
-                  {formErrors.general && (
+                  {formErrors['general'] && (
                     <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-700 dark:text-rose-300 text-sm">
-                      {formErrors.general}
+                      {formErrors['general']}
                     </div>
                   )}
                   
@@ -448,11 +461,11 @@ export default function AdminUsersPage() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       data-testid="email-input"
-                      className={`input ${formErrors.email ? 'input-error' : ''}`}
+                      className={`input ${formErrors['email'] ? 'input-error' : ''}`}
                       placeholder="Enter email address"
                     />
-                    {formErrors.email && (
-                      <p className="form-error">{formErrors.email}</p>
+                    {formErrors['email'] && (
+                      <p className="form-error">{formErrors['email']}</p>
                     )}
                   </div>
                   
@@ -466,11 +479,11 @@ export default function AdminUsersPage() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className={`input ${formErrors.firstName ? 'input-error' : ''}`}
+                      className={`input ${formErrors['firstName'] ? 'input-error' : ''}`}
                       placeholder="Enter first name"
                     />
-                    {formErrors.firstName && (
-                      <p className="form-error">{formErrors.firstName}</p>
+                    {formErrors['firstName'] && (
+                      <p className="form-error">{formErrors['firstName']}</p>
                     )}
                   </div>
                   
@@ -484,11 +497,11 @@ export default function AdminUsersPage() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className={`input ${formErrors.lastName ? 'input-error' : ''}`}
+                      className={`input ${formErrors['lastName'] ? 'input-error' : ''}`}
                       placeholder="Enter last name"
                     />
-                    {formErrors.lastName && (
-                      <p className="form-error">{formErrors.lastName}</p>
+                    {formErrors['lastName'] && (
+                      <p className="form-error">{formErrors['lastName']}</p>
                     )}
                   </div>
                   
@@ -502,11 +515,11 @@ export default function AdminUsersPage() {
                       name="password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className={`input ${formErrors.password ? 'input-error' : ''}`}
+                      className={`input ${formErrors['password'] ? 'input-error' : ''}`}
                       placeholder="Enter password"
                     />
-                    {formErrors.password && (
-                      <p className="form-error">{formErrors.password}</p>
+                    {formErrors['password'] && (
+                      <p className="form-error">{formErrors['password']}</p>
                     )}
                   </div>
                   
@@ -519,15 +532,127 @@ export default function AdminUsersPage() {
                       name="role"
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'staff' | 'teacher' | 'student' })}
-                      className={`input ${formErrors.role ? 'input-error' : ''}`}
+                      className={`input ${formErrors['role'] ? 'input-error' : ''}`}
                     >
                       <option value="student">Student</option>
                       <option value="teacher">Teacher</option>
                       <option value="staff">Staff</option>
                       <option value="admin">Admin</option>
                     </select>
-                    {formErrors.role && (
-                      <p className="form-error">{formErrors.role}</p>
+                    {formErrors['role'] && (
+                      <p className="form-error">{formErrors['role']}</p>
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      type="button"
+                      onClick={closeModal}
+                      variant="secondary"
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={false}
+                      loading={false}
+                      data-testid="create-user-submit"
+                    >
+                      Create User
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Edit User Form Modal */}
+          {showEditForm && selectedUser && (
+            <div className="modal-overlay flex items-center justify-center z-50" data-testid="edit-user-modal">
+              <div className="modal-content p-6 w-full max-w-md">
+                <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Edit User</h2>
+                
+                <form onSubmit={handleUpdateUser}>
+                  {formErrors['general'] && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                      {formErrors['general']}
+                    </div>
+                  )}
+                  
+                  <div className="form-group">
+                    <label htmlFor="email" className="form-label">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className={`input ${formErrors['email'] ? 'input-error' : ''}`}
+                      placeholder="Enter email address"
+                    />
+                    {formErrors['email'] && (
+                      <p className="form-error">{formErrors['email']}</p>
+                    )}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="firstName" className="form-label">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      className={`input ${formErrors['firstName'] ? 'input-error' : ''}`}
+                      placeholder="Enter first name"
+                    />
+                    {formErrors['firstName'] && (
+                      <p className="form-error">{formErrors['firstName']}</p>
+                    )}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="lastName" className="form-label">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      className={`input ${formErrors['lastName'] ? 'input-error' : ''}`}
+                      placeholder="Enter last name"
+                    />
+                    {formErrors['lastName'] && (
+                      <p className="form-error">{formErrors['lastName']}</p>
+                    )}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="role" className="form-label">
+                      Role
+                    </label>
+                    <select
+                      id="role"
+                      name="role"
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'staff' | 'teacher' | 'student' })}
+                      className={`input ${formErrors['role'] ? 'input-error' : ''}`}
+                    >
+                      <option value="student">Student</option>
+                      <option value="teacher">Teacher</option>
+                      <option value="staff">Staff</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    {formErrors['role'] && (
+                      <p className="form-error">{formErrors['role']}</p>
                     )}
                   </div>
                   
@@ -546,118 +671,8 @@ export default function AdminUsersPage() {
                       disabled={isSubmitting}
                       loading={isSubmitting}
                     >
-                      {isSubmitting ? 'Creating...' : 'Create User'}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* Edit User Form Modal */}
-          {showEditForm && selectedUser && (
-            <div className="modal-overlay flex items-center justify-center z-50" data-testid="edit-user-modal">
-              <div className="modal-content p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Edit User</h2>
-                
-                <form onSubmit={handleUpdateUser}>
-                  {formErrors.general && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-                      {formErrors.general}
-                    </div>
-                  )}
-                  
-                  <div className="form-group">
-                    <label htmlFor="email" className="form-label">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className={`input ${formErrors.email ? 'input-error' : ''}`}
-                      placeholder="Enter email address"
-                    />
-                    {formErrors.email && (
-                      <p className="form-error">{formErrors.email}</p>
-                    )}
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="firstName" className="form-label">
-                      First Name
-                    </label>
-                    <input
-                      type="text"
-                      id="firstName"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className={`input ${formErrors.firstName ? 'input-error' : ''}`}
-                      placeholder="Enter first name"
-                    />
-                    {formErrors.firstName && (
-                      <p className="form-error">{formErrors.firstName}</p>
-                    )}
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="lastName" className="form-label">
-                      Last Name
-                    </label>
-                    <input
-                      type="text"
-                      id="lastName"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className={`input ${formErrors.lastName ? 'input-error' : ''}`}
-                      placeholder="Enter last name"
-                    />
-                    {formErrors.lastName && (
-                      <p className="form-error">{formErrors.lastName}</p>
-                    )}
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="role" className="form-label">
-                      Role
-                    </label>
-                    <select
-                      id="role"
-                      name="role"
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'staff' | 'teacher' | 'student' })}
-                      className={`input ${formErrors.role ? 'input-error' : ''}`}
-                    >
-                      <option value="student">Student</option>
-                      <option value="teacher">Teacher</option>
-                      <option value="staff">Staff</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    {formErrors.role && (
-                      <p className="form-error">{formErrors.role}</p>
-                    )}
-                  </div>
-                  
-                  <div className="flex justify-end space-x-2">
-                    <button
-                      type="button"
-                      onClick={closeModal}
-                      className="btn-secondary"
-                      disabled={isSubmitting}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn-primary"
-                      disabled={isSubmitting}
-                    >
                       {isSubmitting ? 'Updating...' : 'Update User'}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </div>

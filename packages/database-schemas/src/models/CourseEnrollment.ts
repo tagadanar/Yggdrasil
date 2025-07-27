@@ -2,10 +2,10 @@
 // Course enrollment and progress tracking models
 
 import mongoose, { Document, Schema } from 'mongoose';
-import { 
-  CourseEnrollment, 
+import {
+  CourseEnrollment,
   CourseProgress,
-  ExerciseSubmission
+  ExerciseSubmission,
 } from '@yggdrasil/shared-utilities';
 
 // Extend interfaces with Mongoose Document
@@ -35,67 +35,67 @@ export interface ExerciseSubmissionModelType extends mongoose.Model<ExerciseSubm
 
 // Test Result Schema for exercise submissions
 const TestResultSchema = new Schema({
-  testCaseId: { 
+  testCaseId: {
     type: String,
-    required: true 
+    required: true,
   },
-  passed: { 
-    type: Boolean, 
-    required: true 
+  passed: {
+    type: Boolean,
+    required: true,
   },
-  actualOutput: { 
-    type: String, 
-    trim: true 
+  actualOutput: {
+    type: String,
+    trim: true,
   },
-  errorMessage: { 
-    type: String, 
-    trim: true 
-  }
+  errorMessage: {
+    type: String,
+    trim: true,
+  },
 }, { _id: false });
 
 // Code Quality Metrics Schema
 const CodeQualityMetricsSchema = new Schema({
-  linesOfCode: { 
-    type: Number, 
-    min: 0 
+  linesOfCode: {
+    type: Number,
+    min: 0,
   },
-  complexity: { 
-    type: Number, 
-    min: 0 
+  complexity: {
+    type: Number,
+    min: 0,
   },
-  duplicateLines: { 
-    type: Number, 
-    min: 0 
+  duplicateLines: {
+    type: Number,
+    min: 0,
   },
-  codeSmells: [{ 
-    type: String, 
-    trim: true 
-  }]
+  codeSmells: [{
+    type: String,
+    trim: true,
+  }],
 }, { _id: false });
 
 // Exercise Result Schema
 const ExerciseResultSchema = new Schema({
-  isCorrect: { 
-    type: Boolean, 
-    required: true 
+  isCorrect: {
+    type: Boolean,
+    required: true,
   },
-  score: { 
-    type: Number, 
-    required: true, 
-    min: 0, 
-    max: 100 
+  score: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 100,
   },
-  feedback: { 
-    type: String, 
-    required: true, 
-    trim: true 
+  feedback: {
+    type: String,
+    required: true,
+    trim: true,
   },
   testResults: [TestResultSchema],
-  executionTime: { 
-    type: Number, 
-    min: 0 
+  executionTime: {
+    type: Number,
+    min: 0,
   }, // milliseconds
-  codeQuality: CodeQualityMetricsSchema
+  codeQuality: CodeQualityMetricsSchema,
 }, { _id: false });
 
 // Exercise Submission Schema
@@ -103,62 +103,62 @@ const ExerciseSubmissionSchema = new Schema<ExerciseSubmissionDocument>({
   exerciseId: {
     type: String,
     required: true,
-    index: true
+    index: true,
   },
   studentId: {
     type: String,
     required: true,
-    index: true
+    index: true,
   },
-  code: { 
-    type: String 
+  code: {
+    type: String,
   },
-  answer: { 
-    type: String, 
-    trim: true 
+  answer: {
+    type: String,
+    trim: true,
   },
-  files: [{ 
-    type: String, 
-    trim: true 
+  files: [{
+    type: String,
+    trim: true,
   }], // URLs to uploaded files
   result: ExerciseResultSchema,
-  submittedAt: { 
-    type: Date, 
+  submittedAt: {
+    type: Date,
     default: Date.now,
-    index: true
+    index: true,
   },
-  gradedAt: Date
+  gradedAt: Date,
 }, {
   timestamps: true,
-  collection: 'exercise_submissions'
+  collection: 'exercise_submissions',
 });
 
 // Course Progress Schema
 const CourseProgressSchema = new Schema({
   completedSections: [{
-    type: String
+    type: String,
   }],
   completedExercises: [{
-    type: String
+    type: String,
   }],
   completedQuizzes: [{
-    type: String
+    type: String,
   }],
-  lastAccessedAt: { 
-    type: Date, 
-    default: Date.now 
+  lastAccessedAt: {
+    type: Date,
+    default: Date.now,
   },
-  overallProgress: { 
-    type: Number, 
-    default: 0, 
-    min: 0, 
-    max: 100 
+  overallProgress: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
   }, // percentage
-  timeSpent: { 
-    type: Number, 
-    default: 0, 
-    min: 0 
-  } // minutes
+  timeSpent: {
+    type: Number,
+    default: 0,
+    min: 0,
+  }, // minutes
 }, { _id: false });
 
 // Main Course Enrollment Schema
@@ -166,31 +166,31 @@ const CourseEnrollmentSchema = new Schema<CourseEnrollmentDocument>({
   courseId: {
     type: String,
     required: true,
-    index: true
+    index: true,
   },
   studentId: {
     type: String,
     required: true,
-    index: true
+    index: true,
   },
-  enrolledAt: { 
-    type: Date, 
+  enrolledAt: {
+    type: Date,
     default: Date.now,
-    index: true
+    index: true,
   },
   progress: {
     type: CourseProgressSchema,
-    default: () => ({})
+    default: () => ({}),
   },
   status: {
     type: String,
     enum: ['active', 'completed', 'dropped'],
     default: 'active',
-    index: true
-  }
+    index: true,
+  },
 }, {
   timestamps: true,
-  collection: 'course_enrollments'
+  collection: 'course_enrollments',
 });
 
 // Compound indexes for performance
@@ -223,23 +223,23 @@ CourseEnrollmentSchema.methods['calculateOverallProgress'] = function(): number 
 
 CourseEnrollmentSchema.methods['updateProgress'] = async function(): Promise<void> {
   const enrollment = this as CourseEnrollmentDocument;
-  
+
   // Calculate overall progress based on completed items
   // This is a simplified calculation - in practice, you'd weight different types of content
-  const totalCompleted = enrollment.progress.completedSections.length + 
-                         enrollment.progress.completedExercises.length + 
+  const totalCompleted = enrollment.progress.completedSections.length +
+                         enrollment.progress.completedExercises.length +
                          enrollment.progress.completedQuizzes.length;
-  
+
   // This would need to be calculated against the total course content
   // For now, we'll just ensure progress doesn't exceed 100%
   enrollment.progress.overallProgress = Math.min(totalCompleted * 10, 100);
   enrollment.progress.lastAccessedAt = new Date();
-  
+
   // Update enrollment status based on progress
   if (enrollment.progress.overallProgress >= 100) {
     enrollment.status = 'completed';
   }
-  
+
   await enrollment.save();
 };
 
@@ -280,17 +280,17 @@ CourseEnrollmentSchema.set('toJSON', {
     ret._id = ret._id.toString();
     ret.courseId = ret.courseId.toString();
     ret.studentId = ret.studentId.toString();
-    
+
     // Transform progress ObjectIds to strings
     if (ret.progress) {
       ret.progress.completedSections = ret.progress.completedSections.map((id: any) => id.toString());
       ret.progress.completedExercises = ret.progress.completedExercises.map((id: any) => id.toString());
       ret.progress.completedQuizzes = ret.progress.completedQuizzes.map((id: any) => id.toString());
     }
-    
+
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
 ExerciseSubmissionSchema.set('toJSON', {
@@ -298,26 +298,26 @@ ExerciseSubmissionSchema.set('toJSON', {
     ret._id = ret._id.toString();
     ret.exerciseId = ret.exerciseId.toString();
     ret.studentId = ret.studentId.toString();
-    
+
     // Transform test result IDs
     if (ret.result?.testResults) {
       ret.result.testResults.forEach((testResult: any) => {
         testResult.testCaseId = testResult.testCaseId.toString();
       });
     }
-    
+
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
 // Create and export the models
 export const CourseEnrollmentModel = mongoose.model<CourseEnrollmentDocument, CourseEnrollmentModelType>(
-  'CourseEnrollment', 
-  CourseEnrollmentSchema
+  'CourseEnrollment',
+  CourseEnrollmentSchema,
 ) as CourseEnrollmentModelType;
 
 export const ExerciseSubmissionModel = mongoose.model<ExerciseSubmissionDocument, ExerciseSubmissionModelType>(
-  'ExerciseSubmission', 
-  ExerciseSubmissionSchema
+  'ExerciseSubmission',
+  ExerciseSubmissionSchema,
 ) as ExerciseSubmissionModelType;

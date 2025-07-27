@@ -5,6 +5,7 @@ import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Platform Features', () => {
   // Removed global auth helpers - each test manages its own cleanup
@@ -13,13 +14,13 @@ test.describe('Platform Features', () => {
   // TEST 1: AUTHENTICATION SYSTEM COMPREHENSIVE TESTING
   // =============================================================================
   test('Complete authentication system workflow', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Complete authentication system workflow');
+    const cleanup = TestCleanup.getInstance('Complete authentication system workflow');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       // Test 1: Login page accessibility and structure
     await page.goto('/auth/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Verify login form elements
     await expect(page.locator('h2:has-text("Sign in to your account")')).toBeVisible();
@@ -44,12 +45,12 @@ test.describe('Platform Features', () => {
                           document.cookie.includes('yggdrasil_refresh_token');
         return notOnLoginPage && hasCookies;
       },
-      { timeout: 5000 }
+      { timeout: 2000 }
     );
     
     // Verify successful demo login
     await expect(page).toHaveURL('/news');
-    await expect(page.locator('h1:has-text("News & Announcements")')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('h1:has-text("News & Announcements")')).toBeVisible({ timeout: 2000 });
     
     } finally {
       await authHelper.clearAuthState();
@@ -62,7 +63,7 @@ test.describe('Platform Features', () => {
   // =============================================================================
   
   test('Admin profile management and navigation workflow', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Admin profile management and navigation workflow');
+    const cleanup = TestCleanup.getInstance('Admin profile management and navigation workflow');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -78,14 +79,14 @@ test.describe('Platform Features', () => {
     
     for (const pageTest of accessiblePages) {
       await page.goto(pageTest.path);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Verify page loads successfully - check for any of the possible titles
       let titleFound = false;
       for (const title of pageTest.possibleTitles) {
         const titleLocator = page.locator(`h1:has-text("${title}")`);
         if (await titleLocator.count() > 0) {
-          await expect(titleLocator.first()).toBeVisible({ timeout: 5000 });
+          await expect(titleLocator.first()).toBeVisible({ timeout: 2000 });
           titleFound = true;
           break;
         }
@@ -96,7 +97,7 @@ test.describe('Platform Features', () => {
     // Test admin-only page access
     await page.goto('/admin/users');
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('h1:has-text("User Management")')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('h1:has-text("User Management")')).toBeVisible({ timeout: 2000 });
     
     } finally {
       await authHelper.clearAuthState();
@@ -105,7 +106,7 @@ test.describe('Platform Features', () => {
   });
 
   test('Teacher profile management and navigation workflow', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Teacher profile management and navigation workflow');
+    const cleanup = TestCleanup.getInstance('Teacher profile management and navigation workflow');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -121,14 +122,14 @@ test.describe('Platform Features', () => {
     
     for (const pageTest of accessiblePages) {
       await page.goto(pageTest.path);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Verify page loads successfully - check for any of the possible titles
       let titleFound = false;
       for (const title of pageTest.possibleTitles) {
         const titleLocator = page.locator(`h1:has-text("${title}")`);
         if (await titleLocator.count() > 0) {
-          await expect(titleLocator.first()).toBeVisible({ timeout: 5000 });
+          await expect(titleLocator.first()).toBeVisible({ timeout: 2000 });
           titleFound = true;
           break;
         }
@@ -140,7 +141,7 @@ test.describe('Platform Features', () => {
     await page.goto('/admin/users');
     await page.waitForLoadState('domcontentloaded');
     // Should redirect to news with access denied
-    await expect(page).toHaveURL(/\/news(\?error=access_denied)?/, { timeout: 5000 });
+    await expect(page).toHaveURL(/\/news(\?error=access_denied)?/, { timeout: 2000 });
     
     } finally {
       await authHelper.clearAuthState();
@@ -149,7 +150,7 @@ test.describe('Platform Features', () => {
   });
 
   test('Staff profile management and navigation workflow', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Staff profile management and navigation workflow');
+    const cleanup = TestCleanup.getInstance('Staff profile management and navigation workflow');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -165,14 +166,14 @@ test.describe('Platform Features', () => {
     
     for (const pageTest of accessiblePages) {
       await page.goto(pageTest.path);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Verify page loads successfully - check for any of the possible titles
       let titleFound = false;
       for (const title of pageTest.possibleTitles) {
         const titleLocator = page.locator(`h1:has-text("${title}")`);
         if (await titleLocator.count() > 0) {
-          await expect(titleLocator.first()).toBeVisible({ timeout: 5000 });
+          await expect(titleLocator.first()).toBeVisible({ timeout: 2000 });
           titleFound = true;
           break;
         }
@@ -184,7 +185,7 @@ test.describe('Platform Features', () => {
     await page.goto('/admin/users');
     await page.waitForLoadState('domcontentloaded');
     // Should redirect to news with access denied
-    await expect(page).toHaveURL(/\/news(\?error=access_denied)?/, { timeout: 5000 });
+    await expect(page).toHaveURL(/\/news(\?error=access_denied)?/, { timeout: 2000 });
     
     } finally {
       await authHelper.clearAuthState();
@@ -193,7 +194,7 @@ test.describe('Platform Features', () => {
   });
 
   test('Student profile management and navigation workflow', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Student profile management and navigation workflow');
+    const cleanup = TestCleanup.getInstance('Student profile management and navigation workflow');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -209,14 +210,14 @@ test.describe('Platform Features', () => {
     
     for (const pageTest of accessiblePages) {
       await page.goto(pageTest.path);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Verify page loads successfully - check for any of the possible titles
       let titleFound = false;
       for (const title of pageTest.possibleTitles) {
         const titleLocator = page.locator(`h1:has-text("${title}")`);
         if (await titleLocator.count() > 0) {
-          await expect(titleLocator.first()).toBeVisible({ timeout: 5000 });
+          await expect(titleLocator.first()).toBeVisible({ timeout: 2000 });
           titleFound = true;
           break;
         }
@@ -228,7 +229,7 @@ test.describe('Platform Features', () => {
     await page.goto('/admin/users');
     await page.waitForLoadState('domcontentloaded');
     // Should redirect to news with access denied
-    await expect(page).toHaveURL(/\/news(\?error=access_denied)?/, { timeout: 5000 });
+    await expect(page).toHaveURL(/\/news(\?error=access_denied)?/, { timeout: 2000 });
     
     } finally {
       await authHelper.clearAuthState();
@@ -241,13 +242,13 @@ test.describe('Platform Features', () => {
   // =============================================================================
   
   test('Student statistics and analytics dashboard', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Student statistics and analytics dashboard');
+    const cleanup = TestCleanup.getInstance('Student statistics and analytics dashboard');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsStudent();
     await page.goto('/statistics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Should show student dashboard or under construction
     await expect(page.locator('[data-testid="statistics-page"]')).toBeVisible();
@@ -259,13 +260,13 @@ test.describe('Platform Features', () => {
   });
 
   test('Teacher statistics and analytics dashboard', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Teacher statistics and analytics dashboard');
+    const cleanup = TestCleanup.getInstance('Teacher statistics and analytics dashboard');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsTeacher();
     await page.goto('/statistics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Should show under construction or teacher dashboard
     await expect(page.locator('[data-testid="statistics-page"]')).toBeVisible();
@@ -277,13 +278,13 @@ test.describe('Platform Features', () => {
   });
 
   test('Admin statistics and analytics dashboard', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Admin statistics and analytics dashboard');
+    const cleanup = TestCleanup.getInstance('Admin statistics and analytics dashboard');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsAdmin();
     await page.goto('/statistics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Should show under construction or admin dashboard
     await expect(page.locator('[data-testid="statistics-page"]')).toBeVisible();
@@ -298,7 +299,7 @@ test.describe('Platform Features', () => {
   // TEST 4: RESPONSIVE DESIGN AND ACCESSIBILITY
   // =============================================================================
   test('System health and performance monitoring', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('System health and performance monitoring');
+    const cleanup = TestCleanup.getInstance('System health and performance monitoring');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -321,7 +322,7 @@ test.describe('Platform Features', () => {
         await page.waitForLoadState('domcontentloaded'); // Faster than networkidle
         
         // Verify page loads and main content is visible
-        await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('h1').first()).toBeVisible({ timeout: 3000 });
         
         // Check if navigation is accessible (may be in hamburger menu on mobile)
         const sidebarNav = page.locator('[data-testid="sidebar-nav"]');
@@ -344,7 +345,7 @@ test.describe('Platform Features', () => {
   // TEST 5: ERROR HANDLING AND EDGE CASES
   // =============================================================================
   test('Platform error handling and edge cases', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Platform error handling and edge cases');
+    const cleanup = TestCleanup.getInstance('Platform error handling and edge cases');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -364,7 +365,7 @@ test.describe('Platform Features', () => {
       await page.waitForLoadState('domcontentloaded');
       
       // Verify page loads successfully
-      await expect(page.locator('h1').first()).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('h1').first()).toBeVisible({ timeout: 2000 });
     }
     
     // Simplified offline test - just verify basic recovery
@@ -372,7 +373,7 @@ test.describe('Platform Features', () => {
     await page.waitForLoadState('domcontentloaded');
     
     // Verify we're on a valid page before going offline
-    await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h1').first()).toBeVisible({ timeout: 3000 });
     
     // Test offline/online behavior is skipped in CI environments for reliability
     // This test is browser and environment dependent
@@ -381,7 +382,7 @@ test.describe('Platform Features', () => {
       await page.context().setOffline(true);
       
       // Wait a moment for offline state to take effect
-      await page.waitForTimeout(500);
+      await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
       
       // Go back online
       await page.context().setOffline(false);

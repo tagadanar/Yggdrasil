@@ -1,10 +1,14 @@
 // packages/api-services/user-service/src/index.ts
 // User Service entry point
 
+// Increase max listeners to prevent EventEmitter memory leak warnings
+// User service needs listeners for: shutdown, database, testing framework
+process.setMaxListeners(20);
+
 import dotenv from 'dotenv';
 import { createApp } from './app';
 import { connectDatabase } from '@yggdrasil/database-schemas';
-import { logger } from '@yggdrasil/shared-utilities';
+import { logger } from '@yggdrasil/shared-utilities/logging';
 
 // Load environment variables from project root
 dotenv.config({ path: '../../../.env' });

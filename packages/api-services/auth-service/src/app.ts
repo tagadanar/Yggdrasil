@@ -8,7 +8,7 @@ import rateLimit from 'express-rate-limit';
 import { authRoutes } from './routes/authRoutes';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
-import { setupSwagger } from '@yggdrasil/shared-utilities';
+import { setupSwagger } from '@yggdrasil/shared-utilities/openapi/setup-swagger';
 import { createAuthServiceOpenAPI } from './openapi';
 
 export const createApp = (): express.Application => {

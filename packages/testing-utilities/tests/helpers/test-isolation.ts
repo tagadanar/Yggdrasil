@@ -1,7 +1,7 @@
 // packages/testing-utilities/tests/helpers/test-isolation.ts
 // Test isolation utilities for parallel execution
 
-import { Page, BrowserContext } from '@playwright/test';
+import { Page } from '@playwright/test';
 import { connectDatabase, UserModel } from '@yggdrasil/database-schemas';
 
 export interface IsolatedTestUser {

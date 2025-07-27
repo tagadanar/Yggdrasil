@@ -10,8 +10,7 @@ import {
   UserModel, 
   CourseModel, 
   CourseEnrollmentModel, 
-  ExerciseSubmissionModel,
-  NewsArticleModel 
+  ExerciseSubmissionModel
 } from '@yggdrasil/database-schemas';
 
 // =============================================================================
@@ -39,7 +38,7 @@ export abstract class BaseDataFactory {
       await TestInitializer.quickSetup(false);
       
       // Ensure explicit database connection
-      const connectionString = process.env.MONGODB_URI || 'mongodb://localhost:27018/yggdrasil-dev';
+      const connectionString = process.env['MONGODB_URI'] || 'mongodb://localhost:27018/yggdrasil-dev';
       await connectDatabase(connectionString);
       
       // Verify connection is established

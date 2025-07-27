@@ -4,13 +4,20 @@ const { spawn, execSync } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { EventEmitter } = require('events');
 
 // Load environment variables from project root
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
+// Increase max listeners to prevent EventEmitter memory leak warnings
+// Service manager needs to handle multiple services and cleanup listeners
+// Set this BEFORE any services or listeners are created
+EventEmitter.defaultMaxListeners = 50;
+process.setMaxListeners(50);
+
 // Simple clean architecture - use standard ports since we removed worker isolation
-const WORKER_ID = 0; // Clean architecture uses single worker
-const BASE_PORT = 3000; // Standard base port for clean architecture
+const WORKER_ID = parseInt(process.env.WORKER_ID || '0'); // Read from environment or default to 0
+const BASE_PORT = 3000 + (WORKER_ID * 10); // Calculate base port from worker ID
 
 const SERVICES = [
   { name: 'Frontend', url: `http://localhost:${BASE_PORT}`, port: BASE_PORT },
@@ -39,6 +46,34 @@ class ServiceManager {
     this.planningProcess = null;
     this.statisticsProcess = null;
     this.isShuttingDown = false;
+    // EventEmitter listener tracking for proper cleanup
+    this.listeners = new Map();
+  }
+
+  // Method to add process listener with tracking
+  addProcessListener(process, event, handler) {
+    process.on(event, handler);
+    if (!this.listeners.has(process.pid)) {
+      this.listeners.set(process.pid, []);
+    }
+    this.listeners.get(process.pid).push({ event, handler });
+  }
+
+  // Method to clean up all tracked listeners
+  cleanupListeners() {
+    for (const [pid, listeners] of this.listeners) {
+      const process = this.processes.find(p => p && p.pid === pid);
+      if (process) {
+        listeners.forEach(({ event, handler }) => {
+          try {
+            process.removeListener(event, handler);
+          } catch (error) {
+            // Ignore errors during cleanup
+          }
+        });
+      }
+    }
+    this.listeners.clear();
   }
 
   async isPortInUse(port) {
@@ -194,6 +229,7 @@ class ServiceManager {
     
     // Setup cleanup on process exit
     const cleanup = () => {
+      this.cleanupListeners(); // Clean up event listeners
       if (fs.existsSync(LOCK_FILE)) {
         fs.unlinkSync(LOCK_FILE);
       }
@@ -279,12 +315,16 @@ class ServiceManager {
     });
     
     // Forward auth service logs for debugging
-    this.authProcess.stdout.on('data', (data) => {
-      console.log(`🔐 AUTH SERVICE: ${data.toString().trim()}`);
-    });
-    this.authProcess.stderr.on('data', (data) => {
-      console.error(`🚨 AUTH SERVICE ERROR: ${data.toString().trim()}`);
-    });
+    if (this.authProcess.stdout) {
+      this.authProcess.stdout.on('data', (data) => {
+        console.log(`🔐 AUTH SERVICE: ${data.toString().trim()}`);
+      });
+    }
+    if (this.authProcess.stderr) {
+      this.authProcess.stderr.on('data', (data) => {
+        console.error(`🚨 AUTH SERVICE ERROR: ${data.toString().trim()}`);
+      });
+    }
     
     // Start user service
     console.log(`👤 Worker ${WORKER_ID}: Starting user service on port ${BASE_PORT + 2}...`);
@@ -335,12 +375,12 @@ class ServiceManager {
     // Handle errors for all processes
     this.processes.forEach((process, index) => {
       const names = ['frontend', 'auth', 'user', 'news', 'course', 'planning', 'statistics'];
-      process.on('error', (error) => {
+      this.addProcessListener(process, 'error', (error) => {
         console.error(`❌ Failed to start ${names[index]} service:`, error);
         process.exit(1);
       });
       
-      process.on('exit', (code) => {
+      this.addProcessListener(process, 'exit', (code) => {
         if (!this.isShuttingDown) {
           console.log(`📋 ${names[index]} service exited with code ${code}`);
         }
@@ -411,17 +451,36 @@ class ServiceManager {
 
     console.log('🛑 Shutting down services...');
     
-    // Immediately kill all individual processes with SIGKILL
+    // Graceful shutdown with SIGTERM->SIGKILL progression
     if (this.processes && this.processes.length > 0) {
       const names = ['frontend', 'auth', 'user', 'news', 'course', 'planning', 'statistics'];
       
-      // Skip SIGTERM - go straight to SIGKILL for development tools
+      // First, try graceful shutdown with SIGTERM
       for (let i = 0; i < this.processes.length; i++) {
         const process = this.processes[i];
         const name = names[i];
         
         if (process && !process.killed) {
-          console.log(`🔥 Force killing ${name} service immediately...`);
+          console.log(`📝 Sending SIGTERM to ${name} service...`);
+          try {
+            process.kill('SIGTERM');
+          } catch (error) {
+            console.log(`⚠️ Failed to send SIGTERM to ${name} process:`, error.message);
+          }
+        }
+      }
+      
+      // Wait 5 seconds for graceful shutdown
+      console.log('⏳ Waiting 5 seconds for graceful shutdown...');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Force kill any remaining processes with SIGKILL
+      for (let i = 0; i < this.processes.length; i++) {
+        const process = this.processes[i];
+        const name = names[i];
+        
+        if (process && !process.killed) {
+          console.log(`🔥 Force killing ${name} service with SIGKILL...`);
           try {
             process.kill('SIGKILL');
           } catch (error) {
@@ -430,10 +489,13 @@ class ServiceManager {
         }
       }
       
-      // Shorter wait since we're using SIGKILL
+      // Additional wait for SIGKILL to take effect
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
+    // Clean up event listeners before final cleanup
+    this.cleanupListeners();
+    
     // Force clean ports as final step
     const ports = SERVICES.map(s => s.port);
     await this.killPortProcesses(ports);
@@ -463,6 +525,57 @@ class ServiceManager {
     );
 
     return allHealthy;
+  }
+
+  // Process monitoring for zombies and hanging processes
+  async monitorProcessHealth() {
+    console.log('🔍 Monitoring process health...');
+    
+    try {
+      // Check for zombie processes
+      const zombieCheck = execSync('ps aux | grep -E "Z|<defunct>" | grep -v grep || true', { encoding: 'utf8' });
+      if (zombieCheck.trim()) {
+        console.log('⚠️ Zombie processes detected:');
+        console.log(zombieCheck);
+      } else {
+        console.log('✅ No zombie processes found');
+      }
+
+      // Check our managed processes
+      if (this.processes && this.processes.length > 0) {
+        const names = ['frontend', 'auth', 'user', 'news', 'course', 'planning', 'statistics'];
+        console.log('📊 Managed process status:');
+        
+        for (let i = 0; i < this.processes.length; i++) {
+          const process = this.processes[i];
+          const name = names[i];
+          
+          if (process) {
+            const status = process.killed ? '💀 Dead' : '✅ Alive';
+            console.log(`   ${name}: ${status} (PID: ${process.pid})`);
+          } else {
+            console.log(`   ${name}: ❌ Not started`);
+          }
+        }
+      }
+
+      // Check for hanging Node.js processes on our ports
+      const ports = SERVICES.map(s => s.port);
+      for (const port of ports) {
+        try {
+          const processInfo = execSync(`lsof -i:${port} -n -P 2>/dev/null || true`, { encoding: 'utf8' });
+          if (processInfo.trim()) {
+            console.log(`🔍 Port ${port} processes:`);
+            console.log(processInfo);
+          }
+        } catch (error) {
+          // Ignore errors - port might not be in use
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ Process monitoring error:', error.message);
+    }
   }
 }
 
@@ -520,6 +633,10 @@ async function main() {
         process.exit(healthy ? 0 : 1);
         break;
         
+      case 'monitor':
+        await serviceManager.monitorProcessHealth();
+        break;
+        
       case 'clean':
         const ports = SERVICES.map(s => s.port);
         await serviceManager.killPortProcesses(ports);
@@ -527,7 +644,7 @@ async function main() {
         break;
         
       default:
-        console.log('Usage: node service-manager.js [start|stop|health|clean]');
+        console.log('Usage: node service-manager.js [start|stop|health|monitor|clean]');
         process.exit(1);
     }
   } catch (error) {

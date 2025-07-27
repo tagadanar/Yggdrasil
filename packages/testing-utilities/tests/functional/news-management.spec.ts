@@ -5,6 +5,7 @@ import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('News Management', () => {
   // Removed global auth helpers - each test manages its own cleanup
@@ -14,20 +15,20 @@ test.describe('News Management', () => {
   // =============================================================================
   
   test('Admin news access and permissions', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Admin news access and permissions');
+    const cleanup = TestCleanup.getInstance('Admin news access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsAdmin();
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // All roles can access news page - check for actual title
     await expect(page.locator('h1:has-text("News & Announcements")')).toBeVisible();
     
     // Admin should see create button
     const createButton = page.locator('button:has-text("Create News Article"), .btn-primary:has-text("Create")');
-    await expect(createButton.first()).toBeVisible({ timeout: 5000 });
+    await expect(createButton.first()).toBeVisible({ timeout: 2000 });
     
     // Check article actions on existing articles
     const articles = page.locator('article');
@@ -49,20 +50,20 @@ test.describe('News Management', () => {
   });
 
   test('Staff news access and permissions', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Staff news access and permissions');
+    const cleanup = TestCleanup.getInstance('Staff news access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsStaff();
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // All roles can access news page - check for actual title
     await expect(page.locator('h1:has-text("News & Announcements")')).toBeVisible();
     
     // Staff should see create button
     const createButton = page.locator('button:has-text("Create News Article"), .btn-primary:has-text("Create")');
-    await expect(createButton.first()).toBeVisible({ timeout: 5000 });
+    await expect(createButton.first()).toBeVisible({ timeout: 2000 });
     
     // Check article actions on existing articles
     const articles = page.locator('article');
@@ -84,13 +85,13 @@ test.describe('News Management', () => {
   });
 
   test('Teacher news access and permissions', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Teacher news access and permissions');
+    const cleanup = TestCleanup.getInstance('Teacher news access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsTeacher();
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // All roles can access news page - check for actual title
     await expect(page.locator('h1:has-text("News & Announcements")')).toBeVisible();
@@ -119,13 +120,13 @@ test.describe('News Management', () => {
   });
 
   test('Student news access and permissions', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Student news access and permissions');
+    const cleanup = TestCleanup.getInstance('Student news access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsStudent();
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // All roles can access news page - check for actual title
     await expect(page.locator('h1:has-text("News & Announcements")')).toBeVisible();
@@ -157,20 +158,20 @@ test.describe('News Management', () => {
   // TEST 2: NEWS ARTICLE CREATION AND MANAGEMENT
   // =============================================================================
   test('Complete article lifecycle - create, edit, publish, archive', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Complete article lifecycle - create, edit, publish, archive');
+    const cleanup = TestCleanup.getInstance('Complete article lifecycle - create, edit, publish, archive');
     const authHelper = new CleanAuthHelper(page);
     let createdArticleTitle: string | null = null;
     
     try {
       await authHelper.loginAsAdmin();
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     createdArticleTitle = `Test Article ${Date.now()}`;
     
     // 1. CREATE ARTICLE
     const createButton = page.locator('button:has-text("Create News Article")');
-    await expect(createButton).toBeVisible();
+    await expect(createButton).toBeVisible({ timeout: 5000 });
     await createButton.click();
     
     // Fill form in modal
@@ -185,11 +186,11 @@ test.describe('News Management', () => {
     
     // Verify article appears in list
     const articleElement = page.locator(`article:has-text("${createdArticleTitle}")`);
-    await expect(articleElement).toBeVisible({ timeout: 15000 });
+    await expect(articleElement).toBeVisible({ timeout: 5000 });
     
     // 2. EDIT ARTICLE
     const editButton = articleElement.locator('button:has-text("Edit")');
-    await expect(editButton).toBeVisible();
+    await expect(editButton).toBeVisible({ timeout: 5000 });
     await editButton.click();
     
     // Edit in modal
@@ -201,19 +202,19 @@ test.describe('News Management', () => {
     await page.click('button:has-text("Update Article")');
     
     // Verify update
-    await expect(page.locator(`article:has-text("${updatedTitle}")`)).toBeVisible({ timeout: 15000 });
+    await expect(page.locator(`article:has-text("${updatedTitle}")`)).toBeVisible({ timeout: 5000 });
     
     // 3. DELETE ARTICLE
     const updatedArticle = page.locator(`article:has-text("${updatedTitle}")`);
     const deleteButton = updatedArticle.locator('button:has-text("Delete")');
-    await expect(deleteButton).toBeVisible();
+    await expect(deleteButton).toBeVisible({ timeout: 5000 });
     
     // Set up dialog handler BEFORE clicking delete
     page.on('dialog', dialog => dialog.accept());
     await deleteButton.click();
     
     // Wait for article to be removed
-    await expect(page.locator(`article:has-text("${updatedTitle}")`)).toHaveCount(0, { timeout: 15000 });
+    await expect(page.locator(`article:has-text("${updatedTitle}")`)).toHaveCount(0, { timeout: 5000 });
     
     } finally {
       // CRITICAL: Track and cleanup created article
@@ -232,13 +233,13 @@ test.describe('News Management', () => {
   // TEST 3: NEWS CATEGORY FILTERING
   // =============================================================================
   test('News filtering and content discovery', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('News filtering and content discovery');
+    const cleanup = TestCleanup.getInstance('News filtering and content discovery');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsStudent();
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Test category filtering
     const categories = ['all', 'announcements', 'events', 'academic', 'general'];
@@ -250,7 +251,7 @@ test.describe('News Management', () => {
         await categoryButton.click();
         
         // Wait for category button to become active (filtering applied)
-        await expect(categoryButton).toHaveClass(/bg-primary-600/, { timeout: 10000 });
+        await expect(categoryButton).toHaveClass(/bg-primary-600/, { timeout: 3000 });
         
         // Verify filtering - count articles
         const articles = page.locator('article');
@@ -268,7 +269,7 @@ test.describe('News Management', () => {
   // TEST 4: NEWS PAGE LOADING AND ERROR HANDLING
   // =============================================================================
   test('News page loading states and error handling', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('News page loading states and error handling');
+    const cleanup = TestCleanup.getInstance('News page loading states and error handling');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -313,7 +314,7 @@ test.describe('News Management', () => {
   // TEST 5: ACCESS DENIED FUNCTIONALITY
   // =============================================================================
   test('Access denied message functionality', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Access denied message functionality');
+    const cleanup = TestCleanup.getInstance('Access denied message functionality');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -321,7 +322,7 @@ test.describe('News Management', () => {
     
     // Navigate to news with access denied parameter
     await page.goto('/news?error=access_denied');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Should show access denied message
     await expect(page.locator('text=Access Denied')).toBeVisible();

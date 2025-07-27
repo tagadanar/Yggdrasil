@@ -1,11 +1,11 @@
 // packages/api-services/statistics-service/src/services/StatisticsService.ts
 // Core business logic for statistics and analytics
 
-import { 
-  CourseModel, 
-  CourseEnrollmentModel, 
-  ExerciseSubmissionModel, 
-  UserModel
+import {
+  CourseModel,
+  CourseEnrollmentModel,
+  ExerciseSubmissionModel,
+  UserModel,
 } from '@yggdrasil/database-schemas';
 import { type CourseProgress, statsLogger as logger } from '@yggdrasil/shared-utilities';
 
@@ -119,56 +119,56 @@ interface AdminDashboardData {
 }
 
 export class StatisticsService {
-  
+
   // =============================================================================
   // STUDENT DASHBOARD ANALYTICS
   // =============================================================================
-  
+
   static async getStudentDashboard(userId: string): Promise<StudentDashboardData> {
     try {
       // ULTRA-AGGRESSIVE: Only process very recent data for test performance
       const testThreshold = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago for tests
-      
+
       // Get student enrollments (optimized with time filter)
-      const enrollments = await CourseEnrollmentModel.find({ 
+      const enrollments = await CourseEnrollmentModel.find({
         studentId: userId,
-        updatedAt: { $gte: testThreshold } // Only recent enrollments
+        updatedAt: { $gte: testThreshold }, // Only recent enrollments
       }).limit(10); // Cap enrollments
-      
+
       // Circuit breaker for student enrollments
       if (enrollments.length > 20) {
         logger.warn(`🚨 STATISTICS PERFORMANCE: Found ${enrollments.length} enrollments for student, using fallback data`);
         return this.getFallbackStudentDashboard();
       }
-      
+
       // Manually fetch course data for each enrollment (optimized)
       const enrollmentsWithCourses = await Promise.all(
         enrollments.slice(0, 5).map(async (enrollment) => { // Process max 5 enrollments
           const course = await CourseModel.findById(enrollment.courseId).select('title instructor estimatedDuration');
           return {
             ...enrollment.toObject(),
-            courseId: course
+            courseId: course,
           };
-        })
+        }),
       );
 
       // Get exercise submissions for this student (ultra-optimized)
-      const submissions = await ExerciseSubmissionModel.find({ 
+      const submissions = await ExerciseSubmissionModel.find({
         studentId: userId,
-        submittedAt: { $gte: testThreshold } // Only recent submissions
+        submittedAt: { $gte: testThreshold }, // Only recent submissions
       }).sort({ submittedAt: -1 })
         .limit(20) // Much lower limit
         .select('exerciseId result submittedAt'); // Essential fields only
 
       // Calculate learning statistics
       const learningStats = await this.calculateStudentLearningStats(userId, enrollmentsWithCourses, submissions);
-      
+
       // Get course progress details
       const courseProgress = await this.calculateStudentCourseProgress(enrollmentsWithCourses);
-      
+
       // Get recent activity
       const recentActivity = await this.getStudentRecentActivity(userId, submissions);
-      
+
       // Get achievements (mock for now - in real implementation this would be calculated)
       const achievements = await this.getStudentAchievements(userId, learningStats);
 
@@ -176,7 +176,7 @@ export class StatisticsService {
         learningStats,
         courseProgress,
         recentActivity,
-        achievements
+        achievements,
       };
     } catch (error: any) {
       throw new Error(`Failed to get student dashboard: ${error.message}`);
@@ -184,14 +184,14 @@ export class StatisticsService {
   }
 
   private static async calculateStudentLearningStats(
-    _userId: string, 
-    enrollments: any[], 
-    submissions: any[]
+    _userId: string,
+    enrollments: any[],
+    submissions: any[],
   ) {
     const totalCourses = enrollments.length;
     const activeCourses = enrollments.filter(e => e.status === 'active').length;
     const completedCourses = enrollments.filter(e => e.status === 'completed').length;
-    
+
     // Calculate total time spent (sum of all course progress timeSpent)
     const totalTimeSpent = enrollments.reduce((total, enrollment) => {
       return total + (enrollment.progress?.timeSpent || 0);
@@ -201,8 +201,8 @@ export class StatisticsService {
     const progressValues = enrollments
       .filter(e => e.progress?.overallProgress !== undefined)
       .map(e => e.progress.overallProgress);
-    const averageProgress = progressValues.length > 0 
-      ? progressValues.reduce((sum, progress) => sum + progress, 0) / progressValues.length 
+    const averageProgress = progressValues.length > 0
+      ? progressValues.reduce((sum, progress) => sum + progress, 0) / progressValues.length
       : 0;
 
     // Weekly goal and progress (mock values - in real implementation would track by date)
@@ -218,8 +218,8 @@ export class StatisticsService {
     const scoreValues = submissions
       .filter(s => s.result?.score !== undefined)
       .map(s => s.result.score);
-    const averageScore = scoreValues.length > 0 
-      ? scoreValues.reduce((sum, score) => sum + score, 0) / scoreValues.length 
+    const averageScore = scoreValues.length > 0
+      ? scoreValues.reduce((sum, score) => sum + score, 0) / scoreValues.length
       : 0;
 
     return {
@@ -233,7 +233,7 @@ export class StatisticsService {
       currentStreak,
       totalExercises,
       completedExercises,
-      averageScore: Math.round(averageScore)
+      averageScore: Math.round(averageScore),
     };
   }
 
@@ -241,7 +241,7 @@ export class StatisticsService {
     return enrollments.map(enrollment => {
       const course = enrollment.courseId;
       const progress = enrollment.progress || {};
-      
+
       // Calculate estimated completion date
       const remainingProgress = 100 - (progress.overallProgress || 0);
       const estimatedHoursRemaining = (course.estimatedDuration || 60) * (remainingProgress / 100);
@@ -258,7 +258,7 @@ export class StatisticsService {
         lastAccessed: progress.lastAccessedAt || enrollment.enrolledAt,
         enrollmentStatus: enrollment.status || 'active',
         instructor: course.instructor?.name || 'Unknown',
-        estimatedCompletion
+        estimatedCompletion,
       };
     });
   }
@@ -270,36 +270,36 @@ export class StatisticsService {
         // Find the exercise and course data
         const exercise = await this.findExerciseBySubmission(submission.exerciseId);
         const course = await CourseModel.findById(submission.courseId || exercise?.courseId);
-        
+
         return {
           id: submission._id.toString(),
           type: 'exercise' as const,
           courseTitle: course?.title || 'Unknown Course',
           activityTitle: exercise?.title || 'Unknown Exercise',
           completedAt: submission.submittedAt,
-          score: submission.result?.score
+          score: submission.result?.score,
         };
-      })
+      }),
     );
 
     return recentSubmissions;
   }
 
   private static exerciseCache = new Map<string, any>();
-  
+
   private static async findExerciseBySubmission(exerciseId: string): Promise<any | null> {
     try {
       // Check cache first
       if (this.exerciseCache.has(exerciseId)) {
         return this.exerciseCache.get(exerciseId);
       }
-      
+
       // ULTRA-AGGRESSIVE: only search very recent courses (test performance)
       const testThreshold = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours only
       const courses = await CourseModel.find({
-        updatedAt: { $gte: testThreshold }
+        updatedAt: { $gte: testThreshold },
       }).limit(5).select('chapters title'); // Much lower limits
-      
+
       // Circuit breaker - if too many courses, return fallback
       if (courses.length > 10) {
         logger.warn(`🚨 EXERCISE SEARCH: Found ${courses.length} courses, returning fallback exercise`);
@@ -307,43 +307,43 @@ export class StatisticsService {
           _id: exerciseId,
           title: 'Test Exercise',
           type: 'code',
-          courseId: 'fallback-course'
+          courseId: 'fallback-course',
         };
         this.exerciseCache.set(exerciseId, fallbackExercise);
         return fallbackExercise;
       }
-      
+
       for (const course of courses) {
         for (const chapter of course.chapters.slice(0, 2)) { // Max 2 chapters
           for (const section of chapter.sections.slice(0, 3)) { // Max 3 sections
             for (const content of section.content.slice(0, 5)) { // Max 5 content items
-              if (content.type === 'exercise' && content.data?.exercise && 
+              if (content.type === 'exercise' && content.data?.exercise &&
                   content.data.exercise._id.toString() === exerciseId) {
                 const result = {
                   ...content.data.exercise,
-                  courseId: course._id.toString()
+                  courseId: course._id.toString(),
                 };
-                
+
                 // Cache the result
                 this.exerciseCache.set(exerciseId, result);
                 if (this.exerciseCache.size > 30) { // Smaller cache
                   const firstKey = this.exerciseCache.keys().next().value;
                   this.exerciseCache.delete(firstKey!);
                 }
-                
+
                 return result;
               }
             }
           }
         }
       }
-      
+
       // Return fallback instead of null to avoid expensive repeated searches
       const fallbackExercise = {
         _id: exerciseId,
         title: 'Test Exercise',
         type: 'code',
-        courseId: 'fallback-course'
+        courseId: 'fallback-course',
       };
       this.exerciseCache.set(exerciseId, fallbackExercise);
       return fallbackExercise;
@@ -354,7 +354,7 @@ export class StatisticsService {
         _id: exerciseId,
         title: 'Test Exercise',
         type: 'code',
-        courseId: 'fallback-course'
+        courseId: 'fallback-course',
       };
     }
   }
@@ -370,7 +370,7 @@ export class StatisticsService {
         description: 'Complete your first exercise',
         iconName: 'trophy',
         unlockedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-        category: 'progress' as const
+        category: 'progress' as const,
       });
     }
 
@@ -382,7 +382,7 @@ export class StatisticsService {
         description: 'Study for 5 consecutive days',
         iconName: 'fire',
         unlockedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-        category: 'streak' as const
+        category: 'streak' as const,
       });
     }
 
@@ -394,7 +394,7 @@ export class StatisticsService {
         description: 'Maintain 90%+ average score',
         iconName: 'star',
         unlockedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-        category: 'score' as const
+        category: 'score' as const,
       });
     }
 
@@ -410,14 +410,14 @@ export class StatisticsService {
       // ULTRA-AGGRESSIVE: Only process very recent data (last 10 minutes for test performance)
       const recentThreshold = new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago
       const testThreshold = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago for tests
-      
+
       // Get courses taught by this teacher (ultra-optimized with recent filter)
       const courses = await CourseModel.find({
         $or: [
           { 'instructor._id': teacherId },
-          { 'collaborators._id': teacherId }
+          { 'collaborators._id': teacherId },
         ],
-        updatedAt: { $gte: testThreshold } // Only recent courses
+        updatedAt: { $gte: testThreshold }, // Only recent courses
       }).limit(10).select('_id title status instructor collaborators updatedAt'); // Essential fields only
 
       // Circuit breaker - exit early if too many courses (indicates accumulated test data)
@@ -431,7 +431,7 @@ export class StatisticsService {
       // Get enrollments for teacher's courses (ultra-optimized)
       const enrollments = await CourseEnrollmentModel.find({
         courseId: { $in: courseIds },
-        updatedAt: { $gte: testThreshold } // Only recent enrollments
+        updatedAt: { $gte: testThreshold }, // Only recent enrollments
       }).limit(50).select('courseId studentId status progress updatedAt'); // Essential fields only
 
       // Circuit breaker for enrollments
@@ -448,27 +448,27 @@ export class StatisticsService {
         if (exerciseIds.length > 30) break; // Cap total exercise IDs at 30
       }
 
-      // Get submissions for teacher's exercises (ultra-optimized - very recent only)  
+      // Get submissions for teacher's exercises (ultra-optimized - very recent only)
       const submissions = await ExerciseSubmissionModel.find({
         exerciseId: { $in: exerciseIds },
-        submittedAt: { $gte: recentThreshold } // Last 10 minutes only for tests
+        submittedAt: { $gte: recentThreshold }, // Last 10 minutes only for tests
       }).sort({ submittedAt: -1 })
         .limit(50) // Much lower limit
         .select('exerciseId studentId result gradedAt submittedAt'); // Essential fields only
 
       // Calculate course statistics
       const courseStats = this.calculateTeacherCourseStats(courses, enrollments, submissions);
-      
+
       // Calculate individual course analytics
       const courseAnalytics = await this.calculateTeacherCourseAnalytics(courses, enrollments);
-      
+
       // Get recent submissions needing attention
       const recentSubmissions = await this.getTeacherRecentSubmissions(submissions);
 
       return {
         courseStats,
         courseAnalytics,
-        recentSubmissions
+        recentSubmissions,
       };
     } catch (error: any) {
       throw new Error(`Failed to get teacher dashboard: ${error.message}`);
@@ -490,7 +490,7 @@ export class StatisticsService {
         currentStreak: 1,
         totalExercises: 1,
         completedExercises: 1,
-        averageScore: 75
+        averageScore: 75,
       },
       courseProgress: [{
         courseId: 'fallback-course',
@@ -500,7 +500,7 @@ export class StatisticsService {
         lastAccessed: new Date(),
         enrollmentStatus: 'active' as const,
         instructor: 'Test Instructor',
-        estimatedCompletion: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        estimatedCompletion: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       }],
       recentActivity: [{
         id: 'fallback-activity',
@@ -508,7 +508,7 @@ export class StatisticsService {
         courseTitle: 'Test Course',
         activityTitle: 'Test Exercise',
         completedAt: new Date(),
-        score: 75
+        score: 75,
       }],
       achievements: [{
         id: 'fallback-achievement',
@@ -516,8 +516,8 @@ export class StatisticsService {
         description: 'Started learning journey',
         iconName: 'trophy',
         unlockedAt: new Date(),
-        category: 'progress' as const
-      }]
+        category: 'progress' as const,
+      }],
     };
   }
 
@@ -533,7 +533,7 @@ export class StatisticsService {
         activeStudents: 1,
         averageProgress: 50,
         totalSubmissions: 1,
-        pendingGrading: 0
+        pendingGrading: 0,
       },
       courseAnalytics: [{
         courseId: 'fallback-course',
@@ -542,7 +542,7 @@ export class StatisticsService {
         completedStudents: 0,
         averageProgress: 50,
         averageScore: 75,
-        lastActivity: new Date()
+        lastActivity: new Date(),
       }],
       recentSubmissions: [{
         submissionId: 'fallback-submission',
@@ -550,8 +550,8 @@ export class StatisticsService {
         courseName: 'Test Course',
         exerciseTitle: 'Test Exercise',
         submittedAt: new Date(),
-        needsGrading: false
-      }]
+        needsGrading: false,
+      }],
     };
   }
 
@@ -559,15 +559,15 @@ export class StatisticsService {
     const totalCourses = courses.length;
     const publishedCourses = courses.filter(c => c.status === 'published').length;
     const draftCourses = courses.filter(c => c.status === 'draft').length;
-    
+
     const totalStudents = enrollments.length;
     const activeStudents = enrollments.filter(e => e.status === 'active').length;
-    
+
     // Calculate average progress across all enrollments
     const progressValues = enrollments
       .filter(e => e.progress?.overallProgress !== undefined)
       .map(e => e.progress.overallProgress);
-    const averageProgress = progressValues.length > 0 
+    const averageProgress = progressValues.length > 0
       ? Math.round(progressValues.reduce((sum, progress) => sum + progress, 0) / progressValues.length)
       : 0;
 
@@ -582,44 +582,44 @@ export class StatisticsService {
       activeStudents,
       averageProgress,
       totalSubmissions,
-      pendingGrading
+      pendingGrading,
     };
   }
 
   private static async calculateTeacherCourseAnalytics(courses: any[], enrollments: any[]) {
     return await Promise.all(
       courses.map(async (course) => {
-        const courseEnrollments = enrollments.filter(e => 
-          e.courseId.toString() === course._id.toString()
+        const courseEnrollments = enrollments.filter(e =>
+          e.courseId.toString() === course._id.toString(),
         );
-        
+
         const enrolledStudents = courseEnrollments.length;
         const completedStudents = courseEnrollments.filter(e => e.status === 'completed').length;
-        
+
         // Calculate average progress for this course
         const progressValues = courseEnrollments
           .filter(e => e.progress?.overallProgress !== undefined)
           .map(e => e.progress.overallProgress);
-        const averageProgress = progressValues.length > 0 
+        const averageProgress = progressValues.length > 0
           ? Math.round(progressValues.reduce((sum, progress) => sum + progress, 0) / progressValues.length)
           : 0;
 
         // Calculate real average score from submissions
         const exerciseIds = await this.getExerciseIdsForCourse(course._id.toString());
         const courseSubmissions = await ExerciseSubmissionModel.find({
-          exerciseId: { $in: exerciseIds }
+          exerciseId: { $in: exerciseIds },
         });
-        
+
         const scores = courseSubmissions
           .filter(s => s.result?.score !== undefined)
           .map(s => s.result!.score);
-        
-        const averageScore = scores.length > 0 
+
+        const averageScore = scores.length > 0
           ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
           : 0;
 
         // Get last activity date
-        const lastActivity = courseEnrollments.length > 0 
+        const lastActivity = courseEnrollments.length > 0
           ? new Date(Math.max(...courseEnrollments.map(e => e.lastAccessedAt || e.enrolledAt)))
           : course.updatedAt;
 
@@ -630,26 +630,26 @@ export class StatisticsService {
           completedStudents,
           averageProgress,
           averageScore,
-          lastActivity
+          lastActivity,
         };
-      })
+      }),
     );
   }
 
   private static exerciseIdCache = new Map<string, string[]>();
-  
+
   private static async getExerciseIdsForCourse(courseId: string): Promise<string[]> {
     try {
       // Check cache first
       if (this.exerciseIdCache.has(courseId)) {
         return this.exerciseIdCache.get(courseId)!;
       }
-      
+
       const course = await CourseModel.findById(courseId).select('chapters');
       if (!course) return [];
-      
+
       const exerciseIds: string[] = [];
-      
+
       // Optimize: limit chapters and sections processed
       for (const chapter of course.chapters.slice(0, 5)) { // Max 5 chapters
         for (const section of chapter.sections.slice(0, 10)) { // Max 10 sections per chapter
@@ -663,14 +663,14 @@ export class StatisticsService {
         }
         if (exerciseIds.length >= 50) break;
       }
-      
+
       // Cache result (with TTL cleanup every 100 entries)
       this.exerciseIdCache.set(courseId, exerciseIds);
       if (this.exerciseIdCache.size > 100) {
         const firstKey = this.exerciseIdCache.keys().next().value;
         this.exerciseIdCache.delete(firstKey!);
       }
-      
+
       return exerciseIds;
     } catch (error) {
       logger.error('Error getting exercise IDs for course:', error);
@@ -683,18 +683,18 @@ export class StatisticsService {
       submissions.slice(0, 20).map(async (submission) => {
         // Find the real exercise title
         const exercise = await this.findExerciseBySubmission(submission.exerciseId);
-        
+
         return {
           submissionId: submission._id.toString(),
           studentName: `${submission.studentId?.profile?.firstName || 'Unknown'} ${submission.studentId?.profile?.lastName || 'Student'}`,
           courseName: submission.courseId?.title || 'Unknown Course',
           exerciseTitle: exercise?.title || 'Unknown Exercise',
           submittedAt: submission.submittedAt,
-          needsGrading: !submission.result || !submission.gradedAt
+          needsGrading: !submission.result || !submission.gradedAt,
         };
-      })
+      }),
     );
-    
+
     return recentSubmissions;
   }
 
@@ -709,22 +709,22 @@ export class StatisticsService {
         UserModel.countDocuments(),
         CourseModel.countDocuments(),
         CourseEnrollmentModel.countDocuments(),
-        ExerciseSubmissionModel.countDocuments()
+        ExerciseSubmissionModel.countDocuments(),
       ]);
 
       // Get active users (users who accessed platform in last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const activeUsers = await UserModel.countDocuments({
-        lastLoginAt: { $gte: thirtyDaysAgo }
+        lastLoginAt: { $gte: thirtyDaysAgo },
       });
 
       // Get user breakdown by role
       const userBreakdown = await this.getUserBreakdown();
-      
+
       // Get course metrics
       const courseMetrics = await this.getCourseMetrics();
-      
+
       // System health (mock for now)
       const systemHealth = this.getSystemHealth();
 
@@ -734,14 +734,14 @@ export class StatisticsService {
         totalCourses: courseCount,
         totalEnrollments: enrollmentCount,
         totalSubmissions: submissionCount,
-        platformEngagement: Math.round((activeUsers / userCount) * 100) || 0
+        platformEngagement: Math.round((activeUsers / userCount) * 100) || 0,
       };
 
       return {
         platformStats,
         userBreakdown,
         courseMetrics,
-        systemHealth
+        systemHealth,
       };
     } catch (error: any) {
       throw new Error(`Failed to get admin dashboard: ${error.message}`);
@@ -753,9 +753,9 @@ export class StatisticsService {
       {
         $group: {
           _id: '$role',
-          count: { $sum: 1 }
-        }
-      }
+          count: { $sum: 1 },
+        },
+      },
     ]);
 
     const breakdown = { students: 0, teachers: 0, staff: 0, admins: 0 };
@@ -774,33 +774,33 @@ export class StatisticsService {
       {
         $group: {
           _id: '$courseId',
-          enrollments: { $sum: 1 }
-        }
+          enrollments: { $sum: 1 },
+        },
       },
       {
         $lookup: {
           from: 'courses',
           localField: '_id',
           foreignField: '_id',
-          as: 'course'
-        }
+          as: 'course',
+        },
       },
       {
-        $unwind: '$course'
+        $unwind: '$course',
       },
       {
         $project: {
           courseId: '$_id',
           title: '$course.title',
-          enrollments: 1
-        }
+          enrollments: 1,
+        },
       },
       {
-        $sort: { enrollments: -1 }
+        $sort: { enrollments: -1 },
       },
       {
-        $limit: 5
-      }
+        $limit: 5,
+      },
     ]);
 
     // Top performing courses with real metrics
@@ -810,36 +810,36 @@ export class StatisticsService {
         // Get real metrics for each course
         const enrollments = await CourseEnrollmentModel.find({ courseId: course._id });
         const exerciseIds = await this.getExerciseIdsForCourse(course._id.toString());
-        const submissions = await ExerciseSubmissionModel.find({ 
-          exerciseId: { $in: exerciseIds } 
+        const submissions = await ExerciseSubmissionModel.find({
+          exerciseId: { $in: exerciseIds },
         });
-        
+
         // Calculate real completion rate
         const completedEnrollments = enrollments.filter(e => e.status === 'completed').length;
-        const completionRate = enrollments.length > 0 
+        const completionRate = enrollments.length > 0
           ? Math.round((completedEnrollments / enrollments.length) * 100)
           : 0;
-        
+
         // Calculate real average score
         const scores = submissions
           .filter(s => s.result?.score !== undefined)
           .map(s => s.result!.score);
-        const averageScore = scores.length > 0 
+        const averageScore = scores.length > 0
           ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
           : 0;
-        
+
         return {
           courseId: course._id.toString(),
           title: course.title,
           averageScore,
-          completionRate
+          completionRate,
         };
-      })
+      }),
     );
 
     return {
       mostPopularCourses,
-      topPerformingCourses
+      topPerformingCourses,
     };
   }
 
@@ -852,8 +852,8 @@ export class StatisticsService {
         { name: 'course-service', status: 'healthy' as const },
         { name: 'news-service', status: 'healthy' as const },
         { name: 'planning-service', status: 'healthy' as const },
-        { name: 'statistics-service', status: 'healthy' as const }
-      ]
+        { name: 'statistics-service', status: 'healthy' as const },
+      ],
     };
   }
 
@@ -864,12 +864,12 @@ export class StatisticsService {
   static async updateStudentProgress(
     studentId: string,
     courseId: string,
-    progressUpdate: Partial<CourseProgress>
+    progressUpdate: Partial<CourseProgress>,
   ): Promise<any> {
     try {
       const enrollment = await CourseEnrollmentModel.findOne({
         studentId,
-        courseId
+        courseId,
       });
 
       if (!enrollment) {
@@ -881,13 +881,13 @@ export class StatisticsService {
       if (updateType && !['section_complete', 'exercise_complete'].includes(updateType)) {
         return {
           success: false,
-          error: 'Invalid progress update type. Must be "section_complete" or "exercise_complete"'
+          error: 'Invalid progress update type. Must be "section_complete" or "exercise_complete"',
         };
       }
 
       // Handle different types of progress updates
       const currentProgress = enrollment.progress || {};
-      
+
       if (updateType === 'section_complete') {
         const update = progressUpdate as any;
         const completedSections = currentProgress.completedSections || [];
@@ -898,7 +898,7 @@ export class StatisticsService {
           ...currentProgress,
           completedSections,
           timeSpent: (currentProgress.timeSpent || 0) + (update.timeSpent || 0),
-          lastAccessedAt: new Date()
+          lastAccessedAt: new Date(),
         };
       } else if (updateType === 'exercise_complete') {
         const update = progressUpdate as any;
@@ -910,14 +910,14 @@ export class StatisticsService {
           ...currentProgress,
           completedExercises,
           timeSpent: (currentProgress.timeSpent || 0) + (update.timeSpent || 0),
-          lastAccessedAt: new Date()
+          lastAccessedAt: new Date(),
         };
       } else {
         // Direct progress update
         enrollment.progress = {
           ...currentProgress,
           ...progressUpdate,
-          lastAccessedAt: new Date()
+          lastAccessedAt: new Date(),
         };
       }
 
@@ -929,12 +929,12 @@ export class StatisticsService {
       return {
         success: true,
         message: 'Student progress updated successfully',
-        data: enrollment.progress
+        data: enrollment.progress,
       };
     } catch (error: any) {
       return {
         success: false,
-        error: error.message || 'Failed to update student progress'
+        error: error.message || 'Failed to update student progress',
       };
     }
   }
@@ -943,11 +943,11 @@ export class StatisticsService {
     // Simple calculation based on completed sections and exercises
     const sectionWeight = 0.7;
     const exerciseWeight = 0.3;
-    
+
     // Mock calculation - in real implementation would use actual course structure
     const sectionProgress = (progress.completedSections?.length || 0) * 10; // Assume 10 sections
     const exerciseProgress = (progress.completedExercises?.length || 0) * 5; // Assume 20 exercises
-    
+
     const totalProgress = (sectionProgress * sectionWeight) + (exerciseProgress * exerciseWeight);
     return Math.min(Math.round(totalProgress), 100);
   }
@@ -972,23 +972,23 @@ export class StatisticsService {
           _id: course._id.toString(),
           title: course.title,
           status: course.status,
-          createdAt: course.createdAt
+          createdAt: course.createdAt,
         } : null,
         enrollmentStats: {
           totalEnrollments,
           activeEnrollments,
           completedEnrollments,
-          dropoutRate: totalEnrollments > 0 ? Math.round((droppedEnrollments / totalEnrollments) * 100) : 0
+          dropoutRate: totalEnrollments > 0 ? Math.round((droppedEnrollments / totalEnrollments) * 100) : 0,
         },
         progressStats: {
           averageProgress: this.calculateAverageProgress(enrollments),
-          progressDistribution: this.getProgressDistribution(enrollments)
+          progressDistribution: this.getProgressDistribution(enrollments),
         },
         timeStats: {
           averageTimeSpent: this.calculateAverageTimeSpent(enrollments),
-          totalTimeSpent: enrollments.reduce((total, e) => total + (e.progress?.timeSpent || 0), 0)
+          totalTimeSpent: enrollments.reduce((total, e) => total + (e.progress?.timeSpent || 0), 0),
         },
-        recentActivity: [] // Mock - in real implementation would show recent enrollments, completions, etc.
+        recentActivity: [], // Mock - in real implementation would show recent enrollments, completions, etc.
       };
 
       return analytics;
@@ -1001,8 +1001,8 @@ export class StatisticsService {
     const progressValues = enrollments
       .filter(e => e.progress?.overallProgress !== undefined)
       .map(e => e.progress.overallProgress);
-    
-    return progressValues.length > 0 
+
+    return progressValues.length > 0
       ? Math.round(progressValues.reduce((sum, progress) => sum + progress, 0) / progressValues.length)
       : 0;
   }
@@ -1012,7 +1012,7 @@ export class StatisticsService {
       { range: '0-25%', count: 0 },
       { range: '26-50%', count: 0 },
       { range: '51-75%', count: 0 },
-      { range: '76-100%', count: 0 }
+      { range: '76-100%', count: 0 },
     ];
 
     enrollments.forEach(enrollment => {
@@ -1030,8 +1030,8 @@ export class StatisticsService {
     const timeValues = enrollments
       .filter(e => e.progress?.timeSpent !== undefined)
       .map(e => e.progress.timeSpent);
-    
-    return timeValues.length > 0 
+
+    return timeValues.length > 0
       ? Math.round(timeValues.reduce((sum, time) => sum + time, 0) / timeValues.length)
       : 0;
   }

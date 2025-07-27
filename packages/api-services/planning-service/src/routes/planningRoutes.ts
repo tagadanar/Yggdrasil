@@ -1,13 +1,10 @@
 import { Router } from 'express';
-import { authenticate, requireRole } from '../middleware/authMiddleware';
+import { authenticate, requireRole, teacherAndAbove } from '../middleware/authMiddleware';
 import { PlanningController } from '../controllers/PlanningController';
 
 const router = Router();
 
-// Apply authentication to all routes
-router.use(authenticate);
-
-// Root route - authenticated users can access planning service
+// Root route - public access for service info (like course service)
 router.get('/', (req, res) => {
   return res.json({
     service: 'planning-service',
@@ -20,25 +17,25 @@ router.get('/', (req, res) => {
       'PUT /events/:eventId': 'Update event (admin/staff)',
       'DELETE /events/:eventId': 'Delete event (admin/staff)',
       'GET /conflicts': 'Check for conflicts',
-      'POST /export': 'Export calendar'
-    }
+      'POST /export': 'Export calendar',
+    },
   });
 });
 
 // Events routes
-router.get('/events', PlanningController.getEvents);
-router.post('/events', requireRole('admin'), PlanningController.createEvent);
-router.get('/events/:eventId', PlanningController.getEvent);
-router.put('/events/:eventId', requireRole('admin'), PlanningController.updateEvent);
-router.delete('/events/:eventId', requireRole('admin'), PlanningController.deleteEvent);
+router.get('/events', authenticate, PlanningController.getEvents);
+router.post('/events', authenticate, teacherAndAbove, PlanningController.createEvent);
+router.get('/events/:eventId', authenticate, PlanningController.getEvent);
+router.put('/events/:eventId', authenticate, teacherAndAbove, PlanningController.updateEvent);
+router.delete('/events/:eventId', authenticate, requireRole('admin'), PlanningController.deleteEvent);
 
 // Conflict detection
-router.get('/conflicts', PlanningController.checkConflicts);
+router.get('/conflicts', authenticate, PlanningController.checkConflicts);
 
 // Export functionality
-router.post('/export', PlanningController.exportCalendar);
+router.post('/export', authenticate, PlanningController.exportCalendar);
 
 // Recurring events
-router.post('/events/:eventId/instances', requireRole('admin'), PlanningController.generateRecurringInstances);
+router.post('/events/:eventId/instances', authenticate, teacherAndAbove, PlanningController.generateRecurringInstances);
 
 export default router;

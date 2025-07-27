@@ -4,7 +4,7 @@
 import { Request, Response } from 'express';
 import { CourseService } from '../services/CourseService';
 import { ResponseHelper, HTTP_STATUS, courseLogger as logger } from '@yggdrasil/shared-utilities';
-import { 
+import {
   CreateCourseSchema,
   UpdateCourseSchema,
   CreateChapterSchema,
@@ -16,7 +16,7 @@ import {
   SubmitExerciseSchema,
   CourseSearchSchema,
   EnrollCourseSchema,
-  type AuthRequest
+  type AuthRequest,
 } from '@yggdrasil/shared-utilities';
 
 export class CourseController {
@@ -35,7 +35,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -43,7 +43,7 @@ export class CourseController {
       // Only teachers, staff, and admins can create courses
       if (!['teacher', 'staff', 'admin'].includes(user.role)) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden('Insufficient permissions to create courses')
+          ResponseHelper.forbidden('Insufficient permissions to create courses'),
         );
         return;
       }
@@ -51,7 +51,7 @@ export class CourseController {
       const validation = CreateCourseSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid course data')
+          ResponseHelper.badRequest('Invalid course data'),
         );
         return;
       }
@@ -60,15 +60,15 @@ export class CourseController {
         user.userId,
         `${user.profile?.firstName} ${user.profile?.lastName}`,
         user.email,
-        validation.data as any
+        validation.data as any,
       );
 
       res.status(HTTP_STATUS.CREATED).json(
-        ResponseHelper.success(course, 'Course created successfully')
+        ResponseHelper.success(course, 'Course created successfully'),
       );
     } catch (error: any) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to create course')
+        ResponseHelper.error('Failed to create course'),
       );
     }
   };
@@ -76,21 +76,21 @@ export class CourseController {
   getCourse = async (req: Request, res: Response): Promise<void> => {
     try {
       const { courseId } = req.params;
-      
+
       const course = await this.courseService.getCourseById(courseId!);
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course')
+          ResponseHelper.notFound('Course'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(course, 'Course retrieved successfully')
+        ResponseHelper.success(course, 'Course retrieved successfully'),
       );
     } catch (error: any) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve course')
+        ResponseHelper.error('Failed to retrieve course'),
       );
     }
   };
@@ -98,21 +98,21 @@ export class CourseController {
   getCourseBySlug = async (req: Request, res: Response): Promise<void> => {
     try {
       const { slug } = req.params;
-      
+
       const course = await this.courseService.getCourseBySlug(slug!);
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course')
+          ResponseHelper.notFound('Course'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(course, 'Course retrieved successfully')
+        ResponseHelper.success(course, 'Course retrieved successfully'),
       );
     } catch (error: any) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve course')
+        ResponseHelper.error('Failed to retrieve course'),
       );
     }
   };
@@ -122,17 +122,17 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
 
       const { courseId } = req.params;
-      
+
       const validation = UpdateCourseSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid course data')
+          ResponseHelper.badRequest('Invalid course data'),
         );
         return;
       }
@@ -141,27 +141,27 @@ export class CourseController {
         courseId!,
         validation.data as any,
         user.userId,
-        user.role
+        user.role,
       );
 
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course')
+          ResponseHelper.notFound('Course'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(course, 'Course updated successfully')
+        ResponseHelper.success(course, 'Course updated successfully'),
       );
     } catch (error: any) {
       if (error.message.includes('Insufficient permissions')) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden(error.message)
+          ResponseHelper.forbidden(error.message),
         );
       } else {
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to update course')
+          ResponseHelper.error('Failed to update course'),
         );
       }
     }
@@ -172,7 +172,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -182,22 +182,22 @@ export class CourseController {
       const success = await this.courseService.deleteCourse(courseId!, user.userId, user.role);
       if (!success) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course')
+          ResponseHelper.notFound('Course'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(null, 'Course deleted successfully')
+        ResponseHelper.success(null, 'Course deleted successfully'),
       );
     } catch (error: any) {
       if (error.message.includes('Insufficient permissions')) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden(error.message)
+          ResponseHelper.forbidden(error.message),
         );
       } else {
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to delete course')
+          ResponseHelper.error('Failed to delete course'),
         );
       }
     }
@@ -213,19 +213,19 @@ export class CourseController {
       if (!validation.success) {
         logger.error('Validation error:', validation.error.issues);
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid search parameters')
+          ResponseHelper.badRequest('Invalid search parameters'),
         );
         return;
       }
 
       const result = await this.courseService.searchCourses(validation.data);
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(result, 'Courses retrieved successfully')
+        ResponseHelper.success(result, 'Courses retrieved successfully'),
       );
     } catch (error: any) {
       logger.error('Course search error:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to search courses')
+        ResponseHelper.error('Failed to search courses'),
       );
     }
   };
@@ -234,11 +234,11 @@ export class CourseController {
     try {
       const courses = await this.courseService.getPublishedCourses();
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(courses, 'Published courses retrieved successfully')
+        ResponseHelper.success(courses, 'Published courses retrieved successfully'),
       );
     } catch (error: any) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve courses')
+        ResponseHelper.error('Failed to retrieve courses'),
       );
     }
   };
@@ -248,7 +248,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -257,18 +257,18 @@ export class CourseController {
         // For students, return enrolled courses
         const enrollments = await this.courseService.getStudentEnrollments(user.userId);
         res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success(enrollments, 'Enrolled courses retrieved successfully')
+          ResponseHelper.success(enrollments, 'Enrolled courses retrieved successfully'),
         );
       } else {
         // For teachers/staff/admins, return courses they created
         const courses = await this.courseService.getCoursesByInstructor(user.userId);
         res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success(courses, 'Your courses retrieved successfully')
+          ResponseHelper.success(courses, 'Your courses retrieved successfully'),
         );
       }
     } catch (error: any) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve courses')
+        ResponseHelper.error('Failed to retrieve courses'),
       );
     }
   };
@@ -282,7 +282,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -291,7 +291,7 @@ export class CourseController {
       const validation = CreateChapterSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid chapter data')
+          ResponseHelper.badRequest('Invalid chapter data'),
         );
         return;
       }
@@ -300,27 +300,27 @@ export class CourseController {
         courseId!,
         validation.data,
         user.userId,
-        user.role
+        user.role,
       );
 
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course')
+          ResponseHelper.notFound('Course'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.CREATED).json(
-        ResponseHelper.success(course, 'Chapter added successfully')
+        ResponseHelper.success(course, 'Chapter added successfully'),
       );
     } catch (error: any) {
       if (error.message.includes('Insufficient permissions')) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden(error.message)
+          ResponseHelper.forbidden(error.message),
         );
       } else {
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to add chapter')
+          ResponseHelper.error('Failed to add chapter'),
         );
       }
     }
@@ -331,7 +331,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -340,7 +340,7 @@ export class CourseController {
       const validation = UpdateChapterSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid chapter data')
+          ResponseHelper.badRequest('Invalid chapter data'),
         );
         return;
       }
@@ -350,27 +350,27 @@ export class CourseController {
         chapterId!,
         validation.data,
         user.userId,
-        user.role
+        user.role,
       );
 
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course or chapter')
+          ResponseHelper.notFound('Course or chapter'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(course, 'Chapter updated successfully')
+        ResponseHelper.success(course, 'Chapter updated successfully'),
       );
     } catch (error: any) {
       if (error.message.includes('Insufficient permissions')) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden(error.message)
+          ResponseHelper.forbidden(error.message),
         );
       } else {
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to update chapter')
+          ResponseHelper.error('Failed to update chapter'),
         );
       }
     }
@@ -381,7 +381,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -391,27 +391,27 @@ export class CourseController {
         courseId!,
         chapterId!,
         user.userId,
-        user.role
+        user.role,
       );
 
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course or chapter')
+          ResponseHelper.notFound('Course or chapter'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(course, 'Chapter deleted successfully')
+        ResponseHelper.success(course, 'Chapter deleted successfully'),
       );
     } catch (error: any) {
       if (error.message.includes('Insufficient permissions')) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden(error.message)
+          ResponseHelper.forbidden(error.message),
         );
       } else {
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to delete chapter')
+          ResponseHelper.error('Failed to delete chapter'),
         );
       }
     }
@@ -426,7 +426,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -435,7 +435,7 @@ export class CourseController {
       const validation = CreateSectionSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid section data')
+          ResponseHelper.badRequest('Invalid section data'),
         );
         return;
       }
@@ -445,27 +445,27 @@ export class CourseController {
         chapterId!,
         validation.data,
         user.userId,
-        user.role
+        user.role,
       );
 
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course or chapter')
+          ResponseHelper.notFound('Course or chapter'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.CREATED).json(
-        ResponseHelper.success(course, 'Section added successfully')
+        ResponseHelper.success(course, 'Section added successfully'),
       );
     } catch (error: any) {
       if (error.message.includes('Insufficient permissions')) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden(error.message)
+          ResponseHelper.forbidden(error.message),
         );
       } else {
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to add section')
+          ResponseHelper.error('Failed to add section'),
         );
       }
     }
@@ -476,7 +476,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -485,7 +485,7 @@ export class CourseController {
       const validation = UpdateSectionSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid section data')
+          ResponseHelper.badRequest('Invalid section data'),
         );
         return;
       }
@@ -496,27 +496,27 @@ export class CourseController {
         sectionId!,
         validation.data,
         user.userId,
-        user.role
+        user.role,
       );
 
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course, chapter, or section')
+          ResponseHelper.notFound('Course, chapter, or section'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(course, 'Section updated successfully')
+        ResponseHelper.success(course, 'Section updated successfully'),
       );
     } catch (error: any) {
       if (error.message.includes('Insufficient permissions')) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden(error.message)
+          ResponseHelper.forbidden(error.message),
         );
       } else {
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to update section')
+          ResponseHelper.error('Failed to update section'),
         );
       }
     }
@@ -531,7 +531,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -540,7 +540,7 @@ export class CourseController {
       const validation = CreateContentSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid content data')
+          ResponseHelper.badRequest('Invalid content data'),
         );
         return;
       }
@@ -551,27 +551,27 @@ export class CourseController {
         sectionId!,
         validation.data,
         user.userId,
-        user.role
+        user.role,
       );
 
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course, chapter, or section')
+          ResponseHelper.notFound('Course, chapter, or section'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.CREATED).json(
-        ResponseHelper.success(course, 'Content added successfully')
+        ResponseHelper.success(course, 'Content added successfully'),
       );
     } catch (error: any) {
       if (error.message.includes('Insufficient permissions')) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden(error.message)
+          ResponseHelper.forbidden(error.message),
         );
       } else {
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to add content')
+          ResponseHelper.error('Failed to add content'),
         );
       }
     }
@@ -582,7 +582,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -591,7 +591,7 @@ export class CourseController {
       const validation = UpdateContentSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid content data')
+          ResponseHelper.badRequest('Invalid content data'),
         );
         return;
       }
@@ -603,27 +603,27 @@ export class CourseController {
         contentId!,
         validation.data,
         user.userId,
-        user.role
+        user.role,
       );
 
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course, chapter, section, or content')
+          ResponseHelper.notFound('Course, chapter, section, or content'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(course, 'Content updated successfully')
+        ResponseHelper.success(course, 'Content updated successfully'),
       );
     } catch (error: any) {
       if (error.message.includes('Insufficient permissions')) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden(error.message)
+          ResponseHelper.forbidden(error.message),
         );
       } else {
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to update content')
+          ResponseHelper.error('Failed to update content'),
         );
       }
     }
@@ -638,7 +638,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -646,7 +646,7 @@ export class CourseController {
       // Only students can enroll in courses
       if (user.role !== 'student') {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden('Only students can enroll in courses')
+          ResponseHelper.forbidden('Only students can enroll in courses'),
         );
         return;
       }
@@ -654,35 +654,35 @@ export class CourseController {
       const validation = EnrollCourseSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid enrollment data')
+          ResponseHelper.badRequest('Invalid enrollment data'),
         );
         return;
       }
 
       const enrollment = await this.courseService.enrollStudent(
         validation.data.courseId,
-        user.userId
+        user.userId,
       );
 
       res.status(HTTP_STATUS.CREATED).json(
-        ResponseHelper.success(enrollment, 'Successfully enrolled in course')
+        ResponseHelper.success(enrollment, 'Successfully enrolled in course'),
       );
     } catch (error: any) {
       if (error.message.includes('already enrolled')) {
         res.status(HTTP_STATUS.CONFLICT).json(
-          ResponseHelper.error('Student is already enrolled in this course')
+          ResponseHelper.error('Student is already enrolled in this course'),
         );
       } else if (error.message.includes('not available for enrollment')) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.error('Course is not available for enrollment')
+          ResponseHelper.error('Course is not available for enrollment'),
         );
       } else if (error.message.includes('maximum enrollment capacity')) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.error('Course has reached maximum enrollment capacity')
+          ResponseHelper.error('Course has reached maximum enrollment capacity'),
         );
       } else {
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to enroll in course')
+          ResponseHelper.error('Failed to enroll in course'),
         );
       }
     }
@@ -693,28 +693,28 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
 
       const { courseId } = req.params;
-      
+
       // Check if user can view enrollments (instructors and admins only)
       if (!['teacher', 'staff', 'admin'].includes(user.role)) {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden('Insufficient permissions to view enrollments')
+          ResponseHelper.forbidden('Insufficient permissions to view enrollments'),
         );
         return;
       }
 
       const enrollments = await this.courseService.getCourseEnrollments(courseId!);
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(enrollments, 'Course enrollments retrieved successfully')
+        ResponseHelper.success(enrollments, 'Course enrollments retrieved successfully'),
       );
     } catch (error: any) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve course enrollments')
+        ResponseHelper.error('Failed to retrieve course enrollments'),
       );
     }
   };
@@ -728,7 +728,7 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
@@ -736,7 +736,7 @@ export class CourseController {
       // Only students can submit exercises
       if (user.role !== 'student') {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden('Only students can submit exercises')
+          ResponseHelper.forbidden('Only students can submit exercises'),
         );
         return;
       }
@@ -745,7 +745,7 @@ export class CourseController {
       const validation = SubmitExerciseSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid exercise submission data')
+          ResponseHelper.badRequest('Invalid exercise submission data'),
         );
         return;
       }
@@ -753,15 +753,15 @@ export class CourseController {
       const submission = await this.courseService.submitExercise(
         exerciseId!,
         user.userId,
-        validation.data
+        validation.data,
       );
 
       res.status(HTTP_STATUS.CREATED).json(
-        ResponseHelper.success(submission, 'Exercise submitted successfully')
+        ResponseHelper.success(submission, 'Exercise submitted successfully'),
       );
     } catch (error: any) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to submit exercise')
+        ResponseHelper.error('Failed to submit exercise'),
       );
     }
   };
@@ -771,13 +771,13 @@ export class CourseController {
       const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required')
+          ResponseHelper.unauthorized('Authentication required'),
         );
         return;
       }
 
       const { exerciseId } = req.params;
-      
+
       let submissions;
       if (user.role === 'student') {
         // Students can only see their own submissions
@@ -787,17 +787,17 @@ export class CourseController {
         submissions = await this.courseService.getExerciseSubmissions(exerciseId!);
       } else {
         res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden('Insufficient permissions to view submissions')
+          ResponseHelper.forbidden('Insufficient permissions to view submissions'),
         );
         return;
       }
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(submissions, 'Exercise submissions retrieved successfully')
+        ResponseHelper.success(submissions, 'Exercise submissions retrieved successfully'),
       );
     } catch (error: any) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve exercise submissions')
+        ResponseHelper.error('Failed to retrieve exercise submissions'),
       );
     }
   };

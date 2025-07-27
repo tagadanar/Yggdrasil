@@ -4,13 +4,33 @@
 import axios, { AxiosInstance } from 'axios';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
 
-// Statistics service API client
-const STATISTICS_SERVICE_URL = process.env.NEXT_PUBLIC_STATISTICS_SERVICE_URL || 'http://localhost:3006';
+// Dynamic Statistics Service URL detection for worker-specific testing
+function getStatisticsServiceUrl(): string {
+  // In test environment, detect worker-specific Statistics Service URL from frontend port
+  if (process.env.NODE_ENV === 'test' || typeof window !== 'undefined') {
+    const frontendPort = typeof window !== 'undefined' 
+      ? parseInt(window.location.port, 10) 
+      : parseInt(process.env['PORT'] || '3000', 10);
+    
+    // Calculate statistics service port from frontend port (frontend + 6)
+    const statisticsPort = frontendPort + 6;
+    
+    // Use localhost if we're in a test environment or browser
+    if (typeof window !== 'undefined' || process.env.NODE_ENV === 'test') {
+      return `http://localhost:${statisticsPort}`;
+    }
+  }
+  
+  // Fallback to environment variable or default
+  return process.env['NEXT_PUBLIC_STATISTICS_SERVICE_URL'] || 'http://localhost:3006';
+}
+
+const STATISTICS_SERVICE_URL = getStatisticsServiceUrl();
 
 // Create axios instance for statistics service
 const statisticsApiClient: AxiosInstance = axios.create({
   baseURL: `${STATISTICS_SERVICE_URL}/api/statistics`,
-  timeout: 10000,
+  timeout: 30000, // Increased from 10s to 30s for test environments
   headers: {
     'Content-Type': 'application/json',
   },
@@ -47,7 +67,7 @@ statisticsApiClient.interceptors.response.use(
       if (refreshToken) {
         try {
           // Try to refresh the token
-          const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/refresh`, {
+          const response = await axios.post(`${process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3001'}/api/auth/refresh`, {
             refreshToken,
           });
           

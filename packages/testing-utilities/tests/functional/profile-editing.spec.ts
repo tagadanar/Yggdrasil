@@ -4,10 +4,11 @@
 import { test, expect } from '@playwright/test';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Profile Editing Functionality', () => {
   test('Should save all profile fields when editing profile', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Profile Editing Test');
+    const cleanup = TestCleanup.getInstance('Profile Editing Test');
     const testContext = await browser.newContext();
     cleanup.trackBrowserContext(testContext);
     const page = await testContext.newPage();
@@ -24,10 +25,10 @@ test.describe('Profile Editing Functionality', () => {
       
       // Navigate to profile page
       await page.goto('/profile');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Wait for profile to load
-      await page.waitForSelector('[data-testid="profile-name"]', { timeout: 10000 });
+      await page.waitForSelector('[data-testid="profile-name"]', { timeout: 3000 });
       
       // First verify we can see the current user data
       const currentEmail = await page.textContent('[data-testid="profile-email"]');
@@ -35,10 +36,10 @@ test.describe('Profile Editing Functionality', () => {
       
       // Click edit button to enter edit mode
       await page.click('button:has-text("Edit Profile")');
-      await page.waitForTimeout(1000); // Wait for edit mode to activate
+      await page.waitForLoadState("domcontentloaded", { timeout: 5000 }); // Wait for edit mode to activate
       
       // Verify we're now in edit mode by checking for Save button
-      await page.waitForSelector('button:has-text("Save Changes")', { timeout: 5000 });
+      await page.waitForSelector('button:has-text("Save Changes", { timeout: 10000 })', { timeout: 2000 });
       
       // Check current field values before updating
       const currentFirstName = await page.inputValue('input[name="firstName"]');
@@ -69,7 +70,7 @@ test.describe('Profile Editing Functionality', () => {
       await page.click('button:has-text("Save Changes")');
       
       // Wait for save to complete and exit edit mode
-      await page.waitForSelector('button:has-text("Edit Profile")', { timeout: 10000 });
+      await page.waitForSelector('button:has-text("Edit Profile", { timeout: 10000 })', { timeout: 3000 });
       console.log('Successfully exited edit mode');
       
       // Check if the name display updated (this is what users actually see)
@@ -78,8 +79,8 @@ test.describe('Profile Editing Functionality', () => {
       
       // Now refresh the page to test persistence (like a user closing and reopening)
       await page.reload();
-      await page.waitForLoadState('networkidle');
-      await page.waitForSelector('[data-testid="profile-name"]', { timeout: 10000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      await page.waitForSelector('[data-testid="profile-name"]', { timeout: 3000 });
       
       // Check the display name after refresh - this is what users actually see
       const displayNameAfterRefresh = await page.textContent('[data-testid="profile-name"]');
@@ -91,7 +92,7 @@ test.describe('Profile Editing Functionality', () => {
       
       // Enter edit mode again to verify form fields are populated correctly
       await page.click('button:has-text("Edit Profile")');
-      await page.waitForSelector('button:has-text("Save Changes")', { timeout: 5000 });
+      await page.waitForSelector('button:has-text("Save Changes", { timeout: 10000 })', { timeout: 2000 });
       
       // Now verify all fields were saved correctly in the form
       expect(await page.inputValue('input[name="firstName"]')).toBe(profileData.firstName);
@@ -131,7 +132,7 @@ test.describe('Profile Editing Functionality', () => {
   });
   
   test('Should save student-specific profile fields', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Student Profile Test');
+    const cleanup = TestCleanup.getInstance('Student Profile Test');
     const testContext = await browser.newContext();
     cleanup.trackBrowserContext(testContext);
     const page = await testContext.newPage();
@@ -143,10 +144,10 @@ test.describe('Profile Editing Functionality', () => {
       
       // Navigate to profile page
       await page.goto('/profile');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Wait for profile to load
-      await page.waitForSelector('[data-testid="profile-name"]', { timeout: 10000 });
+      await page.waitForSelector('[data-testid="profile-name"]', { timeout: 3000 });
       
       // Click edit button
       await page.click('button:has-text("Edit Profile")');
@@ -167,12 +168,12 @@ test.describe('Profile Editing Functionality', () => {
       await page.click('button:has-text("Save Changes")');
       
       // Wait for save to complete
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
       
       // Refresh the page to verify data persistence
       await page.reload();
-      await page.waitForLoadState('networkidle');
-      await page.waitForSelector('[data-testid="profile-name"]', { timeout: 10000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      await page.waitForSelector('[data-testid="profile-name"]', { timeout: 3000 });
       
       // Verify fields were saved
       expect(await page.inputValue('input[name="studentId"]')).toBe(profileData.studentId);

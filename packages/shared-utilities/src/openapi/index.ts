@@ -12,7 +12,7 @@ export const createOpenAPIDocument = (
   title: string,
   version: string,
   description: string,
-  port: number
+  port: number,
 ): OpenAPIV3.Document => ({
   openapi: '3.0.3',
   info: {
@@ -34,7 +34,7 @@ export const createOpenAPIDocument = (
       description: 'Development server',
     },
     {
-      url: `https://api.yggdrasil.edu`,
+      url: 'https://api.yggdrasil.edu',
       description: 'Production server',
     },
   ],
@@ -96,7 +96,7 @@ export const getSharedSchemas = (): Record<string, OpenAPIV3.SchemaObject> => ({
       },
     },
   },
-  
+
   User: {
     type: 'object',
     required: ['_id', 'email', 'role', 'profile'],
@@ -270,7 +270,7 @@ export const getSharedResponses = (): Record<string, OpenAPIV3.ResponseObject> =
       },
     },
   },
-  
+
   ForbiddenError: {
     description: 'Insufficient permissions',
     content: {
@@ -377,7 +377,7 @@ export const getSharedParameters = (): Record<string, OpenAPIV3.ParameterObject>
     description: 'Page number',
     schema: { type: 'integer', minimum: 1, default: 1 },
   },
-  
+
   limitParam: {
     name: 'limit',
     in: 'query',
@@ -414,7 +414,7 @@ export const getSharedParameters = (): Record<string, OpenAPIV3.ParameterObject>
 export const addCommonResponses = (
   operation: OpenAPIV3.OperationObject,
   includeAuth = true,
-  includeNotFound = true
+  includeNotFound = true,
 ): OpenAPIV3.OperationObject => {
   const responses = {
     ...operation.responses,

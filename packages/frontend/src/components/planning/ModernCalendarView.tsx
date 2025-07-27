@@ -3,7 +3,7 @@
 
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -71,33 +71,72 @@ export const ModernCalendarView: React.FC<ModernCalendarViewProps> = ({
 }) => {
   const calendarRef = useRef<FullCalendar>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [calendarKey, setCalendarKey] = useState(0);
 
-  // Convert events to FullCalendar format
-  const calendarEvents = events.map(event => ({
-    id: event._id,
-    title: event.title,
-    start: event.startDate,
-    end: event.endDate,
-    backgroundColor: getEventColor(event.type),
-    borderColor: getEventColor(event.type),
-    textColor: getEventTextColor(event.type),
-    extendedProps: {
-      description: event.description,
-      location: event.location,
-      type: event.type,
-      linkedCourse: event.linkedCourse,
-      isRecurring: event.isRecurring,
-      attendeeCount: event.attendeeCount,
-      originalEvent: event
-    },
+  // Memoize calendar events to prevent constant re-renders
+  const calendarEvents = useMemo(() => {
+    return events.map(event => ({
+      id: event._id,
+      title: event.title,
+      start: event.startDate,
+      end: event.endDate,
+      backgroundColor: getEventColor(event.type),
+      borderColor: getEventColor(event.type),
+      textColor: getEventTextColor(event.type),
+      extendedProps: {
+        description: event.description,
+        location: event.location,
+        type: event.type,
+        linkedCourse: event.linkedCourse,
+        isRecurring: event.isRecurring,
+        attendeeCount: event.attendeeCount,
+        originalEvent: event
+      },
+      editable: canModifyEvents,
+      eventResizableFromStart: canModifyEvents,
+      classNames: [
+        'fc-event-modern',
+        event.isRecurring ? 'fc-event-recurring' : '',
+        canModifyEvents ? 'fc-event-editable' : 'fc-event-readonly'
+      ].filter(Boolean)
+    }));
+  }, [events, canModifyEvents]);
+
+  // Memoize calendar plugins to prevent re-initialization
+  const calendarPlugins = useMemo(() => [
+    dayGridPlugin, 
+    timeGridPlugin, 
+    interactionPlugin
+  ], []);
+
+  // Memoize calendar configuration to prevent re-renders
+  const calendarConfig = useMemo(() => ({
+    initialView: getFullCalendarView(),
+    headerToolbar: false as const,
+    events: calendarEvents,
     editable: canModifyEvents,
-    eventResizableFromStart: canModifyEvents,
-    classNames: [
-      'fc-event-modern',
-      event.isRecurring ? 'fc-event-recurring' : '',
-      canModifyEvents ? 'fc-event-editable' : 'fc-event-readonly'
-    ].filter(Boolean)
-  }));
+    selectable: canModifyEvents,
+    selectMirror: true,
+    dayMaxEvents: isMobile ? 2 : 4,
+    moreLinkClick: "popover" as const,
+  }), [calendarEvents, canModifyEvents, isMobile, currentView]);
+
+  // Add cleanup and error boundaries
+  useEffect(() => {
+    return () => {
+      if (calendarRef.current) {
+        try {
+          const calendarApi = calendarRef.current.getApi();
+          if (calendarApi) {
+            // No destroy method needed for FullCalendar v6
+            calendarApi.removeAllEvents();
+          }
+        } catch (error) {
+          console.warn('Calendar cleanup error:', error);
+        }
+      }
+    };
+  }, []);
 
   // Get event colors based on type
   function getEventColor(type: string): string {
@@ -364,16 +403,10 @@ export const ModernCalendarView: React.FC<ModernCalendarViewProps> = ({
       <div className="p-4">
         <div data-testid={`calendar-grid-${currentView}`}>
           <FullCalendar
+            key={calendarKey}
             ref={calendarRef}
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView={getFullCalendarView()}
-            headerToolbar={false} // We handle our own header
-            events={calendarEvents}
-            editable={canModifyEvents}
-            selectable={canModifyEvents}
-            selectMirror={true}
-            dayMaxEvents={isMobile ? 2 : 4}
-            moreLinkClick="popover"
+            plugins={calendarPlugins}
+            {...calendarConfig}
             eventClick={handleEventClick}
             eventDrop={handleEventDrop}
             eventResize={handleEventResize}
@@ -403,7 +436,7 @@ export const ModernCalendarView: React.FC<ModernCalendarViewProps> = ({
             eventOrder="start,title"
             eventClassNames={(arg) => {
               const classes = ['fc-event-modern'];
-              if (arg.event.extendedProps.isRecurring) {
+              if (arg.event.extendedProps['isRecurring']) {
                 classes.push('fc-event-recurring');
               }
               if (!canModifyEvents) {
@@ -413,7 +446,7 @@ export const ModernCalendarView: React.FC<ModernCalendarViewProps> = ({
             }}
             eventDidMount={(info) => {
               // Add custom styling and tooltips
-              const event = info.event.extendedProps.originalEvent;
+              const event = info.event.extendedProps['originalEvent'];
               if (event) {
                 info.el.title = `${event.title}${event.location ? ' @ ' + event.location : ''}${event.description ? '\n' + event.description : ''}`;
                 

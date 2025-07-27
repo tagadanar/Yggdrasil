@@ -1,10 +1,12 @@
 // packages/testing-utilities/tests/integration/system-integration.spec.ts
 // Comprehensive system integration tests - updated to follow CLAUDE.md clean testing architecture
+/* eslint-disable prefer-const */
 
 import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('System Integration - Comprehensive Tests', () => {
   // Removed global auth helpers - each test manages its own cleanup
@@ -26,7 +28,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // 1. COURSE ENROLLMENT → CALENDAR INTEGRATION
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const availableCourses = page.locator('[data-testid="course-card"]:has([data-testid="enroll-button"])');
     const courseCount = await availableCourses.count();
@@ -44,11 +46,11 @@ test.describe('System Integration - Comprehensive Tests', () => {
       }
       
       // Wait for enrollment to complete
-      await page.waitForSelector('[data-testid="enrolled-course"], .enrollment-success', { state: 'visible', timeout: 5000 }).catch(() => {});
+      await page.waitForSelector('[data-testid="enrolled-course"], .enrollment-success', { state: 'visible', timeout: 2000 }).catch(() => {});
       
       // 2. VERIFY ENROLLMENT IN PROFILE
       await page.goto('/profile');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const enrolledCourses = page.locator('[data-testid="enrolled-course"]');
       if (await enrolledCourses.count() > 0) {
@@ -57,7 +59,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
       
       // 3. VERIFY COURSE EVENTS IN CALENDAR
       await page.goto('/planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const courseEvents = page.locator('[data-testid="calendar-event"]');
       if (await courseEvents.count() > 0) {
@@ -65,7 +67,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
       
       // 4. VERIFY PROGRESS TRACKING
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const progressSection = page.locator('[data-testid="course-progress"]');
       if (await progressSection.count() > 0) {
@@ -82,7 +84,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Test 1: Network failure handling
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Verify initial load
     await expect(page.locator('h1:has-text("News")')).toBeVisible();
@@ -105,14 +107,14 @@ test.describe('System Integration - Comprehensive Tests', () => {
     // Restore network
     await page.context().setOffline(false);
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Verify recovery
     await expect(page.locator('h1:has-text("News")')).toBeVisible();
     
     // Test 2: Data corruption handling
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Inject invalid data (if possible)
     await page.evaluate(() => {
@@ -121,7 +123,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     });
     
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Verify system handles corruption gracefully
     await expect(page.locator('h1:has-text("Course Management")')).toBeVisible();
@@ -153,7 +155,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     const authHelper = new CleanAuthHelper(page);
     await authHelper.loginAsAdmin();
     await page.goto('/admin/users');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Verify admin access
     await expect(page.locator('h1:has-text("User Management")')).toBeVisible();
@@ -184,7 +186,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
       
       // Test protected route access
       await page.goto('/admin/users');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       await page.waitForLoadState('domcontentloaded'); // Wait for any redirects
       
       if (roleConfig.userManagement.canAccess) {
@@ -254,7 +256,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     for (const test of pageLoadTests) {
       const startTime = Date.now();
       await page.goto(test.url);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       const loadTime = Date.now() - startTime;
       
       expect(loadTime, `${test.name} should load within 3 seconds`).toBeLessThan(3000);
@@ -273,7 +275,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     // Perform memory-intensive operations
     for (let i = 0; i < 10; i++) {
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     }
     
     const memoryAfter = await page.evaluate(() => {
@@ -287,12 +289,12 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Test 3: Database query performance
     await page.goto('/admin/users');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Measure large dataset loading
     const startTime = Date.now();
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     const queryTime = Date.now() - startTime;
     
     expect(queryTime, 'User list should load within 2 seconds').toBeLessThan(2000);
@@ -307,7 +309,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Test 1: User profile consistency
     await page.goto('/profile');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Get user data from profile
     const profileName = await page.locator('[data-testid="profile-name"]').textContent();
@@ -315,10 +317,10 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Verify same data in user management
     await page.goto('/admin/users');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const userRow = page.locator(`tr:has-text("${profileEmail}")`);
-    await expect(userRow).toBeVisible();
+    await expect(userRow).toBeVisible({ timeout: 5000 });
     
     if (profileName) {
       await expect(userRow).toContainText(profileName);
@@ -328,7 +330,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     await authHelper.switchToRole('student');
     
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Enroll in a course
     const availableCourses = page.locator('[data-testid="course-card"]:has([data-testid="enroll-button"])');
@@ -344,11 +346,11 @@ test.describe('System Integration - Comprehensive Tests', () => {
       }
       
       // Wait for enrollment confirmation to complete
-      await page.waitForSelector('[data-testid="enrollment-confirmed"], .enrollment-success', { state: 'visible', timeout: 5000 }).catch(() => {});
+      await page.waitForSelector('[data-testid="enrollment-confirmed"], .enrollment-success', { state: 'visible', timeout: 2000 }).catch(() => {});
       
       // Verify enrollment in multiple places
       await page.goto('/profile');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const enrolledCourses = page.locator('[data-testid="enrolled-course"]');
       if (await enrolledCourses.count() > 0) {
@@ -356,7 +358,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
       }
       
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const courseStats = page.locator('[data-testid="course-progress"]');
       if (await courseStats.count() > 0) {
@@ -365,7 +367,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Test 3: Real-time data synchronization
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const initialArticleCount = await page.locator('[data-testid="news-article"]').count();
     
@@ -373,7 +375,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     await authHelper.switchToRole('admin');
     
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     await page.click('[data-testid="create-news-button"]');
     
@@ -384,7 +386,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     await page.click('[data-testid="publish-button"]');
     
     // Wait for article creation to complete
-    await page.waitForSelector('[data-testid="news-article"], .article-created', { state: 'visible', timeout: 5000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="news-article"], .article-created', { state: 'visible', timeout: 2000 }).catch(() => {});
     
     // Check if there are any error messages
     const errorAlert = page.locator('text=Failed to create article');
@@ -400,10 +402,10 @@ test.describe('System Integration - Comprehensive Tests', () => {
     await authHelper.loginAsStudent();
     
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Wait for article to appear in student view
-    await page.waitForSelector('[data-testid="news-article"]', { state: 'visible', timeout: 5000 }).catch(() => {});
+    await page.waitForSelector('[data-testid="news-article"]', { state: 'visible', timeout: 2000 }).catch(() => {});
     
     // The main test is whether the student can see the article created by admin
     const studentArticleCount = await page.locator('[data-testid="news-article"]').count();
@@ -448,7 +450,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Test 2: System diagnostics
     await page.goto('/admin/system');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Check if system status page exists
     const systemStatus = page.locator('[data-testid="system-status"]');
@@ -467,7 +469,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Test 3: Performance metrics
     await page.goto('/statistics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const performanceMetrics = page.locator('[data-testid="performance-metrics"]');
     if (await performanceMetrics.count() > 0) {
@@ -490,6 +492,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
   // INTEGRATION-001: Complete Student Learning Journey
   // =============================================================================
   test('Complete Student Learning Journey', async ({ page }) => {
+    const authHelper = new CleanAuthHelper(page);
     let studentEmail: string;
     let courseName: string;
 
@@ -515,11 +518,11 @@ test.describe('System Integration - Comprehensive Tests', () => {
       
       const registerButton = page.locator('button:has-text("Register"), button:has-text("Sign Up"), button[type="submit"]');
       await registerButton.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     } else {
       // Fallback: Use existing student login if registration isn't available
-    await authHelper.loginAsStudent();
-      studentEmail = authHelpers.getCurrentUser().email;
+      await authHelper.loginAsStudent();
+      studentEmail = 'student@yggdrasil.edu';
     }
 
     // Login if not already logged in
@@ -528,12 +531,12 @@ test.describe('System Integration - Comprehensive Tests', () => {
       await page.fill('input[name="email"], input[type="email"]', studentEmail);
       await page.fill('input[name="password"], input[type="password"]', 'password123');
       await page.click('button[type="submit"], button:has-text("Login")');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     }
 
     // Navigate to courses and enroll
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
     // Look for available courses to enroll in
     const availableCourses = page.locator('.course-card, [data-testid="course-card"], .course-item');
@@ -554,13 +557,13 @@ test.describe('System Integration - Comprehensive Tests', () => {
         }
         
         // Wait for enrollment to complete
-        await page.waitForSelector('[data-testid="enrollment-success"], .enrolled', { state: 'visible', timeout: 5000 }).catch(() => {});
+        await page.waitForSelector('[data-testid="enrollment-success"], .enrolled', { state: 'visible', timeout: 2000 }).catch(() => {});
       }
     } else {
       // Create a test course for enrollment (admin action)
-    await authHelper.switchToRole('admin');
+      await authHelper.switchToRole('admin');
       await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const createButton = page.locator('button:has-text("Create Course"), button:has-text("Create")');
       if (await createButton.count() > 0) {
@@ -572,7 +575,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
         
         const saveButton = page.locator('button:has-text("Save"), button[type="submit"]');
         await saveButton.click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Publish the course
         const publishButton = page.locator('button:has-text("Publish")');
@@ -582,9 +585,9 @@ test.describe('System Integration - Comprehensive Tests', () => {
       }
       
       // Switch back to student and enroll
-    await authHelper.switchToRole('student');
+      await authHelper.switchToRole('student');
       await page.goto('/courses');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const newCourseCard = page.locator(`text=${courseName}`).locator('..');
       const newEnrollButton = newCourseCard.locator('button:has-text("Enroll")');
@@ -595,13 +598,13 @@ test.describe('System Integration - Comprehensive Tests', () => {
 
     // Step 2: Completes course content → submits exercises → takes quizzes
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Enter the enrolled course
     const enrolledCourseLink = page.locator(`a:has-text("${courseName}"), .course-card:has-text("${courseName}")`);
     if (await enrolledCourseLink.count() > 0) {
       await enrolledCourseLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Complete course content (chapters/sections)
       const contentItems = page.locator('.chapter, .section, .lesson, .content-item');
@@ -612,7 +615,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
           const contentItem = contentItems.nth(i);
           await contentItem.click();
           // Wait for content to load
-          await page.waitForLoadState('networkidle');
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
           
           // Mark as complete if there's a completion button
           const completeButton = page.locator('button:has-text("Complete"), button:has-text("Mark Complete")');
@@ -626,7 +629,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
       const exerciseLinks = page.locator('a:has-text("Exercise"), .exercise-item, [data-testid="exercise"]');
       if (await exerciseLinks.count() > 0) {
         await exerciseLinks.first().click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Submit exercise solution
         const codeEditor = page.locator('textarea[name*="code"], .code-editor');
@@ -637,7 +640,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
           if (await submitButton.count() > 0) {
             await submitButton.click();
             // Wait for exercise submission to complete
-            await page.waitForSelector('.submission-success, [data-testid="submission-complete"]', { state: 'visible', timeout: 5000 }).catch(() => {});
+            await page.waitForSelector('.submission-success, [data-testid="submission-complete"]', { state: 'visible', timeout: 2000 }).catch(() => {});
           }
         }
       }
@@ -646,14 +649,14 @@ test.describe('System Integration - Comprehensive Tests', () => {
       const quizLinks = page.locator('a:has-text("Quiz"), .quiz-item, [data-testid="quiz"]');
       if (await quizLinks.count() > 0) {
         await quizLinks.first().click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Start quiz
         const startQuizButton = page.locator('button:has-text("Start Quiz"), button:has-text("Begin")');
         if (await startQuizButton.count() > 0) {
           await startQuizButton.click();
           // Wait for quiz to start
-          await page.waitForSelector('.quiz-question, [data-testid="quiz-question"]', { state: 'visible', timeout: 5000 }).catch(() => {});
+          await page.waitForSelector('.quiz-question, [data-testid="quiz-question"]', { state: 'visible', timeout: 2000 }).catch(() => {});
           
           // Answer quiz questions
           const quizQuestions = page.locator('input[type="radio"], input[type="checkbox"]');
@@ -669,7 +672,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
             if (await submitQuizButton.count() > 0) {
               await submitQuizButton.click();
               // Wait for quiz submission to complete
-              await page.waitForSelector('.quiz-complete, [data-testid="quiz-complete"]', { state: 'visible', timeout: 5000 }).catch(() => {});
+              await page.waitForSelector('.quiz-complete, [data-testid="quiz-complete"]', { state: 'visible', timeout: 2000 }).catch(() => {});
             }
           }
         }
@@ -678,7 +681,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
 
     // Step 3: Views progress statistics → reads course news
     await page.goto('/statistics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Verify progress tracking
     const progressElements = page.locator('.progress, .course-progress, [data-testid="progress"]');
@@ -698,7 +701,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
 
     // Read course news and announcements
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const newsArticles = page.locator('.news-article, .article, [data-testid="news-article"]');
     const articleCount = await newsArticles.count();
@@ -706,7 +709,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     if (articleCount > 0) {
       // Read first article
       await newsArticles.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Verify article content is visible
       const articleContent = page.locator('.article-content, .content, .news-content');
@@ -717,7 +720,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
 
     // Step 4: Schedules study sessions → exports calendar
     await page.goto('/planning');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Create study session event
     const createEventButton = page.locator('button:has-text("Create Event"), button:has-text("Add Event"), [data-testid="create-event"]');
@@ -745,7 +748,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
       if (await saveEventButton.count() > 0) {
         await saveEventButton.click();
         // Wait for event to be created
-        await page.waitForSelector('[data-testid="event-created"], .event-success', { state: 'visible', timeout: 5000 }).catch(() => {});
+        await page.waitForSelector('[data-testid="event-created"], .event-success', { state: 'visible', timeout: 2000 }).catch(() => {});
       }
     }
     
@@ -767,14 +770,14 @@ test.describe('System Integration - Comprehensive Tests', () => {
       const downloadButton = page.locator('button:has-text("Download"), a[download]');
       if (await downloadButton.count() > 0) {
         // In a real test, we would verify the download
-        await expect(downloadButton).toBeVisible();
+        await expect(downloadButton).toBeVisible({ timeout: 5000 });
       }
     }
 
     // Step 5: Achieves course completion → receives certificate
     // Check if course is completed
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const completedCourse = page.locator(`:has-text("${courseName}"), .course-card:has-text("${courseName}")`);
     if (await completedCourse.count() > 0) {
@@ -785,7 +788,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
         const certificateLink = completedCourse.locator('a:has-text("Certificate"), button:has-text("Certificate")');
         if (await certificateLink.count() > 0) {
           await certificateLink.click();
-          await page.waitForLoadState('networkidle');
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
           
           // Verify certificate page or download
           const certificateContent = page.locator('.certificate, .diploma, [data-testid="certificate"]');
@@ -799,7 +802,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     // Step 6: Verify data consistency across all services throughout journey
     // Check profile shows enrolled course
     await page.goto('/profile');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const profileCourses = page.locator('.enrolled-courses, .my-courses, [data-testid="enrolled-courses"]');
     if (await profileCourses.count() > 0) {
@@ -808,7 +811,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Check statistics reflect progress
     await page.goto('/statistics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const statsOverview = page.locator('.stats-overview, .progress-overview, [data-testid="student-stats"]');
     if (await statsOverview.count() > 0) {
@@ -821,7 +824,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Check calendar shows study session
     await page.goto('/planning');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const calendarEvents = page.locator('.calendar-event, .event, [data-testid="calendar-event"]');
     if (await calendarEvents.count() > 0) {
@@ -843,7 +846,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     const authHelper = new CleanAuthHelper(page);
     await authHelper.loginAsTeacher();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Create new course
     const createCourseButton = page.locator('button:has-text("Create Course"), button:has-text("Create")');
@@ -867,7 +870,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     // Save course as draft
     const saveDraftButton = page.locator('button:has-text("Save Draft"), button:has-text("Save")');
     await saveDraftButton.first().click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Add course content
     // Add chapters
@@ -934,7 +937,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     const publishButton = page.locator('button:has-text("Publish"), button:has-text("Make Public")');
     if (await publishButton.count() > 0) {
       await publishButton.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     }
 
     // Step 2: Manages student enrollments → grades submissions
@@ -946,7 +949,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
       studentEmails.push(studentEmail);
       
       await page.goto('/admin/users');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const createUserButton = page.locator('button:has-text("Create User")');
       await createUserButton.click();
@@ -959,18 +962,18 @@ test.describe('System Integration - Comprehensive Tests', () => {
       await page.click('form button[type="submit"]');
       
       // Wait for user creation to complete
-      await page.waitForSelector('.user-created, [data-testid="user-created"]', { state: 'visible', timeout: 5000 }).catch(() => {});
+      await page.waitForSelector('.user-created, [data-testid="user-created"]', { state: 'visible', timeout: 2000 }).catch(() => {});
     }
     
     // Switch back to instructor to manage enrollments
     await authHelper.loginAsTeacher();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Enter course management
     const courseCard = page.locator(`:has-text("${courseName}")`);
     await courseCard.first().click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Manage enrollments
     const enrollmentTab = page.locator('button:has-text("Enrollments"), a:has-text("Students")');
@@ -990,7 +993,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
             const enrollButton = page.locator('button:has-text("Enroll"), button[type="submit"]');
             await enrollButton.click();
             // Wait for enrollment to complete
-            await page.waitForSelector('.enrollment-complete, [data-testid="enrollment-success"]', { state: 'visible', timeout: 5000 }).catch(() => {});
+            await page.waitForSelector('.enrollment-complete, [data-testid="enrollment-success"]', { state: 'visible', timeout: 2000 }).catch(() => {});
           }
         }
       }
@@ -1028,7 +1031,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
 
     // Step 3: Creates course-related news announcements
     await page.goto('/news');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const createNewsButton = page.locator('button:has-text("Create"), button:has-text("New Article")');
     if (await createNewsButton.count() > 0) {
@@ -1053,12 +1056,12 @@ test.describe('System Integration - Comprehensive Tests', () => {
       
       const publishNewsButton = page.locator('button:has-text("Publish"), button[type="submit"]');
       await publishNewsButton.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     }
 
     // Step 4: Schedules class events → manages calendar
     await page.goto('/planning');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Create class event
     const createEventButton = page.locator('button:has-text("Create Event"), button:has-text("Add Event")');
@@ -1099,7 +1102,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
       const saveEventButton = page.locator('button:has-text("Save"), button[type="submit"]');
       await saveEventButton.click();
       // Wait for calendar event to be saved
-      await page.waitForSelector('[data-testid="event-saved"], .event-created', { state: 'visible', timeout: 5000 }).catch(() => {});
+      await page.waitForSelector('[data-testid="event-saved"], .event-created', { state: 'visible', timeout: 2000 }).catch(() => {});
     }
     
     // Manage calendar view
@@ -1108,7 +1111,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
       // Test different calendar views
       await calendarViewButtons.nth(1).click(); // Week view
       // Wait for calendar view to change
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Verify event appears in calendar
       const calendarEvent = page.locator(`:has-text("${courseName} - Live Session")`);
@@ -1119,7 +1122,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
 
     // Step 5: Monitors student progress → generates reports
     await page.goto('/statistics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // View course analytics
     const courseAnalyticsSection = page.locator('.course-analytics, .instructor-dashboard, [data-testid="course-stats"]');
@@ -1158,7 +1161,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
         
         const downloadReportButton = page.locator('button:has-text("Download"), button:has-text("Generate")');
         if (await downloadReportButton.count() > 0) {
-          await expect(downloadReportButton).toBeVisible();
+          await expect(downloadReportButton).toBeVisible({ timeout: 5000 });
           // In a real test, would verify download
         }
       }
@@ -1175,7 +1178,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     for (const section of instructorSections) {
       await page.goto(section.url);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       const sectionHeader = page.locator(section.element);
       if (await sectionHeader.count() > 0) {
@@ -1185,7 +1188,7 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Test instructor cannot access admin-only features
     await page.goto('/admin/users');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Should be redirected or show access denied
     const currentUrl = page.url();
@@ -1196,14 +1199,14 @@ test.describe('System Integration - Comprehensive Tests', () => {
     
     // Verify course data is properly associated with instructor
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const instructorCourseList = page.locator(`:has-text("${courseName}")`);
     await expect(instructorCourseList.first()).toBeVisible();
     
     // Verify student progress data is accessible
     await page.goto('/statistics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const studentProgressData = page.locator('.student-progress, .progress-table, [data-testid="student-stats"]');
     if (await studentProgressData.count() > 0) {

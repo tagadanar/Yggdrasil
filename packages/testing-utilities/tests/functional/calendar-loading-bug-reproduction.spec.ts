@@ -4,11 +4,12 @@
 import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Calendar Loading Bug - Staff Users', () => {
   
   test('REPRO: Staff user calendar loading hangs due to auth middleware bug', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Staff calendar loading bug reproduction');
+    const cleanup = TestCleanup.getInstance('Staff calendar loading bug reproduction');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -17,11 +18,11 @@ test.describe('Calendar Loading Bug - Staff Users', () => {
       
       // Step 2: Navigate to planning page
       await page.goto('/planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Step 3: Verify basic page elements load (these should work)
       await expect(page.locator('h1:has-text("Academic Planning")')).toBeVisible({
-        timeout: 5000
+        timeout: 2000
       });
       
       // Step 4: This is where the bug manifests - calendar should load but doesn't for staff
@@ -33,7 +34,7 @@ test.describe('Calendar Loading Bug - Staff Users', () => {
       try {
         await page.waitForSelector(calendarSelector, { 
           state: 'visible', 
-          timeout: 10000 // Shorter timeout to demonstrate the issue
+          timeout: 3000 // Shorter timeout to demonstrate the issue
         });
         
         // If we reach here, the calendar loaded successfully
@@ -71,7 +72,7 @@ test.describe('Calendar Loading Bug - Staff Users', () => {
   });
   
   test('CONTROL: Admin user calendar loads correctly', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Admin calendar loading control test');
+    const cleanup = TestCleanup.getInstance('Admin calendar loading control test');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -80,14 +81,14 @@ test.describe('Calendar Loading Bug - Staff Users', () => {
       
       // Step 2: Navigate to planning page
       await page.goto('/planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Step 3: Verify admin calendar loads correctly
       console.log('⏳ Testing calendar loading for admin user...');
       
       await page.waitForSelector('[data-testid="calendar-view"]', { 
         state: 'visible', 
-        timeout: 15000 
+        timeout: 5000 
       });
       
       console.log('✅ Calendar loaded successfully for admin user');
@@ -106,7 +107,7 @@ test.describe('Calendar Loading Bug - Staff Users', () => {
   });
   
   test('DIAGNOSTIC: Check planning API response for staff vs admin', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Planning API diagnostic test');
+    const cleanup = TestCleanup.getInstance('Planning API diagnostic test');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -133,10 +134,10 @@ test.describe('Calendar Loading Bug - Staff Users', () => {
       });
       
       await page.goto('/planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Wait a bit for API calls to complete
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
       
       console.log(`📊 Staff API calls captured: ${staffApiResponses.length}`);
       
@@ -162,10 +163,10 @@ test.describe('Calendar Loading Bug - Staff Users', () => {
       });
       
       await page.goto('/planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Wait a bit for API calls to complete
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
       
       console.log(`📊 Admin API calls captured: ${adminApiResponses.length}`);
       

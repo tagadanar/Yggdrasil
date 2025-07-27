@@ -4,13 +4,33 @@
 import axios, { AxiosInstance } from 'axios';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
 
-// Planning service API client
-const PLANNING_SERVICE_URL = process.env.NEXT_PUBLIC_PLANNING_SERVICE_URL || 'http://localhost:3005';
+// Dynamic Planning Service URL detection for worker-specific testing
+function getPlanningServiceUrl(): string {
+  // In test environment, detect worker-specific Planning Service URL from frontend port
+  if (process.env.NODE_ENV === 'test' || typeof window !== 'undefined') {
+    const frontendPort = typeof window !== 'undefined' 
+      ? parseInt(window.location.port, 10) 
+      : parseInt(process.env['PORT'] || '3000', 10);
+    
+    // Calculate planning service port from frontend port (frontend + 5)
+    const planningPort = frontendPort + 5;
+    
+    // Use localhost if we're in a test environment or browser
+    if (typeof window !== 'undefined' || process.env.NODE_ENV === 'test') {
+      return `http://localhost:${planningPort}`;
+    }
+  }
+  
+  // Fallback to environment variable or default
+  return process.env['NEXT_PUBLIC_PLANNING_SERVICE_URL'] || 'http://localhost:3005';
+}
+
+const PLANNING_SERVICE_URL = getPlanningServiceUrl();
 
 // Create axios instance for planning service
 const planningApiClient: AxiosInstance = axios.create({
   baseURL: `${PLANNING_SERVICE_URL}/api/planning`,
-  timeout: 10000,
+  timeout: 30000, // Increased from 10s to 30s for test environments
   headers: {
     'Content-Type': 'application/json',
   },
@@ -27,6 +47,50 @@ planningApiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle token refresh
+planningApiClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If we get a 401 and haven't already tried to refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      const refreshToken = tokenStorage.getRefreshToken();
+      if (refreshToken) {
+        try {
+          // Try to refresh the token
+          const response = await axios.post(`${process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3001'}/api/auth/refresh`, {
+            refreshToken,
+          });
+          
+          if (response.data.success && response.data.data.tokens) {
+            const tokens = response.data.data.tokens;
+            tokenStorage.setTokens(tokens);
+            
+            // Retry the original request with new token
+            originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
+            return planningApiClient(originalRequest);
+          }
+        } catch (refreshError) {
+          // Refresh failed, clear tokens
+          tokenStorage.clearTokens();
+          // Let the ProtectedRoute component handle redirect
+        }
+      } else {
+        // No refresh token, clear tokens
+        tokenStorage.clearTokens();
+        // Let the ProtectedRoute component handle redirect
+      }
+    }
+    
     return Promise.reject(error);
   }
 );

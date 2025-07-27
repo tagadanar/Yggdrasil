@@ -2,10 +2,11 @@ import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { TestDataFactory } from '../helpers/TestDataFactory';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Role-Based Access Control Matrix', () => {
   test('RBAC-001: Complete Role-Based Access Control Matrix - All Modules', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('RBAC-001');
+    const cleanup = TestCleanup.getInstance('RBAC-001');
     const factory = new TestDataFactory('RBAC-001');
     
     try {
@@ -71,7 +72,7 @@ test.describe('Role-Based Access Control Matrix', () => {
             await page.goto(endpoint);
             
             // Wait for the page to load and verify we're on the correct page
-            await page.waitForLoadState('networkidle', { timeout: 10000 });
+            await page.waitForLoadState('networkidle', { timeout: 3000 });
             const currentUrl = page.url();
             
             // Verify we stayed on the requested page (not redirected)
@@ -84,7 +85,7 @@ test.describe('Role-Based Access Control Matrix', () => {
             // Verify expected content is visible
             const expectedElement = access.expectedElements[endpoint];
             if (expectedElement) {
-              await expect(page.locator(expectedElement)).toBeVisible({ timeout: 15000 });
+              await expect(page.locator(expectedElement)).toBeVisible({ timeout: 5000 });
             }
             
             console.log(`    ✓ ${endpoint} - Access granted`);
@@ -97,7 +98,7 @@ test.describe('Role-Based Access Control Matrix', () => {
               await page.goto(endpoint);
               
               // Wait for redirect or error page
-              await page.waitForLoadState('networkidle', { timeout: 10000 });
+              await page.waitForLoadState('networkidle', { timeout: 3000 });
               const currentUrl = page.url();
               
               // Verify we were redirected away or shown error
@@ -126,7 +127,7 @@ test.describe('Role-Based Access Control Matrix', () => {
   });
   
   test('RBAC-002: API Endpoint Authorization Matrix', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('RBAC-002');
+    const cleanup = TestCleanup.getInstance('RBAC-002');
     const factory = new TestDataFactory('RBAC-002');
     
     try {

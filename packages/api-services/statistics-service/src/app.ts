@@ -1,6 +1,10 @@
 // packages/api-services/statistics-service/src/app.ts
 // Express application setup for statistics service
 
+// Increase max listeners to prevent EventEmitter memory leak warnings
+// Statistics service needs listeners for: shutdown, database, testing framework
+process.setMaxListeners(20);
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

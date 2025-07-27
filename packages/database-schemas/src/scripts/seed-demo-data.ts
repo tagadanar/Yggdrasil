@@ -16,7 +16,7 @@ const DEMO_USERS = [
     isActive: true,
   },
   {
-    email: 'teacher@yggdrasil.edu', 
+    email: 'teacher@yggdrasil.edu',
     password: 'Admin123!',
     role: 'teacher',
     profile: {
@@ -38,7 +38,7 @@ const DEMO_USERS = [
   },
   {
     email: 'student@yggdrasil.edu',
-    password: 'Admin123!', 
+    password: 'Admin123!',
     role: 'student',
     profile: {
       firstName: 'Student',
@@ -52,19 +52,19 @@ async function seedDemoData(): Promise<void> {
   try {
     // Connect to database
     await connectDatabase();
-    
+
     // Clear existing demo users
-    await UserModel.deleteMany({ 
-      email: { $in: DEMO_USERS.map(u => u.email) } 
+    await UserModel.deleteMany({
+      email: { $in: DEMO_USERS.map(u => u.email) },
     });
-    
+
     // Create demo users
     for (const userData of DEMO_USERS) {
       // Create user with plain password - pre-save middleware will hash it
       const user = new UserModel(userData);
       await user.save();
     }
-    
+
   } catch (error) {
     throw error;
   } finally {

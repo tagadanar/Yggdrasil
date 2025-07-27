@@ -1,6 +1,10 @@
 // packages/api-services/course-service/src/app.ts
 // Express application setup for course service
 
+// Increase max listeners to prevent EventEmitter memory leak warnings
+// Course service needs listeners for: shutdown, database, testing framework
+process.setMaxListeners(20);
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -207,7 +211,7 @@ process.on('uncaughtException', (error) => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('❌ Course Service: Unhandled Rejection at:', promise, 'reason:', reason);
-  console.error('❌ Course Service: Rejection details:', {
+  logger.error('❌ Course Service: Rejection details:', {
     reason: reason,
     promise: promise.toString()
   });

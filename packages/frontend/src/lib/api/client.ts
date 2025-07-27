@@ -10,7 +10,7 @@ function getApiUrl(): string {
   if (process.env.NODE_ENV === 'test' || typeof window !== 'undefined') {
     const frontendPort = typeof window !== 'undefined' 
       ? parseInt(window.location.port, 10) 
-      : parseInt(process.env.PORT || '3000', 10);
+      : parseInt(process.env['PORT'] || '3000', 10);
     
     // Calculate auth service port from frontend port (frontend + 1)
     const authPort = frontendPort + 1;
@@ -22,7 +22,7 @@ function getApiUrl(): string {
   }
   
   // Fallback to environment variable or default
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  return process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3001';
 }
 
 const BASE_URL = getApiUrl();
@@ -102,7 +102,7 @@ function getUserServiceUrl(): string {
   if (process.env.NODE_ENV === 'test' || typeof window !== 'undefined') {
     const frontendPort = typeof window !== 'undefined' 
       ? parseInt(window.location.port, 10) 
-      : parseInt(process.env.PORT || '3000', 10);
+      : parseInt(process.env['PORT'] || '3000', 10);
     
     // Calculate user service port from frontend port (frontend + 2)
     const userPort = frontendPort + 2;
@@ -114,7 +114,7 @@ function getUserServiceUrl(): string {
   }
   
   // Fallback to environment variable or default
-  return process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'http://localhost:3002';
+  return process.env['NEXT_PUBLIC_USER_SERVICE_URL'] || 'http://localhost:3002';
 }
 
 const USER_SERVICE_URL = getUserServiceUrl();

@@ -3,7 +3,8 @@
 // Uses TestCleanup pattern for proper state management
 
 import { Page } from '@playwright/test';
-import { AuthTestHelper, TestInitializer, QuickAuth, type AuthResult } from '@yggdrasil/shared-utilities/testing';
+import { AuthTestHelper, TestInitializer, type AuthResult } from '@yggdrasil/shared-utilities/testing';
+import { TEST_PERFORMANCE_CONFIG } from '../config/performance-config';
 
 /**
  * CleanAuthHelper - Follows CLAUDE.md clean testing architecture
@@ -18,8 +19,8 @@ export class CleanAuthHelper {
     this.page = page;
     this.authHelper = new AuthTestHelper(page, {
       debug: false, // OPTIMIZED: Disable debug for faster execution
-      timeout: 8000, // OPTIMIZED: Reduced from 15s to 8s for faster tests
-      maxRetries: 1,  // OPTIMIZED: Reduced retries to speed up tests
+      timeout: TEST_PERFORMANCE_CONFIG.timeouts.auth, // Use optimized auth timeout
+      retries: 1,  // OPTIMIZED: Reduced retries to speed up tests
     });
   }
 
@@ -45,7 +46,7 @@ export class CleanAuthHelper {
           // Wait before retrying (exponential backoff)
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
           console.log(`🔐 CLEAN AUTH: Waiting ${delay}ms before retry...`);
-          await this.page.waitForTimeout(delay);
+          await this.page.waitForTimeout(Math.min(delay, 1000)); // Cap retry delay at 1s for faster tests
           
           // Clear auth state before retry
           try {
@@ -186,12 +187,12 @@ export class CleanAuthHelper {
             }
           } catch (securityError) {
             // Ignore security errors for localStorage/sessionStorage access
-            console.warn('Could not clear storage due to security restrictions:', securityError.message);
+            console.warn('Could not clear storage due to security restrictions:', (securityError as Error).message);
           }
         });
       } catch (navigationError) {
         // Handle execution context destroyed errors gracefully
-        if (navigationError.message && navigationError.message.includes('Execution context was destroyed')) {
+        if ((navigationError as Error).message && (navigationError as Error).message.includes('Execution context was destroyed')) {
           console.log('🔐 CLEAN AUTH: Page navigated during cleanup, auth state likely already cleared');
           return;
         }
@@ -204,7 +205,7 @@ export class CleanAuthHelper {
       console.log('🔐 CLEAN AUTH: Authentication state cleared successfully');
     } catch (error) {
       // Handle execution context destroyed errors gracefully
-      if (error.message && error.message.includes('Execution context was destroyed')) {
+      if ((error as Error).message && (error as Error).message.includes('Execution context was destroyed')) {
         console.log('🔐 CLEAN AUTH: Page navigated during cleanup, auth state likely already cleared');
         return;
       }
@@ -225,14 +226,14 @@ export class CleanAuthHelper {
       await this.clearAuthState();
       
       // Step 2: Wait for auth UI to reset (critical for cycling)
-      await this.page.waitForTimeout(800);
+      await this.page.waitForTimeout(TEST_PERFORMANCE_CONFIG.waits.stateChange);
       
       // Step 3: Navigate to clean login page to ensure fresh state
       await this.page.goto('/auth/login');
       await this.page.waitForLoadState('networkidle');
       
       // Step 4: Verify we're on clean login page
-      await this.page.waitForSelector('[data-testid="login-form"], .login-form', { timeout: 5000 });
+      await this.page.waitForSelector('[data-testid="login-form"], .login-form', { timeout: TEST_PERFORMANCE_CONFIG.timeouts.selector });
       
       // Step 5: Execute target authentication
       switch (targetRole) {
@@ -269,10 +270,13 @@ export class CleanAuthHelper {
         if (cookies.includes('yggdrasil_access_token')) {
           // Try to decode the token to check role (simplified check)
           const tokenMatch = cookies.match(/yggdrasil_access_token=([^;]+)/);
-          if (tokenMatch) {
+          if (tokenMatch && tokenMatch[1]) {
             try {
-              const payload = JSON.parse(atob(tokenMatch[1].split('.')[1]));
-              return payload.role;
+              const parts = tokenMatch[1].split('.');
+              if (parts.length === 3 && parts[1]) {
+                const payload = JSON.parse(atob(parts[1]));
+                return payload.role;
+              }
             } catch (e) {
               return null;
             }

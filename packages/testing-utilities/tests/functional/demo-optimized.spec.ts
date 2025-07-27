@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Demo Optimized Test Suite', () => {
   test('DEMO-001: Authentication Matrix Test (Consolidates 4 auth tests)', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('DEMO-001');
+    const cleanup = TestCleanup.getInstance('DEMO-001');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
     
@@ -70,7 +71,7 @@ test.describe('Demo Optimized Test Suite', () => {
   });
   
   test('DEMO-002: Quick UI State Test (Consolidates 3 UI tests)', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('DEMO-002');
+    const cleanup = TestCleanup.getInstance('DEMO-002');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
     
@@ -114,7 +115,7 @@ test.describe('Demo Optimized Test Suite', () => {
   });
   
   test('DEMO-003: Quick Performance Test (~10 seconds vs 2+ minutes)', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('DEMO-003');
+    const cleanup = TestCleanup.getInstance('DEMO-003');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
     

@@ -3,14 +3,14 @@
 
 import { UserModel, UserDocument } from '@yggdrasil/database-schemas';
 
-import { 
-  AuthResult, 
-  LoginRequest as LoginRequestType, 
+import {
+  AuthResult,
+  LoginRequest as LoginRequestType,
   RegisterRequest as RegisterRequestType,
   User,
   ERROR_MESSAGES,
-  logger as authLogger 
 } from '@yggdrasil/shared-utilities';
+import { authLogger } from '@yggdrasil/shared-utilities/logging';
 import { JWTHelper } from '../utils/JWTHelper';
 import { v4 as uuidv4 } from 'uuid';
 import { performance } from 'perf_hooks';
@@ -33,7 +33,7 @@ export class AuthService {
       requestId,
       email: userData.email.substring(0, 3) + '***',
       role: userData.role,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     try {
@@ -42,7 +42,7 @@ export class AuthService {
       if (existingUser) {
         authLogger.warn('Registration failed - email already exists', {
           requestId,
-          email: userData.email.substring(0, 3) + '***'
+          email: userData.email.substring(0, 3) + '***',
         });
         return {
           success: false,
@@ -74,19 +74,19 @@ export class AuthService {
       const userResponse = this.userDocumentToUser(savedUser);
 
       const duration = performance.now() - startTime;
-      
+
       authLogger.info('Registration successful', {
         requestId,
         userId: savedUser._id,
         email: userData.email.substring(0, 3) + '***',
         role: userData.role,
-        duration: Math.round(duration)
+        duration: Math.round(duration),
       });
 
       // Log performance metric
       (authLogger as any).performance('auth.register', duration, {
         userId: savedUser._id,
-        role: userData.role
+        role: userData.role,
       });
 
       return {
@@ -96,15 +96,15 @@ export class AuthService {
       };
     } catch (error) {
       const duration = performance.now() - startTime;
-      
+
       authLogger.error('Registration exception', {
         requestId,
         email: userData.email.substring(0, 3) + '***',
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        duration: Math.round(duration)
+        duration: Math.round(duration),
       });
-      
+
       return {
         success: false,
         error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -118,21 +118,21 @@ export class AuthService {
   static async login(loginData: LoginRequestType): Promise<AuthResult> {
     const startTime = performance.now();
     const requestId = uuidv4();
-    
+
     authLogger.info('Login attempt started', {
       requestId,
       email: loginData.email.substring(0, 3) + '***',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     try {
       // Find user by email
       const user = await UserModel.findByEmail(loginData.email);
-      
+
       if (!user) {
         authLogger.warn('Login failed - user not found', {
           requestId,
-          email: loginData.email.substring(0, 3) + '***'
+          email: loginData.email.substring(0, 3) + '***',
         });
         return {
           success: false,
@@ -145,7 +145,7 @@ export class AuthService {
         authLogger.warn('Login failed - account locked', {
           requestId,
           userId: user._id,
-          email: loginData.email.substring(0, 3) + '***'
+          email: loginData.email.substring(0, 3) + '***',
         });
         return {
           success: false,
@@ -155,11 +155,11 @@ export class AuthService {
 
       // Verify password
       const isValidPassword = await user.comparePassword(loginData.password);
-      
+
       if (!isValidPassword) {
         authLogger.warn('Login failed - invalid password', {
           requestId,
-          userId: user._id
+          userId: user._id,
         });
         return {
           success: false,
@@ -170,16 +170,16 @@ export class AuthService {
       // Update last login timestamp using findByIdAndUpdate to avoid document issues
       await UserModel.findByIdAndUpdate(user._id, { lastLogin: new Date() });
 
-      // Generate tokens - CRITICAL FIX for test users with ObjectIds  
+      // Generate tokens - CRITICAL FIX for test users with ObjectIds
       let userId = user._id.toString();
-      
+
       // CRITICAL FIX: For test users, we need to store the actual _id that was used
       // in the JWT so that the /me endpoint can find the user again
       if (process.env['NODE_ENV'] === 'test' && user.email.includes('@test.yggdrasil.local')) {
         // Extract the actual stored _id value
         userId = user._id.toString();
       }
-      
+
       const tokens = JWTHelper.generateTokens({
         _id: userId,
         email: user.email,
@@ -191,18 +191,18 @@ export class AuthService {
       const userResponse = this.userDocumentToUser(user);
 
       const duration = performance.now() - startTime;
-      
+
       authLogger.info('Login successful', {
         requestId,
         userId: user._id,
         duration: Math.round(duration),
-        role: user.role
+        role: user.role,
       });
 
       // Log performance metric
       (authLogger as any).performance('auth.login', duration, {
         userId: user._id,
-        role: user.role
+        role: user.role,
       });
 
       return {
@@ -212,14 +212,14 @@ export class AuthService {
       };
     } catch (error) {
       const duration = performance.now() - startTime;
-      
+
       authLogger.error('Login exception', {
         requestId,
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        duration: Math.round(duration)
+        duration: Math.round(duration),
       });
-      
+
       return {
         success: false,
         error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -233,10 +233,10 @@ export class AuthService {
   static async refreshTokens(refreshToken: string): Promise<AuthResult> {
     const startTime = performance.now();
     const requestId = uuidv4();
-    
+
     authLogger.info('Token refresh attempt started', {
       requestId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     try {
@@ -244,7 +244,7 @@ export class AuthService {
       const tokenResult = JWTHelper.verifyRefreshToken(refreshToken);
       if (!tokenResult.success || !tokenResult.data) {
         authLogger.warn('Token refresh failed - invalid token', {
-          requestId
+          requestId,
         });
         return {
           success: false,
@@ -257,7 +257,7 @@ export class AuthService {
       if (!user) {
         authLogger.warn('Token refresh failed - user not found', {
           requestId,
-          userId: tokenResult.data.id
+          userId: tokenResult.data.id,
         });
         return {
           success: false,
@@ -269,7 +269,7 @@ export class AuthService {
       if (!user.isActive) {
         authLogger.warn('Token refresh failed - account locked', {
           requestId,
-          userId: user._id
+          userId: user._id,
         });
         return {
           success: false,
@@ -283,7 +283,7 @@ export class AuthService {
           requestId,
           userId: user._id,
           tokenVersion: tokenResult.data.tokenVersion,
-          currentVersion: user.tokenVersion
+          currentVersion: user.tokenVersion,
         });
         return {
           success: false,
@@ -293,12 +293,12 @@ export class AuthService {
 
       // Generate new tokens - CRITICAL FIX for test users
       let userId = user._id.toString();
-      
+
       // CRITICAL FIX: For test users, ensure consistency
       if (process.env['NODE_ENV'] === 'test' && user.email.includes('@test.yggdrasil.local')) {
         userId = user._id.toString();
       }
-      
+
       const tokens = JWTHelper.generateTokens({
         _id: userId,
         email: user.email,
@@ -310,18 +310,18 @@ export class AuthService {
       const userResponse = this.userDocumentToUser(user);
 
       const duration = performance.now() - startTime;
-      
+
       authLogger.info('Token refresh successful', {
         requestId,
         userId: user._id,
         duration: Math.round(duration),
-        role: user.role
+        role: user.role,
       });
 
       // Log performance metric
       (authLogger as any).performance('auth.refresh', duration, {
         userId: user._id,
-        role: user.role
+        role: user.role,
       });
 
       return {
@@ -331,14 +331,14 @@ export class AuthService {
       };
     } catch (error) {
       const duration = performance.now() - startTime;
-      
+
       authLogger.error('Token refresh exception', {
         requestId,
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        duration: Math.round(duration)
+        duration: Math.round(duration),
       });
-      
+
       return {
         success: false,
         error: ERROR_MESSAGES.TOKEN_INVALID,
@@ -352,11 +352,11 @@ export class AuthService {
   static async logout(userId: string): Promise<{ success: boolean; error?: string }> {
     const startTime = performance.now();
     const requestId = uuidv4();
-    
+
     authLogger.info('Logout attempt started', {
       requestId,
       userId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     try {
@@ -364,7 +364,7 @@ export class AuthService {
       if (!user) {
         authLogger.warn('Logout failed - user not found', {
           requestId,
-          userId
+          userId,
         });
         return {
           success: false,
@@ -376,16 +376,16 @@ export class AuthService {
       await user.incrementTokenVersion();
 
       const duration = performance.now() - startTime;
-      
+
       authLogger.info('Logout successful', {
         requestId,
         userId,
-        duration: Math.round(duration)
+        duration: Math.round(duration),
       });
 
       // Log performance metric
       (authLogger as any).performance('auth.logout', duration, {
-        userId
+        userId,
       });
 
       return {
@@ -393,15 +393,15 @@ export class AuthService {
       };
     } catch (error) {
       const duration = performance.now() - startTime;
-      
+
       authLogger.error('Logout exception', {
         requestId,
         userId,
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        duration: Math.round(duration)
+        duration: Math.round(duration),
       });
-      
+
       return {
         success: false,
         error: ERROR_MESSAGES.INTERNAL_ERROR,
@@ -415,10 +415,10 @@ export class AuthService {
   static async verifyUser(accessToken: string): Promise<AuthResult> {
     const startTime = performance.now();
     const requestId = uuidv4();
-    
+
     authLogger.debug('User verification attempt started', {
       requestId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     try {
@@ -426,7 +426,7 @@ export class AuthService {
       const tokenResult = JWTHelper.verifyAccessToken(accessToken);
       if (!tokenResult.success || !tokenResult.data) {
         authLogger.debug('User verification failed - invalid token', {
-          requestId
+          requestId,
         });
         return {
           success: false,
@@ -439,7 +439,7 @@ export class AuthService {
       if (!user) {
         authLogger.warn('User verification failed - user not found', {
           requestId,
-          userId: tokenResult.data.id
+          userId: tokenResult.data.id,
         });
         return {
           success: false,
@@ -451,7 +451,7 @@ export class AuthService {
       if (!user.isActive) {
         authLogger.warn('User verification failed - account locked', {
           requestId,
-          userId: user._id
+          userId: user._id,
         });
         return {
           success: false,
@@ -465,7 +465,7 @@ export class AuthService {
           requestId,
           userId: user._id,
           tokenVersion: tokenResult.data.tokenVersion,
-          currentVersion: user.tokenVersion
+          currentVersion: user.tokenVersion,
         });
         return {
           success: false,
@@ -477,19 +477,19 @@ export class AuthService {
       const userResponse = this.userDocumentToUser(user);
 
       const duration = performance.now() - startTime;
-      
+
       authLogger.debug('User verification successful', {
         requestId,
         userId: user._id,
         duration: Math.round(duration),
-        role: user.role
+        role: user.role,
       });
 
       // Log performance metric only for slow verifications
       if (duration > 100) {
         (authLogger as any).performance('auth.verify', duration, {
           userId: user._id,
-          role: user.role
+          role: user.role,
         });
       }
 
@@ -499,14 +499,14 @@ export class AuthService {
       };
     } catch (error) {
       const duration = performance.now() - startTime;
-      
+
       authLogger.error('User verification exception', {
         requestId,
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        duration: Math.round(duration)
+        duration: Math.round(duration),
       });
-      
+
       return {
         success: false,
         error: ERROR_MESSAGES.TOKEN_INVALID,

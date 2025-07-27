@@ -12,7 +12,7 @@ const logger = LoggerFactory.createLogger('swagger');
 
 /**
  * Setup Swagger UI for an Express app
- * 
+ *
  * @param app - Express application
  * @param openApiDoc - OpenAPI document
  * @param basePath - Base path for documentation (default: /api-docs)
@@ -20,7 +20,7 @@ const logger = LoggerFactory.createLogger('swagger');
 export const setupSwagger = (
   app: Express,
   openApiDoc: OpenAPIV3.Document,
-  basePath = '/api-docs'
+  basePath = '/api-docs',
 ): void => {
   // Serve OpenAPI JSON
   app.get(`${basePath}/openapi.json`, (_req: Request, res: Response) => {
@@ -56,7 +56,7 @@ export const setupSwagger = (
         tagsSorter: 'alpha',
         operationsSorter: 'alpha',
       },
-    })
+    }),
   );
 
   // Log documentation URL
@@ -75,7 +75,7 @@ export const combineOpenAPIDocs = (
     name: string;
     doc: OpenAPIV3.Document;
     basePath: string;
-  }>
+  }>,
 ): OpenAPIV3.Document => {
   const combinedDoc: OpenAPIV3.Document = {
     openapi: '3.0.3',

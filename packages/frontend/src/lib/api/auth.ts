@@ -1,7 +1,7 @@
 // packages/frontend/src/lib/api/auth.ts
 // Authentication API utilities
 
-import { AuthResult, LoginRequestType, RegisterRequestType } from '@yggdrasil/shared-utilities';
+import { AuthResult, LoginRequestType, RegisterRequestType } from '@yggdrasil/shared-utilities/client';
 import { apiClient } from './client';
 
 export const authApi = {

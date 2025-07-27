@@ -21,7 +21,7 @@ interface NewsArticle {
 }
 
 // Get news service URL from environment variables
-const NEWS_SERVICE_URL = process.env.NEXT_PUBLIC_NEWS_SERVICE_URL || 'http://localhost:3003';
+const NEWS_SERVICE_URL = process.env['NEXT_PUBLIC_NEWS_SERVICE_URL'] || 'http://localhost:3003';
 
 function NewsPageContent() {
   const { user } = useAuth();
@@ -41,6 +41,28 @@ function NewsPageContent() {
   const [editingArticle, setEditingArticle] = useState<NewsArticle | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
 
+  // Modal cleanup functions
+  const closeCreateModal = () => {
+    setShowCreateForm(false);
+    setFormData({
+      title: '',
+      category: 'announcements',
+      summary: '',
+      content: ''
+    });
+  };
+
+  const closeEditModal = () => {
+    setShowEditForm(false);
+    setEditingArticle(null);
+    setFormData({
+      title: '',
+      category: 'announcements',
+      summary: '',
+      content: ''
+    });
+  };
+
   const categories = [
     { id: 'all', name: 'All News' },
     { id: 'announcements', name: 'Announcements' },
@@ -59,45 +81,45 @@ function NewsPageContent() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    // Load news articles from API
-    const loadNews = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch(`${NEWS_SERVICE_URL}/api/news/articles`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+  // Extract loadNews function so it can be reused
+  const loadNews = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${NEWS_SERVICE_URL}/api/news/articles`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            // Transform API data to match frontend interface
-            const transformedArticles: NewsArticle[] = data.data.articles.map((article: any) => ({
-              id: article._id,
-              title: article.title,
-              content: article.content,
-              author: article.author?.name || 'Unknown Author',
-              category: article.category,
-              publishedAt: article.publishedAt || article.createdAt,
-              excerpt: article.summary || article.content.substring(0, 150) + '...'
-            }));
-            setArticles(transformedArticles);
-          } else {
-            setArticles([]);
-          }
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          // Transform API data to match frontend interface
+          const transformedArticles: NewsArticle[] = data.data.articles.map((article: any) => ({
+            id: article._id,
+            title: article.title,
+            content: article.content,
+            author: article.author?.name || 'Unknown Author',
+            category: article.category,
+            publishedAt: article.publishedAt || article.createdAt,
+            excerpt: article.summary || article.content.substring(0, 150) + '...'
+          }));
+          setArticles(transformedArticles);
         } else {
           setArticles([]);
         }
-      } catch (error) {
+      } else {
         setArticles([]);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      setArticles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadNews();
   }, []);
 
@@ -159,24 +181,10 @@ function NewsPageContent() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // Add the new article to the list
-          const newArticle: NewsArticle = {
-            id: data.data._id,
-            title: data.data.title,
-            content: data.data.content,
-            author: data.data.author?.name || (user?.profile?.firstName + ' ' + user?.profile?.lastName) || 'Unknown Author',
-            category: data.data.category,
-            publishedAt: data.data.publishedAt || data.data.createdAt,
-            excerpt: data.data.summary || data.data.content.substring(0, 150) + '...'
-          };
-          setArticles([newArticle, ...articles]);
-          setShowCreateForm(false);
-          setFormData({
-            title: '',
-            category: 'announcements',
-            summary: '',
-            content: ''
-          });
+          // Close modal and reset form
+          closeCreateModal();
+          // Reload articles to show the new one
+          await loadNews();
         } else {
           alert('Failed to create article: ' + data.message);
         }
@@ -240,17 +248,10 @@ function NewsPageContent() {
             publishedAt: data.data.publishedAt || data.data.createdAt,
             excerpt: data.data.summary || data.data.content.substring(0, 150) + '...'
           };
-          setArticles(articles.map(article => 
-            article.id === editingArticle.id ? updatedArticle : article
-          ));
-          setShowEditForm(false);
-          setEditingArticle(null);
-          setFormData({
-            title: '',
-            category: 'announcements',
-            summary: '',
-            content: ''
-          });
+          // Close modal and reset form
+          closeEditModal();
+          // Reload articles to show the updated one
+          await loadNews();
         } else {
           alert('Failed to update article: ' + data.message);
         }
@@ -289,8 +290,8 @@ function NewsPageContent() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // Remove the article from the list
-          setArticles(articles.filter(article => article.id !== articleId));
+          // Reload articles to reflect the deletion
+          await loadNews();
         } else {
           alert('Failed to delete article: ' + data.message);
         }

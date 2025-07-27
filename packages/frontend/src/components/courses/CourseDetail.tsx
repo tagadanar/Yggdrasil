@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { courseApi } from '@/lib/api/courses';
 import { StatisticsApi } from '@/lib/api/statistics';
-import { User as SharedUser } from '@yggdrasil/shared-utilities';
+import { User as SharedUser } from '@yggdrasil/shared-utilities/client';
 import { ExerciseSubmission } from './ExerciseSubmission';
 import { ProgressTracker } from '../progress/ProgressTracker';
 

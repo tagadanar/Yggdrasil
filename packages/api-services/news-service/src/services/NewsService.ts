@@ -3,7 +3,7 @@
 
 import mongoose from 'mongoose';
 import { NewsArticleModel, UserModel, NewsArticleDocument } from '@yggdrasil/database-schemas';
-import { 
+import {
   CreateNewsArticleType,
   UpdateNewsArticleType,
   GetNewsArticlesQueryType,
@@ -54,17 +54,17 @@ export class NewsService {
     if (article.author.userId.toString() === userId.toString()) {
       return true;
     }
-    
+
     // Admin can edit any content
     if (userRole === 'admin') {
       return true;
     }
-    
+
     // Staff can edit any content for consistency and clarity
     if (userRole === 'staff') {
       return true;
     }
-    
+
     return false;
   }
 
@@ -135,7 +135,7 @@ export class NewsService {
   static async updateArticle(
     articleId: string,
     updateData: UpdateNewsArticleType,
-    userId: string
+    userId: string,
   ): Promise<NewsResult> {
     try {
       // Validate article exists
@@ -345,7 +345,7 @@ export class NewsService {
       if (search) {
         // Split search into individual words and create regex patterns for each
         const searchWords = search.trim().split(/\s+/).filter(word => word.length > 0);
-        
+
         if (searchWords.length === 1) {
           // Single word search - look for the word anywhere in text (handles hyphens, etc.)
           const wordPattern = searchWords[0]!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex chars
@@ -365,7 +365,7 @@ export class NewsService {
                 { content: { $regex: wordPattern, $options: 'i' } },
                 { summary: { $regex: wordPattern, $options: 'i' } },
                 { tags: { $in: [new RegExp(wordPattern, 'i')] } },
-              ]
+              ],
             };
           });
         }
@@ -453,7 +453,7 @@ export class NewsService {
   }
 
   // Instance methods that delegate to static methods for controller compatibility
-  
+
   async createArticle(articleData: CreateNewsArticleType, user: any): Promise<any> {
     const result = await NewsService.createArticle(articleData, user._id || user.id);
     if (!result.success) {
@@ -509,7 +509,7 @@ export class NewsService {
       page: result.pagination?.page || 1,
       totalPages: result.pagination?.totalPages || 1,
       hasNextPage: result.pagination?.hasNextPage || false,
-      hasPrevPage: result.pagination?.hasPrevPage || false
+      hasPrevPage: result.pagination?.hasPrevPage || false,
     };
   }
 

@@ -97,8 +97,8 @@ export const CourseForm: React.FC<CourseFormProps> = ({
           allowEnrollment: course.settings.allowEnrollment ?? true,
           requiresApproval: course.settings.requiresApproval ?? false,
           maxStudents: course.settings.maxStudents,
-          startDate: course.settings.startDate ? course.settings.startDate.split('T')[0] : '',
-          endDate: course.settings.endDate ? course.settings.endDate.split('T')[0] : '',
+          startDate: course.settings.startDate ? course.settings.startDate.split('T')[0] || '' : '',
+          endDate: course.settings.endDate ? course.settings.endDate.split('T')[0] || '' : '',
           allowLateSubmissions: course.settings.allowLateSubmissions ?? true,
           enableDiscussions: course.settings.enableDiscussions ?? true,
           enableCollaboration: course.settings.enableCollaboration ?? false

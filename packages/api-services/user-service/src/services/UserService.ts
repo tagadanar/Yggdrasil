@@ -73,7 +73,7 @@ const ERROR_MESSAGES = {
   INVALID_PROFILE_LASTNAME: 'Invalid profile data: lastName cannot be empty',
   UPDATE_FAILED: 'Update failed',
   USER_ALREADY_EXISTS: 'User with this email already exists',
-  VALIDATION_ERROR: 'Validation error'
+  VALIDATION_ERROR: 'Validation error',
 } as const;
 
 export class UserService {
@@ -84,7 +84,7 @@ export class UserService {
       email: user.email,
       role: user.role,
       profile: user.profile,
-      isActive: user.isActive
+      isActive: user.isActive,
     };
   }
 
@@ -93,17 +93,17 @@ export class UserService {
     if (!ValidationHelper.isValidObjectId(userId)) {
       return {
         success: false,
-        error: ERROR_MESSAGES.INVALID_USER_ID
+        error: ERROR_MESSAGES.INVALID_USER_ID,
       };
     }
 
     try {
       const user = await UserModel.findById(userId);
-      
+
       if (!user) {
         return {
           success: false,
-          error: ERROR_MESSAGES.USER_NOT_FOUND
+          error: ERROR_MESSAGES.USER_NOT_FOUND,
         };
       }
 
@@ -111,14 +111,14 @@ export class UserService {
       return {
         success: true,
         data: {
-          user: this.transformUserDocument(user)
-        }
+          user: this.transformUserDocument(user),
+        },
       };
 
     } catch (error) {
       return {
         success: false,
-        error: ERROR_MESSAGES.INTERNAL_ERROR
+        error: ERROR_MESSAGES.INTERNAL_ERROR,
       };
     }
   }
@@ -136,13 +136,13 @@ export class UserService {
 
   static async updateUserProfile(userId: string, profileData: ProfileUpdateData): Promise<UserServiceResult> {
     logger.debug('🔄 UPDATE PROFILE: Received data:', JSON.stringify(profileData, null, 2));
-    
+
     // REFACTOR: Use extracted error message
     if (!ValidationHelper.isValidObjectId(userId)) {
       logger.error('❌ UPDATE PROFILE: Invalid user ID:', userId);
       return {
         success: false,
-        error: ERROR_MESSAGES.INVALID_USER_ID
+        error: ERROR_MESSAGES.INVALID_USER_ID,
       };
     }
 
@@ -152,23 +152,23 @@ export class UserService {
       logger.error('❌ UPDATE PROFILE: Validation error:', validationError);
       return {
         success: false,
-        error: validationError
+        error: validationError,
       };
     }
 
     try {
       const existingUser = await UserModel.findById(userId);
-      
+
       if (!existingUser) {
         return {
           success: false,
-          error: ERROR_MESSAGES.USER_NOT_FOUND
+          error: ERROR_MESSAGES.USER_NOT_FOUND,
         };
       }
 
       // REFACTOR: Cleaner update data building
       const updateData: Record<string, any> = {};
-      
+
       // Basic profile fields
       if (profileData.firstName !== undefined) updateData['profile.firstName'] = profileData.firstName;
       if (profileData.lastName !== undefined) updateData['profile.lastName'] = profileData.lastName;
@@ -177,43 +177,43 @@ export class UserService {
       if (profileData.bio !== undefined) updateData['profile.bio'] = profileData.bio;
       if (profileData.officeHours !== undefined) updateData['profile.officeHours'] = profileData.officeHours;
       if (profileData.specialties !== undefined) updateData['profile.specialties'] = profileData.specialties;
-      
+
       // Contact info fields
       if (profileData.contactInfo) {
         if (profileData.contactInfo.phone !== undefined) updateData['profile.contactInfo.phone'] = profileData.contactInfo.phone;
         if (profileData.contactInfo.address !== undefined) updateData['profile.contactInfo.address'] = profileData.contactInfo.address;
       }
-      
+
       logger.info('🔄 UPDATE PROFILE: Update data to save:', JSON.stringify(updateData, null, 2));
 
       const updatedUser = await UserModel.findByIdAndUpdate(
         userId,
         { $set: updateData },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       );
 
       if (!updatedUser) {
         logger.error('❌ UPDATE PROFILE: Update failed - user not found after update');
         return {
           success: false,
-          error: ERROR_MESSAGES.UPDATE_FAILED
+          error: ERROR_MESSAGES.UPDATE_FAILED,
         };
       }
-      
+
       logger.info('✅ UPDATE PROFILE: Update successful for user:', updatedUser.email);
 
       // REFACTOR: Use extracted transformation method
       return {
         success: true,
         data: {
-          user: this.transformUserDocument(updatedUser)
-        }
+          user: this.transformUserDocument(updatedUser),
+        },
       };
 
     } catch (error) {
       return {
         success: false,
-        error: ERROR_MESSAGES.INTERNAL_ERROR
+        error: ERROR_MESSAGES.INTERNAL_ERROR,
       };
     }
   }
@@ -223,31 +223,31 @@ export class UserService {
     if (!ValidationHelper.isValidObjectId(userId)) {
       return {
         success: false,
-        error: ERROR_MESSAGES.INVALID_USER_ID
+        error: ERROR_MESSAGES.INVALID_USER_ID,
       };
     }
 
     try {
       const user = await UserModel.findById(userId);
-      
+
       if (!user) {
         return {
           success: false,
-          error: ERROR_MESSAGES.USER_NOT_FOUND
+          error: ERROR_MESSAGES.USER_NOT_FOUND,
         };
       }
 
       return {
         success: true,
         data: {
-          preferences: user.preferences
-        }
+          preferences: user.preferences,
+        },
       };
 
     } catch (error) {
       return {
         success: false,
-        error: ERROR_MESSAGES.INTERNAL_ERROR
+        error: ERROR_MESSAGES.INTERNAL_ERROR,
       };
     }
   }
@@ -259,14 +259,14 @@ export class UserService {
       if (!userData.email || !userData.password || !userData.role) {
         return {
           success: false,
-          error: ERROR_MESSAGES.VALIDATION_ERROR + ': Email, password, and role are required'
+          error: ERROR_MESSAGES.VALIDATION_ERROR + ': Email, password, and role are required',
         };
       }
 
       if (!userData.profile?.firstName || !userData.profile?.lastName) {
         return {
           success: false,
-          error: ERROR_MESSAGES.VALIDATION_ERROR + ': First name and last name are required'
+          error: ERROR_MESSAGES.VALIDATION_ERROR + ': First name and last name are required',
         };
       }
 
@@ -275,7 +275,7 @@ export class UserService {
       if (existingUser) {
         return {
           success: false,
-          error: ERROR_MESSAGES.USER_ALREADY_EXISTS
+          error: ERROR_MESSAGES.USER_ALREADY_EXISTS,
         };
       }
 
@@ -288,26 +288,26 @@ export class UserService {
         password: hashedPassword,
         role: userData.role,
         profile: userData.profile,
-        isActive: true
+        isActive: true,
       });
 
       return {
         success: true,
         data: {
-          user: this.transformUserDocument(newUser)
-        }
+          user: this.transformUserDocument(newUser),
+        },
       };
 
     } catch (error: any) {
       if (error.name === 'ValidationError') {
         return {
           success: false,
-          error: ERROR_MESSAGES.VALIDATION_ERROR + ': ' + error.message
+          error: ERROR_MESSAGES.VALIDATION_ERROR + ': ' + error.message,
         };
       }
       return {
         success: false,
-        error: ERROR_MESSAGES.INTERNAL_ERROR
+        error: ERROR_MESSAGES.INTERNAL_ERROR,
       };
     }
   }
@@ -316,7 +316,7 @@ export class UserService {
   static async listUsers(options: ListUsersOptions = {}): Promise<UserServiceResult> {
     try {
       const { role, limit = 50, offset = 0 } = options;
-      
+
       // Build query
       const query: any = {};
       if (role) {
@@ -339,15 +339,15 @@ export class UserService {
           pagination: {
             limit,
             offset,
-            total
-          }
-        }
+            total,
+          },
+        },
       };
 
     } catch (error) {
       return {
         success: false,
-        error: ERROR_MESSAGES.INTERNAL_ERROR
+        error: ERROR_MESSAGES.INTERNAL_ERROR,
       };
     }
   }
@@ -357,17 +357,17 @@ export class UserService {
     if (!ValidationHelper.isValidObjectId(userId)) {
       return {
         success: false,
-        error: ERROR_MESSAGES.INVALID_USER_ID
+        error: ERROR_MESSAGES.INVALID_USER_ID,
       };
     }
 
     try {
       const user = await UserModel.findById(userId);
-      
+
       if (!user) {
         return {
           success: false,
-          error: ERROR_MESSAGES.USER_NOT_FOUND
+          error: ERROR_MESSAGES.USER_NOT_FOUND,
         };
       }
 
@@ -375,13 +375,13 @@ export class UserService {
 
       return {
         success: true,
-        data: {}
+        data: {},
       };
 
     } catch (error) {
       return {
         success: false,
-        error: ERROR_MESSAGES.INTERNAL_ERROR
+        error: ERROR_MESSAGES.INTERNAL_ERROR,
       };
     }
   }
@@ -391,7 +391,7 @@ export class UserService {
     if (!ValidationHelper.isValidObjectId(userId)) {
       return {
         success: false,
-        error: ERROR_MESSAGES.INVALID_USER_ID
+        error: ERROR_MESSAGES.INVALID_USER_ID,
       };
     }
 
@@ -400,7 +400,7 @@ export class UserService {
       if (!user) {
         return {
           success: false,
-          error: ERROR_MESSAGES.USER_NOT_FOUND
+          error: ERROR_MESSAGES.USER_NOT_FOUND,
         };
       }
 
@@ -412,7 +412,7 @@ export class UserService {
         if (existingUser && existingUser._id.toString() !== userId) {
           return {
             success: false,
-            error: ERROR_MESSAGES.USER_ALREADY_EXISTS
+            error: ERROR_MESSAGES.USER_ALREADY_EXISTS,
           };
         }
         updateData.email = userData.email;
@@ -441,27 +441,27 @@ export class UserService {
       const updatedUser = await UserModel.findByIdAndUpdate(
         userId,
         { $set: updateData },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       );
 
       if (!updatedUser) {
         return {
           success: false,
-          error: ERROR_MESSAGES.UPDATE_FAILED
+          error: ERROR_MESSAGES.UPDATE_FAILED,
         };
       }
 
       return {
         success: true,
         data: {
-          user: this.transformUserDocument(updatedUser)
-        }
+          user: this.transformUserDocument(updatedUser),
+        },
       };
 
     } catch (error) {
       return {
         success: false,
-        error: ERROR_MESSAGES.INTERNAL_ERROR
+        error: ERROR_MESSAGES.INTERNAL_ERROR,
       };
     }
   }

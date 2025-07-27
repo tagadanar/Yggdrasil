@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LoginRequestSchema, LoginRequestType } from '@yggdrasil/shared-utilities';
+import { LoginRequestSchema, LoginRequestType } from '@yggdrasil/shared-utilities/client';
 import { authFlowManager } from '@/lib/auth/AuthFlowManager';
 import { Button } from '@/components/ui/Button';
 import { EnvelopeIcon, LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';

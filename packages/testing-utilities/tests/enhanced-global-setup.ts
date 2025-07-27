@@ -1,6 +1,13 @@
 // packages/testing-utilities/tests/enhanced-global-setup.ts
 // Enhanced global setup for single-worker testing
 
+// Increase max listeners to prevent EventEmitter memory leak warnings
+// Playwright test runner and service manager add many process listeners
+process.setMaxListeners(100);
+
+import { EventEmitter } from 'events';
+EventEmitter.defaultMaxListeners = 50;
+
 import { FullConfig } from '@playwright/test';
 import { TestInitializer } from '@yggdrasil/shared-utilities/testing';
 import { spawn, ChildProcess } from 'child_process';
@@ -79,10 +86,10 @@ async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
   console.log(`⏳ GLOBAL SETUP: Waiting for Worker ${workerId} services to be ready...`);
   
   let retries = 0;
-  const maxRetries = 60; // 1 minute total with faster checks
+  const maxRetries = 60; // 30 seconds total with faster checks
   
   while (retries < maxRetries) {
-    await sleep(1000); // Check every 1 second for faster startup
+    await sleep(500); // Check every 500ms for faster startup
     
     const healthChecks = await Promise.all(
       ports.map(port => checkServiceHealth(port))
@@ -179,7 +186,7 @@ async function startSingleWorkerServices(): Promise<void> {
     
     console.log('✅ GLOBAL SETUP: Single worker started and verified!');
     console.log('📊 Startup Results:');
-    console.log(`   Worker 0: ports ${serviceProcesses[0].ports.join(', ')}`);
+    console.log(`   Worker 0: ports ${serviceProcesses[0]?.ports?.join(', ') || 'none'}`);
     
     // Store reference for global teardown
     (global as any).__serviceProcesses = serviceProcesses;
@@ -209,7 +216,7 @@ async function startSingleWorkerServices(): Promise<void> {
   }
 }
 
-async function globalSetup(config: FullConfig) {
+async function globalSetup(_config: FullConfig) {
   console.log('🚀 Starting clean global setup for testing...');
   console.log('🔧 Using clean testing architecture with dev database...');
   

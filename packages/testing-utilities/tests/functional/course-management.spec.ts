@@ -5,6 +5,7 @@ import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Course Management', () => {
   // Removed global auth helpers - each test manages its own cleanup
@@ -14,13 +15,13 @@ test.describe('Course Management', () => {
   // =============================================================================
   
   test('Admin course access and permissions', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Admin course access and permissions');
+    const cleanup = TestCleanup.getInstance('Admin course access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsAdmin();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Admin should see course management interface
     const titleSelectors = [
@@ -40,7 +41,7 @@ test.describe('Course Management', () => {
     
     // Admin should see create course button
     const createButton = page.locator('button:has-text("Create"), button:has-text("New Course"), .btn-primary:has-text("Create")');
-    await expect(createButton.first()).toBeVisible({ timeout: 5000 });
+    await expect(createButton.first()).toBeVisible({ timeout: 2000 });
     
     } finally {
       await authHelper.clearAuthState();
@@ -49,13 +50,13 @@ test.describe('Course Management', () => {
   });
 
   test('Teacher course access and permissions', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Teacher course access and permissions');
+    const cleanup = TestCleanup.getInstance('Teacher course access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsTeacher();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Teacher should see their courses interface
     const titleSelectors = [
@@ -76,7 +77,7 @@ test.describe('Course Management', () => {
     
     // Teacher should see create course button
     const createButton = page.locator('button:has-text("Create"), button:has-text("New Course"), .btn-primary:has-text("Create")');
-    await expect(createButton.first()).toBeVisible({ timeout: 5000 });
+    await expect(createButton.first()).toBeVisible({ timeout: 2000 });
     
     } finally {
       await authHelper.clearAuthState();
@@ -85,13 +86,13 @@ test.describe('Course Management', () => {
   });
 
   test('Staff course access and permissions', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Staff course access and permissions');
+    const cleanup = TestCleanup.getInstance('Staff course access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsStaff();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Staff should see course management interface
     const titleSelectors = [
@@ -111,7 +112,7 @@ test.describe('Course Management', () => {
     
     // Staff should see create course button
     const createButton = page.locator('button:has-text("Create"), button:has-text("New Course"), .btn-primary:has-text("Create")');
-    await expect(createButton.first()).toBeVisible({ timeout: 5000 });
+    await expect(createButton.first()).toBeVisible({ timeout: 2000 });
     
     } finally {
       await authHelper.clearAuthState();
@@ -120,13 +121,13 @@ test.describe('Course Management', () => {
   });
 
   test('Student course access and permissions', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Student course access and permissions');
+    const cleanup = TestCleanup.getInstance('Student course access and permissions');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsStudent();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Student should see their enrollments interface
     const titleSelectors = [
@@ -158,13 +159,13 @@ test.describe('Course Management', () => {
   // TEST 2: BASIC COURSE PAGE FUNCTIONALITY  
   // =============================================================================
   test('Course page basic functionality and navigation', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Course page basic functionality and navigation');
+    const cleanup = TestCleanup.getInstance('Course page basic functionality and navigation');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsAdmin();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Verify page loads and has expected structure
     await expect(page.locator('h1:has-text("Course Management")')).toBeVisible();
@@ -195,13 +196,13 @@ test.describe('Course Management', () => {
   // TEST 3: STUDENT COURSE VIEW
   // =============================================================================
   test('Student course page view and basic functionality', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Student course page view and basic functionality');
+    const cleanup = TestCleanup.getInstance('Student course page view and basic functionality');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsStudent();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Students should see "My Enrollments" title
     await expect(page.locator('h1:has-text("My Enrollments")')).toBeVisible();
@@ -221,23 +222,23 @@ test.describe('Course Management', () => {
   // TEST 4: TEACHER COURSE VIEW
   // =============================================================================
   test('Teacher course page view and basic functionality', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Teacher course page view and basic functionality');
+    const cleanup = TestCleanup.getInstance('Teacher course page view and basic functionality');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsTeacher();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Teachers should see either "My Courses" or "Courses" title
     const heading = await page.locator('h1').first();
-    await expect(heading).toBeVisible({ timeout: 5000 });
+    await expect(heading).toBeVisible({ timeout: 2000 });
     const headingText = await heading.textContent();
     expect(headingText).toMatch(/Courses|My Courses/);
     
     // Check for description text
     const description = page.locator('p').first();
-    await expect(description).toBeVisible({ timeout: 5000 });
+    await expect(description).toBeVisible({ timeout: 2000 });
     
     // Teachers should have create button access - wait for it to appear
     const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course"), .btn-primary');
@@ -254,7 +255,7 @@ test.describe('Course Management', () => {
   // COURSE-001: Complete Course Creation & Publishing Workflow
   // =============================================================================
   test('Complete Course Creation & Publishing Workflow', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('COURSE-001: Complete Course Creation & Publishing Workflow');
+    const cleanup = TestCleanup.getInstance('COURSE-001: Complete Course Creation & Publishing Workflow');
     const authHelper = new CleanAuthHelper(page);
     let createdCourseTitle: string | null = null;
     
@@ -263,7 +264,7 @@ test.describe('Course Management', () => {
     
     // Step 1: Create draft course with basic info → verify draft status
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course"), .btn-primary');
     await createButton.first().waitFor({ state: 'visible', timeout: 3000 });
@@ -301,7 +302,7 @@ test.describe('Course Management', () => {
     const saveDraftButton = page.locator('button:has-text("Save Draft"), button:has-text("Draft"), button[type="submit"]');
     if (await saveDraftButton.count() > 0) {
       await saveDraftButton.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     }
     
     // Verify draft status (look for draft indicator)
@@ -402,19 +403,19 @@ test.describe('Course Management', () => {
     // Try publishing again
     if (await publishButton.count() > 0) {
       await publishButton.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     }
     
     // Step 7: Verify public visibility and search indexing
     // Check if course appears in public course list
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     const courseSearchInput = page.locator('input[name="search"], input[placeholder*="search"]');
     if (await courseSearchInput.count() > 0) {
       await courseSearchInput.fill(uniqueCourseTitle);
       await page.keyboard.press('Enter');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Verify course appears in search results
       const courseResults = page.locator(`:has-text("${uniqueCourseTitle}")`);
@@ -461,14 +462,14 @@ test.describe('Course Management', () => {
   // COURSE-002: Exercise Submission & Automated Grading
   // =============================================================================
   test('Exercise Submission & Automated Grading', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('COURSE-002: Exercise Submission & Automated Grading');
+    const cleanup = TestCleanup.getInstance('COURSE-002: Exercise Submission & Automated Grading');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       // Step 1: Create coding exercise with test cases → verify exercise setup
       await authHelper.loginAsTeacher();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Create a course first if needed
     const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
@@ -514,7 +515,7 @@ test.describe('Course Management', () => {
         const saveExerciseButton = page.locator('button:has-text("Save Exercise"), button:has-text("Save")');
         if (await saveExerciseButton.count() > 0) {
           await saveExerciseButton.first().click();
-          await page.waitForLoadState('networkidle');
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         }
       }
     }
@@ -522,19 +523,19 @@ test.describe('Course Management', () => {
     // Step 2: Student submits valid solution → verify test execution
     await authHelper.loginAsStudent();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Find and enter the course with exercise
     const courseLink = page.locator('a:has-text("Exercise Course"), .course-card:has-text("Exercise")');
     if (await courseLink.count() > 0) {
       await courseLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Find the exercise
       const exerciseLink = page.locator('a:has-text("Simple Addition"), .exercise:has-text("Addition")');
       if (await exerciseLink.count() > 0) {
         await exerciseLink.first().click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Submit a valid solution
         const codeEditor = page.locator('textarea[name*="code"], .code-editor, [data-testid="code-editor"]');
@@ -544,7 +545,7 @@ test.describe('Course Management', () => {
           const submitButton = page.locator('button:has-text("Submit"), button:has-text("Run Tests")');
           if (await submitButton.count() > 0) {
             await submitButton.first().click();
-            await page.waitForLoadState('networkidle');
+            await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
             
             // Verify test execution results
             const successMessage = page.locator('.success, .text-green, :has-text("passed"), :has-text("correct")');
@@ -562,7 +563,7 @@ test.describe('Course Management', () => {
       const submitButton = page.locator('button:has-text("Submit"), button:has-text("Run Tests")');
       if (await submitButton.count() > 0) {
         await submitButton.first().click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Verify error handling
         const errorMessage = page.locator('.error, .text-red, :has-text("error"), :has-text("syntax")');
@@ -577,7 +578,7 @@ test.describe('Course Management', () => {
       const submitButton = page.locator('button:has-text("Submit"), button:has-text("Run Tests")');
       if (await submitButton.count() > 0) {
         await submitButton.first().click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Verify partial credit or failure indication
         const partialMessage = page.locator(':has-text("failed"), :has-text("incorrect"), .warning');
@@ -595,7 +596,7 @@ test.describe('Course Management', () => {
   // COURSE-003: Quiz System & Assessment Workflows
   // =============================================================================
   test('Quiz System & Assessment Workflows', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('COURSE-003: Quiz System & Assessment Workflows');
+    const cleanup = TestCleanup.getInstance('COURSE-003: Quiz System & Assessment Workflows');
     const authHelper = new CleanAuthHelper(page);
     let createdQuizCourse: string | null = null;
     
@@ -603,7 +604,7 @@ test.describe('Course Management', () => {
       // Step 1: Create quiz with multiple choice questions → verify setup
       await authHelper.loginAsTeacher();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Create course with quiz
     const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
@@ -699,7 +700,7 @@ test.describe('Course Management', () => {
         const saveQuizButton = page.locator('button:has-text("Save Quiz"), button:has-text("Save")');
         if (await saveQuizButton.count() > 0) {
           await saveQuizButton.first().click();
-          await page.waitForLoadState('networkidle');
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         }
       }
     }
@@ -707,19 +708,19 @@ test.describe('Course Management', () => {
     // Step 3: Student takes quiz within time limit → verify timing
     await authHelper.loginAsStudent();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Find and enter quiz course
     const quizCourseLink = page.locator('a:has-text("Quiz Course"), .course-card:has-text("Quiz")');
     if (await quizCourseLink.count() > 0) {
       await quizCourseLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Start the quiz
       const startQuizButton = page.locator('button:has-text("Start Quiz"), button:has-text("Begin")');
       if (await startQuizButton.count() > 0) {
         await startQuizButton.first().click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Verify timer is running
         const timer = page.locator('.timer, .countdown, :has-text("remaining")');
@@ -747,7 +748,7 @@ test.describe('Course Management', () => {
         const submitQuizButton = page.locator('button:has-text("Submit Quiz"), button:has-text("Finish")');
         if (await submitQuizButton.count() > 0) {
           await submitQuizButton.first().click();
-          await page.waitForLoadState('networkidle');
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
           
           // Verify submission confirmation
           const confirmationMessage = page.locator(':has-text("submitted"), :has-text("completed"), .success');
@@ -764,13 +765,13 @@ test.describe('Course Management', () => {
     // Step 5: Test manual grading workflow for essays
     await authHelper.loginAsTeacher();
     await page.goto('/courses');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     
     // Navigate to grading interface
     const gradingLink = page.locator('a:has-text("Grade"), a:has-text("Submissions"), button:has-text("Grade")');
     if (await gradingLink.count() > 0) {
       await gradingLink.first().click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Find essay submissions to grade
       const essaySubmission = page.locator('.essay-answer, .manual-grading, textarea[readonly]');
@@ -789,7 +790,7 @@ test.describe('Course Management', () => {
         const saveGradeButton = page.locator('button:has-text("Save Grade"), button:has-text("Submit Grade")');
         if (await saveGradeButton.count() > 0) {
           await saveGradeButton.first().click();
-          await page.waitForLoadState('networkidle');
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         }
       }
     }

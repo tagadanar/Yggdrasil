@@ -10,13 +10,13 @@ export class PlanningController {
   static async getEvents(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const { startDate, endDate, type, courseId } = req.query;
-      
+
       const events = await PlanningController.planningService.getEvents({
         startDate: startDate as string,
         endDate: endDate as string,
         type: type as 'class' | 'exam' | 'meeting' | 'event' | undefined,
         courseId: courseId as string,
-        userId: req.user!._id.toString()
+        userId: req.user!._id.toString(),
       });
 
       const successResponse = ResponseHelper.success(events, 'Events retrieved successfully');
@@ -37,7 +37,7 @@ export class PlanningController {
 
       const event = await PlanningController.planningService.createEvent(
         validation.data,
-        req.user!
+        req.user!,
       );
 
       const successResponse = ResponseHelper.success(event, 'Event created successfully');
@@ -59,7 +59,7 @@ export class PlanningController {
   static async getEvent(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const { eventId } = req.params;
-      
+
       const event = await PlanningController.planningService.getEvent(eventId!);
 
       if (!event) {
@@ -87,7 +87,7 @@ export class PlanningController {
       const event = await PlanningController.planningService.updateEvent(
         eventId!,
         validation.data,
-        req.user!
+        req.user!,
       );
 
       const successResponse = ResponseHelper.success(event, 'Event updated successfully');
@@ -141,7 +141,7 @@ export class PlanningController {
         startDate: new Date(startDate as string),
         endDate: new Date(endDate as string),
         location: location as string,
-        excludeEventId: excludeEventId as string
+        excludeEventId: excludeEventId as string,
       });
 
       const successResponse = ResponseHelper.success(conflicts, 'Conflict check completed');
@@ -162,13 +162,13 @@ export class PlanningController {
 
       const exportData = await PlanningController.planningService.exportCalendar(
         validation.data,
-        req.user!
+        req.user!,
       );
 
       // Set appropriate headers for file download
       res.setHeader('Content-Type', exportData.mimeType);
       res.setHeader('Content-Disposition', `attachment; filename="${exportData.filename}"`);
-      
+
       return res.send(exportData.content);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -179,10 +179,10 @@ export class PlanningController {
   static async generateRecurringInstances(req: AuthRequest, res: Response): Promise<Response> {
     try {
       const { eventId } = req.params;
-      
+
       const instances = await PlanningController.planningService.generateRecurringInstances(
         eventId!,
-        req.user!
+        req.user!,
       );
 
       const successResponse = ResponseHelper.success(instances, 'Recurring instances generated successfully');

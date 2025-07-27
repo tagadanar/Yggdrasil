@@ -6,6 +6,7 @@ import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { TestScenarios } from '../helpers/TestScenarioBuilders';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 // =============================================================================
 // REAL STATISTICS TESTING WITH AUTHENTIC USER SCENARIOS
@@ -19,7 +20,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   // =============================================================================
 
   test('STAT-001: New Student Dashboard (Empty State)', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('STAT-001: New Student Dashboard (Empty State)');
+    const cleanup = TestCleanup.getInstance('STAT-001: New Student Dashboard (Empty State)');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -30,7 +31,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       // Login as the created student
       await authHelper.loginAsStudent();
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
       // Verify empty state dashboard renders correctly
       await expect(page.locator('[data-testid="student-dashboard"]')).toBeVisible();
@@ -50,7 +51,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   });
 
   test('STAT-002: Active Student Dashboard (Real Progress)', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('STAT-002: Active Student Dashboard (Real Progress)');
+    const cleanup = TestCleanup.getInstance('STAT-002: Active Student Dashboard (Real Progress)');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -60,7 +61,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       
       await authHelper.loginAsStudent();
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
       // Verify dashboard shows real data
       await expect(page.locator('[data-testid="student-dashboard"]')).toBeVisible();
@@ -86,7 +87,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   });
 
   test('STAT-003: High-Achieving Student Dashboard (Achievements)', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('STAT-003: High-Achieving Student Dashboard');
+    const cleanup = TestCleanup.getInstance('STAT-003: High-Achieving Student Dashboard');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -96,7 +97,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       
       await authHelper.loginAsStudent();
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
       await expect(page.locator('[data-testid="student-dashboard"]')).toBeVisible();
       
@@ -123,7 +124,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   // =============================================================================
 
   test('STAT-004: New Teacher Dashboard (No Courses)', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('STAT-004: New Teacher Dashboard');
+    const cleanup = TestCleanup.getInstance('STAT-004: New Teacher Dashboard');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -133,7 +134,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       
       await authHelper.loginAsTeacher();
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
       await expect(page.locator('[data-testid="teacher-dashboard"]')).toBeVisible();
       
@@ -152,7 +153,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   });
 
   test('STAT-005: Active Teacher Dashboard (Real Classroom)', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('STAT-005: Active Teacher Dashboard');
+    const cleanup = TestCleanup.getInstance('STAT-005: Active Teacher Dashboard');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -162,7 +163,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       
       await authHelper.loginAsTeacher();
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
       await expect(page.locator('[data-testid="teacher-dashboard"]')).toBeVisible();
       
@@ -195,7 +196,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   // =============================================================================
 
   test('STAT-006: Admin Platform Overview (Real Usage Data)', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('STAT-006: Admin Platform Overview');
+    const cleanup = TestCleanup.getInstance('STAT-006: Admin Platform Overview');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -205,7 +206,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       
       await authHelper.loginAsAdmin();
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
       await expect(page.locator('[data-testid="admin-dashboard"]')).toBeVisible();
       
@@ -238,7 +239,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   // =============================================================================
 
   test('STAT-007: Statistics with Large Dataset (Performance)', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('STAT-007: Large Dataset Performance');
+    const cleanup = TestCleanup.getInstance('STAT-007: Large Dataset Performance');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -251,7 +252,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       // Measure dashboard load time with real large dataset
       const startTime = Date.now();
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       const loadTime = Date.now() - startTime;
       
       // Should load within reasonable time even with large dataset
@@ -268,7 +269,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   });
 
   test('STAT-008: Cross-Role Data Isolation (Security)', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('STAT-008: Cross-Role Data Isolation');
+    const cleanup = TestCleanup.getInstance('STAT-008: Cross-Role Data Isolation');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -282,7 +283,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       // Test student sees only their data
       await authHelper.loginAsStudent();
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       await expect(page.locator('[data-testid="student-dashboard"]')).toBeVisible();
       
@@ -294,7 +295,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       await authHelper.clearAuthState();
       await authHelper.loginAsTeacher();
       await page.goto('/statistics');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       await expect(page.locator('[data-testid="teacher-dashboard"]')).toBeVisible();
       

@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { TestDataFactory } from '../helpers/TestDataFactory';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('User Management - Optimized', () => {
   // Each test has a single responsibility and complete isolation
@@ -10,7 +11,7 @@ test.describe('User Management - Optimized', () => {
   // USER-001a: User Creation and Validation (15s instead of 60s)
   // =============================================================================
   test('USER-001a: User Creation and Validation Workflow', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('USER-001a');
+    const cleanup = TestCleanup.getInstance('USER-001a');
     const factory = new TestDataFactory('USER-001a');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -41,8 +42,8 @@ test.describe('User Management - Optimized', () => {
       
       // Submit and verify
       await page.click('form button[type="submit"]');
-      await expect(page.locator('h2:has-text("Create New User")')).not.toBeVisible({ timeout: 5000 });
-      await expect(page.locator(`text=${testEmail}`)).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('h2:has-text("Create New User")')).not.toBeVisible({ timeout: 2000 });
+      await expect(page.locator(`text=${testEmail}`)).toBeVisible({ timeout: 3000 });
       
       // Test 2: Validate duplicate email prevention
       await page.click('button:has-text("Create User")');
@@ -67,7 +68,7 @@ test.describe('User Management - Optimized', () => {
   // USER-001b: User Profile Management (20s)
   // =============================================================================
   test('USER-001b: User Profile Management and Updates', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('USER-001b');
+    const cleanup = TestCleanup.getInstance('USER-001b');
     const factory = new TestDataFactory('USER-001b');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -89,7 +90,7 @@ test.describe('User Management - Optimized', () => {
       const profileLink = page.locator('a:has-text("Profile"), button:has-text("Profile"), [href*="profile"]');
       if (await profileLink.count() > 0) {
         await profileLink.first().click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Update profile information
         const phoneInput = page.locator('input[name="phone"], input[placeholder*="phone"]');
@@ -104,7 +105,7 @@ test.describe('User Management - Optimized', () => {
         
         // Save changes
         await page.click('button:has-text("Save"), button[type="submit"]');
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Verify persistence by refreshing
         await page.reload();
@@ -132,11 +133,11 @@ test.describe('User Management - Optimized', () => {
         await page.fill('input[name="firstName"]', 'UpdatedName');
         await page.click('form button[type="submit"]');
         
-        await expect(page.locator('h2:has-text("Edit User")')).not.toBeVisible({ timeout: 5000 });
+        await expect(page.locator('h2:has-text("Edit User")')).not.toBeVisible({ timeout: 2000 });
         
         // Verify update in table
         await page.reload();
-        await expect(page.locator('text=UpdatedName')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('text=UpdatedName')).toBeVisible({ timeout: 3000 });
       }
       
     } finally {
@@ -149,7 +150,7 @@ test.describe('User Management - Optimized', () => {
   // USER-001c: User Role and Permission Management (15s)
   // =============================================================================
   test('USER-001c: User Role Changes and Permission Updates', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('USER-001c');
+    const cleanup = TestCleanup.getInstance('USER-001c');
     const factory = new TestDataFactory('USER-001c');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -190,7 +191,7 @@ test.describe('User Management - Optimized', () => {
         await editButton.click();
         await page.selectOption('select[name="role"]', 'teacher');
         await page.click('form button[type="submit"]');
-        await expect(page.locator('h2:has-text("Edit User")')).not.toBeVisible({ timeout: 5000 });
+        await expect(page.locator('h2:has-text("Edit User")')).not.toBeVisible({ timeout: 2000 });
       }
       
       // Note: In a real system, we'd verify the teacher can now access courses
@@ -206,7 +207,7 @@ test.describe('User Management - Optimized', () => {
   // USER-001d: User Account Status Management (15s)
   // =============================================================================
   test('USER-001d: User Account Activation and Deactivation', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('USER-001d');
+    const cleanup = TestCleanup.getInstance('USER-001d');
     const factory = new TestDataFactory('USER-001d');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -234,7 +235,7 @@ test.describe('User Management - Optimized', () => {
       if (await statusControl.count() > 0) {
         // Deactivate account
         await statusControl.first().click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
         
         // Try to login as deactivated user
         await auth.clearAuthState();
@@ -248,7 +249,7 @@ test.describe('User Management - Optimized', () => {
         await loginPage.click('button[type="submit"]');
         
         // Should see error or stay on login page
-        await loginPage.waitForTimeout(2000);
+        await loginPage.waitForTimeout(200);
         const currentUrl = loginPage.url();
         expect(currentUrl).toContain('/auth/login');
         
@@ -259,7 +260,7 @@ test.describe('User Management - Optimized', () => {
         const reactivateControl = userRow.locator('button:has-text("Activate"), button:has-text("Enable"), input[type="checkbox"]:not(:checked)');
         if (await reactivateControl.count() > 0) {
           await reactivateControl.first().click();
-          await page.waitForTimeout(2000);
+          await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
         }
       }
       
@@ -273,7 +274,7 @@ test.describe('User Management - Optimized', () => {
   // USER-001e: User Deletion and Data Cleanup (15s)
   // =============================================================================
   test('USER-001e: User Deletion Workflow with Data Cleanup', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('USER-001e');
+    const cleanup = TestCleanup.getInstance('USER-001e');
     const factory = new TestDataFactory('USER-001e');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -301,7 +302,7 @@ test.describe('User Management - Optimized', () => {
       await page.locator('.fixed.inset-0').locator('button:has-text("Delete")').click();
       
       // Should be prevented
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
       const errorOrModal = await page.locator('text=Cannot delete your own account').count() || 
                           await page.locator('h2:has-text("Delete User")').count();
       expect(errorOrModal).toBeGreaterThan(0);
@@ -323,10 +324,10 @@ test.describe('User Management - Optimized', () => {
       
       // Confirm deletion
       await page.locator('.fixed.inset-0').locator('button:has-text("Delete")').click();
-      await expect(page.locator('h2:has-text("Delete User")')).not.toBeVisible({ timeout: 5000 });
+      await expect(page.locator('h2:has-text("Delete User")')).not.toBeVisible({ timeout: 2000 });
       
       // Verify user removed
-      await page.waitForTimeout(3000);
+      await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
       await page.reload();
       await expect(page.locator('text=Loading users...')).not.toBeVisible({ timeout: 3000 });
       
@@ -344,7 +345,7 @@ test.describe('User Management - Optimized', () => {
   // USER-002a: CSV Import and Batch User Creation (20s)
   // =============================================================================
   test('USER-002a: CSV Import for Batch User Creation', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('USER-002a');
+    const cleanup = TestCleanup.getInstance('USER-002a');
     const factory = new TestDataFactory('USER-002a');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -369,7 +370,7 @@ test.describe('User Management - Optimized', () => {
         await expect(page.locator('text=/import|upload|csv/i')).toBeVisible();
         
         const fileInput = page.locator('input[type="file"]');
-        await expect(fileInput).toBeVisible();
+        await expect(fileInput).toBeVisible({ timeout: 5000 });
         
         // Test validation for empty file
         const uploadButton = page.locator('button:has-text("Upload"), button:has-text("Import")').last();
@@ -383,7 +384,7 @@ test.describe('User Management - Optimized', () => {
         // Test duplicate email handling message
         const duplicateWarning = page.locator('text=/duplicate.*skip|duplicate.*error/i');
         if (await duplicateWarning.count() > 0) {
-          await expect(duplicateWarning).toBeVisible();
+          await expect(duplicateWarning).toBeVisible({ timeout: 5000 });
         }
         
         // Cancel import
@@ -400,7 +401,7 @@ test.describe('User Management - Optimized', () => {
   // USER-002b: User Data Export and Filtering (15s)
   // =============================================================================
   test('USER-002b: User List Export with Filters', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('USER-002b');
+    const cleanup = TestCleanup.getInstance('USER-002b');
     const factory = new TestDataFactory('USER-002b');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -429,7 +430,7 @@ test.describe('User Management - Optimized', () => {
       if (await roleFilter.count() > 0) {
         // Filter by students
         await roleFilter.selectOption('student');
-        await page.waitForTimeout(1000);
+        await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
         
         // Verify filtered results
         const visibleEmails = await page.locator('tbody tr').allTextContents();
@@ -443,7 +444,7 @@ test.describe('User Management - Optimized', () => {
       const exportButton = page.locator('button:has-text("Export"), button:has-text("Download"), a[download]');
       if (await exportButton.count() > 0) {
         // Click export with filter applied
-        const downloadPromise = page.waitForEvent('download', { timeout: 5000 }).catch(() => null);
+        const downloadPromise = page.waitForEvent('download', { timeout: 2000 }).catch(() => null);
         await exportButton.first().click();
         
         // If download modal appears, select format
@@ -475,7 +476,7 @@ test.describe('User Management - Optimized', () => {
   // USER-002c: Bulk Operations on Multiple Users (20s)
   // =============================================================================
   test('USER-002c: Bulk Role Assignment and Updates', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('USER-002c');
+    const cleanup = TestCleanup.getInstance('USER-002c');
     const factory = new TestDataFactory('USER-002c');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -534,7 +535,7 @@ test.describe('User Management - Optimized', () => {
             const confirmButton = page.locator('button:has-text("Confirm")');
             if (await confirmButton.count() > 0) {
               await confirmButton.click();
-              await page.waitForTimeout(2000);
+              await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
             }
           }
         }
@@ -553,7 +554,7 @@ test.describe('User Management - Optimized', () => {
   // USER-002d: User Search and Advanced Filtering (10s)
   // =============================================================================
   test('USER-002d: Search Functionality and Advanced Filters', async ({ browser }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('USER-002d');
+    const cleanup = TestCleanup.getInstance('USER-002d');
     const factory = new TestDataFactory('USER-002d');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;
@@ -583,7 +584,7 @@ test.describe('User Management - Optimized', () => {
       if (await searchInput.count() > 0) {
         // Search by name
         await searchInput.fill('Searchable');
-        await page.waitForTimeout(500); // Debounce delay
+        await page.waitForLoadState("domcontentloaded", { timeout: 5000 }); // Debounce delay
         
         // Verify search results
         const visibleRows = await page.locator('tbody tr:visible').count();
@@ -594,21 +595,21 @@ test.describe('User Management - Optimized', () => {
         
         // Clear search
         await searchInput.clear();
-        await page.waitForTimeout(500);
+        await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
         
         // Search by email
         await searchInput.fill(searchableUser.email.substring(0, 10));
-        await page.waitForTimeout(500);
+        await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
         
         await expect(page.locator(`text=${searchableUser.email}`)).toBeVisible();
         
         // Test no results
         await searchInput.fill('nonexistentuser12345');
-        await page.waitForTimeout(500);
+        await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
         
         const noResultsMessage = page.locator('text=/no.*found|no.*results|no.*users/i');
         if (await noResultsMessage.count() > 0) {
-          await expect(noResultsMessage).toBeVisible();
+          await expect(noResultsMessage).toBeVisible({ timeout: 5000 });
         }
         
         // Clear search

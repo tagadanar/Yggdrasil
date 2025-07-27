@@ -87,6 +87,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       mediaQuery.addEventListener('change', handleChange);
       return () => mediaQuery.removeEventListener('change', handleChange);
     }
+    return undefined;
   }, [theme]);
 
   // Initialize theme from localStorage on mount

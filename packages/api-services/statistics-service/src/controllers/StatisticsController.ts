@@ -22,7 +22,7 @@ export class StatisticsController {
       // Validate userId
       if (!userId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID is required')
+          ResponseHelper.badRequest('User ID is required'),
         );
         return;
       }
@@ -31,12 +31,12 @@ export class StatisticsController {
       const dashboardData = await StatisticsService.getStudentDashboard(userId);
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(dashboardData, 'Student dashboard data retrieved successfully')
+        ResponseHelper.success(dashboardData, 'Student dashboard data retrieved successfully'),
       );
     } catch (error: any) {
       logger.error('Error getting student dashboard:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get student dashboard data')
+        ResponseHelper.error('Failed to get student dashboard data'),
       );
     }
   }
@@ -51,7 +51,7 @@ export class StatisticsController {
 
       if (!userId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID is required')
+          ResponseHelper.badRequest('User ID is required'),
         );
         return;
       }
@@ -59,12 +59,12 @@ export class StatisticsController {
       const dashboardData = await StatisticsService.getTeacherDashboard(userId);
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(dashboardData, 'Teacher dashboard data retrieved successfully')
+        ResponseHelper.success(dashboardData, 'Teacher dashboard data retrieved successfully'),
       );
     } catch (error: any) {
       logger.error('Error getting teacher dashboard:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get teacher dashboard data')
+        ResponseHelper.error('Failed to get teacher dashboard data'),
       );
     }
   }
@@ -78,12 +78,12 @@ export class StatisticsController {
       const dashboardData = await StatisticsService.getAdminDashboard();
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(dashboardData, 'Admin dashboard data retrieved successfully')
+        ResponseHelper.success(dashboardData, 'Admin dashboard data retrieved successfully'),
       );
     } catch (error: any) {
       logger.error('Error getting admin dashboard:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get admin dashboard data')
+        ResponseHelper.error('Failed to get admin dashboard data'),
       );
     }
   }
@@ -103,7 +103,7 @@ export class StatisticsController {
 
       if (!userId || !courseId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID and Course ID are required')
+          ResponseHelper.badRequest('User ID and Course ID are required'),
         );
         return;
       }
@@ -111,7 +111,7 @@ export class StatisticsController {
       // Validate progress update data
       if (!progressUpdate || typeof progressUpdate !== 'object') {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Valid progress data is required')
+          ResponseHelper.badRequest('Valid progress data is required'),
         );
         return;
       }
@@ -119,30 +119,30 @@ export class StatisticsController {
       // Validate required fields for typed progress updates
       if (progressUpdate.type && !progressUpdate.type.trim()) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Progress update type is required')
+          ResponseHelper.badRequest('Progress update type is required'),
         );
         return;
       }
 
       const result = await StatisticsService.updateStudentProgress(
-        userId, 
-        courseId, 
-        progressUpdate
+        userId,
+        courseId,
+        progressUpdate,
       );
 
       if (result.success) {
         res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success(result.data, result.message)
+          ResponseHelper.success(result.data, result.message),
         );
       } else {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest(result.error)
+          ResponseHelper.badRequest(result.error),
         );
       }
     } catch (error: any) {
       logger.error('Error updating student progress:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error(error.message || 'Failed to update student progress')
+        ResponseHelper.error(error.message || 'Failed to update student progress'),
       );
     }
   }
@@ -157,7 +157,7 @@ export class StatisticsController {
 
       if (!userId || !courseId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID and Course ID are required')
+          ResponseHelper.badRequest('User ID and Course ID are required'),
         );
         return;
       }
@@ -166,12 +166,12 @@ export class StatisticsController {
       const { CourseEnrollmentModel } = require('@yggdrasil/database-schemas');
       const enrollment = await CourseEnrollmentModel.findOne({
         studentId: userId,
-        courseId: courseId
+        courseId: courseId,
       }).populate('courseId', 'title chapters');
 
       if (!enrollment) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Enrollment not found')
+          ResponseHelper.notFound('Enrollment not found'),
         );
         return;
       }
@@ -198,23 +198,23 @@ export class StatisticsController {
               id: content._id,
               title: content.title || `${content.type} content`,
               type: content.type,
-              isCompleted: content.type === 'exercise' 
+              isCompleted: content.type === 'exercise'
                 ? enrollment.progress?.completedExercises?.includes(content._id.toString()) || false
                 : enrollment.progress?.completedSections?.includes(section._id.toString()) || false,
               isOptional: false,
-              estimatedMinutes: content.type === 'video' ? 15 : content.type === 'exercise' ? 30 : 10
-            })) || []
-          })) || []
-        })) || []
+              estimatedMinutes: content.type === 'video' ? 15 : content.type === 'exercise' ? 30 : 10,
+            })) || [],
+          })) || [],
+        })) || [],
       };
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(progressData, 'Student course progress retrieved successfully')
+        ResponseHelper.success(progressData, 'Student course progress retrieved successfully'),
       );
     } catch (error: any) {
       logger.error('Error getting student course progress:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get student course progress')
+        ResponseHelper.error('Failed to get student course progress'),
       );
     }
   }
@@ -233,7 +233,7 @@ export class StatisticsController {
 
       if (!courseId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Course ID is required')
+          ResponseHelper.badRequest('Course ID is required'),
         );
         return;
       }
@@ -241,12 +241,12 @@ export class StatisticsController {
       const analytics = await StatisticsService.getCourseAnalytics(courseId);
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(analytics, 'Course analytics retrieved successfully')
+        ResponseHelper.success(analytics, 'Course analytics retrieved successfully'),
       );
     } catch (error: any) {
       logger.error('Error getting course analytics:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error(error.message || 'Failed to get course analytics')
+        ResponseHelper.error(error.message || 'Failed to get course analytics'),
       );
     }
   }
@@ -262,12 +262,12 @@ export class StatisticsController {
       const platformData = await StatisticsService.getAdminDashboard();
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(platformData, 'Platform analytics retrieved successfully')
+        ResponseHelper.success(platformData, 'Platform analytics retrieved successfully'),
       );
     } catch (error: any) {
       logger.error('Error getting platform analytics:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get platform analytics')
+        ResponseHelper.error('Failed to get platform analytics'),
       );
     }
   }
@@ -286,7 +286,7 @@ export class StatisticsController {
 
       if (!userId || !courseId || !sectionId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID, Course ID, and Section ID are required')
+          ResponseHelper.badRequest('User ID, Course ID, and Section ID are required'),
         );
         return;
       }
@@ -294,22 +294,22 @@ export class StatisticsController {
       // Update progress with completed section
       const progressUpdate = {
         completedSections: [sectionId], // In real implementation, append to existing array
-        timeSpent: 15 // Add estimated time for section completion
+        timeSpent: 15, // Add estimated time for section completion
       };
 
       const updatedProgress = await StatisticsService.updateStudentProgress(
         userId,
         courseId,
-        progressUpdate
+        progressUpdate,
       );
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(updatedProgress, 'Section marked as completed')
+        ResponseHelper.success(updatedProgress, 'Section marked as completed'),
       );
     } catch (error: any) {
       logger.error('Error marking section complete:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to mark section as completed')
+        ResponseHelper.error('Failed to mark section as completed'),
       );
     }
   }
@@ -324,7 +324,7 @@ export class StatisticsController {
 
       if (!userId || !courseId || !exerciseId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID, Course ID, and Exercise ID are required')
+          ResponseHelper.badRequest('User ID, Course ID, and Exercise ID are required'),
         );
         return;
       }
@@ -332,22 +332,22 @@ export class StatisticsController {
       // Update progress with completed exercise
       const progressUpdate = {
         completedExercises: [exerciseId], // In real implementation, append to existing array
-        timeSpent: 30 // Add estimated time for exercise completion
+        timeSpent: 30, // Add estimated time for exercise completion
       };
 
       const updatedProgress = await StatisticsService.updateStudentProgress(
         userId,
         courseId,
-        progressUpdate
+        progressUpdate,
       );
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(updatedProgress, 'Exercise marked as completed')
+        ResponseHelper.success(updatedProgress, 'Exercise marked as completed'),
       );
     } catch (error: any) {
       logger.error('Error marking exercise complete:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to mark exercise as completed')
+        ResponseHelper.error('Failed to mark exercise as completed'),
       );
     }
   }
@@ -362,7 +362,7 @@ export class StatisticsController {
 
       if (!userId) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID is required')
+          ResponseHelper.badRequest('User ID is required'),
         );
         return;
       }
@@ -372,12 +372,12 @@ export class StatisticsController {
       const achievements = dashboardData.achievements;
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success({ achievements }, 'User achievements retrieved successfully')
+        ResponseHelper.success({ achievements }, 'User achievements retrieved successfully'),
       );
     } catch (error: any) {
       logger.error('Error getting user achievements:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get user achievements')
+        ResponseHelper.error('Failed to get user achievements'),
       );
     }
   }
@@ -393,7 +393,7 @@ export class StatisticsController {
       const userCount = await UserModel.countDocuments();
 
       const memoryUsage = process.memoryUsage();
-      
+
       res.status(HTTP_STATUS.OK).json(
         ResponseHelper.success({
           status: 'healthy',
@@ -405,14 +405,14 @@ export class StatisticsController {
           memory: {
             used: memoryUsage.heapUsed,
             total: memoryUsage.heapTotal,
-            percentage: Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100)
-          }
-        }, 'Statistics service is healthy')
+            percentage: Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100),
+          },
+        }, 'Statistics service is healthy'),
       );
     } catch (error: any) {
       logger.error('Statistics service health check failed:', error);
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Statistics service health check failed')
+        ResponseHelper.error('Statistics service health check failed'),
       );
     }
   }

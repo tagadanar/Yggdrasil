@@ -22,7 +22,7 @@ export const {
   requireOwnership,         // Resource ownership validation
   requireOwnershipOrAdmin: requireOwnershipOrAdminOriginal,  // Ownership OR admin access
   requireOwnershipOrStaff,  // Ownership OR staff access
-  requireOwnershipOrTeacher // Ownership OR teacher access
+  requireOwnershipOrTeacher, // Ownership OR teacher access
 } = serviceAuth;
 
 // Export request type for controllers
@@ -44,18 +44,18 @@ export const requireStudentOnly = requireRole('student');
 
 // Backward compatible requireOwnershipOrAdmin that accepts parameter name
 export const requireOwnershipOrAdmin = (userIdParam: string = 'id') => {
-  return requireOwnership({ 
-    userIdParam, 
-    allowedRoles: ['admin', 'staff'], 
-    bypassOwnership: true 
+  return requireOwnership({
+    userIdParam,
+    allowedRoles: ['admin', 'staff'],
+    bypassOwnership: true,
   });
 };
 
 // Legacy compatibility - custom parameter name for ownership validation
 export const requireOwnershipOrAdminCustom = (userIdParam: string = 'userId') => {
-  return requireOwnership({ 
-    userIdParam, 
-    allowedRoles: ['admin', 'staff'], 
-    bypassOwnership: true 
+  return requireOwnership({
+    userIdParam,
+    allowedRoles: ['admin', 'staff'],
+    bypassOwnership: true,
   });
 };

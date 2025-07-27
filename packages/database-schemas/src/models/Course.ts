@@ -2,13 +2,13 @@
 // Course model with comprehensive schema for educational platform
 
 import mongoose, { Document, Schema } from 'mongoose';
-import { 
-  Course, 
-  Chapter, 
-  Section, 
-  Content, 
-  Exercise, 
-  Quiz
+import {
+  Course,
+  Chapter,
+  Section,
+  Content,
+  Exercise,
+  Quiz,
 } from '@yggdrasil/shared-utilities';
 
 // Extend interfaces with Mongoose Document
@@ -53,126 +53,126 @@ const TestCaseSchema = new Schema({
   input: { type: String, required: true },
   expectedOutput: { type: String, required: true },
   description: { type: String, trim: true },
-  isHidden: { type: Boolean, default: false }
+  isHidden: { type: Boolean, default: false },
 }, { _id: true });
 
 // Quiz Question Schema
 const QuizQuestionSchema = new Schema({
-  type: { 
-    type: String, 
+  type: {
+    type: String,
     enum: ['multiple_choice', 'true_false', 'short_answer', 'essay'],
-    required: true 
+    required: true,
   },
-  question: { 
-    type: String, 
-    required: true, 
-    trim: true, 
-    maxlength: 1000 
+  question: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 1000,
   },
-  options: [{ 
-    type: String, 
-    trim: true, 
-    maxlength: 200 
+  options: [{
+    type: String,
+    trim: true,
+    maxlength: 200,
   }],
   correctAnswer: { type: Schema.Types.Mixed, required: true }, // String or Array
-  explanation: { 
-    type: String, 
-    trim: true, 
-    maxlength: 500 
+  explanation: {
+    type: String,
+    trim: true,
+    maxlength: 500,
   },
-  points: { 
-    type: Number, 
-    required: true, 
-    min: 1, 
-    max: 100 
-  }
+  points: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 100,
+  },
 }, { _id: true });
 
 // Quiz Schema
 const QuizSchema = new Schema({
-  title: { 
-    type: String, 
-    required: true, 
-    trim: true, 
-    maxlength: 100 
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 100,
   },
-  description: { 
-    type: String, 
-    trim: true, 
-    maxlength: 500 
+  description: {
+    type: String,
+    trim: true,
+    maxlength: 500,
   },
   questions: [QuizQuestionSchema],
-  timeLimit: { 
-    type: Number, 
-    min: 1, 
-    max: 480 
+  timeLimit: {
+    type: Number,
+    min: 1,
+    max: 480,
   }, // minutes
-  maxAttempts: { 
-    type: Number, 
-    min: 1, 
-    max: 10 
+  maxAttempts: {
+    type: Number,
+    min: 1,
+    max: 10,
   },
-  passingScore: { 
-    type: Number, 
-    required: true, 
-    min: 0, 
-    max: 100 
-  }
+  passingScore: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 100,
+  },
 }, { _id: true });
 
 // Exercise Schema
 const ExerciseSchema = new Schema({
-  title: { 
-    type: String, 
-    required: true, 
-    trim: true, 
-    maxlength: 100 
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 100,
   },
-  description: { 
-    type: String, 
-    required: true, 
-    trim: true, 
-    maxlength: 1000 
+  description: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 1000,
   },
-  type: { 
-    type: String, 
+  type: {
+    type: String,
     enum: ['code', 'quiz', 'assignment'],
-    required: true 
+    required: true,
   },
-  instructions: { 
-    type: String, 
-    required: true, 
-    trim: true, 
-    maxlength: 2000 
+  instructions: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 2000,
   },
   starterCode: { type: String, trim: true },
   solution: { type: String, trim: true },
   testCases: [TestCaseSchema],
-  hints: [{ 
-    type: String, 
-    trim: true, 
-    maxlength: 200 
+  hints: [{
+    type: String,
+    trim: true,
+    maxlength: 200,
   }],
-  difficulty: { 
-    type: String, 
+  difficulty: {
+    type: String,
     enum: ['easy', 'medium', 'hard'],
-    required: true 
+    required: true,
   },
-  programmingLanguage: { 
-    type: String, 
-    trim: true, 
-    maxlength: 20 
+  programmingLanguage: {
+    type: String,
+    trim: true,
+    maxlength: 20,
   },
-  maxAttempts: { 
-    type: Number, 
-    min: 1, 
-    max: 100 
+  maxAttempts: {
+    type: Number,
+    min: 1,
+    max: 100,
   },
-  timeLimit: { 
-    type: Number, 
-    min: 1, 
-    max: 480 
-  } // minutes
+  timeLimit: {
+    type: Number,
+    min: 1,
+    max: 480,
+  }, // minutes
 }, { _id: true });
 
 // Content Data Schema
@@ -180,229 +180,229 @@ const ContentDataSchema = new Schema({
   // Text content
   markdown: { type: String },
   html: { type: String },
-  
+
   // Video content
   videoUrl: { type: String, trim: true },
   videoDuration: { type: Number, min: 1 },
   transcript: { type: String },
-  
+
   // Exercise content
   exercise: ExerciseSchema,
-  
+
   // Quiz content
   quiz: QuizSchema,
-  
+
   // File content
   fileUrl: { type: String, trim: true },
   fileName: { type: String, trim: true },
   fileSize: { type: Number, min: 1 },
-  mimeType: { type: String, trim: true }
+  mimeType: { type: String, trim: true },
 }, { _id: false });
 
 // Content Schema
 const ContentSchema = new Schema({
-  type: { 
-    type: String, 
+  type: {
+    type: String,
     enum: ['text', 'video', 'exercise', 'quiz', 'file'],
-    required: true 
+    required: true,
   },
-  title: { 
-    type: String, 
-    trim: true, 
-    maxlength: 100 
+  title: {
+    type: String,
+    trim: true,
+    maxlength: 100,
   },
-  order: { 
-    type: Number, 
-    required: true, 
-    min: 1 
+  order: {
+    type: Number,
+    required: true,
+    min: 1,
   },
   data: ContentDataSchema,
-  isPublished: { 
-    type: Boolean, 
-    default: false 
-  }
+  isPublished: {
+    type: Boolean,
+    default: false,
+  },
 }, { _id: true });
 
 // Section Schema
 const SectionSchema = new Schema({
-  title: { 
-    type: String, 
-    required: true, 
-    trim: true, 
-    maxlength: 100 
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 100,
   },
-  description: { 
-    type: String, 
-    trim: true, 
-    maxlength: 500 
+  description: {
+    type: String,
+    trim: true,
+    maxlength: 500,
   },
-  order: { 
-    type: Number, 
-    required: true, 
-    min: 1 
+  order: {
+    type: Number,
+    required: true,
+    min: 1,
   },
   content: [ContentSchema],
-  isPublished: { 
-    type: Boolean, 
-    default: false 
+  isPublished: {
+    type: Boolean,
+    default: false,
   },
-  estimatedDuration: { 
-    type: Number, 
-    default: 0, 
-    min: 0 
-  } // minutes
+  estimatedDuration: {
+    type: Number,
+    default: 0,
+    min: 0,
+  }, // minutes
 }, { _id: true });
 
 // Chapter Schema
 const ChapterSchema = new Schema({
-  title: { 
-    type: String, 
-    required: true, 
-    trim: true, 
-    maxlength: 100 
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 100,
   },
-  description: { 
-    type: String, 
-    trim: true, 
-    maxlength: 500 
+  description: {
+    type: String,
+    trim: true,
+    maxlength: 500,
   },
-  order: { 
-    type: Number, 
-    required: true, 
-    min: 1 
+  order: {
+    type: Number,
+    required: true,
+    min: 1,
   },
   sections: [SectionSchema],
-  isPublished: { 
-    type: Boolean, 
-    default: false 
+  isPublished: {
+    type: Boolean,
+    default: false,
   },
-  estimatedDuration: { 
-    type: Number, 
-    default: 0, 
-    min: 0 
-  } // minutes
+  estimatedDuration: {
+    type: Number,
+    default: 0,
+    min: 0,
+  }, // minutes
 }, { _id: true });
 
 // Course Resource Schema
 const CourseResourceSchema = new Schema({
-  name: { 
-    type: String, 
-    required: true, 
-    trim: true, 
-    maxlength: 100 
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 100,
   },
-  type: { 
-    type: String, 
+  type: {
+    type: String,
     enum: ['file', 'link', 'reference'],
-    required: true 
+    required: true,
   },
-  url: { 
-    type: String, 
-    required: true, 
-    trim: true 
+  url: {
+    type: String,
+    required: true,
+    trim: true,
   },
-  description: { 
-    type: String, 
-    trim: true, 
-    maxlength: 300 
+  description: {
+    type: String,
+    trim: true,
+    maxlength: 300,
   },
-  size: { 
-    type: Number, 
-    min: 1 
+  size: {
+    type: Number,
+    min: 1,
   }, // for files
-  uploadedAt: { 
-    type: Date, 
-    default: Date.now 
-  }
+  uploadedAt: {
+    type: Date,
+    default: Date.now,
+  },
 }, { _id: true });
 
 // Course Settings Schema
 const CourseSettingsSchema = new Schema({
-  isPublic: { 
-    type: Boolean, 
-    default: true 
+  isPublic: {
+    type: Boolean,
+    default: true,
   },
-  allowEnrollment: { 
-    type: Boolean, 
-    default: true 
+  allowEnrollment: {
+    type: Boolean,
+    default: true,
   },
-  requiresApproval: { 
-    type: Boolean, 
-    default: false 
+  requiresApproval: {
+    type: Boolean,
+    default: false,
   },
-  maxStudents: { 
-    type: Number, 
-    min: 1, 
-    max: 10000 
+  maxStudents: {
+    type: Number,
+    min: 1,
+    max: 10000,
   },
   startDate: Date,
   endDate: Date,
-  allowLateSubmissions: { 
-    type: Boolean, 
-    default: true 
+  allowLateSubmissions: {
+    type: Boolean,
+    default: true,
   },
-  enableDiscussions: { 
-    type: Boolean, 
-    default: true 
+  enableDiscussions: {
+    type: Boolean,
+    default: true,
   },
-  enableCollaboration: { 
-    type: Boolean, 
-    default: false 
-  }
+  enableCollaboration: {
+    type: Boolean,
+    default: false,
+  },
 }, { _id: false });
 
 // Course Statistics Schema
 const CourseStatsSchema = new Schema({
-  enrolledStudents: { 
-    type: Number, 
-    default: 0, 
-    min: 0 
+  enrolledStudents: {
+    type: Number,
+    default: 0,
+    min: 0,
   },
-  completedStudents: { 
-    type: Number, 
-    default: 0, 
-    min: 0 
+  completedStudents: {
+    type: Number,
+    default: 0,
+    min: 0,
   },
-  averageProgress: { 
-    type: Number, 
-    default: 0, 
-    min: 0, 
-    max: 100 
+  averageProgress: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
   }, // percentage
-  averageRating: { 
-    type: Number, 
-    min: 0, 
-    max: 5 
+  averageRating: {
+    type: Number,
+    min: 0,
+    max: 5,
   },
-  totalViews: { 
-    type: Number, 
-    default: 0, 
-    min: 0 
+  totalViews: {
+    type: Number,
+    default: 0,
+    min: 0,
   },
-  lastAccessed: Date
+  lastAccessed: Date,
 }, { _id: false });
 
 // Collaborator Schema
 const CollaboratorSchema = new Schema({
-  _id: { 
+  _id: {
     type: String,
-    required: true 
+    required: true,
   },
-  name: { 
-    type: String, 
-    required: true, 
-    trim: true 
+  name: {
+    type: String,
+    required: true,
+    trim: true,
   },
-  email: { 
-    type: String, 
-    required: true, 
-    trim: true 
+  email: {
+    type: String,
+    required: true,
+    trim: true,
   },
-  role: { 
-    type: String, 
+  role: {
+    type: String,
     enum: ['instructor', 'assistant'],
-    default: 'assistant' 
-  }
+    default: 'assistant',
+  },
 }, { _id: false });
 
 // Main Course Schema
@@ -413,106 +413,106 @@ const CourseSchema = new Schema<CourseDocument>({
     sparse: true,
     uppercase: true,
     trim: true,
-    index: true
+    index: true,
   },
   title: {
     type: String,
     required: true,
     trim: true,
     maxlength: 100,
-    index: true
+    index: true,
   },
   description: {
     type: String,
     required: true,
     trim: true,
-    maxlength: 1000
+    maxlength: 1000,
   },
   slug: {
     type: String,
     unique: true,
     lowercase: true,
     trim: true,
-    index: true
+    index: true,
   },
   category: {
     type: String,
     required: true,
     trim: true,
     maxlength: 50,
-    index: true
+    index: true,
   },
   level: {
     type: String,
     enum: ['beginner', 'intermediate', 'advanced'],
     required: true,
-    index: true
+    index: true,
   },
   status: {
     type: String,
     enum: ['draft', 'published', 'archived'],
     default: 'draft',
-    index: true
+    index: true,
   },
   instructor: {
-    _id: { 
+    _id: {
       type: String,
       required: true,
-      index: true
+      index: true,
     },
-    name: { 
-      type: String, 
-      required: true, 
-      trim: true 
+    name: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    email: { 
-      type: String, 
-      required: true, 
-      trim: true 
-    }
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+    },
   },
   collaborators: [CollaboratorSchema],
-  thumbnail: { 
-    type: String, 
-    trim: true 
+  thumbnail: {
+    type: String,
+    trim: true,
   },
   tags: [{
     type: String,
     trim: true,
-    maxlength: 30
+    maxlength: 30,
   }],
   prerequisites: [{
     type: String,
     trim: true,
-    maxlength: 100
+    maxlength: 100,
   }],
   estimatedDuration: {
     type: Number,
     default: 0,
-    min: 0
+    min: 0,
   }, // minutes
   chapters: [ChapterSchema],
   resources: [CourseResourceSchema],
   settings: {
     type: CourseSettingsSchema,
-    default: () => ({})
+    default: () => ({}),
   },
   stats: {
     type: CourseStatsSchema,
-    default: () => ({})
+    default: () => ({}),
   },
   version: {
     type: Number,
     default: 1,
-    min: 1
+    min: 1,
   },
   lastModified: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 }, {
   timestamps: true, // Adds createdAt and updatedAt
-  collection: 'courses'
+  collection: 'courses',
 });
 
 // Indexes for performance
@@ -533,11 +533,11 @@ CourseSchema.index({ updatedAt: -1 }); // For time-range queries
 // Pre-save middleware to generate slug
 CourseSchema.pre<CourseDocument>('save', function(next) {
   const course = this;
-  
+
   if (course.isModified('title') && !course.slug) {
     course.slug = course.generateSlug();
   }
-  
+
   course.lastModified = new Date();
   next();
 });
@@ -575,7 +575,7 @@ CourseSchema.methods['updateStats'] = async function(): Promise<void> {
 CourseSchema.set('toJSON', {
   transform: function(_doc: any, ret: any) {
     ret._id = ret._id.toString();
-    
+
     // Transform nested ObjectIds to strings
     if (ret.chapters) {
       ret.chapters.forEach((chapter: any) => {
@@ -598,16 +598,16 @@ CourseSchema.set('toJSON', {
         }
       });
     }
-    
+
     if (ret.resources) {
       ret.resources.forEach((resource: any) => {
         resource._id = resource._id.toString();
       });
     }
-    
+
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
 // Static methods
@@ -616,9 +616,9 @@ CourseSchema.statics['findBySlug'] = function(slug: string) {
 };
 
 CourseSchema.statics['findPublished'] = function() {
-  return this.find({ 
-    status: 'published', 
-    'settings.isPublic': true 
+  return this.find({
+    status: 'published',
+    'settings.isPublic': true,
   }).sort({ createdAt: -1 });
 };
 
@@ -627,46 +627,46 @@ CourseSchema.statics['findByInstructor'] = function(instructorId: string) {
 };
 
 CourseSchema.statics['findByCategory'] = function(category: string) {
-  return this.find({ 
-    category: category, 
+  return this.find({
+    category: category,
     status: 'published',
-    'settings.isPublic': true 
+    'settings.isPublic': true,
   }).sort({ createdAt: -1 });
 };
 
 CourseSchema.statics['searchCourses'] = function(query: string, filters: any = {}) {
   const searchCriteria: any = {
     status: 'published',
-    'settings.isPublic': true
+    'settings.isPublic': true,
   };
-  
+
   // Text search
   if (query) {
     searchCriteria.$text = { $search: query };
   }
-  
+
   // Apply filters
   if (filters.category) {
     searchCriteria.category = filters.category;
   }
-  
+
   if (filters.level) {
     searchCriteria.level = filters.level;
   }
-  
+
   if (filters.instructor) {
     searchCriteria['instructor._id'] = filters.instructor;
   }
-  
+
   if (filters.tags && filters.tags.length > 0) {
     searchCriteria.tags = { $in: filters.tags };
   }
-  
+
   // Build sort criteria properly to avoid "Invalid sort value" error
   if (query && query.trim().length > 0) {
-    return this.find(searchCriteria).sort({ 
+    return this.find(searchCriteria).sort({
       score: { $meta: 'textScore' },
-      createdAt: -1 
+      createdAt: -1,
     });
   } else {
     return this.find(searchCriteria).sort({ createdAt: -1 });

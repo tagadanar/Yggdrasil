@@ -139,16 +139,16 @@ NewsArticleSchema.index({ isPublished: 1 }); // Published articles
 NewsArticleSchema.index({ isPinned: 1 }); // Pinned articles
 // slug index is automatically created by unique: true
 NewsArticleSchema.index({ 'author.userId': 1 }); // Articles by author
-NewsArticleSchema.index({ 
-  title: 'text', 
-  content: 'text', 
-  summary: 'text' 
-}, { 
-  weights: { 
-    title: 10, 
-    summary: 5, 
-    content: 1 
-  } 
+NewsArticleSchema.index({
+  title: 'text',
+  content: 'text',
+  summary: 'text',
+}, {
+  weights: {
+    title: 10,
+    summary: 5,
+    content: 1,
+  },
 }); // Text search
 
 // Pre-save middleware to generate slug
@@ -214,7 +214,7 @@ NewsArticleSchema.set('toJSON', {
     }
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
 NewsArticleSchema.set('toObject', {
@@ -225,7 +225,7 @@ NewsArticleSchema.set('toObject', {
     }
     delete ret.__v;
     return ret;
-  }
+  },
 });
 
 // Static methods
@@ -253,17 +253,17 @@ NewsArticleSchema.statics['searchArticles'] = function(query: string) {
           { title: { $regex: query, $options: 'i' } },
           { content: { $regex: query, $options: 'i' } },
           { summary: { $regex: query, $options: 'i' } },
-          { tags: { $in: [new RegExp(query, 'i')] } }
-        ]
-      }
-    ]
+          { tags: { $in: [new RegExp(query, 'i')] } },
+        ],
+      },
+    ],
   }).sort({ publishedAt: -1 });
 };
 
 NewsArticleSchema.statics['findByTag'] = function(tag: string) {
-  return this.find({ 
-    tags: { $in: [tag] }, 
-    isPublished: true 
+  return this.find({
+    tags: { $in: [tag] },
+    isPublished: true,
   }).sort({ publishedAt: -1 });
 };
 

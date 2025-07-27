@@ -36,7 +36,7 @@ export class DatabaseConnection {
         bufferCommands: false,
         minPoolSize: process.env['NODE_ENV'] === 'test' ? 5 : 0,
         maxIdleTimeMS: process.env['NODE_ENV'] === 'test' ? 30000 : 30000,
-        
+
         // Authentication options
         authSource: config.MONGO_DATABASE || 'yggdrasil-dev',
         retryWrites: true,
@@ -52,12 +52,12 @@ export class DatabaseConnection {
       const options = { ...defaultOptions, ...dbConfig.options };
 
       await mongoose.connect(dbConfig.uri, options);
-      
+
       this.isConnected = true;
-      
+
       // Handle connection events
       this.setupEventHandlers();
-      
+
     } catch (error) {
       throw error;
     }
@@ -94,7 +94,7 @@ export class DatabaseConnection {
 // Function to build authenticated MongoDB connection string
 function buildAuthenticatedConnectionString(): string {
   let uri = config.MONGODB_URI;
-  
+
   // If authentication credentials are provided, add them to the connection string
   if (config.MONGO_APP_USERNAME && config.MONGO_APP_PASSWORD) {
     try {
@@ -106,7 +106,7 @@ function buildAuthenticatedConnectionString(): string {
       // If URL parsing fails, assume it's already a complete connection string
     }
   }
-  
+
   return uri;
 }
 
@@ -114,13 +114,13 @@ function buildAuthenticatedConnectionString(): string {
 export const connectDatabase = async (uri?: string): Promise<void> => {
   // Build authenticated connection string or use provided URI
   const dbUri = uri || buildAuthenticatedConnectionString();
-  
+
   const dbConfig: DatabaseConfig = {
     uri: dbUri,
   };
 
   const db = DatabaseConnection.getInstance();
-  
+
   // Connect with retry logic
   let retries = 5;
   while (retries > 0) {
@@ -132,11 +132,11 @@ export const connectDatabase = async (uri?: string): Promise<void> => {
       if (retries === 0) {
         throw error;
       }
-      
+
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
-  
+
   // Initialize UserModel with correct collection name after database connection
   try {
     const { createUserModel, setDefaultUserModel } = await import('../models/User');

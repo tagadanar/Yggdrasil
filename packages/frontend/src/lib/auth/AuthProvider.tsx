@@ -4,7 +4,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, AuthTokens } from '@yggdrasil/shared-utilities';
+import { User, AuthTokens } from '@yggdrasil/shared-utilities/client';
 import { authApi } from '@/lib/api/auth';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
 import { tokenSync } from '@/lib/auth/tokenSync';
@@ -52,6 +52,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsubscribe();
     };
   }, []);
+
+  // Cookie change detection - Fix for state caching bug
+  useEffect(() => {
+    const checkCookieChanges = () => {
+      const currentTokens = tokenStorage.getTokens();
+      if (!currentTokens && (user || tokens)) {
+        // Cookies cleared but state still exists - clear state
+        setUser(null);
+        setTokens(null);
+        // Also notify tokenSync for immediate propagation
+        tokenSync.notifyTokenChange(null);
+      }
+    };
+    
+    // Check immediately on mount
+    checkCookieChanges();
+    
+    // Poll for cookie changes (more frequently for responsive detection)
+    const interval = setInterval(checkCookieChanges, 250);
+    return () => clearInterval(interval);
+  }, [user, tokens]);
 
   const initializeAuth = async () => {
     try {

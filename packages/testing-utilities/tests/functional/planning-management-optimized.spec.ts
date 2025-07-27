@@ -4,6 +4,7 @@
 import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
+import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 // Parameterized test for role-based access
 const roles = [
@@ -18,7 +19,7 @@ test.describe('Planning Management - Core Features', () => {
   // Quick navigation test for each role
   for (const role of roles) {
     test(`${role.name} can access planning page`, async ({ page }) => {
-      const cleanup = await TestCleanup.ensureCleanStart(`${role.name} planning access`);
+      const cleanup = TestCleanup.getInstance(`${role.name} planning access`);
       const authHelper = new CleanAuthHelper(page);
       
       try {
@@ -36,9 +37,9 @@ test.describe('Planning Management - Core Features', () => {
         expect(page.url()).toContain('/planning');
         
         // 2. Wait for basic page structure (lightweight check)
-        await page.waitForSelector('h1:has-text("Academic Planning")', { 
+        await page.waitForSelector('h1:has-text("Academic Planning", { timeout: 10000 })', { 
           state: 'visible', 
-          timeout: 5000 
+          timeout: 2000 
         });
         
         // 3. Skip complex calendar component - test permissions instead
@@ -69,7 +70,7 @@ test.describe('Planning Management - Core Features', () => {
 test.describe('Planning Management - Event Operations', () => {
   
   test('Admin can create events', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Admin create events');
+    const cleanup = TestCleanup.getInstance('Admin create events');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -80,12 +81,12 @@ test.describe('Planning Management - Event Operations', () => {
       await page.waitForLoadState('domcontentloaded');
       
       await page.goto('/planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Robust wait for calendar
       await page.waitForSelector('[data-testid="calendar-view"]', { 
         state: 'visible', 
-        timeout: 15000 
+        timeout: 5000 
       });
       
       // Create event
@@ -110,7 +111,7 @@ test.describe('Planning Management - Event Operations', () => {
       
       // Wait for success or close modal
       await page.waitForSelector('[data-testid="success-message"], [data-testid="modal-close"]', {
-        timeout: 5000
+        timeout: 2000
       });
       
     } finally {
@@ -120,7 +121,7 @@ test.describe('Planning Management - Event Operations', () => {
   });
   
   test('Calendar view switching works', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Calendar view switching');
+    const cleanup = TestCleanup.getInstance('Calendar view switching');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -131,12 +132,12 @@ test.describe('Planning Management - Event Operations', () => {
       await page.waitForLoadState('domcontentloaded');
       
       await page.goto('/planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Robust wait for calendar
       await page.waitForSelector('[data-testid="calendar-view"]', { 
         state: 'visible', 
-        timeout: 15000 
+        timeout: 5000 
       });
       
       // Test view controls if they exist
@@ -167,7 +168,7 @@ test.describe('Planning Management - Event Operations', () => {
 test.describe('Planning Management - Advanced Features', () => {
   
   test('Export functionality works', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Export functionality');
+    const cleanup = TestCleanup.getInstance('Export functionality');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -178,12 +179,12 @@ test.describe('Planning Management - Advanced Features', () => {
       await page.waitForLoadState('domcontentloaded');
       
       await page.goto('/planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Robust wait for calendar
       await page.waitForSelector('[data-testid="calendar-view"]', { 
         state: 'visible', 
-        timeout: 15000 
+        timeout: 5000 
       });
       
       // Test export
@@ -209,7 +210,7 @@ test.describe('Planning Management - Advanced Features', () => {
   });
   
   test('Google Calendar sync UI is accessible', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Google Calendar sync');
+    const cleanup = TestCleanup.getInstance('Google Calendar sync');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -220,12 +221,12 @@ test.describe('Planning Management - Advanced Features', () => {
       await page.waitForLoadState('domcontentloaded');
       
       await page.goto('/planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Robust wait for calendar
       await page.waitForSelector('[data-testid="calendar-view"]', { 
         state: 'visible', 
-        timeout: 15000 
+        timeout: 5000 
       });
       
       // Test Google sync button
@@ -252,7 +253,7 @@ test.describe('Planning Management - Advanced Features', () => {
   });
   
   test('Mobile responsiveness', async ({ page }) => {
-    const cleanup = await TestCleanup.ensureCleanStart('Mobile responsiveness');
+    const cleanup = TestCleanup.getInstance('Mobile responsiveness');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -266,12 +267,12 @@ test.describe('Planning Management - Advanced Features', () => {
       await page.waitForLoadState('domcontentloaded');
       
       await page.goto('/planning');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Robust wait for calendar
       await page.waitForSelector('[data-testid="calendar-view"]', { 
         state: 'visible', 
-        timeout: 15000 
+        timeout: 5000 
       });
       
       // Verify mobile layout

@@ -116,10 +116,11 @@ export const ExerciseSubmission: React.FC<ExerciseSubmissionProps> = ({
   useEffect(() => {
     if (timeRemaining && timeRemaining > 0) {
       const timer = setInterval(() => {
-        setTimeRemaining(prev => prev ? prev - 1 : 0);
+        setTimeRemaining(prev => (prev ? prev - 1 : 0));
       }, 1000);
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [timeRemaining]);
 
   const loadSubmissions = async () => {

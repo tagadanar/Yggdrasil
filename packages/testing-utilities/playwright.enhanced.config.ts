@@ -1,6 +1,12 @@
 // packages/testing-utilities/playwright.enhanced.config.ts
 // Enhanced Playwright configuration for single-worker testing
 
+// Increase max listeners to prevent EventEmitter memory leak warnings
+// Must be set before any other imports
+import { EventEmitter } from 'events';
+EventEmitter.defaultMaxListeners = 50;
+process.setMaxListeners(50);
+
 // Load environment variables before any other imports
 import { config } from 'dotenv';
 import path from 'path';
@@ -16,7 +22,7 @@ export default defineConfig({
   fullyParallel: false,
   
   // Fail the build on CI if you accidentally left test.only in the source code
-  forbidOnly: !!process.env.CI,
+  forbidOnly: !!process.env['CI'],
   
   // No retries - tests should be deterministic with enhanced isolation
   retries: 0,
@@ -25,7 +31,7 @@ export default defineConfig({
   workers: 1,
   
   // Enhanced reporter configuration for single-worker analysis
-  reporter: process.env.CI ? [
+  reporter: process.env['CI'] ? [
     ['dot'],
     ['json', { outputFile: 'test-results-enhanced/results.json' }]
   ] : [

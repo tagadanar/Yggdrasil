@@ -3,7 +3,7 @@
 
 /**
  * User role enumeration defining access levels across the platform.
- * 
+ *
  * Roles follow hierarchical permissions model:
  * - admin: Full system access, user management, all content
  * - staff: Content management, user coordination, statistics access
@@ -14,7 +14,7 @@ export type UserRole = 'admin' | 'staff' | 'teacher' | 'student';
 
 /**
  * Authentication token pair for secure user sessions.
- * 
+ *
  * Contains both short-lived access tokens for API requests and
  * long-lived refresh tokens for session persistence.
  */
@@ -27,7 +27,7 @@ export interface AuthTokens {
 
 /**
  * User login request payload.
- * 
+ *
  * Contains credentials required for user authentication.
  */
 export interface LoginRequest {
@@ -39,7 +39,7 @@ export interface LoginRequest {
 
 /**
  * User registration request payload.
- * 
+ *
  * Contains all information required to create a new user account
  * with appropriate role and profile data.
  */
@@ -68,7 +68,7 @@ export interface AuthResult {
 
 /**
  * JWT access token payload structure.
- * 
+ *
  * Contains user identity and role information for API authorization.
  * Includes both 'id' and 'userId' fields for backward compatibility.
  */
@@ -91,7 +91,7 @@ export interface JWTPayload {
 
 /**
  * JWT refresh token payload structure.
- * 
+ *
  * Contains minimal user identification for token refresh operations.
  * Excludes sensitive information like email and role.
  */
@@ -110,7 +110,7 @@ export interface RefreshTokenPayload {
 
 /**
  * Core User interface representing a complete user account.
- * 
+ *
  * Contains all user data including authentication, profile, preferences,
  * and account status information used throughout the platform.
  */
@@ -137,7 +137,7 @@ export interface User {
 
 /**
  * User profile information with role-specific fields.
- * 
+ *
  * Contains personal information and role-specific data that varies
  * based on user type (student, teacher, staff, admin).
  */
@@ -164,7 +164,7 @@ export interface UserProfile {
 
 /**
  * Extended contact information for user profiles.
- * 
+ *
  * Contains optional contact details and emergency contact information
  * for comprehensive user records.
  */
@@ -186,7 +186,7 @@ export interface ContactInfo {
 
 /**
  * User preferences for platform customization.
- * 
+ *
  * Contains language, notification, and accessibility settings
  * that personalize the user experience.
  */
