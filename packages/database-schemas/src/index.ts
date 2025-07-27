@@ -10,3 +10,6 @@ export * from './models/NewsArticle';
 export * from './models/Course';
 export * from './models/CourseEnrollment';
 export * from './models/Event';
+
+// Migrations
+export { Migration, MigrationRunner, runMigrationCLI } from './migrations/migration-runner';

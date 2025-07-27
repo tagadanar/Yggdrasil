@@ -10,6 +10,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { setupSwagger } from '@yggdrasil/shared-utilities';
 import { createAuthServiceOpenAPI } from './openapi';
+import { setupHealthChecks } from './health/setup';
 
 export const createApp = (): express.Application => {
   const app = express();
@@ -44,14 +45,8 @@ export const createApp = (): express.Application => {
   // Request logging
   app.use(requestLogger);
 
-  // Health check endpoint
-  app.get('/health', (_req, res) => {
-    res.json({
-      status: 'ok',
-      service: 'auth-service',
-      timestamp: new Date().toISOString(),
-    });
-  });
+  // Setup comprehensive health checks
+  setupHealthChecks(app);
 
   // Setup OpenAPI documentation
   if (process.env['NODE_ENV'] !== 'test') {

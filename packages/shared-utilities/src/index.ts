@@ -129,3 +129,29 @@ export {
   createPaginatedResponse,
 } from './openapi';
 export { setupSwagger } from './openapi/setup-swagger';
+
+// Health Check utilities (server-side only)
+export {
+  HealthChecker,
+  HealthCheckManager,
+  DatabaseHealthChecker,
+  RedisHealthChecker,
+  ExternalServiceHealthChecker,
+  HealthStatus,
+} from './health';
+
+export type { HealthCheckResult, ServiceHealth, SystemHealth } from './health';
+
+// Monitoring utilities (server-side only)
+export {
+  MetricsCollector,
+  TracingService,
+  extractTraceContext,
+  injectTraceContext,
+} from './monitoring';
+
+// Documentation utilities (server-side only)
+export { OpenAPIGenerator, RouteDocumenter, documentAuthRoutes, APIExplorer } from './docs';
+
+// Security utilities (server-side only)
+export { RateLimiter, DistributedRateLimiter, setupSecurityHeaders, setupCORS } from './security';
