@@ -52,7 +52,7 @@ test.describe('Role-Based Access Control Matrix', () => {
       
       // Test each role sequentially with complete isolation
       for (const [role, access] of Object.entries(accessMatrix)) {
-        console.log(`\n🔐 Testing ${role.toUpperCase()} role access...`);
+        // Testing role access
         
         // Create user and auth context for this role
         const user = await factory.users.createUser(role as any);
@@ -67,7 +67,7 @@ test.describe('Role-Based Access Control Matrix', () => {
           await auth.loginWithCustomUser(user.email, 'TestPass123!');
           
           // Test allowed endpoints
-          console.log(`  ✅ Testing allowed endpoints for ${role}:`);
+          // Testing allowed endpoints
           for (const endpoint of access.allowed) {
             await page.goto(endpoint);
             
@@ -88,12 +88,12 @@ test.describe('Role-Based Access Control Matrix', () => {
               await expect(page.locator(expectedElement)).toBeVisible({ timeout: 5000 });
             }
             
-            console.log(`    ✓ ${endpoint} - Access granted`);
+            // Access granted
           }
           
           // Test forbidden endpoints
           if (access.forbidden.length > 0) {
-            console.log(`  ❌ Testing forbidden endpoints for ${role}:`);
+            // Testing forbidden endpoints
             for (const endpoint of access.forbidden) {
               await page.goto(endpoint);
               
@@ -108,7 +108,7 @@ test.describe('Role-Based Access Control Matrix', () => {
               
               expect(wasRedirected || hasAccessDenied || hasErrorMessage).toBeTruthy();
               
-              console.log(`    ✓ ${endpoint} - Access denied`);
+              // Access denied
             }
           }
           
@@ -119,7 +119,7 @@ test.describe('Role-Based Access Control Matrix', () => {
         }
       }
       
-      console.log('\n✅ All RBAC tests completed successfully!');
+      // All RBAC tests completed successfully
       
     } finally {
       await cleanup.cleanup();
@@ -183,7 +183,7 @@ test.describe('Role-Based Access Control Matrix', () => {
       
       // Test each role's API access
       for (const [role, access] of Object.entries(apiMatrix)) {
-        console.log(`\n🔌 Testing ${role.toUpperCase()} API access...`);
+        // Testing API access
         
         const user = await factory.users.createUser(role as any);
         cleanup.trackDocument('users', user._id);
@@ -206,7 +206,7 @@ test.describe('Role-Based Access Control Matrix', () => {
               });
               
               expect(response.status()).toBeLessThan(400);
-              console.log(`    ✓ ${method} ${endpoint} - Allowed (${response.status()})`);
+              // API access allowed
             }
           }
           
@@ -221,7 +221,7 @@ test.describe('Role-Based Access Control Matrix', () => {
               });
               
               expect(response.status()).toBeGreaterThanOrEqual(400);
-              console.log(`    ✓ ${method} ${endpoint} - Forbidden (${response.status()})`);
+              // API access forbidden
             }
           }
           

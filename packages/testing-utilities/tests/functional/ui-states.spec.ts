@@ -80,11 +80,11 @@ test.describe('UI States and Error Handling', () => {
         }
       ];
       
-      console.log('\n🔄 Testing loading states...');
+      // Testing loading states
       
       // Test loading states for each module
       for (const module of modules) {
-        console.log(`  Testing ${module.name} loading state...`);
+        // Testing module loading state
         
         // Set up promise to catch loading state
         const loadingPromise = page.waitForSelector(module.loadingSelector, { 
@@ -98,26 +98,26 @@ test.describe('UI States and Error Handling', () => {
         // Check if loading state appeared
         const loadingElement = await loadingPromise;
         if (loadingElement) {
-          console.log(`    ✓ Loading indicator displayed`);
+          // Loading indicator displayed
           
           // Wait for content to load
           await waitForModuleContent(page, module);
           
           // Verify loading indicator disappears
           await expect(page.locator(module.loadingSelector)).not.toBeVisible();
-          console.log(`    ✓ Loading indicator hidden after content loads`);
+          // Loading indicator hidden after content loads
         } else {
           // If no loading state, verify content loads directly
           await waitForModuleContent(page, module);
-          console.log(`    ✓ Content loaded (fast load, no loading state shown)`);
+          // Content loaded (fast load, no loading state shown)
         }
       }
       
-      console.log('\n❌ Testing error states...');
+      // Testing error states
       
       // Test error states for each module
       for (const module of modules) {
-        console.log(`  Testing ${module.name} error handling...`);
+        // Testing module error handling
         
         // Create a new page for each error test to avoid state pollution
         const errorPage = await context.newPage();
@@ -155,7 +155,7 @@ test.describe('UI States and Error Handling', () => {
           const count = await errorPage.locator(selector).count();
           if (count > 0) {
             errorFound = true;
-            console.log(`    ✓ Error state displayed (${selector})`);
+            // Error state displayed
             break;
           }
         }
@@ -173,12 +173,12 @@ test.describe('UI States and Error Handling', () => {
           }
         }
         expect(anyContentVisible).toBeFalsy();
-        console.log(`    ✓ Content hidden during error state`);
+        // Content hidden during error state
         
         await errorPage.close();
       }
       
-      console.log('\n♻️ Testing refresh/retry functionality...');
+      // Testing refresh/retry functionality
       
       // Test refresh functionality after error
       const retryPage = await context.newPage();
@@ -211,16 +211,16 @@ test.describe('UI States and Error Handling', () => {
       const retryButton = retryPage.locator('button:has-text("Retry"), button:has-text("Refresh"), button:has-text("Try Again")');
       if (await retryButton.count() > 0) {
         await retryButton.first().click();
-        console.log('    ✓ Retry button clicked');
+        // Retry button clicked
       } else {
         // If no retry button, test page refresh
         await retryPage.reload();
-        console.log('    ✓ Page refreshed');
+        // Page refreshed
       }
       
       // Verify content loads after retry (users table should be visible for admin)
       await expect(retryPage.locator('[data-testid="users-table"]')).toBeVisible({ timeout: 5000 });
-      console.log('    ✓ Content loaded successfully after retry');
+      // Content loaded successfully after retry
       
       await retryPage.close();
       
@@ -243,7 +243,7 @@ test.describe('UI States and Error Handling', () => {
       
       await auth.loginAsTeacher();
       
-      console.log('\n📭 Testing empty states...');
+      // Testing empty states
       
       // Test courses empty state (teacher with no courses)
       await page.goto('/courses');
@@ -259,12 +259,12 @@ test.describe('UI States and Error Handling', () => {
       for (const selector of emptyStateSelectors) {
         if (await page.locator(selector).count() > 0) {
           emptyStateFound = true;
-          console.log('    ✓ Courses: Empty state displayed');
+          // Courses: Empty state displayed
           
           // Check for CTA button
           const ctaButton = page.locator('button:has-text("Create Course"), a:has-text("Create Course"), button:has-text("Get Started")');
           if (await ctaButton.count() > 0) {
-            console.log('    ✓ Courses: Call-to-action button present');
+            // Courses: Call-to-action button present
           }
           break;
         }
@@ -282,7 +282,7 @@ test.describe('UI States and Error Handling', () => {
       
       for (const selector of noDataSelectors) {
         if (await page.locator(selector).count() > 0) {
-          console.log('    ✓ Statistics: No data state displayed');
+          // Statistics: No data state displayed
           break;
         }
       }

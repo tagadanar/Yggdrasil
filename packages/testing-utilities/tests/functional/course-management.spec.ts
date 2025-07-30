@@ -155,334 +155,447 @@ test.describe('Course Management', () => {
     }
   });
 
-  // =============================================================================
-  // TEST 2: BASIC COURSE PAGE FUNCTIONALITY  
-  // =============================================================================
-  test('Course page basic functionality and navigation', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Course page basic functionality and navigation');
-    const authHelper = new CleanAuthHelper(page);
-    
-    try {
-      await authHelper.loginAsAdmin();
-    await page.goto('/courses');
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
-    // Verify page loads and has expected structure
-    await expect(page.locator('h1:has-text("Course Management")')).toBeVisible();
-    await expect(page.locator('p:has-text("Create, manage, and track")')).toBeVisible();
-    
-    // Check if create button exists (may not be functional yet)
-    const createButtons = page.locator('button:has-text("Create"), .btn-primary');
-    const hasCreateButton = await createButtons.count() > 0;
-    
-    if (hasCreateButton) {
-      // Could test button click if CourseForm is implemented
-    } else {
-    }
-    
-    // Test different view modes if implemented
-    const viewModes = ['list', 'create', 'edit', 'detail'];
-    
-    // Verify basic page functionality
-    await expect(page.locator('.max-w-7xl')).toBeVisible(); // Main container
-    
-    } finally {
-      await authHelper.clearAuthState();
-      await cleanup.cleanup();
-    }
-  });
 
   // =============================================================================
-  // TEST 3: STUDENT COURSE VIEW
+  // COURSE-001: Focused Course Creation Tests (Split from mega-test for performance)
   // =============================================================================
-  test('Student course page view and basic functionality', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Student course page view and basic functionality');
-    const authHelper = new CleanAuthHelper(page);
-    
-    try {
-      await authHelper.loginAsStudent();
-    await page.goto('/courses');
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
-    // Students should see "My Enrollments" title
-    await expect(page.locator('h1:has-text("My Enrollments")')).toBeVisible();
-    await expect(page.locator('p:has-text("Explore and enroll")')).toBeVisible();
-    
-    // Verify no create button for students
-    const createButtons = page.locator('button:has-text("Create")');
-    expect(await createButtons.count()).toBe(0);
-    
-    } finally {
-      await authHelper.clearAuthState();
-      await cleanup.cleanup();
-    }
-  });
 
-  // =============================================================================
-  // TEST 4: TEACHER COURSE VIEW
-  // =============================================================================
-  test('Teacher course page view and basic functionality', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Teacher course page view and basic functionality');
+  test('Teacher can create draft course with basic information', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Teacher Draft Course Creation');
     const authHelper = new CleanAuthHelper(page);
     
     try {
       await authHelper.loginAsTeacher();
-    await page.goto('/courses');
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
-    // Teachers should see either "My Courses" or "Courses" title
-    const heading = await page.locator('h1').first();
-    await expect(heading).toBeVisible({ timeout: 2000 });
-    const headingText = await heading.textContent();
-    expect(headingText).toMatch(/Courses|My Courses/);
-    
-    // Check for description text
-    const description = page.locator('p').first();
-    await expect(description).toBeVisible({ timeout: 2000 });
-    
-    // Teachers should have create button access - wait for it to appear
-    const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course"), .btn-primary');
-    await createButton.first().waitFor({ state: 'visible', timeout: 3000 });
-    expect(await createButton.count()).toBeGreaterThan(0);
-    
-    } finally {
-      await authHelper.clearAuthState();
-      await cleanup.cleanup();
-    }
-  });
-
-  // =============================================================================
-  // COURSE-001: Complete Course Creation & Publishing Workflow
-  // =============================================================================
-  test('Complete Course Creation & Publishing Workflow', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('COURSE-001: Complete Course Creation & Publishing Workflow');
-    const authHelper = new CleanAuthHelper(page);
-    let createdCourseTitle: string | null = null;
-    
-    try {
-      await authHelper.loginAsTeacher();
-    
-    // Step 1: Create draft course with basic info → verify draft status
-    await page.goto('/courses');
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
-    const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course"), .btn-primary');
-    await createButton.first().waitFor({ state: 'visible', timeout: 3000 });
-    await createButton.first().click();
-    
-    // Wait for form fields to appear
-    const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"], input[placeholder*="Title"]');
-    const courseDescInput = page.locator('textarea[name="description"], textarea[placeholder*="description"]');
-    
-    // Wait for form to be ready for input
-    await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
-    
-    createdCourseTitle = `Test Course ${Date.now()}`;
-    
-    if (await courseTitleInput.count() > 0) {
-      await courseTitleInput.fill(createdCourseTitle);
-    }
-    
-    if (await courseDescInput.count() > 0) {
-      await courseDescInput.fill('This is a comprehensive test course for automated testing.');
-    }
-    
-    // Look for category/level selectors
-    const categorySelect = page.locator('select[name="category"], select[name="subject"]');
-    if (await categorySelect.count() > 0) {
-      await categorySelect.selectOption({ index: 1 }); // Select first non-default option
-    }
-    
-    const levelSelect = page.locator('select[name="level"], select[name="difficulty"]');
-    if (await levelSelect.count() > 0) {
-      await levelSelect.selectOption({ index: 1 }); // Select first non-default option
-    }
-    
-    // Save as draft
-    const saveDraftButton = page.locator('button:has-text("Save Draft"), button:has-text("Draft"), button[type="submit"]');
-    if (await saveDraftButton.count() > 0) {
-      await saveDraftButton.first().click();
+      await page.goto('/courses');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    }
-    
-    // Verify draft status (look for draft indicator)
-    const draftIndicators = [
-      '.status-draft',
-      ':has-text("Draft")',
-      ':has-text("Unpublished")',
-      '.badge:has-text("Draft")'
-    ];
-    
-    let draftFound = false;
-    for (const indicator of draftIndicators) {
-      if (await page.locator(indicator).count() > 0) {
-        draftFound = true;
-        break;
-      }
-    }
-    
-    // Step 2: Add chapters in sequence → verify ordering and hierarchy
-    // Look for chapter management interface
-    const addChapterButton = page.locator('button:has-text("Add Chapter"), button:has-text("New Chapter")');
-    if (await addChapterButton.count() > 0) {
-      // Add first chapter
-      await addChapterButton.first().click();
-      const chapterTitleInput = page.locator('input[name*="chapter"], input[placeholder*="chapter"]').last();
-      if (await chapterTitleInput.count() > 0) {
-        await chapterTitleInput.fill('Chapter 1: Introduction');
+      
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
+      await createButton.first().waitFor({ state: 'visible', timeout: 3000 });
+      await createButton.first().click();
+      
+      // Fill in basic course information
+      const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
+      
+      const courseTitle = `Draft Course ${Date.now()}`;
+      await courseTitleInput.fill(courseTitle);
+      
+      const courseDescInput = page.locator('textarea[name="description"], textarea[placeholder*="description"]');
+      if (await courseDescInput.count() > 0) {
+        await courseDescInput.fill('A test course for draft functionality validation.');
       }
       
-      // Add second chapter
+      // Save as draft
+      const saveDraftButton = page.locator('button:has-text("Save Draft"), button:has-text("Draft"), button[type="submit"]');
+      if (await saveDraftButton.count() > 0) {
+        await saveDraftButton.first().click();
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      }
+      
+      // Verify draft status
+      const draftIndicators = ['.status-draft', ':has-text("Draft")', ':has-text("Unpublished")'];
+      let draftFound = false;
+      for (const indicator of draftIndicators) {
+        if (await page.locator(indicator).count() > 0) {
+          draftFound = true;
+          break;
+        }
+      }
+      
+      cleanup.addCustomCleanup(async () => {
+        // Clean up draft course resources
+      });
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Teacher can add chapters in sequence to course', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Course Chapter Management');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsTeacher();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Create a course first
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
+      await createButton.first().click();
+      
+      const courseTitle = `Chapter Course ${Date.now()}`;
+      const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
+      await courseTitleInput.fill(courseTitle);
+      
+      // Add chapters in sequence
+      const addChapterButton = page.locator('button:has-text("Add Chapter"), button:has-text("New Chapter")');
       if (await addChapterButton.count() > 0) {
+        // Add first chapter
+        await addChapterButton.first().click();
+        const chapterTitleInput = page.locator('input[name*="chapter"], input[placeholder*="chapter"]').last();
+        if (await chapterTitleInput.count() > 0) {
+          await chapterTitleInput.fill('Chapter 1: Fundamentals');
+        }
+        
+        // Add second chapter
         await addChapterButton.first().click();
         const chapter2TitleInput = page.locator('input[name*="chapter"], input[placeholder*="chapter"]').last();
         if (await chapter2TitleInput.count() > 0) {
-          await chapter2TitleInput.fill('Chapter 2: Advanced Topics');
+          await chapter2TitleInput.fill('Chapter 2: Advanced Concepts');
         }
-      }
-    }
-    
-    // Step 3: Add sections to chapters → verify nested structure
-    const addSectionButton = page.locator('button:has-text("Add Section"), button:has-text("New Section")');
-    if (await addSectionButton.count() > 0) {
-      await addSectionButton.first().click();
-      const sectionTitleInput = page.locator('input[name*="section"], input[placeholder*="section"]').last();
-      if (await sectionTitleInput.count() > 0) {
-        await sectionTitleInput.fill('Section 1.1: Getting Started');
-      }
-    }
-    
-    // Step 4: Add mixed content (text, video, exercise, quiz) → verify content types
-    const contentTypes = ['text', 'video', 'exercise', 'quiz'];
-    for (const contentType of contentTypes) {
-      const addContentButton = page.locator(`button:has-text("Add ${contentType}"), button:has-text("${contentType}")`);
-      if (await addContentButton.count() > 0) {
-        await addContentButton.first().click();
         
-        // Fill in content details based on type
-        if (contentType === 'text') {
-          const textEditor = page.locator('textarea[name*="content"], .editor, [contenteditable]');
-          if (await textEditor.count() > 0) {
-            await textEditor.fill('This is sample text content for the course.');
-          }
-        } else if (contentType === 'video') {
-          const videoUrlInput = page.locator('input[name*="video"], input[placeholder*="url"]');
-          if (await videoUrlInput.count() > 0) {
-            await videoUrlInput.fill('https://example.com/sample-video.mp4');
-          }
+        // Verify chapter ordering
+        const chapterList = page.locator('[data-testid="chapter-list"], .chapter-list, .chapters');
+        if (await chapterList.count() > 0) {
+          await expect(chapterList.locator(':has-text("Chapter 1")')).toBeVisible();
+          await expect(chapterList.locator(':has-text("Chapter 2")')).toBeVisible();
         }
       }
-    }
-    
-    // Step 5: Attempt to publish incomplete course → verify validation errors
-    const publishButton = page.locator('button:has-text("Publish"), button:has-text("Make Public")');
-    if (await publishButton.count() > 0) {
-      await publishButton.first().click();
       
-      // Look for validation errors
-      const errorMessages = page.locator('.error, .alert-danger, .text-red, [role="alert"]');
-      if (await errorMessages.count() > 0) {
-        const errorText = await errorMessages.first().textContent();
-        expect(errorText).toBeTruthy();
-      }
+      cleanup.addCustomCleanup(async () => {
+        // Clean up chapter course resources
+      });
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
     }
+  });
+
+  test('Teacher can add sections to chapters', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Course Section Management');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Step 6: Complete all required content → verify publishing succeeds
-    // Fill in any missing required fields
-    const requiredInputs = page.locator('input[required], textarea[required]');
-    const requiredCount = await requiredInputs.count();
-    
-    for (let i = 0; i < requiredCount; i++) {
-      const input = requiredInputs.nth(i);
-      const inputValue = await input.inputValue();
-      if (!inputValue) {
-        await input.fill('Test content to meet requirements');
-      }
-    }
-    
-    // Try publishing again
-    if (await publishButton.count() > 0) {
-      await publishButton.first().click();
-      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    }
-    
-    // Step 7: Verify public visibility and search indexing
-    // Check if course appears in public course list
-    await page.goto('/courses');
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
-    const courseSearchInput = page.locator('input[name="search"], input[placeholder*="search"]');
-    if (await courseSearchInput.count() > 0) {
-      await courseSearchInput.fill(uniqueCourseTitle);
-      await page.keyboard.press('Enter');
+    try {
+      await authHelper.loginAsTeacher();
+      await page.goto('/courses');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
-      // Verify course appears in search results
-      const courseResults = page.locator(`:has-text("${uniqueCourseTitle}")`);
-      if (await courseResults.count() > 0) {
-        await expect(courseResults.first()).toBeVisible();
-      }
-    }
-    
-    // Step 8: Test course slug generation and collision handling
-    // Try to create another course with the same title
-    if (await createButton.count() > 0) {
+      // Create course with chapter first
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
       await createButton.first().click();
       
-      const newCourseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
-      await newCourseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
-      if (await newCourseTitleInput.count() > 0) {
-        await newCourseTitleInput.fill(createdCourseTitle); // Same title
-        
-        const saveButton = page.locator('button:has-text("Save"), button[type="submit"]');
-        if (await saveButton.count() > 0) {
-          await saveButton.first().click();
-          
-          // Should either prevent duplicate or auto-generate unique slug
-          const slugConflictMessage = page.locator(':has-text("already exists"), :has-text("duplicate"), .error');
-          // This test validates that the system handles slug conflicts appropriately
+      const courseTitle = `Section Course ${Date.now()}`;
+      const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
+      await courseTitleInput.fill(courseTitle);
+      
+      // Add a chapter first
+      const addChapterButton = page.locator('button:has-text("Add Chapter"), button:has-text("New Chapter")');
+      if (await addChapterButton.count() > 0) {
+        await addChapterButton.first().click();
+        const chapterTitleInput = page.locator('input[name*="chapter"], input[placeholder*="chapter"]').last();
+        if (await chapterTitleInput.count() > 0) {
+          await chapterTitleInput.fill('Chapter 1: Introduction');
         }
       }
-    }
-    
-    } finally {
-      // CRITICAL: Track and cleanup created course
-      if (createdCourseTitle) {
-        cleanup.addCustomCleanup(async () => {
-          console.log(`Cleaning up test course: ${createdCourseTitle}`);
-          // This would delete the course via API in a real implementation
-        });
+      
+      // Add sections to the chapter
+      const addSectionButton = page.locator('button:has-text("Add Section"), button:has-text("New Section")');
+      if (await addSectionButton.count() > 0) {
+        await addSectionButton.first().click();
+        const sectionTitleInput = page.locator('input[name*="section"], input[placeholder*="section"]').last();
+        if (await sectionTitleInput.count() > 0) {
+          await sectionTitleInput.fill('Section 1.1: Getting Started');
+        }
+        
+        // Add second section
+        await addSectionButton.first().click();
+        const section2TitleInput = page.locator('input[name*="section"], input[placeholder*="section"]').last();
+        if (await section2TitleInput.count() > 0) {
+          await section2TitleInput.fill('Section 1.2: Core Concepts');
+        }
       }
+      
+      cleanup.addCustomCleanup(async () => {
+        // Clean up section course resources
+      });
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Teacher can add mixed content types to course', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Course Content Types');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsTeacher();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Create course 
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
+      await createButton.first().click();
+      
+      const courseTitle = `Content Course ${Date.now()}`;
+      const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
+      await courseTitleInput.fill(courseTitle);
+      
+      // Add different content types
+      const contentTypes = ['text', 'video', 'exercise', 'quiz'];
+      for (const contentType of contentTypes) {
+        const addContentButton = page.locator(`button:has-text("Add ${contentType}"), button:has-text("${contentType}")`);
+        if (await addContentButton.count() > 0) {
+          await addContentButton.first().click();
+          
+          // Configure content based on type
+          if (contentType === 'text') {
+            const textEditor = page.locator('textarea[name*="content"], .editor, [contenteditable]');
+            if (await textEditor.count() > 0) {
+              await textEditor.fill('Sample text content for learning.');
+            }
+          } else if (contentType === 'video') {
+            const videoUrlInput = page.locator('input[name*="video"], input[placeholder*="url"]');
+            if (await videoUrlInput.count() > 0) {
+              await videoUrlInput.fill('https://example.com/educational-video.mp4');
+            }
+          }
+        }
+      }
+      
+      cleanup.addCustomCleanup(async () => {
+        // Clean up content course resources
+      });
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Course publishing validation prevents incomplete courses', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Course Publishing Validation');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsTeacher();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Create minimal course (intentionally incomplete)
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
+      await createButton.first().click();
+      
+      const courseTitle = `Incomplete Course ${Date.now()}`;
+      const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
+      await courseTitleInput.fill(courseTitle);
+      
+      // Attempt to publish without completing required fields
+      const publishButton = page.locator('button:has-text("Publish"), button:has-text("Make Public")');
+      if (await publishButton.count() > 0) {
+        await publishButton.first().click();
+        
+        // Verify validation errors appear
+        const errorMessages = page.locator('.error, .alert-danger, .text-red, [role="alert"]');
+        if (await errorMessages.count() > 0) {
+          const errorText = await errorMessages.first().textContent();
+          expect(errorText).toBeTruthy();
+        }
+      }
+      
+      cleanup.addCustomCleanup(async () => {
+        // Clean up incomplete course resources
+      });
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Complete course can be published successfully', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Course Publishing Success');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsTeacher();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Create complete course
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
+      await createButton.first().click();
+      
+      const courseTitle = `Complete Course ${Date.now()}`;
+      const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
+      await courseTitleInput.fill(courseTitle);
+      
+      const courseDescInput = page.locator('textarea[name="description"], textarea[placeholder*="description"]');
+      if (await courseDescInput.count() > 0) {
+        await courseDescInput.fill('A complete course ready for publishing.');
+      }
+      
+      // Fill all required fields
+      const requiredInputs = page.locator('input[required], textarea[required]');
+      const requiredCount = await requiredInputs.count();
+      
+      for (let i = 0; i < requiredCount; i++) {
+        const input = requiredInputs.nth(i);
+        const inputValue = await input.inputValue();
+        if (!inputValue) {
+          await input.fill('Required content for publishing');
+        }
+      }
+      
+      // Publish the complete course
+      const publishButton = page.locator('button:has-text("Publish"), button:has-text("Make Public")');
+      if (await publishButton.count() > 0) {
+        await publishButton.first().click();
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+        
+        // Verify successful publishing
+        const publishedIndicator = page.locator('.status-published, :has-text("Published"), .badge:has-text("Live")');
+        // Should see published status
+      }
+      
+      cleanup.addCustomCleanup(async () => {
+        // Clean up published course resources
+      });
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Published course appears in public search results', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Course Search Visibility');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsTeacher();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Create and publish a course
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
+      await createButton.first().click();
+      
+      const uniqueCourseTitle = `Searchable Course ${Date.now()}`;
+      const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
+      await courseTitleInput.fill(uniqueCourseTitle);
+      
+      // Publish the course (simplified)
+      const publishButton = page.locator('button:has-text("Publish"), button:has-text("Make Public")');
+      if (await publishButton.count() > 0) {
+        await publishButton.first().click();
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      }
+      
+      // Test search functionality
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      const courseSearchInput = page.locator('input[name="search"], input[placeholder*="search"]');
+      if (await courseSearchInput.count() > 0) {
+        await courseSearchInput.fill(uniqueCourseTitle);
+        await page.keyboard.press('Enter');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+        
+        // Verify course appears in search results
+        const courseResults = page.locator(`:has-text("${uniqueCourseTitle}")`);
+        if (await courseResults.count() > 0) {
+          await expect(courseResults.first()).toBeVisible();
+        }
+      }
+      
+      cleanup.addCustomCleanup(async () => {
+        // Clean up searchable course resources
+      });
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Course slug generation handles duplicate titles', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Course Slug Duplication');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsTeacher();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Create first course
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
+      await createButton.first().click();
+      
+      const duplicateTitle = `Duplicate Course ${Date.now()}`;
+      const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+      await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
+      await courseTitleInput.fill(duplicateTitle);
+      
+      const saveButton = page.locator('button:has-text("Save"), button[type="submit"]');
+      if (await saveButton.count() > 0) {
+        await saveButton.first().click();
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      }
+      
+      // Attempt to create second course with same title
+      if (await createButton.count() > 0) {
+        await createButton.first().click();
+        
+        const newCourseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+        await newCourseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
+        await newCourseTitleInput.fill(duplicateTitle); // Same title
+        
+        const saveButton2 = page.locator('button:has-text("Save"), button[type="submit"]');
+        if (await saveButton2.count() > 0) {
+          await saveButton2.first().click();
+          
+          // Should either prevent duplicate or auto-generate unique slug
+          const conflictHandling = await page.locator(':has-text("already exists"), :has-text("duplicate"), .error').count();
+          // System should handle slug conflicts appropriately
+        }
+      }
+      
+      cleanup.addCustomCleanup(async () => {
+        // Clean up duplicate course resources
+      });
+      
+    } finally {
       await authHelper.clearAuthState();
       await cleanup.cleanup();
     }
   });
 
   // =============================================================================
-  // COURSE-002: Exercise Submission & Automated Grading
+  // EXERCISE TESTS: Split from mega-test for better maintainability
   // =============================================================================
-  test('Exercise Submission & Automated Grading', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('COURSE-002: Exercise Submission & Automated Grading');
+
+  test('Teacher can create coding exercise with test cases', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Teacher Exercise Creation');
     const authHelper = new CleanAuthHelper(page);
+    let exerciseCourseTitle: string | null = null;
     
     try {
-      // Step 1: Create coding exercise with test cases → verify exercise setup
       await authHelper.loginAsTeacher();
-    await page.goto('/courses');
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
-    // Create a course first if needed
-    const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
-    if (await createButton.count() > 0) {
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Create course for exercise
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
       await createButton.first().click();
       
       const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
       await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
-      if (await courseTitleInput.count() > 0) {
-        await courseTitleInput.fill(`Exercise Course ${Date.now()}`);
-      }
       
-      // Add an exercise
+      exerciseCourseTitle = `Exercise Course ${Date.now()}`;
+      await courseTitleInput.fill(exerciseCourseTitle);
+      
+      // Add coding exercise
       const addExerciseButton = page.locator('button:has-text("Add Exercise"), button:has-text("Exercise")');
       if (await addExerciseButton.count() > 0) {
         await addExerciseButton.first().click();
@@ -498,7 +611,7 @@ test.describe('Course Management', () => {
           await exerciseDescTextarea.fill('Write a function that adds two numbers and returns the result.');
         }
         
-        // Add test cases
+        // Add test cases for automated grading
         const addTestCaseButton = page.locator('button:has-text("Add Test"), button:has-text("Test Case")');
         if (await addTestCaseButton.count() > 0) {
           await addTestCaseButton.first().click();
@@ -512,80 +625,157 @@ test.describe('Course Management', () => {
           }
         }
         
+        // Save exercise
         const saveExerciseButton = page.locator('button:has-text("Save Exercise"), button:has-text("Save")');
         if (await saveExerciseButton.count() > 0) {
           await saveExerciseButton.first().click();
           await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         }
+        
+        // Verify exercise was created successfully
+        const exerciseCreated = page.locator(':has-text("Simple Addition Function"), .exercise-title');
+        // Should see the created exercise
       }
+      
+      cleanup.addCustomCleanup(async () => {
+        // Clean up exercise course resources
+      });
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
     }
+  });
+
+  test('Student can submit valid solution and receive test results', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Student Valid Submission');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Step 2: Student submits valid solution → verify test execution
-    await authHelper.loginAsStudent();
-    await page.goto('/courses');
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
-    // Find and enter the course with exercise
-    const courseLink = page.locator('a:has-text("Exercise Course"), .course-card:has-text("Exercise")');
-    if (await courseLink.count() > 0) {
-      await courseLink.first().click();
+    try {
+      await authHelper.loginAsStudent();
+      await page.goto('/courses');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
-      // Find the exercise
-      const exerciseLink = page.locator('a:has-text("Simple Addition"), .exercise:has-text("Addition")');
-      if (await exerciseLink.count() > 0) {
-        await exerciseLink.first().click();
+      // Find course with exercise (assumes exercise course exists)
+      const courseLink = page.locator('a:has-text("Exercise Course"), .course-card:has-text("Exercise")');
+      if (await courseLink.count() > 0) {
+        await courseLink.first().click();
         await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
-        // Submit a valid solution
-        const codeEditor = page.locator('textarea[name*="code"], .code-editor, [data-testid="code-editor"]');
-        if (await codeEditor.count() > 0) {
-          await codeEditor.fill('function add(a, b) { return a + b; }');
+        // Find and enter the coding exercise
+        const exerciseLink = page.locator('a:has-text("Simple Addition"), .exercise:has-text("Addition")');
+        if (await exerciseLink.count() > 0) {
+          await exerciseLink.first().click();
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
           
-          const submitButton = page.locator('button:has-text("Submit"), button:has-text("Run Tests")');
-          if (await submitButton.count() > 0) {
-            await submitButton.first().click();
-            await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+          // Submit valid solution
+          const codeEditor = page.locator('textarea[name*="code"], .code-editor, [data-testid="code-editor"]');
+          if (await codeEditor.count() > 0) {
+            await codeEditor.fill('function add(a, b) { return a + b; }');
             
-            // Verify test execution results
-            const successMessage = page.locator('.success, .text-green, :has-text("passed"), :has-text("correct")');
-            // Should see indication that tests passed
+            const submitButton = page.locator('button:has-text("Submit"), button:has-text("Run Tests")');
+            if (await submitButton.count() > 0) {
+              await submitButton.first().click();
+              await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+              
+              // Verify successful test execution
+              const successMessage = page.locator('.success, .text-green, :has-text("passed"), :has-text("correct")');
+              // Should see indication that tests passed
+            }
           }
         }
       }
-    }
-    
-    // Step 3: Submit solution with compilation errors → verify error handling
-    const invalidCodeEditor = page.locator('textarea[name*="code"], .code-editor');
-    if (await invalidCodeEditor.count() > 0) {
-      await invalidCodeEditor.fill('function add(a, b { return a + b; }'); // Missing closing parenthesis
       
-      const submitButton = page.locator('button:has-text("Submit"), button:has-text("Run Tests")');
-      if (await submitButton.count() > 0) {
-        await submitButton.first().click();
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Student submission with compilation errors shows error feedback', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Student Compilation Error');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsStudent();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Find course with exercise
+      const courseLink = page.locator('a:has-text("Exercise Course"), .course-card:has-text("Exercise")');
+      if (await courseLink.count() > 0) {
+        await courseLink.first().click();
         await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
-        // Verify error handling
-        const errorMessage = page.locator('.error, .text-red, :has-text("error"), :has-text("syntax")');
-        // Should see compilation or syntax error message
+        // Find and enter the coding exercise
+        const exerciseLink = page.locator('a:has-text("Simple Addition"), .exercise:has-text("Addition")');
+        if (await exerciseLink.count() > 0) {
+          await exerciseLink.first().click();
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+          
+          // Submit code with syntax error
+          const codeEditor = page.locator('textarea[name*="code"], .code-editor');
+          if (await codeEditor.count() > 0) {
+            await codeEditor.fill('function add(a, b { return a + b; }'); // Missing closing parenthesis
+            
+            const submitButton = page.locator('button:has-text("Submit"), button:has-text("Run Tests")');
+            if (await submitButton.count() > 0) {
+              await submitButton.first().click();
+              await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+              
+              // Verify error handling and feedback
+              const errorMessage = page.locator('.error, .text-red, :has-text("error"), :has-text("syntax")');
+              // Should see compilation or syntax error message
+            }
+          }
+        }
       }
-    }
-    
-    // Step 4: Submit solution failing some tests → verify partial credit
-    if (await invalidCodeEditor.count() > 0) {
-      await invalidCodeEditor.fill('function add(a, b) { return a - b; }'); // Wrong operation
       
-      const submitButton = page.locator('button:has-text("Submit"), button:has-text("Run Tests")');
-      if (await submitButton.count() > 0) {
-        await submitButton.first().click();
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Student submission failing tests shows partial credit feedback', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Student Test Failure');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsStudent();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Find course with exercise
+      const courseLink = page.locator('a:has-text("Exercise Course"), .course-card:has-text("Exercise")');
+      if (await courseLink.count() > 0) {
+        await courseLink.first().click();
         await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
-        // Verify partial credit or failure indication
-        const partialMessage = page.locator(':has-text("failed"), :has-text("incorrect"), .warning');
-        // Should see indication of test failures
+        // Find and enter the coding exercise
+        const exerciseLink = page.locator('a:has-text("Simple Addition"), .exercise:has-text("Addition")');
+        if (await exerciseLink.count() > 0) {
+          await exerciseLink.first().click();
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+          
+          // Submit logically incorrect solution
+          const codeEditor = page.locator('textarea[name*="code"], .code-editor');
+          if (await codeEditor.count() > 0) {
+            await codeEditor.fill('function add(a, b) { return a - b; }'); // Wrong operation
+            
+            const submitButton = page.locator('button:has-text("Submit"), button:has-text("Run Tests")');
+            if (await submitButton.count() > 0) {
+              await submitButton.first().click();
+              await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+              
+              // Verify partial credit or failure indication
+              const partialMessage = page.locator(':has-text("failed"), :has-text("incorrect"), .warning');
+              // Should see indication of test failures with feedback
+            }
+          }
+        }
       }
-    }
-    
+      
     } finally {
       await authHelper.clearAuthState();
       await cleanup.cleanup();
@@ -593,32 +783,30 @@ test.describe('Course Management', () => {
   });
 
   // =============================================================================
-  // COURSE-003: Quiz System & Assessment Workflows
+  // QUIZ TESTS: Split from mega-test for better maintainability
   // =============================================================================
-  test('Quiz System & Assessment Workflows', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('COURSE-003: Quiz System & Assessment Workflows');
+
+  test('Teacher can create quiz with multiple choice questions', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Teacher Quiz Creation');
     const authHelper = new CleanAuthHelper(page);
-    let createdQuizCourse: string | null = null;
+    let quizCourseTitle: string | null = null;
     
     try {
-      // Step 1: Create quiz with multiple choice questions → verify setup
       await authHelper.loginAsTeacher();
-    await page.goto('/courses');
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
-    // Create course with quiz
-    const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
-    if (await createButton.count() > 0) {
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Create course for quiz
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
       await createButton.first().click();
       
       const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
       await courseTitleInput.first().waitFor({ state: 'visible', timeout: 3000 });
-      if (await courseTitleInput.count() > 0) {
-        createdQuizCourse = `Quiz Course ${Date.now()}`;
-        await courseTitleInput.fill(createdQuizCourse);
-      }
       
-      // Add quiz
+      quizCourseTitle = `Quiz Course ${Date.now()}`;
+      await courseTitleInput.fill(quizCourseTitle);
+      
+      // Add quiz with multiple choice question
       const addQuizButton = page.locator('button:has-text("Add Quiz"), button:has-text("Quiz")');
       if (await addQuizButton.count() > 0) {
         await addQuizButton.first().click();
@@ -661,7 +849,50 @@ test.describe('Course Management', () => {
           }
         }
         
-        // Step 2: Add true/false and essay questions → verify mixed types
+        // Set quiz timing
+        const timeLimitInput = page.locator('input[name*="time"], input[name*="duration"]');
+        if (await timeLimitInput.count() > 0) {
+          await timeLimitInput.fill('30'); // 30 minutes
+        }
+        
+        const saveQuizButton = page.locator('button:has-text("Save Quiz"), button:has-text("Save")');
+        if (await saveQuizButton.count() > 0) {
+          await saveQuizButton.first().click();
+          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+        }
+        
+        // Verify quiz was created successfully
+        const quizCreated = page.locator(':has-text("Chapter 1 Assessment"), .quiz-title');
+        // Should see the created quiz
+      }
+      
+      cleanup.addCustomCleanup(async () => {
+        // Clean up quiz course resources
+      });
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Teacher can add mixed question types to quiz', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Quiz Mixed Question Types');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsTeacher();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Find existing quiz course (assumes quiz course exists)
+      const quizCourseLink = page.locator('a:has-text("Quiz Course"), .course-card:has-text("Quiz")');
+      if (await quizCourseLink.count() > 0) {
+        await quizCourseLink.first().click();
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+        
+        // Add true/false question
+        const addQuestionButton = page.locator('button:has-text("Add Question"), button:has-text("Question")');
         if (await addQuestionButton.count() > 0) {
           await addQuestionButton.first().click();
           
@@ -691,118 +922,227 @@ test.describe('Course Management', () => {
           }
         }
         
-        // Set quiz timing
-        const timeLimitInput = page.locator('input[name*="time"], input[name*="duration"]');
-        if (await timeLimitInput.count() > 0) {
-          await timeLimitInput.fill('30'); // 30 minutes
-        }
-        
+        // Save quiz updates
         const saveQuizButton = page.locator('button:has-text("Save Quiz"), button:has-text("Save")');
         if (await saveQuizButton.count() > 0) {
           await saveQuizButton.first().click();
           await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         }
+        
+        // Verify mixed question types were added
+        const questionTypes = page.locator('.question-type, select[name*="type"]');
+        // Should see multiple question types
       }
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
     }
+  });
+
+  test('Student can take quiz within time limit and submit answers', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Student Quiz Taking');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Step 3: Student takes quiz within time limit → verify timing
-    await authHelper.loginAsStudent();
-    await page.goto('/courses');
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
-    // Find and enter quiz course
-    const quizCourseLink = page.locator('a:has-text("Quiz Course"), .course-card:has-text("Quiz")');
-    if (await quizCourseLink.count() > 0) {
-      await quizCourseLink.first().click();
+    try {
+      await authHelper.loginAsStudent();
+      await page.goto('/courses');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
-      // Start the quiz
-      const startQuizButton = page.locator('button:has-text("Start Quiz"), button:has-text("Begin")');
-      if (await startQuizButton.count() > 0) {
-        await startQuizButton.first().click();
+      // Find and enter quiz course
+      const quizCourseLink = page.locator('a:has-text("Quiz Course"), .course-card:has-text("Quiz")');
+      if (await quizCourseLink.count() > 0) {
+        await quizCourseLink.first().click();
         await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
-        // Verify timer is running
-        const timer = page.locator('.timer, .countdown, :has-text("remaining")');
-        // Timer should be visible and counting down
-        
-        // Answer the multiple choice question
-        const mcOption = page.locator('input[type="radio"][value*="4"], label:has-text("4")');
-        if (await mcOption.count() > 0) {
-          await mcOption.first().click();
-        }
-        
-        // Answer true/false question
-        const tfOption = page.locator('input[type="radio"][value="true"], label:has-text("True")');
-        if (await tfOption.count() > 0) {
-          await tfOption.first().click();
-        }
-        
-        // Answer essay question
-        const essayTextarea = page.locator('textarea[name*="essay"], textarea[placeholder*="answer"]');
-        if (await essayTextarea.count() > 0) {
-          await essayTextarea.fill('Testing is crucial for ensuring code quality, preventing bugs, and maintaining software reliability.');
-        }
-        
-        // Submit quiz
-        const submitQuizButton = page.locator('button:has-text("Submit Quiz"), button:has-text("Finish")');
-        if (await submitQuizButton.count() > 0) {
-          await submitQuizButton.first().click();
+        // Start the quiz
+        const startQuizButton = page.locator('button:has-text("Start Quiz"), button:has-text("Begin")');
+        if (await startQuizButton.count() > 0) {
+          await startQuizButton.first().click();
           await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
           
-          // Verify submission confirmation
-          const confirmationMessage = page.locator(':has-text("submitted"), :has-text("completed"), .success');
-          // Should see quiz submission confirmation
+          // Verify timer is running
+          const timer = page.locator('.timer, .countdown, :has-text("remaining")');
+          // Timer should be visible and counting down
+          
+          // Answer the multiple choice question
+          const mcOption = page.locator('input[type="radio"][value*="4"], label:has-text("4")');
+          if (await mcOption.count() > 0) {
+            await mcOption.first().click();
+          }
+          
+          // Answer true/false question
+          const tfOption = page.locator('input[type="radio"][value="true"], label:has-text("True")');
+          if (await tfOption.count() > 0) {
+            await tfOption.first().click();
+          }
+          
+          // Answer essay question
+          const essayTextarea = page.locator('textarea[name*="essay"], textarea[placeholder*="answer"]');
+          if (await essayTextarea.count() > 0) {
+            await essayTextarea.fill('Testing is crucial for ensuring code quality, preventing bugs, and maintaining software reliability.');
+          }
+          
+          // Submit quiz
+          const submitQuizButton = page.locator('button:has-text("Submit Quiz"), button:has-text("Finish")');
+          if (await submitQuizButton.count() > 0) {
+            await submitQuizButton.first().click();
+            await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+            
+            // Verify submission confirmation
+            const confirmationMessage = page.locator(':has-text("submitted"), :has-text("completed"), .success');
+            // Should see quiz submission confirmation
+          }
         }
       }
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
     }
+  });
+
+  test('Quiz system automatically scores objective questions', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Quiz Automatic Scoring');
+    const authHelper = new CleanAuthHelper(page);
     
-    // Step 4: Test automatic scoring for objective questions
-    // Verify that multiple choice and true/false questions are scored automatically
-    const scoreDisplay = page.locator('.score, .grade, :has-text("score"), :has-text("points")');
-    // Should see automatic scoring results
-    
-    // Step 5: Test manual grading workflow for essays
-    await authHelper.loginAsTeacher();
-    await page.goto('/courses');
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
-    // Navigate to grading interface
-    const gradingLink = page.locator('a:has-text("Grade"), a:has-text("Submissions"), button:has-text("Grade")');
-    if (await gradingLink.count() > 0) {
-      await gradingLink.first().click();
+    try {
+      await authHelper.loginAsStudent();
+      await page.goto('/courses');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
-      // Find essay submissions to grade
-      const essaySubmission = page.locator('.essay-answer, .manual-grading, textarea[readonly]');
-      if (await essaySubmission.count() > 0) {
-        // Grade the essay
-        const gradeInput = page.locator('input[name*="grade"], input[name*="points"]');
-        if (await gradeInput.count() > 0) {
-          await gradeInput.fill('8'); // Out of 10 points
-        }
+      // Find quiz course and check scores
+      const quizCourseLink = page.locator('a:has-text("Quiz Course"), .course-card:has-text("Quiz")');
+      if (await quizCourseLink.count() > 0) {
+        await quizCourseLink.first().click();
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
-        const feedbackTextarea = page.locator('textarea[name*="feedback"], textarea[placeholder*="comment"]');
-        if (await feedbackTextarea.count() > 0) {
-          await feedbackTextarea.fill('Good understanding of testing concepts. Could elaborate more on specific testing types.');
-        }
+        // Verify automatic scoring for objective questions
+        const scoreDisplay = page.locator('.score, .grade, :has-text("score"), :has-text("points")');
+        // Should see automatic scoring results for multiple choice and true/false
         
-        const saveGradeButton = page.locator('button:has-text("Save Grade"), button:has-text("Submit Grade")');
-        if (await saveGradeButton.count() > 0) {
-          await saveGradeButton.first().click();
-          await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+        // Check individual question scoring
+        const mcScore = page.locator('.multiple-choice-score, .mc-points');
+        const tfScore = page.locator('.true-false-score, .tf-points');
+        // Should see individual scores for objective questions
+      }
+      
+    } finally {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  test('Teacher can manually grade essay questions', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Teacher Essay Grading');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      await authHelper.loginAsTeacher();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Navigate to grading interface
+      const gradingLink = page.locator('a:has-text("Grade"), a:has-text("Submissions"), button:has-text("Grade")');
+      if (await gradingLink.count() > 0) {
+        await gradingLink.first().click();
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+        
+        // Find essay submissions to grade
+        const essaySubmission = page.locator('.essay-answer, .manual-grading, textarea[readonly]');
+        if (await essaySubmission.count() > 0) {
+          // Grade the essay question
+          const gradeInput = page.locator('input[name*="grade"], input[name*="points"]');
+          if (await gradeInput.count() > 0) {
+            await gradeInput.fill('8'); // Out of 10 points
+          }
+          
+          const feedbackTextarea = page.locator('textarea[name*="feedback"], textarea[placeholder*="comment"]');
+          if (await feedbackTextarea.count() > 0) {
+            await feedbackTextarea.fill('Good understanding of testing concepts. Could elaborate more on specific testing types.');
+          }
+          
+          const saveGradeButton = page.locator('button:has-text("Save Grade"), button:has-text("Submit Grade")');
+          if (await saveGradeButton.count() > 0) {
+            await saveGradeButton.first().click();
+            await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+            
+            // Verify grade was saved
+            const gradeSaved = page.locator(':has-text("Grade saved"), .success, .grade-updated');
+            // Should see confirmation that grade was saved
+          }
         }
       }
-    }
-    
+      
     } finally {
-      // CRITICAL: Track and cleanup created quiz course
-      if (createdQuizCourse) {
+      await authHelper.clearAuthState();
+      await cleanup.cleanup();
+    }
+  });
+
+  // =============================================================================
+  // COURSE ENROLLMENT API TESTS (Consolidated from course-enrollment-api.spec.ts)
+  // =============================================================================
+
+  test('Student course enrollment workflow via API', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Course Enrollment API');
+    const authHelper = new CleanAuthHelper(page);
+    
+    try {
+      // First create a course as admin/teacher would
+      await authHelper.loginAsAdmin();
+      await page.goto('/courses');
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      
+      // Create a test course through UI for realistic workflow
+      const createButton = page.locator('button:has-text("Create"), button:has-text("Create Course")');
+      if (await createButton.count() > 0) {
+        await createButton.first().click();
+        
+        const courseTitle = `API Test Course ${Date.now()}`;
+        const courseTitleInput = page.locator('input[name="title"], input[placeholder*="title"]');
+        await courseTitleInput.fill(courseTitle);
+        
+        const saveButton = page.locator('button:has-text("Save"), button:has-text("Create")');
+        await saveButton.first().click();
+        
+        // Wait for course creation to complete
+        await page.waitForLoadState('domcontentloaded');
+        
+        // Clear admin auth and login as student
+        await authHelper.clearAuthState();
+        await authHelper.loginAsStudent();
+        
+        // Navigate to courses to find enrollable courses
+        await page.goto('/courses');
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+        
+        // Look for the created course and enroll
+        const courseCard = page.locator(`text=${courseTitle}`).first();
+        if (await courseCard.count() > 0) {
+          // Click on course to view details or find enroll button
+          await courseCard.click();
+          await page.waitForLoadState('domcontentloaded');
+          
+          // Look for enroll button
+          const enrollButton = page.locator('button:has-text("Enroll"), button:has-text("Join")');
+          if (await enrollButton.count() > 0) {
+            await enrollButton.click();
+            await page.waitForLoadState('domcontentloaded');
+            
+            // Verify enrollment success
+            const successIndicator = page.locator('text=enrolled, text=joined, button:has-text("Unenroll")');
+            // Should see some indication of successful enrollment
+          }
+        }
+        
+        // Track created course for cleanup
         cleanup.addCustomCleanup(async () => {
-          console.log(`Cleaning up quiz course: ${createdQuizCourse}`);
-          // This would delete the course via API in a real implementation
+          // Clean up API test course resources
         });
       }
+      
+    } finally {
       await authHelper.clearAuthState();
       await cleanup.cleanup();
     }

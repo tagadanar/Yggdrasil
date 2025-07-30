@@ -46,19 +46,19 @@ test.describe('Student Learning Journey - Optimized', () => {
       // Wait a moment for courses to load and check what's available
       await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
       const allCourseElements = await page.locator('[data-testid*="course"], .course-card, .course-item').count();
-      console.log(`Found ${allCourseElements} course elements on the page`);
+      // Found course elements on the page
       
       const courseCard = page.locator(`:has-text("${course.title}")`);
       
       // If our specific course isn't visible, check for any available courses
       if (await courseCard.count() === 0) {
-        console.log(`Course "${course.title}" not found, checking for any available courses...`);
+        // Course not found, checking for any available courses
         const anyCourse = page.locator('.course-card, .course-item, [data-testid*="course"]').first();
         if (await anyCourse.count() > 0) {
-          console.log('Using first available course instead');
+          // Using first available course instead
           await expect(anyCourse).toBeVisible({ timeout: 2000 });
         } else {
-          console.log('No courses visible, this may be a frontend or API issue');
+          // No courses visible, this may be a frontend or API issue
           // Skip the enrollment test if no courses are available
           return;
         }
@@ -87,7 +87,7 @@ test.describe('Student Learning Journey - Optimized', () => {
         if (await enrolledIndicator.count() > 0) {
           await expect(enrolledIndicator.first()).toBeVisible();
         } else {
-          console.log('Enrollment verification: Looking for any enrollment indicator');
+          // Enrollment verification: Looking for any enrollment indicator
           const anyEnrollmentIndicator = page.locator('text=Enrolled, button:has-text("Continue"), button:has-text("Enter")');
           if (await anyEnrollmentIndicator.count() > 0) {
             await expect(anyEnrollmentIndicator.first()).toBeVisible();

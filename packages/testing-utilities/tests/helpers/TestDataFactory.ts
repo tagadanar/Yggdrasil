@@ -3,7 +3,6 @@
 // This creates REAL data in the database that mirrors production usage patterns
 
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 import { TestCleanup, TestInitializer } from '@yggdrasil/shared-utilities/testing';
 import { connectDatabase, isDatabaseConnected } from '@yggdrasil/database-schemas';
 import { 
@@ -59,10 +58,73 @@ export abstract class BaseDataFactory {
   }
 
   /**
-   * Track created document for automatic cleanup
+   * Track created document for automatic cleanup with cascading relationships
    */
   protected trackCreated(collection: string, id: string): void {
     this.cleanup.trackDocument(collection, id);
+    
+    // Manual cascading cleanup for now (workaround for compilation issue)
+    if (collection === 'courses') {
+      this.cleanup.addCustomCleanup(async () => {
+        await this.cascadeCleanupCourse(id);
+      });
+    } else if (collection === 'users') {
+      this.cleanup.addCustomCleanup(async () => {
+        await this.cascadeCleanupUser(id);
+      });
+    }
+  }
+
+  /**
+   * Cascade cleanup for course-related documents (workaround method)
+   */
+  private async cascadeCleanupCourse(courseId: string): Promise<void> {
+    try {
+      const mongoose = await import('mongoose');
+      const objectId = new mongoose.Types.ObjectId(courseId);
+      
+      if (mongoose.connection?.db) {
+        // Clean up course enrollments
+        const enrollments = mongoose.connection.db.collection('courseenrollments');
+        await enrollments.deleteMany({ courseId: objectId });
+        
+        // Clean up exercise submissions
+        const submissions = mongoose.connection.db.collection('exercisesubmissions');
+        await submissions.deleteMany({ courseId: objectId });
+        
+        // Clean up course progress records
+        const progress = mongoose.connection.db.collection('courseprogress');
+        await progress.deleteMany({ courseId: objectId });
+      }
+    } catch (error) {
+      console.warn(`⚠️ CASCADE CLEANUP: Failed to cleanup course ${courseId}:`, error);
+    }
+  }
+
+  /**
+   * Cascade cleanup for user-related documents (workaround method)
+   */
+  private async cascadeCleanupUser(userId: string): Promise<void> {
+    try {
+      const mongoose = await import('mongoose');
+      const objectId = new mongoose.Types.ObjectId(userId);
+      
+      if (mongoose.connection?.db) {
+        // Clean up user enrollments
+        const enrollments = mongoose.connection.db.collection('courseenrollments');
+        await enrollments.deleteMany({ userId: objectId });
+        
+        // Clean up user submissions
+        const submissions = mongoose.connection.db.collection('exercisesubmissions');
+        await submissions.deleteMany({ userId: objectId });
+        
+        // Clean up user progress
+        const progress = mongoose.connection.db.collection('courseprogress');
+        await progress.deleteMany({ userId: objectId });
+      }
+    } catch (error) {
+      console.warn(`⚠️ CASCADE CLEANUP: Failed to cleanup user ${userId}:`, error);
+    }
   }
 }
 
@@ -78,11 +140,10 @@ export class UserDataFactory extends BaseDataFactory {
     await this.ensureDatabaseConnection();
     
     const testId = this.generateTestId();
-    const hashedPassword = await bcrypt.hash('TestPass123!', 4);
     
     const userData = {
       email: `${role}.${testId}@test.yggdrasil.edu`,
-      password: hashedPassword,
+      password: 'TestPass123!', // Let the User model's pre-save hook handle hashing
       role,
       profile: {
         firstName: overrides.firstName || 'Test',
@@ -148,7 +209,8 @@ export class CourseDataFactory extends BaseDataFactory {
     
     const courseData = {
       code: `TST${testId.toUpperCase()}`,
-      title: options.title || `Test Course ${testId}`,
+      title: options.title ? `${options.title} [${testId}]` : `Test Course ${testId}`,
+      slug: `${(options.title || 'test-course').toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')}-${testId}`,
       description: 'A comprehensive test course created for automated testing scenarios',
       instructor: {
         _id: new mongoose.Types.ObjectId(instructorId),

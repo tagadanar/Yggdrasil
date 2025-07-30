@@ -14,8 +14,8 @@ test.describe('Profile Editing Functionality', () => {
     const page = await testContext.newPage();
     
     // Listen to console logs
-    page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
-    page.on('pageerror', error => console.log('BROWSER ERROR:', error.message));
+    // Browser console monitoring
+    // Browser error monitoring
     
     const authHelper = new CleanAuthHelper(page);
     
@@ -32,7 +32,7 @@ test.describe('Profile Editing Functionality', () => {
       
       // First verify we can see the current user data
       const currentEmail = await page.textContent('[data-testid="profile-email"]');
-      console.log('Current user email:', currentEmail);
+      // Current user email verified
       
       // Click edit button to enter edit mode
       await page.click('button:has-text("Edit Profile")');
@@ -44,7 +44,7 @@ test.describe('Profile Editing Functionality', () => {
       // Check current field values before updating
       const currentFirstName = await page.inputValue('input[name="firstName"]');
       const currentLastName = await page.inputValue('input[name="lastName"]');
-      console.log('Current profile data:', { firstName: currentFirstName, lastName: currentLastName });
+      // Current profile data verified
       
       // Update all profile fields
       const profileData = {
@@ -71,11 +71,11 @@ test.describe('Profile Editing Functionality', () => {
       
       // Wait for save to complete and exit edit mode
       await page.waitForSelector('button:has-text("Edit Profile", { timeout: 10000 })', { timeout: 3000 });
-      console.log('Successfully exited edit mode');
+      // Successfully exited edit mode
       
       // Check if the name display updated (this is what users actually see)
       const displayName = await page.textContent('[data-testid="profile-name"]');
-      console.log('Display name after save:', displayName);
+      // Display name after save verified
       
       // Now refresh the page to test persistence (like a user closing and reopening)
       await page.reload();
@@ -84,7 +84,7 @@ test.describe('Profile Editing Functionality', () => {
       
       // Check the display name after refresh - this is what users actually see
       const displayNameAfterRefresh = await page.textContent('[data-testid="profile-name"]');
-      console.log('Display name after refresh:', displayNameAfterRefresh);
+      // Display name after refresh verified
       
       // Verify the name display shows our updated data
       expect(displayNameAfterRefresh).toContain(profileData.firstName);

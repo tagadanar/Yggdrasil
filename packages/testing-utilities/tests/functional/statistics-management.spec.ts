@@ -1,4 +1,4 @@
-// packages/testing-utilities/tests/functional/statistics-management-real.spec.ts
+// packages/testing-utilities/tests/functional/statistics-management.spec.ts
 // Real statistics dashboard tests with authentic user data scenarios
 // Tests actual statistics calculations with real courses, enrollments, and submissions
 
@@ -6,7 +6,6 @@ import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { TestScenarios } from '../helpers/TestScenarioBuilders';
-import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 // =============================================================================
 // REAL STATISTICS TESTING WITH AUTHENTIC USER SCENARIOS
@@ -24,25 +23,47 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
     const authHelper = new CleanAuthHelper(page);
     
     try {
-      // Create a new student with no learning activity
+      // Create a new student with no courses (true empty state)
       const scenarios = TestScenarios.createStudentScenarios('STAT-001');
       const { student } = await scenarios.createNewStudent();
       
-      // Login as the created student
-      await authHelper.loginAsStudent();
-      await page.goto('/statistics');
-      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-
-      // Verify empty state dashboard renders correctly
-      await expect(page.locator('[data-testid="student-dashboard"]')).toBeVisible();
+      // Login with the new student
+      await authHelper.loginWithCustomUser(student.email, 'TestPass123!');
       
-      // Should show encouragement for new students
-      const emptyStateElements = page.locator(
-        ':has-text("Start your learning"), :has-text("No courses"), :has-text("Begin your journey")'
-      );
-      expect(await emptyStateElements.count()).toBeGreaterThan(0);
+      // Wait for authentication to fully complete
+      await page.waitForFunction(() => {
+        return !window.location.pathname.includes('/auth/login');
+      }, { timeout: 10000 });
+      
+      // Navigate to statistics page
+      await page.goto('/statistics');
+      await page.waitForLoadState('domcontentloaded');
+      
+      // Wait for loading indicators to disappear
+      const hasLoadingIndicator = await page.locator('.animate-spin, [data-testid="loading"]').count() > 0;
+      if (hasLoadingIndicator) {
+        await page.waitForFunction(() => {
+          const spinners = document.querySelectorAll('.animate-spin, [data-testid="loading"]');
+          return spinners.length === 0;
+        }, { timeout: 15000 }).catch(() => {});
+      }
 
-      console.log(`✅ STAT-001: New student empty state tested with real user: ${student.email}`);
+      // Verify dashboard eventually renders
+      await expect(page.locator('[data-testid="student-dashboard"]')).toBeVisible({ timeout: 10000 });
+      
+      // Verify both page header and dashboard welcome header are present
+      await expect(page.locator('h1:has-text("Statistics & Analytics")')).toBeVisible();
+      await expect(page.locator('h1:has-text("Welcome back")')).toBeVisible();
+      
+      // Verify empty state dashboard renders with proper stats cards
+      await expect(page.locator('.grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-4.gap-6')).toBeVisible();
+      
+      // Verify empty state content is displayed properly
+      await expect(page.locator('[data-testid="courses-empty-state"]')).toBeVisible();
+      
+      // Verify basic stats cards are visible (even with zero values)
+      const statsCards = await page.locator('.bg-white.rounded-lg.border').count();
+      expect(statsCards).toBeGreaterThan(0);
       
     } finally {
       await authHelper.clearAuthState();
@@ -59,9 +80,9 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const scenarios = TestScenarios.createStudentScenarios('STAT-002');
       const { student, courses, enrollments, submissions } = await scenarios.createActiveStudent();
       
-      await authHelper.loginAsStudent();
+      await authHelper.loginWithCustomUser(student.email, 'TestPass123!');
       await page.goto('/statistics');
-      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      await page.waitForLoadState('networkidle', { timeout: 15000 });
 
       // Verify dashboard shows real data
       await expect(page.locator('[data-testid="student-dashboard"]')).toBeVisible();
@@ -78,7 +99,6 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const timeElements = page.locator('[data-testid*="time"], :has-text("hour"), :has-text("minute")');
       expect(await timeElements.count()).toBeGreaterThan(0);
 
-      console.log(`✅ STAT-002: Active student tested with ${courses.length} courses, ${submissions.length} submissions`);
       
     } finally {
       await authHelper.clearAuthState();
@@ -95,9 +115,9 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const scenarios = TestScenarios.createStudentScenarios('STAT-003');
       const { student, courses, submissions } = await scenarios.createHighAchievingStudent();
       
-      await authHelper.loginAsStudent();
+      await authHelper.loginWithCustomUser(student.email, 'TestPass123!');
       await page.goto('/statistics');
-      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      await page.waitForLoadState('networkidle', { timeout: 15000 });
 
       await expect(page.locator('[data-testid="student-dashboard"]')).toBeVisible();
       
@@ -111,7 +131,6 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const streakElements = page.locator('[data-testid*="streak"], :has-text("day")');
       expect(await streakElements.count()).toBeGreaterThan(0);
 
-      console.log(`✅ STAT-003: High achiever tested with ${submissions.length} submissions`);
       
     } finally {
       await authHelper.clearAuthState();
@@ -132,7 +151,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const scenarios = TestScenarios.createTeacherScenarios('STAT-004');
       const { teacher } = await scenarios.createNewTeacher();
       
-      await authHelper.loginAsTeacher();
+      await authHelper.loginWithCustomUser(teacher.email, 'TestPass123!');
       await page.goto('/statistics');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
@@ -144,7 +163,6 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       );
       expect(await emptyStateElements.count()).toBeGreaterThan(0);
 
-      console.log(`✅ STAT-004: New teacher empty state tested: ${teacher.email}`);
       
     } finally {
       await authHelper.clearAuthState();
@@ -161,7 +179,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const scenarios = TestScenarios.createTeacherScenarios('STAT-005');
       const { teacher, courses, students, enrollments, submissions } = await scenarios.createActiveTeacher();
       
-      await authHelper.loginAsTeacher();
+      await authHelper.loginWithCustomUser(teacher.email, 'TestPass123!');
       await page.goto('/statistics');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
 
@@ -183,7 +201,6 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       );
       expect(await submissionStats.count()).toBeGreaterThan(0);
 
-      console.log(`✅ STAT-005: Active teacher tested with ${courses.length} courses, ${students.length} students`);
       
     } finally {
       await authHelper.clearAuthState();
@@ -226,7 +243,6 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       );
       expect(await courseMetrics.count()).toBeGreaterThan(0);
 
-      console.log(`✅ STAT-006: Admin platform tested with ${teachers.length} teachers, ${students.length} students, ${courses.length} courses`);
       
     } finally {
       await authHelper.clearAuthState();
@@ -247,7 +263,7 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const scenarios = TestScenarios.createTeacherScenarios('STAT-007');
       const { teacher } = await scenarios.createBasicTeacher();
       
-      await authHelper.loginAsTeacher();
+      await authHelper.loginWithCustomUser(teacher.email, 'TestPass123!');
       
       // Measure dashboard load time with real large dataset
       const startTime = Date.now();
@@ -260,7 +276,6 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       
       await expect(page.locator('[data-testid="teacher-dashboard"]')).toBeVisible();
       
-      console.log(`✅ STAT-007: Performance test completed in ${loadTime}ms with large dataset`);
       
     } finally {
       await authHelper.clearAuthState();
@@ -281,9 +296,9 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       const { teacher } = await teacherScenarios.createActiveTeacher();
       
       // Test student sees only their data
-      await authHelper.loginAsStudent();
+      await authHelper.loginWithCustomUser(student.email, 'TestPass123!');
       await page.goto('/statistics');
-      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      await page.waitForLoadState('networkidle', { timeout: 15000 });
       
       await expect(page.locator('[data-testid="student-dashboard"]')).toBeVisible();
       
@@ -293,13 +308,12 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
       
       // Switch to teacher
       await authHelper.clearAuthState();
-      await authHelper.loginAsTeacher();
+      await authHelper.loginWithCustomUser(teacher.email, 'TestPass123!');
       await page.goto('/statistics');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       await expect(page.locator('[data-testid="teacher-dashboard"]')).toBeVisible();
       
-      console.log('✅ STAT-008: Data isolation verified between roles');
       
     } finally {
       await authHelper.clearAuthState();
