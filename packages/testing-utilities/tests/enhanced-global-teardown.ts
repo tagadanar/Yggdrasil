@@ -3,6 +3,7 @@
 
 import { FullConfig } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
+import { LoggerFactory } from '@yggdrasil/shared-utilities/logging';
 import { spawn } from 'child_process';
 import { promisify } from 'util';
 
@@ -125,6 +126,18 @@ async function globalTeardown(_config: FullConfig) {
       console.log('✅ Test data cleaned up successfully');
     } catch (error) {
       console.error('❌ Test data cleanup failed:', error);
+    }
+
+    // Clean up LoggerFactory to prevent memory leaks
+    console.log('🧹 Cleaning up logging system...');
+    try {
+      const loggerStats = LoggerFactory.getStats();
+      console.log(`📊 Logger cleanup: ${loggerStats.count} loggers, services: [${loggerStats.services.join(', ')}]`);
+      
+      LoggerFactory.cleanup();
+      console.log('✅ Logger cleanup completed successfully');
+    } catch (error) {
+      console.error('❌ Logger cleanup failed:', error);
     }
 
     console.log('📊 Clean teardown statistics:');

@@ -44,9 +44,32 @@
  */
 
 import { EventEmitter } from 'events';
+import { networkInterfaces } from 'os';
 import { v4 as uuidv4 } from 'uuid';
-import { address } from 'ip';
 import { logger } from '../logging/logger';
+
+/**
+ * Get local network address (replacement for ip.address())
+ * Uses Node.js built-in os.networkInterfaces() for security
+ */
+function getLocalAddress(): string {
+  const interfaces = networkInterfaces();
+  
+  // Look for non-internal IPv4 addresses
+  for (const name in interfaces) {
+    const networkInterface = interfaces[name];
+    if (networkInterface) {
+      for (const net of networkInterface) {
+        if (net.family === 'IPv4' && !net.internal) {
+          return net.address;
+        }
+      }
+    }
+  }
+  
+  // Fallback to localhost if no external address found
+  return '127.0.0.1';
+}
 
 // Using any type for Consul due to deprecated package
 // In production, would use a modern Consul client
@@ -156,7 +179,7 @@ export class ServiceDiscovery extends EventEmitter {
     const registration = {
       name: service.name,
       id: service.id || `${service.name}-${uuidv4()}`,
-      address: service.address || address(),
+      address: service.address || getLocalAddress(),
       port: service.port,
       tags: service.tags || [],
       meta: service.meta || {},

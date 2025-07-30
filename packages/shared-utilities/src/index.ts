@@ -95,6 +95,7 @@ export { SecurityLogger } from './helpers/security-logger';
 // Logging utilities - TEMPORARILY added back for backend services ONLY
 // Frontend should use @yggdrasil/shared-utilities/client
 export {
+  LoggerFactory,
   logger,
   authLogger,
   userLogger,

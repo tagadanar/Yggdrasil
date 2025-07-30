@@ -471,10 +471,51 @@ export class AuthTestHelper {
    */
   async getCurrentUser(): Promise<any> {
     try {
-      return await this.page.evaluate(`() => {
-        // Try to get user from React context or global state
+      // First try the window global variable approach
+      const userFromWindow = await this.page.evaluate(`() => {
         return window.__CURRENT_USER__ || null;
       }`);
+      
+      if (userFromWindow) {
+        return userFromWindow;
+      }
+      
+      // If window approach fails, try to get user via API call using stored tokens
+      return await this.page.evaluate(async () => {
+        try {
+          // Get tokens from cookies
+          const cookieString = document.cookie;
+          const accessTokenMatch = cookieString.match(/yggdrasil_access_token=([^;]+)/);
+          
+          if (!accessTokenMatch) {
+            console.log('🔍 DEBUG: No access token found in cookies');
+            return null;
+          }
+          
+          const accessToken = accessTokenMatch[1];
+          
+          // Make API call to get current user
+          const response = await fetch('http://localhost:3001/auth/me', {
+            headers: {
+              'Authorization': 'Bearer ' + accessToken,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (!response.ok) {
+            console.log('🔍 DEBUG: API call failed with status:', response.status);
+            return null;
+          }
+          
+          const result = await response.json();
+          console.log('🔍 DEBUG: API response:', result);
+          
+          return result.success ? result.user : null;
+        } catch (error) {
+          console.log('🔍 DEBUG: Error getting user via API:', error);
+          return null;
+        }
+      });
     } catch (error) {
       if (this.options.debug) {
         logger.error('🔐 AUTH TEST HELPER: Failed to get current user:', error);

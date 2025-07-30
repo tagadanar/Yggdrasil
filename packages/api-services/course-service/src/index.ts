@@ -2,7 +2,7 @@
 // Entry point for the course service
 
 import app, { initializeDatabase } from './app';
-import { logger } from '@yggdrasil/shared-utilities';
+import { logger, initializeJWT } from '@yggdrasil/shared-utilities';
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {
@@ -18,6 +18,10 @@ const PORT = parseInt(process.env['COURSE_SERVICE_PORT'] || process.env['PORT'] 
 // Start server after database initialization
 async function startServer() {
   try {
+    // Initialize JWT system first (same as auth service)
+    logger.info('🔑 Initializing JWT system...');
+    initializeJWT();
+    
     // Wait for database connection first
     await initializeDatabase();
     

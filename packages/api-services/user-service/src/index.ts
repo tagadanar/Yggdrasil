@@ -8,7 +8,7 @@ process.setMaxListeners(20);
 import dotenv from 'dotenv';
 import { createApp } from './app';
 import { connectDatabase } from '@yggdrasil/database-schemas';
-import { logger } from '@yggdrasil/shared-utilities';
+import { logger, initializeJWT } from '@yggdrasil/shared-utilities';
 
 // Load environment variables from project root
 dotenv.config({ path: '../../../.env' });
@@ -59,6 +59,11 @@ logger.debug(`🔧 USER SERVICE: Final PORT: ${PORT}`);
 async function startServer() {
   try {
     logger.info('🔧 USER SERVICE: Starting server...');
+    
+    // Initialize JWT system first (same as auth service)
+    logger.info('🔑 Initializing JWT system...');
+    initializeJWT();
+    
     logger.debug(`🔧 USER SERVICE: NODE_ENV: ${process.env['NODE_ENV']}`);
     logger.debug(`🔧 USER SERVICE: Received DB_NAME: ${process.env['DB_NAME']}`);
     logger.debug(

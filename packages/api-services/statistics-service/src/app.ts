@@ -12,11 +12,15 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { connectDatabase } from '@yggdrasil/database-schemas';
-import { ResponseHelper, statsLogger as logger } from '@yggdrasil/shared-utilities';
+import { ResponseHelper, statsLogger as logger, initializeJWT } from '@yggdrasil/shared-utilities';
 import statisticsRoutes from './routes/statisticsRoutes';
 
 // Load environment variables
 dotenv.config();
+
+// Initialize JWT system for token validation
+initializeJWT();
+logger.info('🔑 JWT system initialized for statistics service');
 
 const app = express();
 

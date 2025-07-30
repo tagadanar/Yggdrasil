@@ -6,6 +6,9 @@ import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Role-Based Access Control Matrix', () => {
   test('RBAC-001: Complete Role-Based Access Control Matrix - All Modules', async ({ browser }) => {
+    // Prevent test hangs - 90 second max per test
+    test.setTimeout(90000);
+  
     const cleanup = TestCleanup.getInstance('RBAC-001');
     const factory = new TestDataFactory('RBAC-001');
     

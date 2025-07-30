@@ -69,10 +69,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check immediately on mount
     checkCookieChanges();
     
-    // Poll for cookie changes (more frequently for responsive detection)
-    const interval = setInterval(checkCookieChanges, 250);
+    // Poll for cookie changes (much more frequently for immediate detection)
+    const interval = setInterval(checkCookieChanges, 50);
     return () => clearInterval(interval);
   }, [user, tokens]);
+
+  // Additional immediate cookie check for navigation events
+  useEffect(() => {
+    const handleNavigationCheck = () => {
+      const currentTokens = tokenStorage.getTokens();
+      if (!currentTokens && (user || tokens)) {
+        setUser(null);
+        setTokens(null);
+        tokenSync.notifyTokenChange(null);
+      }
+    };
+
+    // Listen for navigation events to trigger immediate checks
+    window.addEventListener('beforeunload', handleNavigationCheck);
+    window.addEventListener('focus', handleNavigationCheck);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleNavigationCheck);
+      window.removeEventListener('focus', handleNavigationCheck);
+    };
+  }, [user, tokens]);
+
+  // Expose current user globally for testing purposes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__CURRENT_USER__ = user;
+    }
+  }, [user]);
 
   const initializeAuth = async () => {
     try {

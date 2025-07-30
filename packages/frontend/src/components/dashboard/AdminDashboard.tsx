@@ -205,7 +205,7 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Platform Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="platform-stats-users">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
@@ -213,14 +213,14 @@ export const AdminDashboard: React.FC = () => {
                 {platformStats.totalUsers}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {platformStats.activeUsers} active (last 30 days)
+                <span data-testid="active-users">{platformStats.activeUsers}</span> active (last 30 days)
               </p>
             </div>
             <UserGroupIcon className="h-12 w-12 text-indigo-600 dark:text-indigo-400" />
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="platform-stats-courses">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Courses</p>
@@ -235,7 +235,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="platform-stats-engagement">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Platform Engagement</p>
@@ -250,7 +250,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="platform-stats-enrollments">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Enrollments</p>
@@ -265,11 +265,11 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="platform-stats-submissions">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Submissions</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="total-submissions">
                 {platformStats.totalSubmissions}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -280,11 +280,11 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="platform-stats-averages">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Enrollments/Course</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="avg-enrollments">
                 {platformStats.totalCourses > 0 ? Math.round(platformStats.totalEnrollments / platformStats.totalCourses) : 0}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -297,7 +297,7 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* User Breakdown */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="user-breakdown-section">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">User Distribution</h2>
         <div className="space-y-4" data-testid="user-breakdown-chart">
           {Object.entries(userBreakdown).map(([type, count]) => {
@@ -325,9 +325,9 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Course Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-testid="course-metrics-section">
         {/* Popular Courses */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow" data-testid="course-metrics-popular">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Most Popular Courses</h2>
           </div>

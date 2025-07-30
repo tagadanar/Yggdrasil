@@ -12,6 +12,9 @@ test.describe('Student Learning Journey - Optimized', () => {
   // JOURNEY-001a: Student Registration and Course Enrollment (20s)
   // =============================================================================
   test('JOURNEY-001a: Student Registration and Course Enrollment', async ({ browser }) => {
+    // Prevent test hangs - 90 second max per test
+    test.setTimeout(90000);
+  
     const cleanup = TestCleanup.getInstance('JOURNEY-001a');
     const factory = new TestDataFactory('JOURNEY-001a');
     let context: any = undefined;

@@ -12,6 +12,9 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
   // WORKFLOW-002a: Course Creation and Content Development (25s)
   // =============================================================================
   test('WORKFLOW-002a: Course Creation and Content Development', async ({ browser }) => {
+    // Prevent test hangs - 90 second max per test
+    test.setTimeout(90000);
+  
     const cleanup = TestCleanup.getInstance('WORKFLOW-002a');
     const factory = new TestDataFactory('WORKFLOW-002a');
     let context: any = undefined;

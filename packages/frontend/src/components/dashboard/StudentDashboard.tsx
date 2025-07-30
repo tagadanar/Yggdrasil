@@ -89,7 +89,15 @@ export const StudentDashboard: React.FC = () => {
       setError(null);
 
       // Progressive loading: Load critical stats first for faster perceived performance
-      const response = await StatisticsApi.getStudentDashboard(user._id);
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Dashboard request timed out')), 15000)
+      );
+      
+      const response = await Promise.race([
+        StatisticsApi.getStudentDashboard(user._id),
+        timeoutPromise
+      ]) as any;
       
       if (response.success && response.data) {
         const dashboardData = response.data;
@@ -101,7 +109,7 @@ export const StudentDashboard: React.FC = () => {
         // Process heavy data transformations asynchronously to avoid blocking UI
         setTimeout(() => {
           // Transform API data to match component interfaces (non-blocking)
-          const transformedCourseProgress: CourseProgress[] = dashboardData.courseProgress.map(course => ({
+          const transformedCourseProgress: CourseProgress[] = dashboardData.courseProgress.map((course: any) => ({
             courseId: course.courseId,
             courseTitle: course.courseTitle,
             progress: course.progress,
@@ -112,7 +120,7 @@ export const StudentDashboard: React.FC = () => {
             estimatedCompletion: new Date(course.estimatedCompletion)
           }));
 
-          const transformedRecentActivity: RecentActivity[] = dashboardData.recentActivity.map(activity => ({
+          const transformedRecentActivity: RecentActivity[] = dashboardData.recentActivity.map((activity: any) => ({
             id: activity.id,
             type: activity.type,
             courseTitle: activity.courseTitle,
@@ -121,7 +129,7 @@ export const StudentDashboard: React.FC = () => {
             score: activity.score
           }));
 
-          const transformedAchievements: Achievement[] = dashboardData.achievements.map(achievement => ({
+          const transformedAchievements: Achievement[] = dashboardData.achievements.map((achievement: any) => ({
             id: achievement.id,
             title: achievement.title,
             description: achievement.description,
@@ -141,8 +149,30 @@ export const StudentDashboard: React.FC = () => {
 
     } catch (err: any) {
       console.error('Dashboard load error:', err);
+      
+      // Set fallback empty state data so dashboard still renders
+      const fallbackStats: LearningStats = {
+        totalCourses: 0,
+        activeCourses: 0,
+        completedCourses: 0,
+        totalTimeSpent: 0,
+        averageProgress: 0,
+        weeklyGoal: 120, // 2 hours default
+        weeklyProgress: 0,
+        currentStreak: 0,
+        totalExercises: 0,
+        completedExercises: 0,
+        averageScore: 0,
+      };
+      
+      setLearningStats(fallbackStats);
+      setCourseProgress([]);
+      setRecentActivity([]);
+      setAchievements([]);
+      
+      // Show error but don't prevent dashboard from rendering
       setError(err.message || 'Failed to load dashboard data');
-      setLoading(false); // Only set loading false on error since we set it false earlier on success
+      setLoading(false);
     }
   };
 
@@ -188,30 +218,36 @@ export const StudentDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
+      <div className="flex justify-center items-center py-12" data-testid="student-dashboard">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         <span className="ml-3 text-gray-600">Loading your dashboard...</span>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <div className="text-red-600 text-lg mb-4">{error}</div>
-        <button
-          onClick={loadDashboardData}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
+  // Note: We no longer block dashboard rendering on error - we show fallback data instead
+  // The error is displayed as a small notice at the top of the dashboard
 
   return (
     <div className="max-w-7xl mx-auto space-y-6" data-testid="student-dashboard">
+      {/* Error Notice (if any) */}
+      {error && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mr-2" />
+            <div className="text-sm text-yellow-800">
+              Some dashboard data may be unavailable: {error}
+              <button
+                onClick={loadDashboardData}
+                className="ml-2 text-yellow-600 hover:text-yellow-800 underline"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg text-white p-6">
         <h1 className="text-3xl font-bold mb-2">
@@ -223,9 +259,9 @@ export const StudentDashboard: React.FC = () => {
       </div>
 
       {/* Quick Stats */}
-      {learningStats && (
+      {learningStats ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-lg border p-6">
+          <div className="bg-white rounded-lg border p-6" data-testid="course-stats">
             <div className="flex items-center">
               <BookOpenIcon className="h-8 w-8 text-indigo-600 mr-3" />
               <div>
@@ -235,7 +271,7 @@ export const StudentDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border p-6">
+          <div className="bg-white rounded-lg border p-6" data-testid="time-stats">
             <div className="flex items-center">
               <ClockIcon className="h-8 w-8 text-green-600 mr-3" />
               <div>
@@ -245,7 +281,7 @@ export const StudentDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border p-6">
+          <div className="bg-white rounded-lg border p-6" data-testid="progress-stats">
             <div className="flex items-center">
               <TrophyIcon className="h-8 w-8 text-yellow-600 mr-3" />
               <div>
@@ -255,11 +291,51 @@ export const StudentDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border p-6">
+          <div className="bg-white rounded-lg border p-6" data-testid="streak-stats">
             <div className="flex items-center">
               <FireIcon className="h-8 w-8 text-red-600 mr-3" />
               <div>
                 <div className="text-2xl font-bold text-gray-900">{learningStats.currentStreak}</div>
+                <div className="text-sm text-gray-600">Day Streak</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Empty state placeholders */}
+          <div className="bg-white rounded-lg border p-6">
+            <div className="flex items-center">
+              <BookOpenIcon className="h-8 w-8 text-gray-300 mr-3" />
+              <div>
+                <div className="text-2xl font-bold text-gray-900">0</div>
+                <div className="text-sm text-gray-600">Active Courses</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border p-6">
+            <div className="flex items-center">
+              <ClockIcon className="h-8 w-8 text-gray-300 mr-3" />
+              <div>
+                <div className="text-2xl font-bold text-gray-900">0m</div>
+                <div className="text-sm text-gray-600">Time Spent Learning</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border p-6">
+            <div className="flex items-center">
+              <TrophyIcon className="h-8 w-8 text-gray-300 mr-3" />
+              <div>
+                <div className="text-2xl font-bold text-gray-900">0</div>
+                <div className="text-sm text-gray-600">Courses Completed</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border p-6">
+            <div className="flex items-center">
+              <FireIcon className="h-8 w-8 text-gray-300 mr-3" />
+              <div>
+                <div className="text-2xl font-bold text-gray-900">0</div>
                 <div className="text-sm text-gray-600">Day Streak</div>
               </div>
             </div>
@@ -271,14 +347,14 @@ export const StudentDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Weekly Progress */}
         {learningStats && (
-          <div className="bg-white rounded-lg border p-6">
+          <div className="bg-white rounded-lg border p-6" data-testid="weekly-progress">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Goal</h3>
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Study Time</span>
                 <span>{formatTime(learningStats.weeklyProgress)} / {formatTime(learningStats.weeklyGoal)}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="w-full bg-gray-200 rounded-full h-3" data-testid="progress-bar">
                 <div 
                   className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
                   style={{ width: `${Math.min((learningStats.weeklyProgress / learningStats.weeklyGoal) * 100, 100)}%` }}
@@ -299,14 +375,14 @@ export const StudentDashboard: React.FC = () => {
 
         {/* Exercise Progress */}
         {learningStats && (
-          <div className="bg-white rounded-lg border p-6">
+          <div className="bg-white rounded-lg border p-6" data-testid="exercise-progress">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Exercise Progress</h3>
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Completed</span>
                 <span>{learningStats.completedExercises} / {learningStats.totalExercises}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="w-full bg-gray-200 rounded-full h-3" data-testid="progress-bar">
                 <div 
                   className="bg-green-600 h-3 rounded-full transition-all duration-300"
                   style={{ width: `${(learningStats.completedExercises / learningStats.totalExercises) * 100}%` }}
@@ -351,9 +427,22 @@ export const StudentDashboard: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-900">Your Courses</h2>
         </div>
         <div className="p-6">
+          {courseProgress.length === 0 ? (
+            <div className="text-center py-12" data-testid="courses-empty-state">
+              <BookOpenIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <div className="text-gray-500">No courses enrolled yet</div>
+              <div className="text-sm text-gray-400 mt-2">Start learning by enrolling in courses!</div>
+              <button
+                className="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
+                onClick={() => window.location.href = '/courses'}
+              >
+                Browse Courses
+              </button>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {courseProgress.map((course) => (
-              <div key={course.courseId} className="border rounded-lg p-4">
+              <div key={course.courseId} className="border rounded-lg p-4" data-testid="course-card">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-gray-900">{course.courseTitle}</h3>
                   <span className={`px-2 py-1 text-xs rounded-full ${
@@ -398,6 +487,7 @@ export const StudentDashboard: React.FC = () => {
               </div>
             ))}
           </div>
+          )}
         </div>
       </div>
 

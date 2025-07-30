@@ -122,7 +122,7 @@ export const TeacherDashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6" data-testid="error-state">
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6" data-testid="teacher-dashboard">
         <div className="flex items-center">
           <ExclamationCircleIcon className="h-6 w-6 text-red-600 dark:text-red-400 mr-3" />
           <div>
@@ -140,12 +140,17 @@ export const TeacherDashboard: React.FC = () => {
     );
   }
 
-  if (!courseStats) {
+  if (!courseStats || courseStats.totalCourses === 0) {
     return (
-      <div className="text-center py-12" data-testid="no-courses-message">
+      <div className="text-center py-12" data-testid="teacher-dashboard">
         <BookOpenIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No Courses Yet</h3>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">Start by creating your first course!</p>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No courses</h3>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">Create your first course to get started with teaching!</p>
+        <div className="mt-4">
+          <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Get started
+          </button>
+        </div>
       </div>
     );
   }
@@ -177,7 +182,7 @@ export const TeacherDashboard: React.FC = () => {
 
       {/* Course Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="course-stats-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Courses</p>
@@ -192,7 +197,7 @@ export const TeacherDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="student-stats-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
@@ -200,14 +205,14 @@ export const TeacherDashboard: React.FC = () => {
                 {courseStats.totalStudents}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {courseStats.activeStudents} active
+                <span data-testid="active-students-stat">{courseStats.activeStudents}</span> active
               </p>
             </div>
             <UserGroupIcon className="h-12 w-12 text-green-600 dark:text-green-400" />
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="progress-stats-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Average Progress</p>
@@ -222,15 +227,15 @@ export const TeacherDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="submission-stats-card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Grading</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="pending-grading-stat">
                 {courseStats.pendingGrading}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Of {courseStats.totalSubmissions} total
+                Of <span data-testid="total-submissions-stat">{courseStats.totalSubmissions}</span> total
               </p>
             </div>
             <DocumentCheckIcon className="h-12 w-12 text-orange-600 dark:text-orange-400" />

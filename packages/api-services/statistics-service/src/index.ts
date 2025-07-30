@@ -2,7 +2,7 @@
 // Entry point for the statistics service
 
 import app from './app';
-import { logger } from '@yggdrasil/shared-utilities';
+import { logger, initializeJWT } from '@yggdrasil/shared-utilities';
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {
@@ -18,6 +18,10 @@ const PORT = process.env['STATISTICS_SERVICE_PORT'] ||
 
 logger.debug(`🔧 STATISTICS SERVICE: Worker ID: ${process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || '0'}`);
 logger.debug(`🔧 STATISTICS SERVICE: Calculated PORT: ${PORT}`);
+
+// Initialize JWT system first (same as other services)
+logger.info('🔑 Initializing JWT system...');
+initializeJWT();
 
 const server = app.listen(PORT, () => {
   logger.debug(`📊 Statistics Service running on port ${PORT}`);

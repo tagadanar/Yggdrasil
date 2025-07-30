@@ -28,6 +28,9 @@ async function waitForModuleContent(page: any, module: any): Promise<void> {
 
 test.describe('UI States and Error Handling', () => {
   test('UI-001: Loading and Error States Across All Modules', async ({ browser }) => {
+    // Prevent test hangs - 90 second max per test
+    test.setTimeout(90000);
+  
     const cleanup = TestCleanup.getInstance('UI-001');
     let context: any = undefined;
     let auth: CleanAuthHelper | undefined = undefined;

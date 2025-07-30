@@ -19,6 +19,9 @@ test.describe('Statistics Management - Real Data Scenarios', () => {
   // =============================================================================
 
   test('STAT-001: New Student Dashboard (Empty State)', async ({ page }) => {
+    // Prevent test hangs - 90 second max per test
+    test.setTimeout(90000);
+  
     const cleanup = TestCleanup.getInstance('STAT-001: New Student Dashboard (Empty State)');
     const authHelper = new CleanAuthHelper(page);
     

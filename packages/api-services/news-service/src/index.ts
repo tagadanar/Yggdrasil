@@ -3,7 +3,7 @@
 process.setMaxListeners(20);
 
 import { createApp } from './app';
-import { logger } from '@yggdrasil/shared-utilities';
+import { logger, initializeJWT } from '@yggdrasil/shared-utilities';
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {
@@ -21,6 +21,10 @@ logger.debug(`🔧 NEWS SERVICE: Calculated PORT: ${PORT}`);
 
 const startServer = async () => {
   try {
+    // Initialize JWT system first (same as auth service)
+    logger.info('🔑 Initializing JWT system...');
+    initializeJWT();
+    
     const app = await createApp();
     
     const server = app.listen(PORT, () => {

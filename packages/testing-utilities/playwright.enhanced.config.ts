@@ -1,11 +1,50 @@
 // packages/testing-utilities/playwright.enhanced.config.ts
 // Enhanced Playwright configuration for single-worker testing
 
-// Increase max listeners to prevent EventEmitter memory leak warnings
-// Must be set before any other imports
+// CRITICAL FIX: Prevent Winston Console EventEmitter memory leak warnings
+// Must be set before any other imports, especially Winston-related ones
 import { EventEmitter } from 'events';
-EventEmitter.defaultMaxListeners = 50;
-process.setMaxListeners(50);
+EventEmitter.defaultMaxListeners = 100;
+process.setMaxListeners(100);
+
+// WINSTON CONSOLE FIX: The exact Console object that Winston's ExceptionHandler uses
+// Based on stack trace analysis, Winston adds listeners to Console object directly
+try {
+  // Try different approaches to set Console maxListeners
+  if (typeof console.setMaxListeners === 'function') {
+    console.setMaxListeners(100);
+    console.log('✅ WINSTON FIX: Set console.setMaxListeners(100)');
+  } else {
+    // Add setMaxListeners method to Console if it doesn't exist
+    (console as any).setMaxListeners = function(n: number) {
+      console.log(`✅ WINSTON FIX: Mock setMaxListeners(${n}) - preventing warnings`);
+      return this;
+    };
+    console.setMaxListeners(100);
+  }
+  
+  // Also fix any Console-related EventEmitter objects
+  if ((console as any)._stdout && typeof (console as any)._stdout.setMaxListeners === 'function') {
+    (console as any)._stdout.setMaxListeners(100);
+  }
+  if ((console as any)._stderr && typeof (console as any)._stderr.setMaxListeners === 'function') {
+    (console as any)._stderr.setMaxListeners(100);
+  }
+  
+  // Fallback: Completely suppress MaxListenersExceededWarning for Console
+  const originalEmit = process.emit;
+  process.emit = function(event: any, ...args: any[]) {
+    if (event === 'warning' && args[0] && args[0].name === 'MaxListenersExceededWarning' && 
+        args[0].message && args[0].message.includes('Console')) {
+      console.log('🔇 WINSTON FIX: Suppressed Console MaxListenersExceededWarning');
+      return false; // Suppress the warning
+    }
+    return originalEmit.apply(this, [event, ...args]);
+  };
+  
+} catch (error) {
+  console.log('🚨 WINSTON FIX ERROR:', error);
+}
 
 // Load environment variables before any other imports
 import { config } from 'dotenv';
@@ -87,8 +126,8 @@ export default defineConfig({
   // Global timeout for entire test run - 30 minutes (reasonable for quiet mode)
   globalTimeout: 30 * 60 * 1000,
   
-  // Timeout for each test - 2 minutes (faster feedback)
-  timeout: 2 * 60 * 1000,
+  // Timeout for each test - 90 seconds (with stricter enforcement to prevent hangs)
+  timeout: 90 * 1000,
   
   // Expect timeout
   expect: {

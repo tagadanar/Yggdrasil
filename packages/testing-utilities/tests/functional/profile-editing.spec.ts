@@ -8,6 +8,9 @@ import { captureEnhancedError } from '../helpers/enhanced-error-context';
 
 test.describe('Profile Editing Functionality', () => {
   test('Should save all profile fields when editing profile', async ({ browser }) => {
+    // Prevent test hangs - 90 second max per test
+    test.setTimeout(90000);
+  
     const cleanup = TestCleanup.getInstance('Profile Editing Test');
     const testContext = await browser.newContext();
     cleanup.trackBrowserContext(testContext);

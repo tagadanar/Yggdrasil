@@ -3,7 +3,6 @@
 
 import { UserModel, UserDocument } from '@yggdrasil/database-schemas';
 import { ValidationHelper, userLogger as logger } from '@yggdrasil/shared-utilities';
-import bcrypt from 'bcrypt';
 
 // REFACTOR: Better type definitions
 export interface UserData {
@@ -279,13 +278,10 @@ export class UserService {
         };
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(userData.password, 12);
-
-      // Create user
+      // Create user (password will be automatically hashed by User model pre-save middleware)
       const newUser = await UserModel.create({
         email: userData.email,
-        password: hashedPassword,
+        password: userData.password, // Let the model's pre-save middleware handle hashing
         role: userData.role,
         profile: userData.profile,
         isActive: true,

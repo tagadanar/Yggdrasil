@@ -542,16 +542,25 @@ CourseSchema.pre<CourseDocument>('save', function(next) {
   next();
 });
 
-// Instance method to generate slug from title
+// Instance method to generate slug from title with uniqueness guarantee
 CourseSchema.methods['generateSlug'] = function(): string {
   const course = this as CourseDocument;
-  return course.title
+  const baseSlug = course.title
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
     .replace(/\s+/g, '-') // Replace spaces with hyphens
     .replace(/-+/g, '-') // Replace multiple hyphens with single
     .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+  
+  // Add course code or timestamp for uniqueness if available
+  if (course.code) {
+    return `${baseSlug}-${course.code.toLowerCase()}`;
+  }
+  
+  // Fallback: append timestamp to ensure uniqueness
+  const timestamp = Date.now().toString(36); // Base-36 encoding for shorter string
+  return `${baseSlug}-${timestamp}`;
 };
 
 // Instance method to increment version

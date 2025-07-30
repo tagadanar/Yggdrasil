@@ -52,6 +52,34 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Create separate axios instance for refresh calls (no interceptors to prevent loops)
+const refreshClient = axios.create({
+  baseURL: `${BASE_URL}/api`,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Token refresh state management
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value: any) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 // Response interceptor to handle token refresh
 apiClient.interceptors.response.use(
   (response) => {
@@ -62,13 +90,27 @@ apiClient.interceptors.response.use(
     
     // If we get a 401 and haven't already tried to refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
+      
+      // If already refreshing, queue this request
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return apiClient(originalRequest);
+        }).catch((err) => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
       
       const refreshToken = tokenStorage.getRefreshToken();
       if (refreshToken) {
         try {
-          // Try to refresh the token
-          const response = await axios.post(`${BASE_URL}/api/auth/refresh`, {
+          // Use separate refresh client to avoid interceptor loops
+          const response = await refreshClient.post('/auth/refresh', {
             refreshToken,
           });
           
@@ -76,19 +118,28 @@ apiClient.interceptors.response.use(
             const tokens = response.data.data.tokens;
             tokenStorage.setTokens(tokens);
             
+            // Process queued requests
+            processQueue(null, tokens.accessToken);
+            
             // Retry the original request with new token
             originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
             return apiClient(originalRequest);
+          } else {
+            throw new Error('Token refresh failed: Invalid response');
           }
         } catch (refreshError) {
-          // Refresh failed, clear tokens
+          // Refresh failed, clear tokens and process queue with error
           tokenStorage.clearTokens();
+          processQueue(refreshError, null);
           // Let the ProtectedRoute component handle redirect
+        } finally {
+          isRefreshing = false;
         }
       } else {
-        // No refresh token, clear tokens
+        // No refresh token, clear tokens and process queue with error
         tokenStorage.clearTokens();
-        // Let the ProtectedRoute component handle redirect
+        processQueue(new Error('No refresh token'), null);
+        isRefreshing = false;
       }
     }
     

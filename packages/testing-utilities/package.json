@@ -5,8 +5,10 @@
   "private": true,
   "scripts": {
     "test:quiet": "node scripts/run-quiet-tests.cjs",
-    "test:single": "playwright test --config=playwright.enhanced.config.ts --reporter=line --workers=1",
-    "test:debug": "playwright test --config=playwright.enhanced.config.ts --reporter=line --headed --workers=1",
+    "test:single": "node -r dotenv/config ../../node_modules/.bin/playwright test --config=playwright.enhanced.config.ts --reporter=line --workers=1",
+    "test:debug": "node -r dotenv/config ../../node_modules/.bin/playwright test --config=playwright.enhanced.config.ts --reporter=line --headed --workers=1",
+    "test:fast": "node scripts/run-fast-tests.cjs",
+    "test:optimized": "node scripts/run-optimized-tests.cjs",
     "test:unit": "echo 'Unit tests not implemented yet - use test:quiet for functional tests'",
     "dev": "exec node service-manager.js start",
     "dev:health": "node service-manager.js health",

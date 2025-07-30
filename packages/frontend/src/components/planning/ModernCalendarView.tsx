@@ -109,6 +109,17 @@ export const ModernCalendarView: React.FC<ModernCalendarViewProps> = ({
     interactionPlugin
   ], []);
 
+  // Get FullCalendar view name (moved above useMemo to prevent hoisting issue)
+  const getFullCalendarView = () => {
+    switch (currentView) {
+      case 'month': return 'dayGridMonth';
+      case 'week': return 'timeGridWeek';
+      case 'day': return 'timeGridDay';
+      case 'list': return 'listWeek';
+      default: return 'dayGridMonth';
+    }
+  };
+
   // Memoize calendar configuration to prevent re-renders
   const calendarConfig = useMemo(() => ({
     initialView: getFullCalendarView(),
@@ -232,16 +243,6 @@ export const ModernCalendarView: React.FC<ModernCalendarViewProps> = ({
     }
   };
 
-  // Get FullCalendar view name
-  const getFullCalendarView = () => {
-    switch (currentView) {
-      case 'month': return 'dayGridMonth';
-      case 'week': return 'timeGridWeek';
-      case 'day': return 'timeGridDay';
-      case 'list': return 'listWeek';
-      default: return 'dayGridMonth';
-    }
-  };
 
   // Format date header
   const formatDateHeader = () => {

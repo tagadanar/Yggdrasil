@@ -52,6 +52,24 @@ export class TestCleanup {
   }
 
   /**
+   * Track a document with cascading cleanup for related documents
+   */
+  trackDocumentWithCascade(collection: string, id: string): void {
+    this.trackDocument(collection, id);
+    
+    // Add cascading cleanup based on collection type
+    if (collection === 'courses') {
+      this.addCustomCleanup(async () => {
+        await this.cascadeCleanupCourse(id);
+      });
+    } else if (collection === 'users') {
+      this.addCustomCleanup(async () => {
+        await this.cascadeCleanupUser(id);
+      });
+    }
+  }
+
+  /**
    * Track multiple documents for cleanup
    */
   trackDocuments(collection: string, ids: string[]): void {
@@ -112,10 +130,36 @@ export class TestCleanup {
         if (ids.size > 0) {
           const collection = mongoose.connection.db!.collection(collectionName);
           const idsArray = Array.from(ids);
-          const result = await collection.deleteMany({
-            _id: { $in: idsArray as any },
+          
+          // Convert string IDs to ObjectIds for proper deletion
+          const objectIds: mongoose.Types.ObjectId[] = [];
+          const stringIds: string[] = [];
+          
+          idsArray.forEach(id => {
+            try {
+              objectIds.push(new mongoose.Types.ObjectId(id));
+            } catch (error) {
+              logger.warn(`⚠️ TEST CLEANUP [${this.testName}]: Invalid ObjectId format: ${id}, trying as string`);
+              stringIds.push(id);
+            }
           });
-          logger.info(`🧹 TEST CLEANUP [${this.testName}]: Deleted ${result.deletedCount} documents from ${collectionName}`);
+          
+          // Delete using ObjectIds first, then strings if any
+          let deletedCount = 0;
+          if (objectIds.length > 0) {
+            const result = await collection.deleteMany({
+              _id: { $in: objectIds },
+            });
+            deletedCount += result.deletedCount;
+          }
+          
+          if (stringIds.length > 0) {
+            const result = await collection.deleteMany({
+              _id: { $in: stringIds as any },
+            });
+            deletedCount += result.deletedCount;
+          }
+          logger.info(`🧹 TEST CLEANUP [${this.testName}]: Deleted ${deletedCount} documents from ${collectionName}`);
         }
       }
 
@@ -146,6 +190,72 @@ export class TestCleanup {
     this.tracker.browserContexts.clear();
     this.tracker.pages.clear();
     TestCleanup.instances.delete(this.testName);
+  }
+
+  /**
+   * Cascade cleanup for course-related documents
+   */
+  private async cascadeCleanupCourse(courseId: string): Promise<void> {
+    try {
+      const objectId = new mongoose.Types.ObjectId(courseId);
+      
+      // Clean up course enrollments
+      const enrollments = mongoose.connection.db!.collection('courseenrollments');
+      const enrollmentResult = await enrollments.deleteMany({ courseId: objectId });
+      if (enrollmentResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${enrollmentResult.deletedCount} course enrollments for course ${courseId}`);
+      }
+      
+      // Clean up exercise submissions
+      const submissions = mongoose.connection.db!.collection('exercisesubmissions');
+      const submissionResult = await submissions.deleteMany({ courseId: objectId });
+      if (submissionResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${submissionResult.deletedCount} exercise submissions for course ${courseId}`);
+      }
+      
+      // Clean up course progress records
+      const progress = mongoose.connection.db!.collection('courseprogress');
+      const progressResult = await progress.deleteMany({ courseId: objectId });
+      if (progressResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${progressResult.deletedCount} progress records for course ${courseId}`);
+      }
+      
+    } catch (error) {
+      logger.warn(`⚠️ CASCADE CLEANUP [${this.testName}]: Failed to cleanup course ${courseId}:`, error);
+    }
+  }
+
+  /**
+   * Cascade cleanup for user-related documents
+   */
+  private async cascadeCleanupUser(userId: string): Promise<void> {
+    try {
+      const objectId = new mongoose.Types.ObjectId(userId);
+      
+      // Clean up user enrollments
+      const enrollments = mongoose.connection.db!.collection('courseenrollments');
+      const enrollmentResult = await enrollments.deleteMany({ userId: objectId });
+      if (enrollmentResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${enrollmentResult.deletedCount} enrollments for user ${userId}`);
+      }
+      
+      // Clean up user submissions
+      const submissions = mongoose.connection.db!.collection('exercisesubmissions');
+      const submissionResult = await submissions.deleteMany({ userId: objectId });
+      if (submissionResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${submissionResult.deletedCount} submissions for user ${userId}`);
+      }
+      
+      // Clean up user progress
+      const progress = mongoose.connection.db!.collection('courseprogress');
+      const progressResult = await progress.deleteMany({ userId: objectId });
+      if (progressResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${progressResult.deletedCount} progress records for user ${userId}`);
+      }
+      
+    } catch (error) {
+      logger.warn(`⚠️ CASCADE CLEANUP [${this.testName}]: Failed to cleanup user ${userId}:`, error);
+    }
   }
 
   /**

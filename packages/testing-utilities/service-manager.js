@@ -264,6 +264,9 @@ class ServiceManager {
       PLAYWRIGHT_WORKER_ID: WORKER_ID.toString(),
       TEST_WORKER_INDEX: WORKER_ID.toString(),
       MONGODB_URI: 'mongodb://localhost:27018/yggdrasil-dev',
+      // Ensure all services use the same dev database (prevent worker isolation)
+      DB_NAME: 'yggdrasil-dev',
+      DB_COLLECTION_PREFIX: '', // Empty prefix to use main collections
       // Ensure JWT secrets are available (loaded from .env)
       JWT_SECRET: process.env.JWT_SECRET,
       JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
@@ -272,7 +275,6 @@ class ServiceManager {
       MONGO_APP_PASSWORD: process.env.MONGO_APP_PASSWORD,
       MONGO_ROOT_USERNAME: process.env.MONGO_ROOT_USERNAME,
       MONGO_ROOT_PASSWORD: process.env.MONGO_ROOT_PASSWORD,
-      // No DB_NAME or DB_COLLECTION_PREFIX - use clean dev database
       // Service URLs for inter-service communication
       AUTH_SERVICE_URL: `http://localhost:${BASE_PORT + 1}`,
       USER_SERVICE_URL: `http://localhost:${BASE_PORT + 2}`,

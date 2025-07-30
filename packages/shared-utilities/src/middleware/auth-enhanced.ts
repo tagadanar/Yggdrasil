@@ -47,6 +47,7 @@ export class EnhancedAuthMiddleware {
    */
   static verifyToken(req: Request, res: Response, next: NextFunction): void {
     try {
+      console.log('🔍 AUTH MIDDLEWARE: verifyToken called for:', req.method, req.path);
       const authHeader = req.header('Authorization');
 
       if (!authHeader) {

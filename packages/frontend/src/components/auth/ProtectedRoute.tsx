@@ -24,21 +24,30 @@ export function ProtectedRoute({
 
   useEffect(() => {
     if (!isLoading) {
-      // 🔧 FIXED: Rely primarily on AuthProvider state for consistency
-      const hasStoredTokens = tokens !== null;
+      // Simple, direct check based on AuthProvider state
+      const hasAnyAuth = user || tokens;
       
-      // Only redirect if we truly have no authentication from AuthProvider
-      const hasAnyAuth = user || hasStoredTokens;
+      // Debug logging for test troubleshooting
+      console.log('🔐 ProtectedRoute: Auth check', { 
+        user: !!user, 
+        tokens: !!tokens, 
+        hasAnyAuth, 
+        requireAuth,
+        isLoading,
+        env: process.env.NODE_ENV
+      });
       
-      // Redirect to login if authentication is required but no auth state exists
+      // Redirect to login if authentication is required but no auth exists
       if (requireAuth && !hasAnyAuth) {
+        console.log('🔐 ProtectedRoute: Redirecting to /auth/login');
         router.push('/auth/login');
         return;
       }
 
       // Check role-based authorization only after user is loaded
       if (user && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-        router.push('/news?error=access_denied'); // Redirect to news page if role not allowed
+        console.log('🔐 ProtectedRoute: Redirecting to /news (access denied)');
+        router.push('/news?error=access_denied');
         return;
       }
     }
@@ -48,18 +57,30 @@ export function ProtectedRoute({
   // Also show loading if we have tokens but user is not loaded yet
   if (isLoading || (requireAuth && tokens && !user)) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" data-testid="protected-route-loading">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
   // Don't render children if auth check failed
-  // 🔧 FIXED: Rely on AuthProvider state only for consistency
-  const hasAnyAuth = user || tokens;
+  // Check both AuthProvider state and direct token storage
+  const hasAuthProviderAuth = user || tokens;
   
-  if (requireAuth && !hasAnyAuth) {
-    return null;
+  // For rendering decisions, we need to handle the redirect case properly
+  // Instead of returning null (which causes 404), show loading while redirect happens
+  if (requireAuth && !hasAuthProviderAuth) {
+    // Immediate redirect attempt
+    if (!isLoading) {
+      router.push('/auth/login');
+    }
+    
+    // Show loading spinner while redirect is happening
+    return (
+      <div className="min-h-screen flex items-center justify-center" data-testid="protected-route-redirecting">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      </div>
+    );
   }
 
   // Don't render children if role check failed
@@ -67,5 +88,5 @@ export function ProtectedRoute({
     return null;
   }
 
-  return <>{children}</>;
+  return <div data-testid="protected-route-success">{children}</div>;
 }
