@@ -194,7 +194,7 @@ test.describe('Role-Based Access Control Matrix', () => {
         const context = await browser.newContext();
         cleanup.trackBrowserContext(context);
         const page = await context.newPage();
-        const auth = new CleanAuthHelper(context, `RBAC-API-${role}`);
+        const auth = new CleanAuthHelper(page);
         
         try {
           const { accessToken } = await auth.loginWithCustomUser(user.email, 'TestPass123!');
@@ -229,7 +229,7 @@ test.describe('Role-Based Access Control Matrix', () => {
           }
           
         } finally {
-          await auth.cleanup();
+          await auth.clearAuthState();
           await context.close();
         }
       }
