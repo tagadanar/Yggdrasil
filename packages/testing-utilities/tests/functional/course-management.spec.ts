@@ -6,8 +6,13 @@ import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { ROLE_PERMISSIONS_MATRIX } from '../helpers/role-based-testing';
 import { captureEnhancedError } from '../helpers/enhanced-error-context';
+import { setupTestLifecycle } from '../helpers/test-lifecycle';
+import { CourseModel } from '@yggdrasil/database-schemas';
 
 test.describe('Course Management', () => {
+  // Initialize test lifecycle for cascade prevention
+  setupTestLifecycle('Course Management');
+  
   // Removed global auth helpers - each test manages its own cleanup
 
   // =============================================================================
@@ -23,7 +28,7 @@ test.describe('Course Management', () => {
   // COURSE-001: Focused Course Creation Tests (Split from mega-test for performance)
   // =============================================================================
 
-  test('Teacher can create draft course with basic information', async ({ page }) => {
+  test('Teacher creates draft course', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Teacher Draft Course Creation');
     const authHelper = new CleanAuthHelper(page);
     
@@ -66,7 +71,13 @@ test.describe('Course Management', () => {
       }
       
       cleanup.addCustomCleanup(async () => {
-        // Clean up draft course resources
+        try {
+          // Clean up created course
+          await CourseModel.deleteMany({ title: { $regex: /^Draft Course/ } });
+          console.log('🧹 CLEANUP: Deleted draft course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete draft course:', error);
+        }
       });
       
     } finally {
@@ -75,7 +86,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Teacher can add chapters in sequence to course', async ({ page }) => {
+  test('Teacher adds chapters', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Course Chapter Management');
     const authHelper = new CleanAuthHelper(page);
     
@@ -119,7 +130,13 @@ test.describe('Course Management', () => {
       }
       
       cleanup.addCustomCleanup(async () => {
-        // Clean up chapter course resources
+        try {
+          // Clean up created course
+          await CourseModel.deleteMany({ title: { $regex: /^Chapter Course/ } });
+          console.log('🧹 CLEANUP: Deleted chapter course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete chapter course:', error);
+        }
       });
       
     } finally {
@@ -128,7 +145,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Teacher can add sections to chapters', async ({ page }) => {
+  test('Teacher adds sections', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Course Section Management');
     const authHelper = new CleanAuthHelper(page);
     
@@ -174,7 +191,13 @@ test.describe('Course Management', () => {
       }
       
       cleanup.addCustomCleanup(async () => {
-        // Clean up section course resources
+        try {
+          // Clean up created course
+          await CourseModel.deleteMany({ title: { $regex: /^Section Course/ } });
+          console.log('🧹 CLEANUP: Deleted section course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete section course:', error);
+        }
       });
       
     } finally {
@@ -183,7 +206,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Teacher can add mixed content types to course', async ({ page }) => {
+  test('Mixed content types', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Course Content Types');
     const authHelper = new CleanAuthHelper(page);
     
@@ -224,7 +247,13 @@ test.describe('Course Management', () => {
       }
       
       cleanup.addCustomCleanup(async () => {
-        // Clean up content course resources
+        try {
+          // Clean up created course
+          await CourseModel.deleteMany({ title: { $regex: /^Content Course/ } });
+          console.log('🧹 CLEANUP: Deleted content course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete content course:', error);
+        }
       });
       
     } finally {
@@ -233,7 +262,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Course publishing validation prevents incomplete courses', async ({ page }) => {
+  test('Publishing validation', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Course Publishing Validation');
     const authHelper = new CleanAuthHelper(page);
     
@@ -265,7 +294,13 @@ test.describe('Course Management', () => {
       }
       
       cleanup.addCustomCleanup(async () => {
-        // Clean up incomplete course resources
+        try {
+          // Clean up created course
+          await CourseModel.deleteMany({ title: { $regex: /^Incomplete Course/ } });
+          console.log('🧹 CLEANUP: Deleted incomplete course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete incomplete course:', error);
+        }
       });
       
     } finally {
@@ -274,7 +309,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Complete course can be published successfully', async ({ page }) => {
+  test('Course publishing', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Course Publishing Success');
     const authHelper = new CleanAuthHelper(page);
     
@@ -321,7 +356,13 @@ test.describe('Course Management', () => {
       }
       
       cleanup.addCustomCleanup(async () => {
-        // Clean up published course resources
+        try {
+          // Clean up created course
+          await CourseModel.deleteMany({ title: { $regex: /^Complete Course/ } });
+          console.log('🧹 CLEANUP: Deleted complete course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete complete course:', error);
+        }
       });
       
     } finally {
@@ -330,7 +371,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Published course appears in public search results', async ({ page }) => {
+  test('Course search', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Course Search Visibility');
     const authHelper = new CleanAuthHelper(page);
     
@@ -373,7 +414,13 @@ test.describe('Course Management', () => {
       }
       
       cleanup.addCustomCleanup(async () => {
-        // Clean up searchable course resources
+        try {
+          // Clean up created course
+          await CourseModel.deleteMany({ title: { $regex: /^Searchable Course/ } });
+          console.log('🧹 CLEANUP: Deleted searchable course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete searchable course:', error);
+        }
       });
       
     } finally {
@@ -382,7 +429,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Course slug generation handles duplicate titles', async ({ page }) => {
+  test('Slug generation', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Course Slug Duplication');
     const authHelper = new CleanAuthHelper(page);
     
@@ -425,7 +472,13 @@ test.describe('Course Management', () => {
       }
       
       cleanup.addCustomCleanup(async () => {
-        // Clean up duplicate course resources
+        try {
+          // Clean up created courses (both duplicates)
+          await CourseModel.deleteMany({ title: { $regex: /^Duplicate Course/ } });
+          console.log('🧹 CLEANUP: Deleted duplicate course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete duplicate courses:', error);
+        }
       });
       
     } finally {
@@ -438,7 +491,7 @@ test.describe('Course Management', () => {
   // EXERCISE TESTS: Split from mega-test for better maintainability
   // =============================================================================
 
-  test('Teacher can create coding exercise with test cases', async ({ page }) => {
+  test('Coding exercise creation', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Teacher Exercise Creation');
     const authHelper = new CleanAuthHelper(page);
     let exerciseCourseTitle: string | null = null;
@@ -501,7 +554,13 @@ test.describe('Course Management', () => {
       }
       
       cleanup.addCustomCleanup(async () => {
-        // Clean up exercise course resources
+        try {
+          // Clean up created course
+          await CourseModel.deleteMany({ title: { $regex: /^Exercise Course/ } });
+          console.log('🧹 CLEANUP: Deleted exercise course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete exercise course:', error);
+        }
       });
       
     } finally {
@@ -510,7 +569,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Student can submit valid solution and receive test results', async ({ page }) => {
+  test('Valid solution submission', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Student Valid Submission');
     const authHelper = new CleanAuthHelper(page);
     
@@ -555,7 +614,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Student submission with compilation errors shows error feedback', async ({ page }) => {
+  test('Compilation error feedback', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Student Compilation Error');
     const authHelper = new CleanAuthHelper(page);
     
@@ -600,7 +659,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Student submission failing tests shows partial credit feedback', async ({ page }) => {
+  test('Failed test feedback', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Student Test Failure');
     const authHelper = new CleanAuthHelper(page);
     
@@ -649,7 +708,7 @@ test.describe('Course Management', () => {
   // QUIZ TESTS: Split from mega-test for better maintainability
   // =============================================================================
 
-  test('Teacher can create quiz with multiple choice questions', async ({ page }) => {
+  test('Quiz creation', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Teacher Quiz Creation');
     const authHelper = new CleanAuthHelper(page);
     let quizCourseTitle: string | null = null;
@@ -730,7 +789,13 @@ test.describe('Course Management', () => {
       }
       
       cleanup.addCustomCleanup(async () => {
-        // Clean up quiz course resources
+        try {
+          // Clean up created course
+          await CourseModel.deleteMany({ title: { $regex: /^Quiz Course/ } });
+          console.log('🧹 CLEANUP: Deleted quiz course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete quiz course:', error);
+        }
       });
       
     } finally {
@@ -739,7 +804,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Teacher can add mixed question types to quiz', async ({ page }) => {
+  test('Mixed quiz questions', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Quiz Mixed Question Types');
     const authHelper = new CleanAuthHelper(page);
     
@@ -803,7 +868,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Student can take quiz within time limit and submit answers', async ({ page }) => {
+  test('Quiz submission', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Student Quiz Taking');
     const authHelper = new CleanAuthHelper(page);
     
@@ -865,7 +930,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Quiz system automatically scores objective questions', async ({ page }) => {
+  test('Auto quiz scoring', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Quiz Automatic Scoring');
     const authHelper = new CleanAuthHelper(page);
     
@@ -896,7 +961,7 @@ test.describe('Course Management', () => {
     }
   });
 
-  test('Teacher can manually grade essay questions', async ({ page }) => {
+  test('Manual essay grading', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Teacher Essay Grading');
     const authHelper = new CleanAuthHelper(page);
     
@@ -1001,7 +1066,14 @@ test.describe('Course Management', () => {
         
         // Track created course for cleanup
         cleanup.addCustomCleanup(async () => {
-          // Clean up API test course resources
+          try {
+            // Clean up created course
+            const { Course } = require('@yggdrasil/database-schemas');
+            await CourseModel.deleteMany({ title: { $regex: /^API Test Course/ } });
+            console.log('🧹 CLEANUP: Deleted API test course resources');
+          } catch (error) {
+            console.warn('🧹 CLEANUP: Failed to delete API test course:', error);
+          }
         });
       }
       

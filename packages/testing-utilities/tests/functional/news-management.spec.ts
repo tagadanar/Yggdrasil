@@ -4,8 +4,13 @@
 import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
+import { setupTestLifecycle } from '../helpers/test-lifecycle';
+import { NewsArticleModel } from '@yggdrasil/database-schemas';
 
 test.describe('News Management', () => {
+  // Initialize test lifecycle for cascade prevention
+  setupTestLifecycle('News Management');
+  
   // =============================================================================
   // ROLE-BASED ACCESS TESTS
   // =============================================================================
@@ -17,10 +22,11 @@ test.describe('News Management', () => {
   // =============================================================================
   // NEWS ARTICLE CREATION AND MANAGEMENT
   // =============================================================================
-  test('Complete article lifecycle - create, edit, publish, archive', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Complete article lifecycle - create, edit, publish, archive');
+  test('Article lifecycle', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Article lifecycle');
     const authHelper = new CleanAuthHelper(page);
     let createdArticleTitle: string | null = null;
+    let createdArticleId: string | null = null;
     
     try {
       await authHelper.loginAsAdmin();
@@ -165,9 +171,15 @@ test.describe('News Management', () => {
     
     } finally {
       // Track and cleanup created article
-      if (createdArticleTitle) {
+      if (createdArticleId) {
         cleanup.addCustomCleanup(async () => {
-          // This would delete the article via API in a real implementation
+          try {
+            // Delete the article directly from database
+            await NewsArticleModel.deleteOne({ _id: createdArticleId });
+            console.log(`🧹 CLEANUP: Deleted news article ${createdArticleId}`);
+          } catch (error) {
+            console.warn(`🧹 CLEANUP: Failed to delete news article ${createdArticleId}:`, error);
+          }
         });
       }
       await authHelper.clearAuthState();
@@ -178,35 +190,177 @@ test.describe('News Management', () => {
   // =============================================================================
   // NEWS CATEGORY FILTERING
   // =============================================================================
-  test('News filtering and content discovery', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('News filtering and content discovery');
+  test('News filtering', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('News filtering');
     const authHelper = new CleanAuthHelper(page);
     
     try {
-      await authHelper.loginAsStudent();
-      await page.goto('/news');
-      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      // Detect if we're in critical zone and use enhanced isolation
+      const globalTestCount = global.yggdrasilGlobalTestCount || 0;
+      const inCriticalZone = globalTestCount >= 25;
+      
+      if (inCriticalZone) {
+        console.log(`🚨 NEWS FILTERING: Running in critical zone (test #${globalTestCount}) - using enhanced isolation`);
+        
+        // DEEP DIAGNOSIS: Check news service and database state
+        console.log(`🔍 NEWS FILTERING: Diagnosing news service state...`);
+        
+        try {
+          // Count ALL database collections to identify accumulation source
+          const mongoose = require('mongoose');
+          const collections = await mongoose.connection.db.listCollections().toArray();
+          
+          for (const collection of collections) {
+            const count = await mongoose.connection.db.collection(collection.name).countDocuments({});
+            console.log(`🔍 COLLECTION ${collection.name}: ${count} documents`);
+          }
+          
+          // Count articles in database
+          const articleCount = await NewsArticleModel.countDocuments({});
+          const publishedCount = await NewsArticleModel.countDocuments({ isPublished: true });
+          console.log(`🔍 DATABASE STATE: Total articles: ${articleCount}, Published: ${publishedCount}`);
+          
+          // If too many articles, emergency cleanup
+          if (articleCount > 50) {
+            console.log(`🚨 EMERGENCY: Too many articles (${articleCount}), performing emergency cleanup...`);
+            const deleted = await NewsArticleModel.deleteMany({ 
+              title: { $regex: /^Test Article/ }  // Delete test articles
+            });
+            console.log(`🧹 EMERGENCY CLEANUP: Deleted ${deleted.deletedCount} test articles`);
+          }
+          
+          // Check indexes
+          const indexes = await NewsArticleModel.collection.getIndexes();
+          console.log(`🔍 DATABASE INDEXES: ${JSON.stringify(Object.keys(indexes))}`);
+          
+          // Check if critical indexes exist
+          const hasSlugIndex = 'slug_1' in indexes;
+          const hasCategoryIndex = 'category_1' in indexes;
+          const hasPublishedIndex = 'isPublished_1' in indexes;
+          
+          if (!hasCategoryIndex || !hasPublishedIndex) {
+            console.log(`⚠️ MISSING CRITICAL INDEXES: category=${hasCategoryIndex}, isPublished=${hasPublishedIndex}`);
+          }
+          // Check news service health specifically
+          const newsHealthStart = Date.now();
+          const newsHealthResponse = await page.evaluate(async () => {
+            try {
+              const response = await fetch('http://localhost:3003/health');
+              return {
+                status: response.status,
+                ok: response.ok,
+                statusText: response.statusText,
+                responseTime: Date.now()
+              };
+            } catch (error) {
+              return { error: error.message };
+            }
+          });
+          const newsHealthTime = Date.now() - newsHealthStart;
+          console.log(`🔍 NEWS SERVICE HEALTH: ${JSON.stringify(newsHealthResponse)} (${newsHealthTime}ms)`);
+          
+          // Check news service API directly
+          const newsApiStart = Date.now();
+          const newsApiResponse = await page.evaluate(async () => {
+            try {
+              const response = await fetch('http://localhost:3003/api/news/articles?limit=1');
+              const data = await response.json();
+              return {
+                status: response.status,
+                ok: response.ok,
+                hasData: !!data,
+                dataSize: JSON.stringify(data).length
+              };
+            } catch (error) {
+              return { error: error.message };
+            }
+          });
+          const newsApiTime = Date.now() - newsApiStart;
+          console.log(`🔍 NEWS API TEST: ${JSON.stringify(newsApiResponse)} (${newsApiTime}ms)`);
+          
+          // Check memory usage
+          const memory = process.memoryUsage();
+          console.log(`🔍 MEMORY USAGE: heapUsed=${Math.round(memory.heapUsed / 1024 / 1024)}MB, heapTotal=${Math.round(memory.heapTotal / 1024 / 1024)}MB, external=${Math.round(memory.external / 1024 / 1024)}MB`);
+          
+          // Check connection pool state
+          if (mongoose.connection) {
+            console.log(`🔍 CONNECTION STATE: readyState=${mongoose.connection.readyState}, name=${mongoose.connection.name}`);
+          }
+          
+        } catch (diagnosisError) {
+          console.log(`🔍 NEWS DIAGNOSIS ERROR: ${diagnosisError.message}`);
+        }
+        
+        await authHelper.loginAsStudentWithEnhancedIsolation();
+      } else {
+        console.log(`📰 NEWS FILTERING: Normal execution (test #${globalTestCount})`);
+        await authHelper.loginAsStudent();
+      }
+      
+      // Monitor the actual page navigation that's timing out
+      console.log(`🔍 NEWS FILTERING: Starting page navigation to /news...`);
+      const navigationStart = Date.now();
+      
+      try {
+        await page.goto('/news');
+        const gotoTime = Date.now() - navigationStart;
+        console.log(`🔍 NEWS FILTERING: page.goto('/news') completed in ${gotoTime}ms`);
+        
+        const domLoadStart = Date.now();
+        await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+        const domLoadTime = Date.now() - domLoadStart;
+        console.log(`🔍 NEWS FILTERING: DOM load completed in ${domLoadTime}ms`);
+        
+      } catch (navigationError) {
+        const totalTime = Date.now() - navigationStart;
+        console.log(`🔍 NEWS FILTERING: Navigation failed after ${totalTime}ms: ${navigationError.message}`);
+        throw navigationError;
+      }
       
       // Test category filtering
       const categories = ['all', 'announcements', 'events', 'academic', 'general'];
       
       for (const category of categories) {
+        const categoryStart = Date.now();
         const categoryButton = page.locator(`button:has-text("${category.charAt(0).toUpperCase() + category.slice(1)}")`);
         
         if (await categoryButton.count() > 0) {
+          const clickStart = Date.now();
           await categoryButton.click();
+          const clickTime = Date.now() - clickStart;
           
           // Wait for category button to become active (filtering applied)
+          const activeStart = Date.now();
           await expect(categoryButton).toHaveClass(/bg-primary-600/, { timeout: 3000 });
+          const activeTime = Date.now() - activeStart;
           
           // Verify filtering - count articles
+          const countStart = Date.now();
           const articles = page.locator('article');
           const count = await articles.count();
+          const countTime = Date.now() - countStart;
+          
+          const totalTime = Date.now() - categoryStart;
+          console.log(`🔍 CATEGORY ${category.toUpperCase()}: ${count} articles (click=${clickTime}ms, active=${activeTime}ms, count=${countTime}ms, total=${totalTime}ms)`);
+          
+          // If any operation is slow, it's a sign of the issue
+          if (totalTime > 5000) {
+            console.log(`⚠️ SLOW FILTERING: Category ${category} took ${totalTime}ms!`);
+          }
         }
       }
       
     } finally {
-      await authHelper.clearAuthState();
+      // Use enhanced cleanup if we were in critical zone
+      const globalTestCount = global.yggdrasilGlobalTestCount || 0;
+      const inCriticalZone = globalTestCount >= 25;
+      
+      if (inCriticalZone) {
+        console.log(`🚨 NEWS FILTERING: Critical zone cleanup (test #${globalTestCount})`);
+        await authHelper.clearAuthStateEnhanced();
+      } else {
+        await authHelper.clearAuthState();
+      }
       await cleanup.cleanup();
     }
   });
@@ -214,8 +368,8 @@ test.describe('News Management', () => {
   // =============================================================================
   // NEWS PAGE LOADING AND ERROR HANDLING
   // =============================================================================
-  test('News page loading states and error handling', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('News page loading states and error handling');
+  test('News page loading', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('News page loading');
     const authHelper = new CleanAuthHelper(page);
     
     try {
@@ -253,8 +407,8 @@ test.describe('News Management', () => {
   // =============================================================================
   // ACCESS DENIED FUNCTIONALITY
   // =============================================================================
-  test('Access denied message functionality', async ({ page }) => {
-    const cleanup = TestCleanup.getInstance('Access denied message functionality');
+  test('Access denied message', async ({ page }) => {
+    const cleanup = TestCleanup.getInstance('Access denied message');
     const authHelper = new CleanAuthHelper(page);
     
     try {

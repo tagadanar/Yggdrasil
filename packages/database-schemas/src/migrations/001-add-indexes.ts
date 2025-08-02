@@ -9,24 +9,16 @@ export default class AddIndexes extends Migration {
     await this.transaction(async () => {
       // Users collection
       const Users = mongoose.connection.collection('users');
-      await Users.createIndex({ email: 1 }, { unique: true });
       await Users.createIndex({ role: 1, isActive: 1 });
       await Users.createIndex({ createdAt: -1 });
-      await Users.createIndex({ 'profile.department': 1 });
 
       // Courses collection
       const Courses = mongoose.connection.collection('courses');
-      await Courses.createIndex({ code: 1 }, { unique: true });
       await Courses.createIndex({ teacherId: 1 });
       await Courses.createIndex({ status: 1, startDate: 1 });
       await Courses.createIndex({ 'metadata.tags': 1 });
 
-      // Enrollments collection
-      const Enrollments = mongoose.connection.collection('enrollments');
-      await Enrollments.createIndex({ userId: 1, courseId: 1 }, { unique: true });
-      await Enrollments.createIndex({ courseId: 1, status: 1 });
-      await Enrollments.createIndex({ userId: 1, status: 1 });
-      await Enrollments.createIndex({ enrolledAt: -1 });
+      // Enrollments collection - indexes handled by schemas
 
       // News collection
       const News = mongoose.connection.collection('news');

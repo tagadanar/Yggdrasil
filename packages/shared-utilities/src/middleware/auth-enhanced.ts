@@ -47,7 +47,6 @@ export class EnhancedAuthMiddleware {
    */
   static verifyToken(req: Request, res: Response, next: NextFunction): void {
     try {
-      console.log('🔍 AUTH MIDDLEWARE: verifyToken called for:', req.method, req.path);
       const authHeader = req.header('Authorization');
 
       if (!authHeader) {
@@ -130,14 +129,6 @@ export class EnhancedAuthMiddleware {
         const userId = verification.data!.userId || verification.data!.id;
         const dbUser = await userLookupFn(userId);
 
-        console.log('🔍 AUTH MIDDLEWARE: Database user lookup result:', {
-          userId,
-          hasDbUser: !!dbUser,
-          dbUserEmail: dbUser?.email,
-          dbUserHasProfile: !!dbUser?.profile,
-          dbUserProfileKeys: dbUser?.profile ? Object.keys(dbUser.profile) : 'no profile',
-          dbUserProfileFirstName: dbUser?.profile?.firstName,
-        });
 
         if (!dbUser) {
           const response = ResponseHelper.unauthorized('User not found');
@@ -181,13 +172,6 @@ export class EnhancedAuthMiddleware {
         };
         req.userId = userId;
 
-        console.log('🔍 AUTH MIDDLEWARE: Created req.user object:', {
-          email: req.user.email,
-          role: req.user.role,
-          hasProfile: !!req.user.profile,
-          profileFirstName: req.user.profile?.firstName,
-          profileKeys: req.user.profile ? Object.keys(req.user.profile) : 'no profile',
-        });
 
         next();
       } catch (error) {

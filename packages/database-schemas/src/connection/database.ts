@@ -29,13 +29,17 @@ export class DatabaseConnection {
 
     try {
       const defaultOptions: mongoose.ConnectOptions = {
-        // Connection optimization options
-        maxPoolSize: process.env['NODE_ENV'] === 'test' ? 50 : 10,
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 45000,
+        // Connection optimization options - Reduced for test stability
+        maxPoolSize: process.env['NODE_ENV'] === 'test' ? 15 : 10,  // Reduced from 50 to prevent exhaustion
+        serverSelectionTimeoutMS: process.env['NODE_ENV'] === 'test' ? 3000 : 5000,  // Faster timeout in tests
+        socketTimeoutMS: process.env['NODE_ENV'] === 'test' ? 30000 : 45000,  // Reduced for tests
         bufferCommands: false,
-        minPoolSize: process.env['NODE_ENV'] === 'test' ? 5 : 0,
-        maxIdleTimeMS: process.env['NODE_ENV'] === 'test' ? 30000 : 30000,
+        minPoolSize: process.env['NODE_ENV'] === 'test' ? 2 : 0,  // Keep minimum alive
+        maxIdleTimeMS: process.env['NODE_ENV'] === 'test' ? 5000 : 30000,  // Faster cleanup in tests
+
+        // New options for connection stability
+        connectTimeoutMS: 10000,
+        family: 4,  // Force IPv4 to avoid IPv6 issues
 
         // Authentication options
         authSource: config.MONGO_DATABASE || 'yggdrasil-dev',
@@ -94,6 +98,11 @@ export class DatabaseConnection {
 // Function to build authenticated MongoDB connection string
 function buildAuthenticatedConnectionString(): string {
   let uri = config.MONGODB_URI;
+
+  // If URI already contains authentication, return it as-is
+  if (uri.includes('@')) {
+    return uri;
+  }
 
   // If authentication credentials are provided, add them to the connection string
   if (config.MONGO_APP_USERNAME && config.MONGO_APP_PASSWORD) {

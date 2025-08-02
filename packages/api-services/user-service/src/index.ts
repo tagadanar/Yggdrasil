@@ -130,9 +130,17 @@ async function startServer() {
     });
 
     // Graceful shutdown
-    const gracefulShutdown = (signal: string) => {
+    const gracefulShutdown = async (signal: string) => {
       logger.debug(`🛑 ${signal} received, shutting down gracefully`);
-      server.close(() => {
+      server.close(async () => {
+        try {
+          // CRITICAL FIX: Disconnect from database to prevent connection leaks
+          const { disconnectDatabase } = await import('@yggdrasil/database-schemas');
+          await disconnectDatabase();
+          logger.info('User service database disconnected');
+        } catch (error) {
+          logger.error('Error disconnecting database:', error);
+        }
         logger.info('✅ User Service shut down successfully');
         process.exit(0);
       });

@@ -15,6 +15,14 @@ import { promisify } from 'util';
 
 const sleep = promisify(setTimeout);
 
+// Helper for quiet mode logging
+const isQuietMode = process.env['QUIET_MODE'] === 'true';
+const quietLog = (message: string) => {
+  if (!isQuietMode) {
+    console.log(message);
+  }
+};
+
 interface ServiceProcess {
   workerId: number;
   processes: ChildProcess[];
@@ -37,7 +45,7 @@ async function checkServiceHealth(port: number): Promise<boolean> {
 }
 
 async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
-  console.log(`🚀 GLOBAL SETUP: Starting services for Worker ${workerId}...`);
+  quietLog(`🚀 GLOBAL SETUP: Starting services for Worker ${workerId}...`);
   
   const basePort = 3000 + (workerId * 10);
   const ports = [
@@ -68,7 +76,17 @@ async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
   
   serviceManager.stdout?.on('data', (data) => {
     try {
-      console.log(`📝 Worker ${workerId} Service Manager:`, data.toString().trim());
+      const message = data.toString().trim();
+      // Only log essential messages for quiet mode
+      if (message.includes('🚀') || message.includes('✅') || 
+          message.includes('📱') || message.includes('🔐') || 
+          message.includes('👤') || message.includes('📰') || 
+          message.includes('📚') || message.includes('📅') || 
+          message.includes('📊') || message.includes('❌') ||
+          message.includes('Starting') || message.includes('ready') ||
+          message.includes('All services')) {
+        quietLog(`📝 Worker ${workerId} Service Manager: ${message}`);
+      }
     } catch (error) {
       // Ignore EPIPE errors during shutdown
     }
@@ -83,7 +101,7 @@ async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
   });
   
   // Wait for services to be ready
-  console.log(`⏳ GLOBAL SETUP: Waiting for Worker ${workerId} services to be ready...`);
+  quietLog(`⏳ GLOBAL SETUP: Waiting for Worker ${workerId} services to be ready...`);
   
   let retries = 0;
   const maxRetries = 60; // 30 seconds total with faster checks
@@ -96,7 +114,7 @@ async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
     );
     
     const readyServices = healthChecks.filter(Boolean).length;
-    console.log(`📊 Worker ${workerId}: ${readyServices}/${ports.length} services ready`);
+    quietLog(`📊 Worker ${workerId}: ${readyServices}/${ports.length} services ready`);
     
     if (readyServices === ports.length) {
       console.log(`✅ GLOBAL SETUP: Worker ${workerId} services all ready!`);
@@ -125,7 +143,7 @@ async function verifyWorkerHealth(workerId: number): Promise<boolean> {
     basePort + 6  // statistics
   ];
   
-  console.log(`🔍 HEALTH CHECK: Verifying Worker ${workerId} services on ports ${ports.join(', ')}...`);
+  quietLog(`🔍 HEALTH CHECK: Verifying Worker ${workerId} services on ports ${ports.join(', ')}...`);
   
   try {
     const healthChecks = await Promise.all(
@@ -134,9 +152,9 @@ async function verifyWorkerHealth(workerId: number): Promise<boolean> {
         const isHealthy = await checkServiceHealth(port);
         
         if (isHealthy) {
-          console.log(`✅ ${serviceName} service (${port}) - healthy`);
+          quietLog(`✅ ${serviceName} service (${port}) - healthy`);
         } else {
-          console.log(`❌ ${serviceName} service (${port}) - unhealthy`);
+          quietLog(`❌ ${serviceName} service (${port}) - unhealthy`);
         }
         
         return isHealthy;
@@ -146,7 +164,7 @@ async function verifyWorkerHealth(workerId: number): Promise<boolean> {
     const healthyCount = healthChecks.filter(Boolean).length;
     const isFullyHealthy = healthyCount === ports.length;
     
-    console.log(`📊 Worker ${workerId} Health: ${healthyCount}/${ports.length} services healthy`);
+    quietLog(`📊 Worker ${workerId} Health: ${healthyCount}/${ports.length} services healthy`);
     
     if (!isFullyHealthy) {
       console.warn(`⚠️ Worker ${workerId} has ${ports.length - healthyCount} unhealthy services`);
@@ -167,26 +185,26 @@ async function startSingleWorkerServices(): Promise<void> {
     
     // Single worker setup - workerId is always 0
     const workerId = 0;
-    console.log(`⚡ Starting Worker ${workerId}...`);
+    quietLog(`⚡ Starting Worker ${workerId}...`);
     
     const workerStartTime = Date.now();
     const worker = await startWorkerServices(workerId);
     serviceProcesses.push(worker);
     
     const workerDuration = Date.now() - workerStartTime;
-    console.log(`✅ Worker ${workerId} started in ${workerDuration}ms`);
+    quietLog(`✅ Worker ${workerId} started in ${workerDuration}ms`);
     
     // Verify worker health
-    console.log(`🔍 Verifying Worker ${workerId} health...`);
+    quietLog(`🔍 Verifying Worker ${workerId} health...`);
     const healthCheck = await verifyWorkerHealth(workerId);
     if (!healthCheck) {
       throw new Error(`Worker ${workerId} failed health check after startup`);
     }
-    console.log(`💚 Worker ${workerId} health verified`);
+    quietLog(`💚 Worker ${workerId} health verified`);
     
     console.log('✅ GLOBAL SETUP: Single worker started and verified!');
-    console.log('📊 Startup Results:');
-    console.log(`   Worker 0: ports ${serviceProcesses[0]?.ports?.join(', ') || 'none'}`);
+    quietLog('📊 Startup Results:');
+    quietLog(`   Worker 0: ports ${serviceProcesses[0]?.ports?.join(', ') || 'none'}`);
     
     // Store reference for global teardown
     (global as any).__serviceProcesses = serviceProcesses;
@@ -223,6 +241,11 @@ async function globalSetup(_config: FullConfig) {
   try {
     // Start services for single worker
     await startSingleWorkerServices();
+    
+    // Start service health monitoring
+    console.log('🏥 Starting service health monitoring...');
+    const { startMonitoring } = require('../service-health-monitor.js');
+    await startMonitoring();
     
     // Initialize clean test environment
     console.log('🏗️ Initializing clean test environment...');

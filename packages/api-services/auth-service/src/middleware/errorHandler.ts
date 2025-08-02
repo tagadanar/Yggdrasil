@@ -20,7 +20,7 @@ export const errorHandler = (
   });
 
   // Don't expose error details in production
-  const isDevelopment = process.env['NODE_ENV'] === 'development';
+  const isDevelopment = process.env['NODE_ENV'] === 'development' || process.env['NODE_ENV'] === 'test';
 
   res
     .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)

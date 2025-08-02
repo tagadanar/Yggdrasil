@@ -89,7 +89,8 @@ async function runTests() {
         stdio: ['inherit', 'inherit', 'inherit'],  // Direct passthrough - reporter handles everything
         env: { 
           ...process.env,
-          NODE_ENV: 'test'
+          NODE_ENV: 'test',
+          QUIET_MODE: 'true'
         }
       }
     );

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { CleanAuthHelper } from '../helpers/optimized-auth.helpers';
-import { TestCleanup } from '../helpers/TestCleanup';
+import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
+import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 
 /**
  * System Integration Tests - Core Service Interaction Validation
@@ -20,7 +20,7 @@ test.describe('System Integration Tests', () => {
   // =============================================================================
   // INTEGRATION-001: Complete Cross-Service Integration Workflow
   // =============================================================================
-  test('Complete cross-service integration workflow', async ({ page }) => {
+  test('Cross-service integration workflow', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Cross-Service Integration');
     
     try {
@@ -69,7 +69,7 @@ test.describe('System Integration Tests', () => {
   // =============================================================================
   // INTEGRATION-002: System Resilience Under Adverse Conditions
   // =============================================================================
-  test('System resilience under adverse conditions', async ({ page }) => {
+  test('System resilience adverse conditions', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('System Resilience');
     
     try {
@@ -103,7 +103,7 @@ test.describe('System Integration Tests', () => {
   // =============================================================================
   // INTEGRATION-003: Security Boundaries and Session Management
   // =============================================================================
-  test('Security boundaries and session management', async ({ page }) => {
+  test('Security boundaries session management', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Security Boundaries');
     
     try {
@@ -152,7 +152,7 @@ test.describe('System Integration Tests', () => {
   // =============================================================================
   // INTEGRATION-004: System Performance Under Load
   // =============================================================================
-  test('System performance under load', async ({ page }) => {
+  test('System performance load', async ({ page }) => {
     test.setTimeout(45000); // Extended timeout for performance test
     const cleanup = TestCleanup.getInstance('Performance Load');
     
@@ -198,7 +198,7 @@ test.describe('System Integration Tests', () => {
   // =============================================================================
   // INTEGRATION-005: Data Consistency Across Services
   // =============================================================================
-  test('Data consistency across services', async ({ page }) => {
+  test('Data consistency services', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Data Consistency');
     
     try {
@@ -267,7 +267,7 @@ test.describe('System Integration Tests', () => {
   // =============================================================================
   // INTEGRATION-006: Service Health Monitoring and Diagnostics
   // =============================================================================
-  test('Service health monitoring and diagnostics', async ({ page }) => {
+  test('Service health monitoring diagnostics', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Health Monitoring');
     
     try {

@@ -15,17 +15,13 @@ try {
   // Fix the Console object directly (this is what Winston's ExceptionHandler uses)
   if (typeof (console as any).setMaxListeners === 'function') {
     (console as any).setMaxListeners(100);
-    console.log('🔧 WINSTON FIX: Set Console.setMaxListeners(100)');
   } else {
     // If Console doesn't have setMaxListeners, try to access the underlying EventEmitter
     // Winston might be adding listeners to console._stream or similar
-    const consoleMethods = Object.getOwnPropertyNames(console);
-    console.log('🔍 WINSTON DEBUG: Console methods/properties:', consoleMethods.slice(0, 10));
     
     // Check if console is actually an EventEmitter or has EventEmitter properties
     if ((console as any).on && typeof (console as any).on === 'function') {
-      (console as any).setMaxListeners = (console as any).setMaxListeners || function(n: number) { 
-        console.log(`🔧 WINSTON FIX: Mock setMaxListeners(${n}) called on Console`);
+      (console as any).setMaxListeners = (console as any).setMaxListeners || function(_n: number) { 
       };
       (console as any).setMaxListeners(100);
     }
@@ -50,7 +46,6 @@ try {
     process.stderr.setMaxListeners(100);
   }
 } catch (error) {
-  console.log('🚨 WINSTON FIX ERROR:', error instanceof Error ? error.message : String(error));
 }
 
 // Also increase process max listeners for global error handlers
@@ -110,16 +105,6 @@ export class LoggerFactory {
                       process.argv.some(arg => arg.includes('test')) ||
                       typeof global !== 'undefined' && (global as any).expect !== undefined; // Jest/test environment
     
-    // Debug logging to understand why test mode detection is failing
-    if (service === 'shared') { // Only log once
-      console.log(`🔍 LOGGER DEBUG: Test mode detection for service '${service}':`);
-      console.log(`  - NODE_ENV: ${process.env['NODE_ENV']}`);
-      console.log(`  - process.argv: ${process.argv.join(' ')}`);
-      console.log(`  - playwright in argv: ${process.argv.some(arg => arg.includes('playwright'))}`);
-      console.log(`  - test in argv: ${process.argv.some(arg => arg.includes('test'))}`);
-      console.log(`  - global.expect defined: ${typeof global !== 'undefined' && (global as any).expect !== undefined}`);
-      console.log(`  - Final isTestMode: ${isTestMode}`);
-    }
     
     if (isTestMode) {
       // Return a minimal no-op logger that doesn't create any listeners or transports

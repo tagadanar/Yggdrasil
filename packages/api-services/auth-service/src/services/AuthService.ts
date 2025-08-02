@@ -84,7 +84,8 @@ export class AuthService {
       });
 
       // Log performance metric
-      (authLogger as any).performance('auth.register', duration, {
+      authLogger.debug('Performance: auth.register', {
+        duration: Math.round(duration),
         userId: savedUser._id,
         role: userData.role,
       });
@@ -200,7 +201,8 @@ export class AuthService {
       });
 
       // Log performance metric
-      (authLogger as any).performance('auth.login', duration, {
+      authLogger.debug('Performance: auth.login', {
+        duration: Math.round(duration),
         userId: user._id,
         role: user.role,
       });
@@ -319,7 +321,8 @@ export class AuthService {
       });
 
       // Log performance metric
-      (authLogger as any).performance('auth.refresh', duration, {
+      authLogger.debug('Performance: auth.refresh', {
+        duration: Math.round(duration),
         userId: user._id,
         role: user.role,
       });
@@ -384,7 +387,8 @@ export class AuthService {
       });
 
       // Log performance metric
-      (authLogger as any).performance('auth.logout', duration, {
+      authLogger.debug('Performance: auth.logout', {
+        duration: Math.round(duration),
         userId,
       });
 
@@ -487,7 +491,8 @@ export class AuthService {
 
       // Log performance metric only for slow verifications
       if (duration > 100) {
-        (authLogger as any).performance('auth.verify', duration, {
+        authLogger.debug('Performance: auth.verify', {
+          duration: Math.round(duration),
           userId: user._id,
           role: user.role,
         });

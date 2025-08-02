@@ -55,6 +55,25 @@ async function startServer() {
       }
     });
 
+    // CRITICAL FIX: Add missing graceful shutdown handlers
+    const gracefulShutdown = async (signal: string) => {
+      logger.info(`🛑 ${signal} received, shutting down course service gracefully`);
+      server.close(async () => {
+        try {
+          const { disconnectDatabase } = await import('@yggdrasil/database-schemas');
+          await disconnectDatabase();
+          logger.info('Course service database disconnected');
+        } catch (error) {
+          logger.error('Error disconnecting database:', error);
+        }
+        logger.info('✅ Course Service shut down successfully');
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
     return server;
   } catch (error) {
     logger.error('❌ Course Service: Failed to start server:', error);

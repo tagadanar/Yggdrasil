@@ -4,8 +4,13 @@ import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { TestDataFactory } from '../helpers/TestDataFactory';
 import { TestScenarios } from '../helpers/TestScenarioBuilders';
 import { captureEnhancedError } from '../helpers/enhanced-error-context';
+import { setupTestLifecycle } from '../helpers/test-lifecycle';
+import { CourseModel, NewsArticleModel } from '@yggdrasil/database-schemas';
 
 test.describe('Instructor Teaching Workflow - Optimized', () => {
+  // Initialize test lifecycle for cascade prevention
+  setupTestLifecycle('Instructor Teaching Workflow');
+  
   // Split INTEGRATION-002 into focused workflow segments
   
   // =============================================================================
@@ -37,6 +42,9 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       
       const courseName = `Instructor Course ${Date.now()}`;
       await page.fill('input[name="title"]', courseName);
+      
+      // Track course for cleanup
+      let createdCourseId: string | null = null;
       await page.fill('textarea[name="description"]', 'Comprehensive course for instructor workflow testing');
       
       // Set course details
@@ -50,9 +58,9 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
         await levelSelect.selectOption('intermediate');
       }
       
-      // Save as draft first
-      const saveDraftButton = page.locator('button:has-text("Save Draft"), button:has-text("Save")');
-      await saveDraftButton.first().click();
+      // Create the course (actual button text from debug)
+      const createCourseButton = page.locator('button:has-text("Create Course")');
+      await createCourseButton.click();
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Verify course saved
@@ -112,6 +120,16 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       }
       
     } finally {
+      // Clean up created course
+      cleanup.addCustomCleanup(async () => {
+        try {
+          await CourseModel.deleteMany({ title: { $regex: /^Instructor Course/ } });
+          console.log('🧹 CLEANUP: Deleted instructor course resources');
+        } catch (error) {
+          console.warn('🧹 CLEANUP: Failed to delete instructor course:', error);
+        }
+      });
+      
       if (auth) await auth.clearAuthState();
       await cleanup.cleanup();
     }
@@ -230,9 +248,14 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       const course = courses[0];
       
       // Create submissions for grading
+      const submissionIds: string[] = [];
       for (const student of students.slice(0, 3)) {
-        await factory.submissions.createSubmissions(student._id, course._id, 3);
+        const submissions = await factory.submissions.createSubmissions(student._id, course._id, 3);
+        submissionIds.push(...submissions.map((s: any) => s._id));
       }
+      
+      // Track submissions for cleanup
+      submissionIds.forEach(id => cleanup.trackDocument('submissions', id));
       
       cleanup.trackDocument('users', teacher._id);
       courses.forEach(c => cleanup.trackDocument('courses', c._id));
@@ -344,6 +367,8 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       await auth.loginAsTeacher();
       
       // Create course-related news announcement
+      let createdArticleId: string | null = null;
+      
       await page.goto('/news');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
@@ -352,7 +377,8 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
         await createNewsButton.click();
         
         const titleInput = page.locator('input[name="title"]');
-        await titleInput.fill(`Important Update: ${course.title}`);
+        const newsTitle = `Important Update: ${course.title}`;
+        await titleInput.fill(newsTitle);
         
         const contentTextarea = page.locator('textarea[name="content"], .editor, [data-testid="content-editor"]');
         await contentTextarea.first().fill('Students, please note the updated assignment deadline for this week. The Hello World exercise is now due Friday.');
@@ -371,7 +397,42 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
         
         // Publish news
         const publishButton = page.locator('button:has-text("Publish"), button[type="submit"]');
+        
+        // Wait for creation response to get article ID
+        const publishPromise = page.waitForResponse(response => 
+          response.url().includes('/api/news/articles') && response.request().method() === 'POST',
+          { timeout: 10000 }
+        );
+        
         await publishButton.click();
+        
+        try {
+          const publishResponse = await publishPromise;
+          const responseData = await publishResponse.json();
+          createdArticleId = responseData.data?.article?._id || responseData.data?._id || responseData.article?._id;
+          
+          if (createdArticleId) {
+            cleanup.addCustomCleanup(async () => {
+              try {
+                await NewsArticleModel.deleteOne({ _id: createdArticleId });
+                console.log(`🧹 CLEANUP: Deleted workflow news article ${createdArticleId}`);
+              } catch (error) {
+                console.warn(`🧹 CLEANUP: Failed to delete workflow news article ${createdArticleId}:`, error);
+              }
+            });
+          }
+        } catch (error) {
+          // Fallback cleanup by title pattern
+          cleanup.addCustomCleanup(async () => {
+            try {
+              await NewsArticleModel.deleteMany({ title: { $regex: /^Important Update:/ } });
+              console.log('🧹 CLEANUP: Deleted workflow news articles by title pattern');
+            } catch (error) {
+              console.warn('🧹 CLEANUP: Failed to delete workflow news articles:', error);
+            }
+          });
+        }
+        
         await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         
         // Verify news published

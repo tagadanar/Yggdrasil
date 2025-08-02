@@ -55,4 +55,23 @@ server.on('error', (error: any) => {
   }
 });
 
+// CRITICAL FIX: Add missing graceful shutdown handlers
+const gracefulShutdown = async (signal: string) => {
+  logger.info(`🛑 ${signal} received, shutting down statistics service gracefully`);
+  server.close(async () => {
+    try {
+      const { disconnectDatabase } = await import('@yggdrasil/database-schemas');
+      await disconnectDatabase();
+      logger.info('Statistics service database disconnected');
+    } catch (error) {
+      logger.error('Error disconnecting database:', error);
+    }
+    logger.info('✅ Statistics Service shut down successfully');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
 export default server;

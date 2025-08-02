@@ -103,12 +103,10 @@ const ExerciseSubmissionSchema = new Schema<ExerciseSubmissionDocument>({
   exerciseId: {
     type: String,
     required: true,
-    index: true,
   },
   studentId: {
     type: String,
     required: true,
-    index: true,
   },
   code: {
     type: String,
@@ -125,7 +123,6 @@ const ExerciseSubmissionSchema = new Schema<ExerciseSubmissionDocument>({
   submittedAt: {
     type: Date,
     default: Date.now,
-    index: true,
   },
   gradedAt: Date,
 }, {
@@ -166,17 +163,14 @@ const CourseEnrollmentSchema = new Schema<CourseEnrollmentDocument>({
   courseId: {
     type: String,
     required: true,
-    index: true,
   },
   studentId: {
     type: String,
     required: true,
-    index: true,
   },
   enrolledAt: {
     type: Date,
     default: Date.now,
-    index: true,
   },
   progress: {
     type: CourseProgressSchema,
@@ -186,7 +180,6 @@ const CourseEnrollmentSchema = new Schema<CourseEnrollmentDocument>({
     type: String,
     enum: ['active', 'completed', 'dropped'],
     default: 'active',
-    index: true,
   },
 }, {
   timestamps: true,

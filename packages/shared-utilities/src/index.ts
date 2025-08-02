@@ -161,6 +161,9 @@ export { RateLimiter, DistributedRateLimiter, setupSecurityHeaders, setupCORS } 
 export { SyncStrategy, syncConfigurations } from './patterns/data-sync';
 export type { DataSyncConfig, RetryPolicy } from './patterns/data-sync';
 
+// Test database utilities
+export { TestDatabaseManager, testDatabaseManager, getTestDatabaseConnectionString, connectToTestDatabase } from './database/test-database-manager';
+
 export { ServiceClient, ServiceClientFactory, ServiceClientError } from './patterns/service-client';
 export type { ServiceClientOptions } from './patterns/service-client';
 

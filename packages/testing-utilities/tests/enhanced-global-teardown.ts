@@ -113,6 +113,15 @@ async function globalTeardown(_config: FullConfig) {
   console.log('🔧 Using clean testing architecture...');
 
   try {
+    // Stop service health monitoring
+    console.log('🛑 Stopping service health monitoring...');
+    try {
+      const { stopMonitoring } = require('../service-health-monitor.js');
+      stopMonitoring();
+    } catch (monitorError) {
+      console.warn('⚠️ Health monitor stop had issues:', monitorError.message);
+    }
+    
     // First, stop all services
     await stopServicesForSingleWorker();
 

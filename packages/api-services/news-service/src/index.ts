@@ -32,9 +32,17 @@ const startServer = async () => {
     });
 
     // Graceful shutdown
-    const shutdown = () => {
+    const shutdown = async () => {
       logger.info('Shutting down news service...');
-      server.close(() => {
+      server.close(async () => {
+        try {
+          // CRITICAL FIX: Disconnect from database to prevent connection leaks
+          const { disconnectDatabase } = await import('@yggdrasil/database-schemas');
+          await disconnectDatabase();
+          logger.info('News service database disconnected');
+        } catch (error) {
+          logger.error('Error disconnecting database:', error);
+        }
         logger.info('News service shut down');
         process.exit(0);
       });

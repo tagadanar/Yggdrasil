@@ -58,11 +58,8 @@ class LiveProgressReporter {
     this.totalTests = suite.allTests().length;
     this.startTime = Date.now();
 
-    console.log(chalk.blue.bold('🧪 Yggdrasil Test Suite - Live Progress Mode'));
+    console.log(chalk.blue.bold('🧪 Yggdrasil Test Suite - Quiet Mode'));
     console.log(chalk.gray(`📊 Total tests: ${this.totalTests}`));
-    console.log(
-      chalk.gray(`⚙️  Configuration: ${config.workers} worker(s), ${config.timeout}ms timeout`),
-    );
     console.log(''); // Blank line for spacing
   }
 
@@ -138,10 +135,7 @@ class LiveProgressReporter {
       error: result.error?.message,
     });
 
-    // Show error details immediately for failed tests
-    if (result.status === 'failed' && result.error) {
-      console.log(chalk.red(`   💥 Error: ${result.error.message.split('\n')[0]}`));
-    }
+    // In quiet mode, don't show immediate error details - save for summary
   }
 
   onEnd(result) {

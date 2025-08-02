@@ -16,7 +16,7 @@ import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 
 test.describe('User Management - Core Functionality', () => {
 
-  test('Admin can access user management interface', async ({ page }) => {
+  test('Admin accesses user management', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('User Management Access');
     const authHelper = new CleanAuthHelper(page);
     
@@ -43,7 +43,7 @@ test.describe('User Management - Core Functionality', () => {
     }
   });
 
-  test('User creation form displays with proper validation', async ({ page }) => {
+  test('User creation form validation', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('User Creation Form');
     const authHelper = new CleanAuthHelper(page);
     
@@ -89,7 +89,7 @@ test.describe('User Management - Core Functionality', () => {
     }
   });
 
-  test('User edit functionality displays correctly', async ({ page }) => {
+  test('User edit display', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('User Edit Display');
     const authHelper = new CleanAuthHelper(page);
     
@@ -129,7 +129,7 @@ test.describe('User Management - Core Functionality', () => {
     }
   });
 
-  test('User deletion confirmation works correctly', async ({ page }) => {
+  test('User deletion confirmation', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('User Deletion Confirmation');
     const authHelper = new CleanAuthHelper(page);
     
@@ -163,7 +163,7 @@ test.describe('User Management - Core Functionality', () => {
     }
   });
 
-  test('User search and filtering interface functions', async ({ page }) => {
+  test('User search and filter', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('User Search Interface');
     const authHelper = new CleanAuthHelper(page);
     

@@ -3,6 +3,7 @@
 
 import { UserModel, UserDocument } from '@yggdrasil/database-schemas';
 import { ValidationHelper, userLogger as logger } from '@yggdrasil/shared-utilities';
+import bcrypt from 'bcrypt';
 
 // REFACTOR: Better type definitions
 export interface UserData {

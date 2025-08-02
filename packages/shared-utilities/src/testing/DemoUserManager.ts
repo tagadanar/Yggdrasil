@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import { PASSWORD_CONFIG } from '../constants';
 import { connectDatabase } from '@yggdrasil/database-schemas';
+import { getTestDatabaseConnectionString } from '../database/test-database-manager';
 
 /**
  * Demo user data structure for testing and development.
@@ -138,13 +139,13 @@ export class DemoUserManager {
     }
 
     try {
+      // Use provided connection string or get authenticated one
+      const dbConnectionString = connectionString || getTestDatabaseConnectionString();
+      
       // Use existing connection or create new authenticated one
       let connection = mongoose.connection;
-      if (connectionString && mongoose.connection.readyState !== 1) {
-        await connectDatabase(connectionString);
-        connection = mongoose.connection;
-      } else if (mongoose.connection.readyState !== 1) {
-        await connectDatabase();
+      if (mongoose.connection.readyState !== 1) {
+        await connectDatabase(dbConnectionString);
         connection = mongoose.connection;
       }
 
@@ -168,13 +169,13 @@ export class DemoUserManager {
    */
   async verifyDemoUsers(connectionString?: string): Promise<boolean> {
     try {
+      // Use provided connection string or get authenticated one
+      const dbConnectionString = connectionString || getTestDatabaseConnectionString();
+      
       // Use existing connection or create new authenticated one
       let connection = mongoose.connection;
-      if (connectionString && mongoose.connection.readyState !== 1) {
-        await connectDatabase(connectionString);
-        connection = mongoose.connection;
-      } else if (mongoose.connection.readyState !== 1) {
-        await connectDatabase();
+      if (mongoose.connection.readyState !== 1) {
+        await connectDatabase(dbConnectionString);
         connection = mongoose.connection;
       }
 

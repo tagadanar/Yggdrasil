@@ -128,16 +128,16 @@ export class StatisticsService {
     try {
       // Adjust time threshold for test environment to include all test data
       const isTestEnv = process.env.NODE_ENV === 'test';
-      
+
       // Get student enrollments (no time filter in test env to see all test data)
       const enrollmentQuery: any = { studentId: userId };
-      
+
       if (!isTestEnv) {
         // Only apply time filtering in production
         const productionThreshold = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago
         enrollmentQuery.updatedAt = { $gte: productionThreshold };
       }
-      
+
       const enrollments = await CourseEnrollmentModel.find(enrollmentQuery).limit(10);
 
       // Circuit breaker for student enrollments
@@ -165,13 +165,13 @@ export class StatisticsService {
 
       // Get exercise submissions for this student (ultra-optimized)
       const submissionsQuery: any = { studentId: userId };
-      
+
       if (!isTestEnv) {
         // Only apply time filtering in production
         const productionThreshold = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago
         submissionsQuery.submittedAt = { $gte: productionThreshold };
       }
-      
+
       const submissions = await ExerciseSubmissionModel.find(submissionsQuery)
         .sort({ submittedAt: -1 })
         .limit(20) // Much lower limit
@@ -313,7 +313,7 @@ export class StatisticsService {
 
       // Adjust time threshold for test environment to find test courses
       const isTestEnv = process.env.NODE_ENV === 'test';
-      const searchThreshold = isTestEnv 
+      const searchThreshold = isTestEnv
         ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago for tests
         : new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours only for production
       const courses = await CourseModel.find({
@@ -429,10 +429,10 @@ export class StatisticsService {
     try {
       // Adjust time thresholds for test environment to include all test data
       const isTestEnv = process.env.NODE_ENV === 'test';
-      const recentThreshold = isTestEnv 
+      const recentThreshold = isTestEnv
         ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago for tests
         : new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago for production
-      const testThreshold = isTestEnv 
+      const testThreshold = isTestEnv
         ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago for tests
         : new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago for production
 

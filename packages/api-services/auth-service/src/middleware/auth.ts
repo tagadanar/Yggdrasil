@@ -8,14 +8,6 @@ import { authLogger as logger } from '@yggdrasil/shared-utilities';
 // Re-export shared middleware with user lookup for auth service
 export const authenticateToken = AuthMiddleware.verifyTokenWithUserLookup(async (id: string) => {
   const user = await UserModel.findById(id);
-  logger.info('🔍 AUTH MIDDLEWARE: UserModel.findById() returned:', {
-    email: user?.email,
-    role: user?.role,
-    hasProfile: !!user?.profile,
-    profileFirstName: user?.profile?.firstName,
-    profileLastName: user?.profile?.lastName,
-    profileKeys: user?.profile ? Object.keys(user.profile) : 'no profile',
-  });
   return user;
 });
 

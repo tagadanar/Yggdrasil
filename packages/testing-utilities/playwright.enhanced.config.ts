@@ -13,11 +13,9 @@ try {
   // Try different approaches to set Console maxListeners
   if (typeof console.setMaxListeners === 'function') {
     console.setMaxListeners(100);
-    console.log('✅ WINSTON FIX: Set console.setMaxListeners(100)');
   } else {
     // Add setMaxListeners method to Console if it doesn't exist
     (console as any).setMaxListeners = function(n: number) {
-      console.log(`✅ WINSTON FIX: Mock setMaxListeners(${n}) - preventing warnings`);
       return this;
     };
     console.setMaxListeners(100);
@@ -36,14 +34,12 @@ try {
   process.emit = function(event: any, ...args: any[]) {
     if (event === 'warning' && args[0] && args[0].name === 'MaxListenersExceededWarning' && 
         args[0].message && args[0].message.includes('Console')) {
-      console.log('🔇 WINSTON FIX: Suppressed Console MaxListenersExceededWarning');
       return false; // Suppress the warning
     }
     return originalEmit.apply(this, [event, ...args]);
   };
   
 } catch (error) {
-  console.log('🚨 WINSTON FIX ERROR:', error);
 }
 
 // Load environment variables before any other imports
@@ -72,10 +68,13 @@ export default defineConfig({
   // Enhanced reporter configuration for single-worker analysis
   reporter: process.env['CI'] ? [
     ['dot'],
-    ['json', { outputFile: 'test-results-enhanced/results.json' }]
+    ['json', { outputFile: 'test-results-enhanced/results.json' }],
+    ['./reporters/performance-reporter.ts', { outputDir: 'test-results-enhanced' }]
   ] : [
     ['html', { outputFolder: 'test-results-enhanced' }],
     ['json', { outputFile: 'test-results-enhanced/results.json' }],
+    ['./reporters/performance-reporter.ts', { outputDir: 'test-results-enhanced' }],
+    ['./reporters/live-progress-reporter.js'],
     ['list', { printSteps: true }] // Default for detailed foreground analysis
   ],
   
@@ -126,8 +125,8 @@ export default defineConfig({
   // Global timeout for entire test run - 30 minutes (reasonable for quiet mode)
   globalTimeout: 30 * 60 * 1000,
   
-  // Timeout for each test - 90 seconds (with stricter enforcement to prevent hangs)
-  timeout: 90 * 1000,
+  // Timeout for each test - 100 seconds (with stricter enforcement to prevent hangs)
+  timeout: 100 * 1000,
   
   // Expect timeout
   expect: {

@@ -6,15 +6,19 @@ import { test, expect } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 import { captureEnhancedError } from '../helpers/enhanced-error-context';
+import { setupTestLifecycle } from '../helpers/test-lifecycle';
 
 test.describe('Authentication Security - Comprehensive Workflows', () => {
+  // Initialize test lifecycle for cascade prevention
+  setupTestLifecycle('Authentication Security');
+  
   // Removed global auth helpers - each test manages its own cleanup
 
   // =============================================================================
   // AUTH-001: Focused JWT Security Tests (Split from mega-test for performance)
   // =============================================================================
   
-  test('Student can login successfully', async ({ page }) => {
+  test('Student login', async ({ page }) => {
     // Prevent test hangs - 90 second max per test
     test.setTimeout(90000);
   
@@ -38,7 +42,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     }
   });
 
-  test('Authenticated student can access courses page', async ({ page }) => {
+  test('Student accesses courses', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Student Courses Access');
     const authHelper = new CleanAuthHelper(page);
     
@@ -63,7 +67,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     }
   });
 
-  test('Authenticated student can view profile', async ({ page }) => {
+  test('Student views profile', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Student Profile Access');
     const authHelper = new CleanAuthHelper(page);
     
@@ -85,7 +89,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     }
   });
 
-  test('Session expires when cookies are cleared', async ({ page }) => {
+  test('Session expiry on cookie clear', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Session Expiration');
     const authHelper = new CleanAuthHelper(page);
     
@@ -113,7 +117,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
     }
   });
 
-  test('Unauthenticated users are redirected to login', async ({ page }) => {
+  test('Unauthenticated redirect', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('Unauthenticated Redirect');
     
     try {
@@ -136,7 +140,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   // =============================================================================
   // AUTH-002: Multi-Device Session Management
   // =============================================================================
-  test('Multi-Device Session Management', async ({ page, context }) => {
+  test('Multi-device sessions', async ({ page, context }) => {
     const cleanup = TestCleanup.getInstance('AUTH-002: Multi-Device Session Management');
     const authHelper = new CleanAuthHelper(page);
     
@@ -317,7 +321,7 @@ test.describe('Authentication Security - Comprehensive Workflows', () => {
   // This avoids redundancy and provides centralized RBAC validation
 
 
-  test('JWT token validation protects endpoints correctly', async ({ page }) => {
+  test('JWT endpoint protection', async ({ page }) => {
     const cleanup = TestCleanup.getInstance('JWT Token Validation');
     
     try {

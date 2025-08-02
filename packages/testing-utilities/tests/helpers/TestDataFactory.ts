@@ -85,15 +85,15 @@ export abstract class BaseDataFactory {
       
       if (mongoose.connection?.db) {
         // Clean up course enrollments
-        const enrollments = mongoose.connection.db.collection('courseenrollments');
+        const enrollments = mongoose.connection.db.collection('course_enrollments');
         await enrollments.deleteMany({ courseId: objectId });
         
         // Clean up exercise submissions
-        const submissions = mongoose.connection.db.collection('exercisesubmissions');
+        const submissions = mongoose.connection.db.collection('exercise_submissions');
         await submissions.deleteMany({ courseId: objectId });
         
         // Clean up course progress records
-        const progress = mongoose.connection.db.collection('courseprogress');
+        const progress = mongoose.connection.db.collection('course_progress');
         await progress.deleteMany({ courseId: objectId });
       }
     } catch (error) {
@@ -111,15 +111,15 @@ export abstract class BaseDataFactory {
       
       if (mongoose.connection?.db) {
         // Clean up user enrollments
-        const enrollments = mongoose.connection.db.collection('courseenrollments');
+        const enrollments = mongoose.connection.db.collection('course_enrollments');
         await enrollments.deleteMany({ userId: objectId });
         
         // Clean up user submissions
-        const submissions = mongoose.connection.db.collection('exercisesubmissions');
+        const submissions = mongoose.connection.db.collection('exercise_submissions');
         await submissions.deleteMany({ userId: objectId });
         
         // Clean up user progress
-        const progress = mongoose.connection.db.collection('courseprogress');
+        const progress = mongoose.connection.db.collection('course_progress');
         await progress.deleteMany({ userId: objectId });
       }
     } catch (error) {

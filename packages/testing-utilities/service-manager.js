@@ -34,6 +34,14 @@ const PID_FILE = path.join(__dirname, `.service-manager-worker-${WORKER_ID}.pids
 const MAX_WAIT_TIME = 120000; // 2 minutes
 const CHECK_INTERVAL = 2000; // 2 seconds
 
+// Helper for quiet mode logging
+const isQuietMode = process.env.QUIET_MODE === 'true';
+const quietLog = (message) => {
+  if (!isQuietMode) {
+    console.log(message);
+  }
+};
+
 class ServiceManager {
   constructor() {
     this.devProcess = null;
@@ -250,10 +258,19 @@ class ServiceManager {
     const ports = SERVICES.map(s => s.port);
     await this.killPortProcesses(ports);
     
-    console.log(`🚀 Worker ${WORKER_ID}: Starting development services on ports ${BASE_PORT}-${BASE_PORT + 6}...`);
+    quietLog(`🚀 Worker ${WORKER_ID}: Starting development services on ports ${BASE_PORT}-${BASE_PORT + 6}...`);
     
     // Start services individually to avoid npm workspace command issues
     const rootDir = path.join(__dirname, '../..');
+    
+    // Build authenticated MongoDB connection string for tests
+    const username = process.env.MONGO_APP_USERNAME || 'yggdrasil_app';
+    const password = process.env.MONGO_APP_PASSWORD || 'k1DMs0polKWKKVnJlYuX4IFCknZX0kXxU0fQaLaQ8To';
+    const database = process.env.MONGO_DATABASE || 'yggdrasil-dev';
+    const authenticatedMongoURI = `mongodb://${encodeURIComponent(username)}:${encodeURIComponent(password)}@localhost:27018/${database}?authSource=${database}`;
+    
+    quietLog(`🔐 Worker ${WORKER_ID}: Using authenticated MongoDB URI for all services`);
+    console.log(`🔐 Database: ${database}, Username: ${username}`);
     
     // Clean environment for test mode without worker isolation
     const testEnv = { 
@@ -263,18 +280,20 @@ class ServiceManager {
       // Clean database configuration - no worker isolation
       PLAYWRIGHT_WORKER_ID: WORKER_ID.toString(),
       TEST_WORKER_INDEX: WORKER_ID.toString(),
-      MONGODB_URI: 'mongodb://localhost:27018/yggdrasil-dev',
+      MONGODB_URI: authenticatedMongoURI, // Use authenticated connection string
       // Ensure all services use the same dev database (prevent worker isolation)
-      DB_NAME: 'yggdrasil-dev',
+      DB_NAME: database,
       DB_COLLECTION_PREFIX: '', // Empty prefix to use main collections
       // Ensure JWT secrets are available (loaded from .env)
       JWT_SECRET: process.env.JWT_SECRET,
       JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
       // MongoDB authentication credentials for services
-      MONGO_APP_USERNAME: process.env.MONGO_APP_USERNAME,
-      MONGO_APP_PASSWORD: process.env.MONGO_APP_PASSWORD,
+      MONGO_APP_USERNAME: username,
+      MONGO_APP_PASSWORD: password,
       MONGO_ROOT_USERNAME: process.env.MONGO_ROOT_USERNAME,
       MONGO_ROOT_PASSWORD: process.env.MONGO_ROOT_PASSWORD,
+      // Add database name for services that need it
+      MONGO_DATABASE: database,
       // Service URLs for inter-service communication
       AUTH_SERVICE_URL: `http://localhost:${BASE_PORT + 1}`,
       USER_SERVICE_URL: `http://localhost:${BASE_PORT + 2}`,
@@ -292,7 +311,7 @@ class ServiceManager {
     };
     
     // Start frontend service (Next.js)
-    console.log(`📱 Worker ${WORKER_ID}: Starting frontend service on port ${BASE_PORT}...`);
+    quietLog(`📱 Worker ${WORKER_ID}: Starting frontend service on port ${BASE_PORT}...`);
     this.frontendProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/frontend'),
       stdio: 'pipe',
@@ -301,8 +320,8 @@ class ServiceManager {
     });
     
     // Start auth service
-    console.log(`🔐 Worker ${WORKER_ID}: Starting auth service on port ${BASE_PORT + 1}...`);
-    console.log(`🔐 Worker ${WORKER_ID}: Auth service environment:`, {
+    quietLog(`🔐 Worker ${WORKER_ID}: Starting auth service on port ${BASE_PORT + 1}...`);
+    quietLog(`🔐 Worker ${WORKER_ID}: Auth service environment:`, {
       NODE_ENV: testEnv.NODE_ENV,
       DB_NAME: testEnv.DB_NAME,
       DB_COLLECTION_PREFIX: testEnv.DB_COLLECTION_PREFIX,
@@ -329,7 +348,7 @@ class ServiceManager {
     }
     
     // Start user service
-    console.log(`👤 Worker ${WORKER_ID}: Starting user service on port ${BASE_PORT + 2}...`);
+    quietLog(`👤 Worker ${WORKER_ID}: Starting user service on port ${BASE_PORT + 2}...`);
     this.userProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/user-service'),
       stdio: 'pipe',
@@ -338,7 +357,7 @@ class ServiceManager {
     });
     
     // Start news service
-    console.log(`📰 Worker ${WORKER_ID}: Starting news service on port ${BASE_PORT + 3}...`);
+    quietLog(`📰 Worker ${WORKER_ID}: Starting news service on port ${BASE_PORT + 3}...`);
     this.newsProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/news-service'),
       stdio: 'pipe',
@@ -347,7 +366,7 @@ class ServiceManager {
     });
 
     // Start course service
-    console.log(`📚 Worker ${WORKER_ID}: Starting course service on port ${BASE_PORT + 4}...`);
+    quietLog(`📚 Worker ${WORKER_ID}: Starting course service on port ${BASE_PORT + 4}...`);
     this.courseProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/course-service'),
       stdio: 'pipe',
@@ -355,7 +374,7 @@ class ServiceManager {
       env: { ...testEnv, PORT: (BASE_PORT + 4).toString() }
     });
 
-    console.log(`📅 Worker ${WORKER_ID}: Starting planning service on port ${BASE_PORT + 5}...`);
+    quietLog(`📅 Worker ${WORKER_ID}: Starting planning service on port ${BASE_PORT + 5}...`);
     this.planningProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/planning-service'),
       stdio: 'pipe',
@@ -363,7 +382,7 @@ class ServiceManager {
       env: { ...testEnv, PORT: (BASE_PORT + 5).toString() }
     });
 
-    console.log(`📊 Worker ${WORKER_ID}: Starting statistics service on port ${BASE_PORT + 6}...`);
+    quietLog(`📊 Worker ${WORKER_ID}: Starting statistics service on port ${BASE_PORT + 6}...`);
     this.statisticsProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/statistics-service'),
       stdio: 'pipe',

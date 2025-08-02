@@ -35,10 +35,26 @@ export class TestCleanup {
    * Get or create a TestCleanup instance for a specific test
    */
   static getInstance(testName: string): TestCleanup {
+    // Clear stale instances periodically (every 50 instances)
+    if (TestCleanup.instances.size > 50) {
+      TestCleanup.clearStaleInstances();
+    }
+    
     if (!TestCleanup.instances.has(testName)) {
       TestCleanup.instances.set(testName, new TestCleanup(testName));
     }
     return TestCleanup.instances.get(testName)!;
+  }
+
+  /**
+   * Clear stale instances from the Map to prevent memory accumulation
+   */
+  static clearStaleInstances(): void {
+    const instanceCount = TestCleanup.instances.size;
+    if (instanceCount > 0) {
+      logger.info(`🧹 TEST CLEANUP: Clearing ${instanceCount} stale test cleanup instances`);
+      TestCleanup.instances.clear();
+    }
   }
 
   /**
@@ -174,9 +190,14 @@ export class TestCleanup {
       this.tracker.browserContexts.clear();
       this.tracker.pages.clear();
 
+      // CRITICAL FIX: Remove this instance from the static Map to prevent memory leak
+      TestCleanup.instances.delete(this.testName);
+
       logger.info(`✅ TEST CLEANUP [${this.testName}]: Cleanup completed`);
     } catch (error) {
       logger.error(`❌ TEST CLEANUP [${this.testName}]: Cleanup failed:`, error);
+      // Still remove instance even on error to prevent memory leak
+      TestCleanup.instances.delete(this.testName);
       throw error;
     }
   }
@@ -529,6 +550,9 @@ export const testCleanupHooks = {
   async beforeAll(): Promise<void> {
     logger.debug('🧹 GLOBAL TEST CLEANUP: Ensuring clean test environment...');
 
+    // Clear any stale TestCleanup instances from previous runs
+    TestCleanup.clearStaleInstances();
+
     // Connect to dev database (with authentication)
     if (mongoose.connection.readyState !== 1) {
       await connectDatabase();
@@ -552,6 +576,9 @@ export const testCleanupHooks = {
 
     // Clean any remaining test data
     await TestCleanup.cleanupAllTestData();
+
+    // Clear all TestCleanup instances
+    TestCleanup.clearStaleInstances();
 
     // Close database connection
     if (mongoose.connection.readyState === 1) {

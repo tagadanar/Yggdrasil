@@ -88,14 +88,7 @@ async function startServer(): Promise<void> {
     if (process.env['NODE_ENV'] === 'test') {
       logger.debug('🔧 AUTH SERVICE: Test mode detected - using dev database directly');
       logger.debug('🔧 AUTH SERVICE: Clean testing approach - no worker isolation');
-
-      // Always use the dev database for testing
-      // This ensures tests run against the same database structure as development
-      if (!process.env['MONGODB_URI']) {
-        process.env['MONGODB_URI'] = 'mongodb://localhost:27018/yggdrasil-dev';
-      }
-
-      logger.debug('🔧 AUTH SERVICE: Using dev database for testing');
+      logger.debug('🔧 AUTH SERVICE: Using authenticated connection from service manager');
     }
 
     // Step 3: Connect to database
@@ -119,7 +112,15 @@ async function startServer(): Promise<void> {
     // Graceful shutdown
     process.on('SIGTERM', () => {
       logger.debug('🛑 SIGTERM received, shutting down gracefully');
-      server.close(() => {
+      server.close(async () => {
+        try {
+          // CRITICAL FIX: Disconnect from database to prevent connection leaks
+          const { disconnectDatabase } = await import('@yggdrasil/database-schemas');
+          await disconnectDatabase();
+          logger.info('Auth service database disconnected');
+        } catch (error) {
+          logger.error('Error disconnecting database:', error);
+        }
         logger.info('✅ Auth Service shut down successfully');
         process.exit(0);
       });

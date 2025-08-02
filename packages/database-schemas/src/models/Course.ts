@@ -413,14 +413,12 @@ const CourseSchema = new Schema<CourseDocument>({
     sparse: true,
     uppercase: true,
     trim: true,
-    index: true,
   },
   title: {
     type: String,
     required: true,
     trim: true,
     maxlength: 100,
-    index: true,
   },
   description: {
     type: String,
@@ -433,32 +431,27 @@ const CourseSchema = new Schema<CourseDocument>({
     unique: true,
     lowercase: true,
     trim: true,
-    index: true,
   },
   category: {
     type: String,
     required: true,
     trim: true,
     maxlength: 50,
-    index: true,
   },
   level: {
     type: String,
     enum: ['beginner', 'intermediate', 'advanced'],
     required: true,
-    index: true,
   },
   status: {
     type: String,
     enum: ['draft', 'published', 'archived'],
     default: 'draft',
-    index: true,
   },
   instructor: {
     _id: {
       type: String,
       required: true,
-      index: true,
     },
     name: {
       type: String,
@@ -552,12 +545,12 @@ CourseSchema.methods['generateSlug'] = function(): string {
     .replace(/\s+/g, '-') // Replace spaces with hyphens
     .replace(/-+/g, '-') // Replace multiple hyphens with single
     .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-  
+
   // Add course code or timestamp for uniqueness if available
   if (course.code) {
     return `${baseSlug}-${course.code.toLowerCase()}`;
   }
-  
+
   // Fallback: append timestamp to ensure uniqueness
   const timestamp = Date.now().toString(36); // Base-36 encoding for shorter string
   return `${baseSlug}-${timestamp}`;

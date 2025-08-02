@@ -3,6 +3,7 @@
 
 import { DemoUserManager } from './DemoUserManager';
 import { LoggerFactory } from '../logging/logger';
+import { getTestDatabaseConnectionString } from '../database/test-database-manager';
 
 const logger = LoggerFactory.createLogger('test-initializer');
 
@@ -43,6 +44,9 @@ export class TestInitializer {
       debug = false,
     } = options;
 
+    // Always use authenticated connection string for tests
+    const dbConnectionString = connectionString || getTestDatabaseConnectionString();
+
     try {
       if (debug) {
         logger.info('🚀 TEST INITIALIZER: Starting test environment initialization...');
@@ -53,7 +57,8 @@ export class TestInitializer {
 
         if (debug) {
           console.log('🚀 TEST INITIALIZER: Database setup:', {
-            connectionString,
+            connectionString: dbConnectionString,
+            usingAuthenticated: !connectionString, // True if we're using our authenticated connection
           });
         }
 
@@ -61,23 +66,23 @@ export class TestInitializer {
           if (debug) {
             logger.info('🚀 TEST INITIALIZER: Ensuring demo users are set up...');
           }
-          await demoUserManager.initializeDemoUsers(connectionString);
+          await demoUserManager.initializeDemoUsers(dbConnectionString);
         }
 
         if (verifyDemoUsers) {
           if (debug) {
             logger.info('🚀 TEST INITIALIZER: Verifying demo users...');
           }
-          const allValid = await demoUserManager.verifyDemoUsers(connectionString);
+          const allValid = await demoUserManager.verifyDemoUsers(dbConnectionString);
 
           if (!allValid) {
             if (debug) {
               logger.error('🚀 TEST INITIALIZER: Demo user verification failed, re-initializing...');
             }
-            await demoUserManager.initializeDemoUsers(connectionString);
+            await demoUserManager.initializeDemoUsers(dbConnectionString);
 
             // Verify again
-            const reVerified = await demoUserManager.verifyDemoUsers(connectionString);
+            const reVerified = await demoUserManager.verifyDemoUsers(dbConnectionString);
             if (!reVerified) {
               throw new Error('Demo user setup failed after re-initialization');
             }

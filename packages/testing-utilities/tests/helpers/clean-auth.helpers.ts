@@ -5,6 +5,7 @@
 import { Page } from '@playwright/test';
 import { AuthTestHelper, TestInitializer, type AuthResult } from '@yggdrasil/shared-utilities/testing';
 import { TEST_PERFORMANCE_CONFIG } from '../config/performance-config';
+import { AuthStateIsolator } from './auth-state-isolator';
 
 /**
  * CleanAuthHelper - Follows CLAUDE.md clean testing architecture
@@ -66,7 +67,11 @@ export class CleanAuthHelper {
    */
   async loginAsAdmin(): Promise<AuthResult> {
     return this.retryAuth(async () => {
-      await TestInitializer.quickSetup();
+      await AuthStateIsolator.prepareForRoleChange(this.page, 'admin', 'Admin Login');
+      // Only initialize if not already done
+      if (!TestInitializer.isInitialized()) {
+        await TestInitializer.quickSetup();
+      }
       const result = await this.authHelper.authenticateAs('admin');
       
       if (!result.success) {
@@ -83,7 +88,11 @@ export class CleanAuthHelper {
    */
   async loginAsTeacher(): Promise<AuthResult> {
     return this.retryAuth(async () => {
-      await TestInitializer.quickSetup();
+      await AuthStateIsolator.prepareForRoleChange(this.page, 'teacher', 'Teacher Login');
+      // Only initialize if not already done
+      if (!TestInitializer.isInitialized()) {
+        await TestInitializer.quickSetup();
+      }
       const result = await this.authHelper.authenticateAs('teacher');
       
       if (!result.success) {
@@ -100,7 +109,11 @@ export class CleanAuthHelper {
    */
   async loginAsStaff(): Promise<AuthResult> {
     return this.retryAuth(async () => {
-      await TestInitializer.quickSetup();
+      await AuthStateIsolator.prepareForRoleChange(this.page, 'staff', 'Staff Login');
+      // Only initialize if not already done
+      if (!TestInitializer.isInitialized()) {
+        await TestInitializer.quickSetup();
+      }
       const result = await this.authHelper.authenticateAs('staff');
       
       if (!result.success) {
@@ -114,10 +127,17 @@ export class CleanAuthHelper {
 
   /**
    * Login as student user with proper state tracking and retry logic
+   * CRITICAL: Uses deep auth isolation to prevent role sequence corruption
    */
   async loginAsStudent(): Promise<AuthResult> {
     return this.retryAuth(async () => {
-      await TestInitializer.quickSetup();
+      // CRITICAL: Deep auth state reset for student login to prevent cascade failures
+      await AuthStateIsolator.prepareForRoleChange(this.page, 'student', 'Student Login');
+      
+      // Only initialize if not already done
+      if (!TestInitializer.isInitialized()) {
+        await TestInitializer.quickSetup();
+      }
       const result = await this.authHelper.authenticateAs('student');
       
       if (!result.success) {
@@ -133,7 +153,10 @@ export class CleanAuthHelper {
    * Login with specific credentials
    */
   async loginWithCredentials(email: string, password: string): Promise<AuthResult> {
-    await TestInitializer.quickSetup();
+    // Only initialize if not already done
+    if (!TestInitializer.isInitialized()) {
+      await TestInitializer.quickSetup();
+    }
     const result = await this.authHelper.authenticateWithCredentials(email, password);
     
     if (!result.success) {
@@ -149,6 +172,92 @@ export class CleanAuthHelper {
    */
   async loginWithCustomUser(email: string, password: string): Promise<AuthResult> {
     return this.loginWithCredentials(email, password);
+  }
+
+  /**
+   * Enhanced authentication isolation for critical zone tests
+   * Provides extra cleanup and verification
+   */
+  async loginAsStudentWithEnhancedIsolation(): Promise<AuthResult> {
+    console.log('🔐 CRITICAL ZONE: Enhanced student login with extra isolation');
+    
+    // Aggressive state clearing first
+    await this.clearAuthStateEnhanced();
+    
+    // Force page reload to ensure clean state
+    await this.page.goto('about:blank');
+    await this.page.waitForTimeout(500);
+    
+    // Standard login with retries
+    return await this.retryAuth(async () => {
+      console.log('🔐 CRITICAL ZONE: Performing isolated student login');
+      return await this.authHelper.loginAsStudent();
+    }, 'Enhanced Student Login');
+  }
+
+  /**
+   * Enhanced authentication state clearing for critical zone
+   */
+  async clearAuthStateEnhanced(): Promise<void> {
+    console.log('🔐 CRITICAL ZONE: Enhanced authentication state clearing');
+    
+    try {
+      // Check if page is still available
+      if (this.page.isClosed()) {
+        console.log('🔐 CRITICAL ZONE: Page already closed, skipping enhanced cleanup');
+        return;
+      }
+      
+      // Clear all storage more aggressively
+      await this.page.evaluate(() => {
+        // Clear all types of storage
+        try {
+          if (typeof localStorage !== 'undefined' && localStorage) {
+            localStorage.clear();
+          }
+          if (typeof sessionStorage !== 'undefined' && sessionStorage) {
+            sessionStorage.clear();
+          }
+        } catch (e) {
+          // Ignore storage errors
+        }
+        
+        // Clear all cookies aggressively
+        try {
+          document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+          });
+        } catch (e) {
+          // Ignore cookie errors
+        }
+        
+        // Clear IndexedDB
+        try {
+          if (window.indexedDB && indexedDB.databases) {
+            indexedDB.databases().then(databases => {
+              databases.forEach(db => {
+                if (db.name) indexedDB.deleteDatabase(db.name);
+              });
+            }).catch(() => {
+              // Ignore errors
+            });
+          }
+        } catch (e) {
+          // Ignore IndexedDB errors
+        }
+      });
+      
+      // Standard auth state clear
+      await this.authHelper.clearAuthState();
+      
+      // Wait for state to settle
+      await this.page.waitForTimeout(1000);
+      
+      console.log('🔐 CRITICAL ZONE: Enhanced authentication state cleared');
+    } catch (error) {
+      console.warn('🔐 CRITICAL ZONE: Enhanced clear failed, falling back to standard clear');
+      await this.authHelper.clearAuthState();
+    }
   }
 
   /**

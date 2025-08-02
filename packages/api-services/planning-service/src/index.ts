@@ -32,9 +32,17 @@ const startServer = async () => {
     });
 
     // Graceful shutdown
-    const shutdown = () => {
+    const shutdown = async () => {
       logger.info('Shutting down planning service...');
-      server.close(() => {
+      server.close(async () => {
+        try {
+          // CRITICAL FIX: Disconnect from database to prevent connection leaks
+          const { disconnectDatabase } = await import('@yggdrasil/database-schemas');
+          await disconnectDatabase();
+          logger.info('Planning service database disconnected');
+        } catch (error) {
+          logger.error('Error disconnecting database:', error);
+        }
         logger.info('Planning service shut down');
         process.exit(0);
       });
