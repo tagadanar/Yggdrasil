@@ -17,7 +17,6 @@ test.describe('User Management - UI Components', () => {
     const authHelper = new CleanAuthHelper(page, 'UI Test');
     
     try {
-      await authHelper.initialize();
       await authHelper.loginAsAdmin();
       
       // Navigate to user management
@@ -29,7 +28,7 @@ test.describe('User Management - UI Components', () => {
       await expect(mainContainer).toBeVisible();
       
       // Check for user table or list
-      const userContainer = page.locator('table, .user-list, [data-testid*="user"]');
+      const userContainer = page.locator('[data-testid="users-table"]');
       await expect(userContainer).toBeVisible({ timeout: 10000 });
       
     } finally {
@@ -43,7 +42,6 @@ test.describe('User Management - UI Components', () => {
     const authHelper = new CleanAuthHelper(page, 'Modal Test');
     
     try {
-      await authHelper.initialize();
       await authHelper.loginAsAdmin();
       
       await page.goto('/admin/users');
@@ -83,7 +81,6 @@ test.describe('User Management - UI Components', () => {
     const authHelper = new CleanAuthHelper(page, 'Cancel Test');
     
     try {
-      await authHelper.initialize();
       await authHelper.loginAsAdmin();
       
       await page.goto('/admin/users');
@@ -94,7 +91,7 @@ test.describe('User Management - UI Components', () => {
         await createButton.click();
         
         // Verify modal is open
-        const modal = page.locator('.modal, [role="dialog"]');
+        const modal = page.locator('[data-testid="create-user-modal"]');
         await expect(modal).toBeVisible();
         
         // Click cancel button
@@ -118,7 +115,6 @@ test.describe('User Management - UI Components', () => {
     const authHelper = new CleanAuthHelper(page, 'Validation Test');
     
     try {
-      await authHelper.initialize();
       await authHelper.loginAsAdmin();
       
       await page.goto('/admin/users');
@@ -129,7 +125,7 @@ test.describe('User Management - UI Components', () => {
         await createButton.click();
         
         // Try to submit empty form
-        const submitButton = page.locator('form button[type="submit"], button:has-text("Create")');
+        const submitButton = page.locator('[data-testid="create-user-submit"]');
         if (await submitButton.count() > 0) {
           await submitButton.click();
           
@@ -151,7 +147,6 @@ test.describe('User Management - UI Components', () => {
     const authHelper = new CleanAuthHelper(page, 'Edit Modal Test');
     
     try {
-      await authHelper.initialize();
       await authHelper.loginAsAdmin();
       
       await page.goto('/admin/users');
@@ -192,7 +187,6 @@ test.describe('User Management - UI Components', () => {
     const authHelper = new CleanAuthHelper(page, 'Delete Modal Test');
     
     try {
-      await authHelper.initialize();
       await authHelper.loginAsAdmin();
       
       await page.goto('/admin/users');
@@ -208,7 +202,7 @@ test.describe('User Management - UI Components', () => {
         await expect(confirmModal).toBeVisible();
         
         // Should have confirmation message
-        const confirmMessage = page.locator('text*="Are you sure", text*="cannot be undone", text*="permanently"');
+        const confirmMessage = page.locator(':has-text("Are you sure"), :has-text("cannot be undone"), :has-text("permanently")');
         const hasConfirmMessage = await confirmMessage.count() > 0;
         expect(hasConfirmMessage).toBeTruthy();
         
@@ -232,7 +226,6 @@ test.describe('User Management - UI Components', () => {
     const authHelper = new CleanAuthHelper(page, 'Search Test');
     
     try {
-      await authHelper.initialize();
       await authHelper.loginAsAdmin();
       
       await page.goto('/admin/users');

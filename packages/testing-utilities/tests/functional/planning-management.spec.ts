@@ -386,30 +386,33 @@ test.describe('Planning Management', () => {
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Test export functionality
+      await page.waitForTimeout(1000); // Wait for calendar to fully render
       const exportButton = page.locator('[data-testid="export-calendar-button"]');
-      await exportButton.waitFor({ state: 'visible', timeout: 3000 });
-      await page.waitForLoadState('domcontentloaded');
-      await exportButton.click({ force: true });
-      await page.waitForLoadState("domcontentloaded", { timeout: 5000 });
+      await exportButton.waitFor({ state: 'visible', timeout: 10000 });
+      await exportButton.waitFor({ state: 'attached', timeout: 5000 });
+      await page.waitForLoadState('networkidle', { timeout: 5000 });
+      await exportButton.click();
+      await page.waitForTimeout(500); // Small delay for modal to appear
       
       const exportModal = page.locator('[data-testid="export-calendar-modal"]');
-      if (await exportModal.count() > 0) {
-        await expect(exportModal).toBeVisible({ timeout: 5000 });
-        
-        // Test export options if available
-        const icsExport = page.locator('[data-testid="export-ics"], input[value="ics"]');
-        const csvExport = page.locator('[data-testid="export-csv"], input[value="csv"]');
-        
-        if (await icsExport.count() > 0) {
-          await icsExport.click();
-        }
-        
-        // Close export modal
-        const closeExportButton = page.locator('[data-testid="export-close"], [data-testid="modal-close"]');
-        if (await closeExportButton.count() > 0) {
-          await closeExportButton.click();
-        }
-      }
+      await expect(exportModal).toBeVisible({ timeout: 5000 });
+      
+      // Test export format selector
+      const exportFormat = page.locator('[data-testid="export-format"]');
+      await expect(exportFormat).toBeVisible();
+      
+      // Select CSV format
+      await exportFormat.selectOption('csv');
+      await page.waitForTimeout(500);
+      
+      // Select iCal format
+      await exportFormat.selectOption('ical');
+      await page.waitForTimeout(500);
+      
+      // Close export modal
+      const closeExportButton = page.locator('[data-testid="modal-close"]').first();
+      await closeExportButton.click();
+      await expect(exportModal).not.toBeVisible({ timeout: 5000 });
       
     } finally {
       await authHelper.clearAuthState();
@@ -591,50 +594,46 @@ test.describe('Planning Management', () => {
       await page.waitForSelector('[data-testid="calendar-view"]', { state: 'visible', timeout: 3000 });
       
       // Test Google Calendar sync functionality
+      await page.waitForTimeout(1000); // Wait for page to stabilize
       const googleSyncButton = page.locator('[data-testid="google-calendar-sync"]');
-      await expect(googleSyncButton).toBeVisible({ timeout: 5000 });
-      await googleSyncButton.click({ force: true });
+      await googleSyncButton.waitFor({ state: 'visible', timeout: 10000 });
+      await googleSyncButton.waitFor({ state: 'attached', timeout: 5000 });
+      await page.waitForLoadState('networkidle', { timeout: 5000 });
+      await googleSyncButton.click();
+      await page.waitForTimeout(500); // Small delay for modal to appear
       
       // Check if Google sync modal appears
       const googleSyncModal = page.locator('[data-testid="google-sync-modal"]');
-      if (await googleSyncModal.count() > 0) {
-        await expect(googleSyncModal).toBeVisible({ timeout: 3000 });
+      await expect(googleSyncModal).toBeVisible({ timeout: 5000 });
+      
+      // Test sync setup options
+      const connectButton = page.locator('[data-testid="connect-google-calendar"]');
+      const syncPreferences = page.locator('[data-testid="sync-preferences"]');
+      
+      if (await connectButton.count() > 0) {
+        // Should show auth instructions
+        const authInstructions = page.locator('[data-testid="google-auth-instructions"]');
+        await expect(authInstructions).toBeVisible({ timeout: 3000 });
+      }
+      
+      if (await syncPreferences.count() > 0) {
+        await expect(syncPreferences).toBeVisible({ timeout: 5000 });
         
-        // Test sync setup options
-        const connectButton = page.locator('[data-testid="connect-google-calendar"]');
-        const syncPreferences = page.locator('[data-testid="sync-preferences"]');
+        // Test sync direction options
+        const bidirectionalSync = page.locator('[data-testid="bidirectional-sync-sync"]');
+        const importOnly = page.locator('[data-testid="import-sync"]');
         
-        if (await connectButton.count() > 0) {
-          await connectButton.click();
-          
-          // Should show auth instructions or redirect
-          const authInstructions = page.locator('[data-testid="google-auth-instructions"]');
-          const oauthRedirect = page.locator('[data-testid="google-oauth-redirect"]');
-          
-          // One of these should be visible
-          expect(await authInstructions.count() + await oauthRedirect.count()).toBeGreaterThan(0);
-        }
-        
-        if (await syncPreferences.count() > 0) {
-          await expect(syncPreferences).toBeVisible({ timeout: 5000 });
-          
-          // Test sync direction options
-          const bidirectionalSync = page.locator('[data-testid="bidirectional-sync"]');
-          const importOnly = page.locator('[data-testid="import-only"]');
-          
-          if (await bidirectionalSync.count() > 0) {
-            await bidirectionalSync.click();
-          } else if (await importOnly.count() > 0) {
-            await importOnly.click();
-          }
-        }
-        
-        // Close Google sync modal
-        const closeSyncButton = page.locator('[data-testid="google-sync-close"], [data-testid="modal-close"]');
-        if (await closeSyncButton.count() > 0) {
-          await closeSyncButton.click();
+        if (await bidirectionalSync.count() > 0) {
+          await bidirectionalSync.click();
+        } else if (await importOnly.count() > 0) {
+          await importOnly.click();
         }
       }
+      
+      // Close Google sync modal
+      const closeSyncButton = page.locator('[data-testid="google-sync-close"]');
+      await closeSyncButton.click();
+      await expect(googleSyncModal).not.toBeVisible({ timeout: 5000 });
       
     } finally {
       await authHelper.clearAuthState();

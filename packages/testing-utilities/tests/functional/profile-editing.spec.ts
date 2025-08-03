@@ -42,7 +42,7 @@ test.describe('Profile Editing Functionality', () => {
       await page.waitForLoadState("domcontentloaded", { timeout: 5000 }); // Wait for edit mode to activate
       
       // Verify we're now in edit mode by checking for Save button
-      await page.waitForSelector('button:has-text("Save Changes", { timeout: 10000 })', { timeout: 2000 });
+      await page.waitForSelector('button:has-text("Save Changes")', { timeout: 10000 });
       
       // Check current field values before updating
       const currentFirstName = await page.inputValue('input[name="firstName"]');
@@ -73,7 +73,7 @@ test.describe('Profile Editing Functionality', () => {
       await page.click('button:has-text("Save Changes")');
       
       // Wait for save to complete and exit edit mode
-      await page.waitForSelector('button:has-text("Edit Profile", { timeout: 10000 })', { timeout: 3000 });
+      await page.waitForSelector('button:has-text("Edit Profile")', { timeout: 10000 });
       // Successfully exited edit mode
       
       // Check if the name display updated (this is what users actually see)
@@ -95,7 +95,7 @@ test.describe('Profile Editing Functionality', () => {
       
       // Enter edit mode again to verify form fields are populated correctly
       await page.click('button:has-text("Edit Profile")');
-      await page.waitForSelector('button:has-text("Save Changes", { timeout: 10000 })', { timeout: 2000 });
+      await page.waitForSelector('button:has-text("Save Changes")', { timeout: 10000 });
       
       // Now verify all fields were saved correctly in the form
       expect(await page.inputValue('input[name="firstName"]')).toBe(profileData.firstName);

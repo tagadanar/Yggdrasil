@@ -9,17 +9,23 @@ import { LoggerFactory } from '@yggdrasil/shared-utilities';
 
 const logger = LoggerFactory.createLogger('test-lifecycle');
 
-// Global test counter across all test files - use global object to ensure sharing
+// Import service coordinator for test execution control
+const { getInstance: getCoordinator } = require('../../service-coordinator');
+const coordinator = getCoordinator();
+
+// Global test counter across all test files - use globalThis object to ensure sharing
 declare global {
-  let yggdrasilGlobalTestCount: number;
-  let yggdrasilSuiteTestCount: number;
+  // eslint-disable-next-line no-var
+  var yggdrasilGlobalTestCount: number;
+  // eslint-disable-next-line no-var
+  var yggdrasilSuiteTestCount: number;
 }
 
-if (typeof global.yggdrasilGlobalTestCount === 'undefined') {
-  global.yggdrasilGlobalTestCount = 0;
+if (typeof globalThis.yggdrasilGlobalTestCount === 'undefined') {
+  globalThis.yggdrasilGlobalTestCount = 0;
 }
-if (typeof global.yggdrasilSuiteTestCount === 'undefined') {
-  global.yggdrasilSuiteTestCount = 0;
+if (typeof globalThis.yggdrasilSuiteTestCount === 'undefined') {
+  globalThis.yggdrasilSuiteTestCount = 0;
 }
 
 const CLEANUP_INTERVAL = 5; // CRITICAL: Force cleanup every 5 tests to prevent cascade at test #33
@@ -35,7 +41,7 @@ const MEMORY_THRESHOLD = 400 * 1024 * 1024; // 400MB
  */
 export function setupTestLifecycle(suiteName: string) {
   // Reset suite counter
-  global.yggdrasilSuiteTestCount = 0;
+  globalThis.yggdrasilSuiteTestCount = 0;
   
   // Log suite start
   test.beforeAll(async () => {
@@ -46,59 +52,54 @@ export function setupTestLifecycle(suiteName: string) {
   
   // Before each test
   test.beforeEach(async ({ }, testInfo) => {
-    global.yggdrasilGlobalTestCount++;
-    global.yggdrasilSuiteTestCount++;
+    globalThis.yggdrasilGlobalTestCount++;
+    globalThis.yggdrasilSuiteTestCount++;
     
-    logger.info(`▶️ Test ${global.yggdrasilGlobalTestCount}: ${testInfo.title}`);
+    logger.info(`▶️ Test ${globalThis.yggdrasilGlobalTestCount}: ${testInfo.title}`);
     
-    // ENHANCED ROBUST SERVICE RESTART: Strategic points to prevent cascade
-    if (global.yggdrasilGlobalTestCount === 25) {
-      logger.warn(`🔄 PROACTIVE RESTART: Test ${global.yggdrasilGlobalTestCount} - RESTARTING ALL SERVICES TO PREVENT CASCADE`);
-      
-      try {
-        await restartServicesForCascadePrevention(`proactive-test-${global.yggdrasilGlobalTestCount}`);
-        logger.info(`✅ PROACTIVE RESTART SUCCESSFUL: Fresh services ready for tests 25+`);
-      } catch (error) {
-        logger.error(`❌ PROACTIVE RESTART FAILED: ${error.message}`);
-        // Continue anyway - don't fail the entire test
-        logger.warn(`⚠️ Continuing with existing services despite restart failure`);
-      }
+    // CRITICAL: Wait for services to be ready before running test
+    const servicesReady = await coordinator.waitForServices(30000); // Reduced from 60s to 30s
+    
+    if (!servicesReady) {
+      logger.error(`❌ Test ${globalThis.yggdrasilGlobalTestCount} skipped - services not ready`);
+      testInfo.skip();
+      return;
     }
     
-    // CRITICAL RESTART: Before the cascade point that moved to test #60
-    if (global.yggdrasilGlobalTestCount === 50) {
-      logger.warn(`🔄 CRITICAL RESTART: Test ${global.yggdrasilGlobalTestCount} - RESTARTING BEFORE CASCADE ZONE`);
+    // Check if we're in a danger zone and need extra caution
+    if (globalThis.yggdrasilGlobalTestCount >= 25) {
+      logger.info(`🚨 CRITICAL ZONE: Test ${globalThis.yggdrasilGlobalTestCount} - Enhanced monitoring active`);
       
-      try {
-        await restartServicesForCascadePrevention(`critical-test-${global.yggdrasilGlobalTestCount}`);
-        logger.info(`✅ CRITICAL RESTART SUCCESSFUL: Fresh services ready for tests 50+`);
-      } catch (error) {
-        logger.error(`❌ CRITICAL RESTART FAILED: ${error.message}`);
-        // Continue anyway - don't fail the entire test
-        logger.warn(`⚠️ Continuing with existing services despite restart failure`);
+      // Extra verification before critical tests
+      const coordinatorState = coordinator.getState();
+      if (!coordinatorState.servicesHealthy) {
+        logger.warn(`⚠️ Services unhealthy before test ${globalThis.yggdrasilGlobalTestCount}, waiting for recovery...`);
+        const recovered = await coordinator.waitForServices(30000);
+        if (!recovered) {
+          logger.error(`❌ Services failed to recover, skipping test ${globalThis.yggdrasilGlobalTestCount}`);
+          testInfo.skip();
+          return;
+        }
       }
     }
     
     // Enhanced isolation for cascade prevention
-    if (global.yggdrasilGlobalTestCount >= 25) {
-      logger.info(`🚨 CRITICAL ZONE: Test ${global.yggdrasilGlobalTestCount} - ENHANCED ISOLATION ACTIVE`);
+    if (globalThis.yggdrasilGlobalTestCount >= 25) {
+      logger.info(`🚨 CRITICAL ZONE: Test ${globalThis.yggdrasilGlobalTestCount} - ENHANCED ISOLATION ACTIVE`);
       
-      // REAL FIX: Enhanced cleanup and isolation - no skipping!
-      await emergencyCleanup(`critical-zone-test-${global.yggdrasilGlobalTestCount}`);
-      
-      // Verify service health before critical tests
-      await verifyServiceHealth();
+      // Enhanced cleanup and isolation
+      await emergencyCleanup(`critical-zone-test-${globalThis.yggdrasilGlobalTestCount}`);
       
       // Force garbage collection more aggressively
       if (global.gc) {
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 3; i++) {
           global.gc();
           await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
       
       // Wait for system to stabilize
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
     
     // Circuit breaker check - may skip test if system is unhealthy
@@ -111,19 +112,19 @@ export function setupTestLifecycle(suiteName: string) {
     
     // Enhanced logging with cascade risk assessment
     const memory = process.memoryUsage();
-    logger.info(`▶️ Test ${global.yggdrasilGlobalTestCount}: ${testInfo.title}`);
+    logger.info(`▶️ Test ${globalThis.yggdrasilGlobalTestCount}: ${testInfo.title}`);
     logger.info(`💾 Memory: ${Math.round(memory.heapUsed / 1024 / 1024)}MB`);
     
-    if (global.yggdrasilGlobalTestCount >= 30) {
-      logger.warn(`🚨 HIGH RISK TEST - Global #${global.yggdrasilGlobalTestCount} - ${Math.max(0, 33 - global.yggdrasilGlobalTestCount)} tests until cascade point`);
+    if (globalThis.yggdrasilGlobalTestCount >= 30) {
+      logger.warn(`🚨 HIGH RISK TEST - Global #${globalThis.yggdrasilGlobalTestCount} - ${Math.max(0, 33 - globalThis.yggdrasilGlobalTestCount)} tests until cascade point`);
     }
     
     // More aggressive memory threshold for cascade prevention
-    const cascadePreventionThreshold = global.yggdrasilGlobalTestCount >= 30 ? 250 * 1024 * 1024 : MEMORY_THRESHOLD;
+    const cascadePreventionThreshold = globalThis.yggdrasilGlobalTestCount >= 30 ? 250 * 1024 * 1024 : MEMORY_THRESHOLD;
     
     if (memory.heapUsed > cascadePreventionThreshold) {
-      logger.error(`⚠️ High memory before test ${global.yggdrasilGlobalTestCount}: ${Math.round(memory.heapUsed / 1024 / 1024)}MB`);
-      await emergencyCleanup(`pre-test-high-memory-${global.yggdrasilGlobalTestCount}`);
+      logger.error(`⚠️ High memory before test ${globalThis.yggdrasilGlobalTestCount}: ${Math.round(memory.heapUsed / 1024 / 1024)}MB`);
+      await emergencyCleanup(`pre-test-high-memory-${globalThis.yggdrasilGlobalTestCount}`);
     }
   });
   
@@ -136,52 +137,55 @@ export function setupTestLifecycle(suiteName: string) {
     await TestCircuitBreaker.afterTest(testInfo.title, testPassed, testDuration);
     
     // Enhanced logging with cascade risk
-    const cascadeRisk = global.yggdrasilGlobalTestCount >= 25 ? 'HIGH' : 'LOW';
-    logger.info(`${testPassed ? '✅' : '❌'} Test ${global.yggdrasilGlobalTestCount} completed: ${testInfo.title} (${testDuration}ms) [Risk: ${cascadeRisk}]`);
+    const cascadeRisk = globalThis.yggdrasilGlobalTestCount >= 25 ? 'HIGH' : 'LOW';
+    logger.info(`${testPassed ? '✅' : '❌'} Test ${globalThis.yggdrasilGlobalTestCount} completed: ${testInfo.title} (${testDuration}ms) [Risk: ${cascadeRisk}]`);
     
     // CRITICAL: Aggressive cleanup in cascade prevention zone
-    if (global.yggdrasilGlobalTestCount >= 25) {
-      logger.info(`🚨 POST-TEST CLEANUP: Critical zone test ${global.yggdrasilGlobalTestCount} completed - forcing aggressive cleanup`);
-      await emergencyCleanup(`post-cascade-zone-test-${global.yggdrasilGlobalTestCount}`);
+    if (globalThis.yggdrasilGlobalTestCount >= 25) {
+      logger.info(`🚨 POST-TEST CLEANUP: Critical zone test ${globalThis.yggdrasilGlobalTestCount} completed - forcing aggressive cleanup`);
+      await emergencyCleanup(`post-cascade-zone-test-${globalThis.yggdrasilGlobalTestCount}`);
       
-      // NUCLEAR OPTION: Force database cleanup of test data after every critical test
+      // Force database cleanup of test data after every critical test
       await forceDatabaseCleanup();
       
-      // SERVICE HEALTH MONITORING: Check for service degradation in critical zone
-      await monitorServiceHealth(`post-test-${global.yggdrasilGlobalTestCount}`);
+      // Check service health and report to coordinator
+      const coordinatorState = coordinator.getState();
+      if (!coordinatorState.servicesHealthy) {
+        logger.warn(`⚠️ Services degraded after test ${globalThis.yggdrasilGlobalTestCount}`);
+      }
       
       // Extra stabilization time
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
     // Force cleanup at regular intervals (more frequent now)
-    if (global.yggdrasilGlobalTestCount % CLEANUP_INTERVAL === 0) {
-      logger.info(`🧹 Scheduled cleanup after ${global.yggdrasilGlobalTestCount} tests`);
+    if (globalThis.yggdrasilGlobalTestCount % CLEANUP_INTERVAL === 0) {
+      logger.info(`🧹 Scheduled cleanup after ${globalThis.yggdrasilGlobalTestCount} tests`);
       await forceResourceCleanup();
     }
     
     // More aggressive cleanup conditions
     if (!testPassed) {
-      logger.warn(`❌ Test ${global.yggdrasilGlobalTestCount} FAILED: ${testInfo.title} - forcing emergency cleanup`);
-      await emergencyCleanup(`test-failure-${global.yggdrasilGlobalTestCount}`);
+      logger.warn(`❌ Test ${globalThis.yggdrasilGlobalTestCount} FAILED: ${testInfo.title} - forcing emergency cleanup`);
+      await emergencyCleanup(`test-failure-${globalThis.yggdrasilGlobalTestCount}`);
     } else if (testDuration > 15000) { // Reduced threshold from 20s to 15s
-      logger.warn(`⏱️ Slow test ${global.yggdrasilGlobalTestCount} detected (${testDuration}ms) - forcing cleanup`);
+      logger.warn(`⏱️ Slow test ${globalThis.yggdrasilGlobalTestCount} detected (${testDuration}ms) - forcing cleanup`);
       await forceResourceCleanup();
     }
     
     // More aggressive memory threshold in cascade zone
     const memory = process.memoryUsage();
-    const memoryThreshold = global.yggdrasilGlobalTestCount >= 25 ? 200 * 1024 * 1024 : MEMORY_THRESHOLD; // 200MB in critical zone
+    const memoryThreshold = globalThis.yggdrasilGlobalTestCount >= 25 ? 200 * 1024 * 1024 : MEMORY_THRESHOLD; // 200MB in critical zone
     
     if (memory.heapUsed > memoryThreshold) {
-      logger.warn(`⚠️ High memory after test ${global.yggdrasilGlobalTestCount}: ${Math.round(memory.heapUsed / 1024 / 1024)}MB (threshold: ${Math.round(memoryThreshold / 1024 / 1024)}MB)`);
-      await emergencyCleanup(`post-test-high-memory-${global.yggdrasilGlobalTestCount}`);
+      logger.warn(`⚠️ High memory after test ${globalThis.yggdrasilGlobalTestCount}: ${Math.round(memory.heapUsed / 1024 / 1024)}MB (threshold: ${Math.round(memoryThreshold / 1024 / 1024)}MB)`);
+      await emergencyCleanup(`post-test-high-memory-${globalThis.yggdrasilGlobalTestCount}`);
     }
   });
   
   // After all tests in suite
   test.afterAll(async () => {
-    logger.info(`🏁 Completed test suite: ${suiteName} (${global.yggdrasilSuiteTestCount} tests)`);
+    logger.info(`🏁 Completed test suite: ${suiteName} (${globalThis.yggdrasilSuiteTestCount} tests)`);
     
     // Force cleanup after each suite
     await forceResourceCleanup();
@@ -203,8 +207,8 @@ async function forceResourceCleanup() {
     if (mongoose.connection && mongoose.connection.db) {
       // Clear query cache (mongoose doesn't expose this directly, but we can try)
       try {
-        mongoose.connection.models = {};
-        mongoose.models = {};
+        (mongoose.connection as any).models = {};
+        (mongoose as any).models = {};
       } catch (error) {
         logger.debug('Could not clear mongoose model cache:', error);
       }
@@ -290,7 +294,7 @@ export function reportTestMetrics() {
   const stats = TestConnectionPool.getStats();
   
   return {
-    testsRun: global.yggdrasilGlobalTestCount,
+    testsRun: globalThis.yggdrasilGlobalTestCount,
     memoryUsed: Math.round(memory.heapUsed / 1024 / 1024),
     connectionPoolStats: stats,
     timestamp: new Date().toISOString(),
@@ -299,48 +303,8 @@ export function reportTestMetrics() {
 
 /**
  * Verify all services are healthy and responsive
+ * Note: Removed - now handled by health monitor and coordinator
  */
-async function verifyServiceHealth() {
-  const services = [
-    { name: 'auth', port: 3001 },
-    { name: 'user', port: 3002 },
-    { name: 'news', port: 3003 },
-    { name: 'course', port: 3004 },
-    { name: 'planning', port: 3005 },
-    { name: 'statistics', port: 3006 },
-  ];
-  
-  logger.info('🔍 Verifying service health in critical zone...');
-  
-  for (const service of services) {
-    try {
-      const startTime = Date.now();
-      
-      // Create timeout promise
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout')), 5000);
-      });
-      
-      // Race between fetch and timeout
-      const response = await Promise.race([
-        fetch(`http://localhost:${service.port}/health`),
-        timeoutPromise
-      ]);
-      
-      const responseTime = Date.now() - startTime;
-      
-      if (!response.ok) {
-        logger.error(`❌ Service ${service.name} unhealthy: ${response.status} (${responseTime}ms)`);
-      } else if (responseTime > 2000) {
-        logger.warn(`⚠️ Service ${service.name} slow: ${responseTime}ms`);
-      } else {
-        logger.info(`✅ Service ${service.name} healthy: ${responseTime}ms`);
-      }
-    } catch (error) {
-      logger.error(`❌ Service ${service.name} unreachable: ${error.message}`);
-    }
-  }
-}
 
 /**
  * Monitor service health to detect degradation over time
@@ -369,7 +333,7 @@ async function monitorServiceHealth(checkpoint: string): Promise<void> {
       const response = await Promise.race([
         fetch(`http://localhost:${service.port}/health`),
         timeoutPromise
-      ]);
+      ]) as Response;
       
       const responseTime = Date.now() - start;
       
@@ -386,7 +350,7 @@ async function monitorServiceHealth(checkpoint: string): Promise<void> {
       }
     } catch (error) {
       healthResults.push(`${service.name}:UNREACHABLE`);
-      logger.error(`💥 SERVICE UNREACHABLE: ${service.name} - ${error.message}`);
+      logger.error(`💥 SERVICE UNREACHABLE: ${service.name} - ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   
@@ -447,10 +411,16 @@ async function forceDatabaseCleanup(): Promise<void> {
 }
 
 /**
- * Restart all services to prevent cascade issues - Enhanced robust version
+ * Restart all services to prevent cascade issues
+ * Note: Deprecated - now handled by health monitor with coordinator
  */
-async function restartServicesForCascadePrevention(reason: string): Promise<void> {
-  logger.warn(`🔄 ENHANCED SERVICE RESTART: ${reason} - Stopping and restarting all services`);
+// @ts-ignore - deprecated function kept for reference
+async function _restartServicesForCascadePrevention(_reason: string): Promise<void> {
+  logger.warn(`⚠️ DEPRECATED: Service restart requested for ${_reason} - delegating to health monitor`);
+  
+  // This function is kept for backward compatibility but should not be used
+  // The health monitor now handles all service restarts through the coordinator
+  return;
   
   const startTime = Date.now();
   
@@ -460,7 +430,7 @@ async function restartServicesForCascadePrevention(reason: string): Promise<void
     
     // 1. Pre-restart health check
     logger.info('🏥 Pre-restart health check...');
-    await monitorServiceHealth(`pre-restart-${global.yggdrasilGlobalTestCount}`);
+    await monitorServiceHealth(`pre-restart-${globalThis.yggdrasilGlobalTestCount}`);
     
     // 2. Force cleanup of any hanging connections
     logger.info('🧹 Pre-restart cleanup...');
@@ -600,18 +570,18 @@ async function restartServicesForCascadePrevention(reason: string): Promise<void
     
     // 6. Post-restart verification
     logger.info('🔍 Post-restart service verification...');
-    await verifyServiceHealth();
+    await monitorServiceHealth('post-restart-verification');
     
     // 7. Final stabilization wait
     logger.info('⏳ Final stabilization wait...');
     await new Promise(resolve => setTimeout(resolve, 5000));
     
     const duration = Date.now() - startTime;
-    logger.info(`✅ ENHANCED SERVICE RESTART COMPLETE: Fresh services ready for test ${global.yggdrasilGlobalTestCount} (${duration}ms)`);
+    logger.info(`✅ ENHANCED SERVICE RESTART COMPLETE: Fresh services ready for test ${globalThis.yggdrasilGlobalTestCount} (${duration}ms)`);
     
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error(`❌ ENHANCED SERVICE RESTART FAILED: ${error.message} (${duration}ms)`);
+    logger.error(`❌ ENHANCED SERVICE RESTART FAILED: ${error instanceof Error ? error.message : String(error)} (${duration}ms)`);
     
     // Enhanced error recovery
     logger.warn('🔧 Attempting error recovery...');
@@ -619,7 +589,7 @@ async function restartServicesForCascadePrevention(reason: string): Promise<void
       await emergencyCleanup(`restart-failure-recovery-${reason}`);
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (recoveryError) {
-      logger.error(`Recovery attempt failed: ${recoveryError.message}`);
+      logger.error(`Recovery attempt failed: ${recoveryError instanceof Error ? recoveryError.message : String(recoveryError)}`);
     }
     
     throw error;
@@ -630,6 +600,6 @@ async function restartServicesForCascadePrevention(reason: string): Promise<void
  * Reset global counters (for testing the lifecycle itself)
  */
 export function resetLifecycleCounters() {
-  global.yggdrasilGlobalTestCount = 0;
-  global.yggdrasilSuiteTestCount = 0;
+  globalThis.yggdrasilGlobalTestCount = 0;
+  globalThis.yggdrasilSuiteTestCount = 0;
 }

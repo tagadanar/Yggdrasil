@@ -121,9 +121,9 @@ test.describe('News Management', () => {
       await page.waitForLoadState('domcontentloaded');
       
       // Check for loading indicators and wait for them to disappear
-      const loadingIndicators = await page.locator('text=Loading, :has-text("Loading"), .loading, .spinner').count();
+      const loadingIndicators = await page.locator(':has-text("Loading"), .loading, .spinner').count();
       if (loadingIndicators > 0) {
-        await page.waitForSelector('text=Loading, :has-text("Loading"), .loading, .spinner', { state: 'hidden', timeout: 10000 });
+        await page.waitForSelector(':has-text("Loading"), .loading, .spinner', { state: 'hidden', timeout: 10000 });
       }
       
       // If no articles, try refreshing the page

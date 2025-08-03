@@ -33,6 +33,20 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       
       await auth.loginAsTeacher();
       
+      // Listen for console messages to debug API errors
+      page.on('console', msg => {
+        if (msg.type() === 'error' || msg.text().includes('Failed') || msg.text().includes('Error')) {
+          console.log('Browser console:', msg.type(), msg.text());
+        }
+      });
+      
+      // Listen for network errors
+      page.on('response', response => {
+        if (response.status() >= 400) {
+          console.log(`Network error: ${response.status()} ${response.url()}`);
+        }
+      });
+      
       // Create new course
       await page.goto('/courses');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
@@ -61,10 +75,47 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       // Create the course (actual button text from debug)
       const createCourseButton = page.locator('button:has-text("Create Course")');
       await createCourseButton.click();
-      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
-      // Verify course saved
-      await expect(page.locator(`text=${courseName}`)).toBeVisible({ timeout: 3000 });
+      // Check for any error messages that might appear
+      await page.waitForTimeout(2000); // Give the form time to submit
+      
+      // Check if there's an error message displayed
+      const errorMessage = page.locator('.bg-red-50, .text-red-700, .text-red-600');
+      if (await errorMessage.count() > 0) {
+        const errorText = await errorMessage.textContent();
+        console.log('❌ Course creation error:', errorText);
+      }
+      
+      // Check browser console for JavaScript errors
+      const logs = await page.evaluate(() => {
+        return (window as any).testLogs || [];
+      });
+      if (logs.length > 0) {
+        console.log('Browser console logs:', logs);
+      }
+      
+      // Wait for the form to be submitted and navigate to course detail
+      // This should transition from CourseForm to CourseDetail
+      await page.waitForFunction(() => {
+        // Check if we're no longer on the create form (input should be gone)
+        const titleInput = document.querySelector('[data-testid="course-title-input"]');
+        const titleDisplay = document.querySelector('[data-testid="course-title"]');
+        const errorEl = document.querySelector('.bg-red-50');
+        
+        // Log current state for debugging
+        console.log('Debug state:', { 
+          hasInput: !!titleInput, 
+          hasDisplay: !!titleDisplay, 
+          hasError: !!errorEl,
+          url: window.location.href 
+        });
+        
+        return !titleInput && titleDisplay;
+      }, { timeout: 15000 });
+      
+      // Verify course saved - should now be on CourseDetail page
+      await expect(page.locator('[data-testid="course-title"]')).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('[data-testid="course-title"]')).toContainText(courseName);
       
       // Add course content structure
       const addChapterButton = page.locator('button:has-text("Add Chapter"), button:has-text("Chapter")');
@@ -159,7 +210,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       const page = await context.newPage();
       auth = new CleanAuthHelper(page);
       
-      await auth.loginAsTeacher();
+      await auth.loginWithCustomUser(teacher.email, 'TestPass123!');
       
       // Navigate to course management
       await page.goto('/courses');
@@ -266,7 +317,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       const page = await context.newPage();
       auth = new CleanAuthHelper(page);
       
-      await auth.loginAsTeacher();
+      await auth.loginWithCustomUser(teacher.email, 'TestPass123!');
       
       await page.goto('/courses');
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
@@ -364,7 +415,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       const page = await context.newPage();
       auth = new CleanAuthHelper(page);
       
-      await auth.loginAsTeacher();
+      await auth.loginWithCustomUser(teacher.email, 'TestPass123!');
       
       // Create course-related news announcement
       let createdArticleId: string | null = null;
@@ -489,7 +540,7 @@ test.describe('Instructor Teaching Workflow - Optimized', () => {
       const page = await context.newPage();
       auth = new CleanAuthHelper(page);
       
-      await auth.loginAsTeacher();
+      await auth.loginWithCustomUser(teacher.email, 'TestPass123!');
       
       // View instructor statistics
       await page.goto('/statistics');

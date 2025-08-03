@@ -239,11 +239,17 @@ async function globalSetup(_config: FullConfig) {
   console.log('🔧 Using clean testing architecture with dev database...');
   
   try {
+    // Initialize service coordinator first
+    console.log('📊 Initializing service coordinator...');
+    const { getInstance: getCoordinator } = require('../service-coordinator.js');
+    const coordinator = getCoordinator();
+    coordinator.reset(); // Start with clean state
+    
     // Start services for single worker
     await startSingleWorkerServices();
     
-    // Start service health monitoring
-    console.log('🏥 Starting service health monitoring...');
+    // Start service health monitoring with coordinator
+    console.log('🏥 Starting enhanced service health monitoring...');
     const { startMonitoring } = require('../service-health-monitor.js');
     await startMonitoring();
     

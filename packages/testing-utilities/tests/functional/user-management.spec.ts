@@ -34,7 +34,7 @@ test.describe('User Management - Core Functionality', () => {
       await expect(createButton).toBeVisible();
       
       // Verify user list/table is present
-      const userList = page.locator('table, .user-list, [data-testid*="user"]');
+      const userList = page.locator('[data-testid="users-table"], table, .user-list');
       await expect(userList).toBeVisible({ timeout: 10000 });
       
     } finally {

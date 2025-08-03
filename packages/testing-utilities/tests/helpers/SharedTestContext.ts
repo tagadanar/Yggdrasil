@@ -6,7 +6,7 @@
  */
 
 import { TestDataFactory } from './TestDataFactory';
-import { TestCleanup } from './TestCleanup';
+import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
 
 interface CachedUser {
   _id: string;

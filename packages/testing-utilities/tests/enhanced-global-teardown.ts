@@ -3,7 +3,7 @@
 
 import { FullConfig } from '@playwright/test';
 import { TestCleanup } from '@yggdrasil/shared-utilities/testing';
-import { LoggerFactory } from '@yggdrasil/shared-utilities/logging';
+import { LoggerFactory } from '@yggdrasil/shared-utilities';
 import { spawn } from 'child_process';
 import { promisify } from 'util';
 
@@ -113,13 +113,19 @@ async function globalTeardown(_config: FullConfig) {
   console.log('🔧 Using clean testing architecture...');
 
   try {
-    // Stop service health monitoring
+    // Stop service health monitoring and cleanup coordinator
     console.log('🛑 Stopping service health monitoring...');
     try {
       const { stopMonitoring } = require('../service-health-monitor.js');
       stopMonitoring();
+      
+      // Cleanup service coordinator
+      const { getInstance: getCoordinator } = require('../service-coordinator.js');
+      const coordinator = getCoordinator();
+      coordinator.cleanup();
+      console.log('✅ Service coordinator cleaned up');
     } catch (monitorError) {
-      console.warn('⚠️ Health monitor stop had issues:', monitorError.message);
+      console.warn('⚠️ Health monitor/coordinator stop had issues:', monitorError instanceof Error ? monitorError.message : String(monitorError));
     }
     
     // First, stop all services

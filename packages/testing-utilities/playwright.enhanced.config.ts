@@ -11,14 +11,14 @@ process.setMaxListeners(100);
 // Based on stack trace analysis, Winston adds listeners to Console object directly
 try {
   // Try different approaches to set Console maxListeners
-  if (typeof console.setMaxListeners === 'function') {
-    console.setMaxListeners(100);
+  if (typeof (console as any).setMaxListeners === 'function') {
+    (console as any).setMaxListeners(100);
   } else {
     // Add setMaxListeners method to Console if it doesn't exist
-    (console as any).setMaxListeners = function(n: number) {
+    (console as any).setMaxListeners = function(_n: number) {
       return this;
     };
-    console.setMaxListeners(100);
+    (console as any).setMaxListeners(100);
   }
   
   // Also fix any Console-related EventEmitter objects
@@ -31,12 +31,12 @@ try {
   
   // Fallback: Completely suppress MaxListenersExceededWarning for Console
   const originalEmit = process.emit;
-  process.emit = function(event: any, ...args: any[]) {
+  (process as any).emit = function(event: any, ...args: any[]): boolean {
     if (event === 'warning' && args[0] && args[0].name === 'MaxListenersExceededWarning' && 
         args[0].message && args[0].message.includes('Console')) {
       return false; // Suppress the warning
     }
-    return originalEmit.apply(this, [event, ...args]);
+    return (originalEmit.call(this, event, ...args) as unknown) as boolean;
   };
   
 } catch (error) {
