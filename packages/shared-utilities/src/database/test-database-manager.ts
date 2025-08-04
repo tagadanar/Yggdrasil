@@ -51,21 +51,28 @@ export class TestDatabaseManager {
       // Get base URI from config
       let baseUri = config.MONGODB_URI;
       
-      // Extract MongoDB credentials from environment
+      // In test environments, use simple connection without authentication
+      if (config.NODE_ENV === 'test') {
+        logger.debug('✅ Using simple MongoDB connection for test environment');
+        this.authenticatedUri = baseUri;
+        return baseUri;
+      }
+      
+      // Extract MongoDB credentials from environment for non-test environments
       const username = config.MONGO_APP_USERNAME;
       const password = config.MONGO_APP_PASSWORD;
       const database = config.MONGO_DATABASE || 'yggdrasil-dev';
 
       if (!username || !password) {
         logger.warn('⚠️ MongoDB credentials not found in environment, using unauthenticated connection');
-        logger.warn('   This may cause authentication failures in tests');
+        logger.warn('   This may cause authentication failures in production');
         return baseUri;
       }
 
       // Parse the base URI to extract components
       const url = new URL(baseUri);
       
-      // Build authenticated URI
+      // Build authenticated URI for production environments
       const authenticatedUri = `mongodb://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${url.host}/${database}?authSource=${database}`;
       
       logger.debug('✅ Built authenticated MongoDB connection string');

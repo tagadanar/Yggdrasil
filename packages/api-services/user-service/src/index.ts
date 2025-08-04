@@ -6,12 +6,30 @@
 process.setMaxListeners(20);
 
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 import { createApp } from './app';
 import { connectDatabase } from '@yggdrasil/database-schemas';
 import { logger, initializeJWT } from '@yggdrasil/shared-utilities';
 
 // Load environment variables from project root
-dotenv.config({ path: '../../../.env' });
+// Use absolute path resolution to find .env file regardless of working directory
+const possiblePaths = [
+  path.resolve(__dirname, '../../../.env'),
+  path.resolve(__dirname, '../../../../.env'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), '../../.env'),
+  path.resolve(process.cwd(), '../../../.env'),
+  '/home/tagada/Desktop/Yggdrasil/.env'
+];
+
+const envPath = possiblePaths.find(p => fs.existsSync(p));
+if (envPath) {
+  dotenv.config({ path: envPath });
+  console.log(`🔧 USER SERVICE: Loaded .env from ${envPath}`);
+} else {
+  console.warn('⚠️ USER SERVICE: Could not find .env file, using existing environment variables');
+}
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {

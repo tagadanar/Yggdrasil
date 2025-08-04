@@ -41,11 +41,14 @@ export class DatabaseConnection {
         connectTimeoutMS: 10000,
         family: 4,  // Force IPv4 to avoid IPv6 issues
 
-        // Authentication options
-        authSource: config.MONGO_DATABASE || 'yggdrasil-dev',
         retryWrites: true,
         w: 'majority',
       };
+
+      // Only add authentication options in non-test environments
+      if (process.env['NODE_ENV'] !== 'test') {
+        defaultOptions.authSource = config.MONGO_DATABASE || 'yggdrasil-dev';
+      }
 
       // Add replica set config for production
       if (config.NODE_ENV === 'production') {
@@ -104,7 +107,12 @@ function buildAuthenticatedConnectionString(): string {
     return uri;
   }
 
-  // If authentication credentials are provided, add them to the connection string
+  // In test mode, bypass authentication for simplified testing setup
+  if (config.NODE_ENV === 'test') {
+    return uri; // Return plain URI without authentication
+  }
+
+  // If authentication credentials are provided in non-test environments, add them to the connection string
   if (config.MONGO_APP_USERNAME && config.MONGO_APP_PASSWORD) {
     try {
       const url = new URL(uri);

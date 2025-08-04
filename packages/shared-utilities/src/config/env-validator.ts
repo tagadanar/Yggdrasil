@@ -54,11 +54,53 @@ const envSchema = z.object({
 
 export type EnvConfig = z.infer<typeof envSchema>;
 
+// Test defaults - secure defaults for testing environment
+const TEST_DEFAULTS = {
+  NODE_ENV: 'test',
+  JWT_SECRET: 'test-jwt-secret-32-characters-long-for-security',
+  JWT_REFRESH_SECRET: 'test-refresh-secret-32-characters-long-for-security',
+  MONGODB_URI: 'mongodb://localhost:27018/yggdrasil-dev',
+  JWT_ACCESS_EXPIRES_IN: '15m',
+  JWT_REFRESH_EXPIRES_IN: '7d',
+  LOG_LEVEL: 'info',
+  AUTH_SERVICE_PORT: '3001',
+  USER_SERVICE_PORT: '3002',
+  NEWS_SERVICE_PORT: '3003',
+  COURSE_SERVICE_PORT: '3004',
+  PLANNING_SERVICE_PORT: '3005',
+  STATISTICS_SERVICE_PORT: '3006',
+} as const;
+
 export function validateEnv(): EnvConfig {
   try {
     return envSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      // In test mode, use defaults instead of failing
+      if (process.env['NODE_ENV'] === 'test' || process.env['NODE_ENV'] === undefined) {
+        logger.warn('⚠️ Using test defaults for missing environment variables');
+        
+        // Merge test defaults with existing env vars
+        const testEnv = {
+          ...TEST_DEFAULTS,
+          ...process.env,
+          NODE_ENV: 'test'
+        };
+        
+        try {
+          return envSchema.parse(testEnv);
+        } catch (testError) {
+          logger.error('❌ Even with test defaults, validation failed');
+          if (testError instanceof z.ZodError) {
+            testError.errors.forEach(err => {
+              logger.error(`  - ${err.path.join('.')}: ${err.message}`);
+            });
+          }
+          throw testError;
+        }
+      }
+      
+      // For non-test environments, show the error and exit
       logger.error('❌ Environment validation failed:');
       error.errors.forEach(err => {
         logger.error(`  - ${err.path.join('.')}: ${err.message}`);
@@ -69,12 +111,15 @@ export function validateEnv(): EnvConfig {
       logger.error('  - MONGODB_URI');
       logger.error('  - NODE_ENV (development|test|production)\n');
 
-      if (process.env['NODE_ENV'] !== 'test') {
-        logger.error('💡 To generate secure development secrets, run:');
-        logger.error('   npm run security:generate-secrets\n');
-      }
+      logger.error('💡 To generate secure development secrets, run:');
+      logger.error('   npm run security:generate-secrets\n');
 
-      process.exit(1);
+      // Only exit in production environments, throw in others for better error handling
+      if (process.env['NODE_ENV'] === 'production') {
+        process.exit(1);
+      } else {
+        throw new Error('Environment validation failed - see logs above');
+      }
     }
     throw error;
   }

@@ -1,8 +1,30 @@
 // packages/api-services/course-service/src/index.ts
 // Entry point for the course service
 
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 import app, { initializeDatabase } from './app';
 import { logger, initializeJWT } from '@yggdrasil/shared-utilities';
+
+// Load environment variables from project root
+// Use absolute path resolution to find .env file regardless of working directory
+const possiblePaths = [
+  path.resolve(__dirname, '../../../.env'),
+  path.resolve(__dirname, '../../../../.env'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), '../../.env'),
+  path.resolve(process.cwd(), '../../../.env'),
+  '/home/tagada/Desktop/Yggdrasil/.env'
+];
+
+const envPath = possiblePaths.find(p => fs.existsSync(p));
+if (envPath) {
+  dotenv.config({ path: envPath });
+  console.log(`🔧 COURSE SERVICE: Loaded .env from ${envPath}`);
+} else {
+  console.warn('⚠️ COURSE SERVICE: Could not find .env file, using existing environment variables');
+}
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {
