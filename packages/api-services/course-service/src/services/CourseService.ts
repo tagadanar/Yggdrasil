@@ -37,6 +37,15 @@ export class CourseService {
     courseData: CreateCourseRequest,
   ): Promise<CourseDocument> {
     try {
+      logger.info('Creating course:', {
+        instructorId,
+        instructorName,
+        courseData: {
+          title: courseData.title,
+          category: courseData.category,
+          level: courseData.level,
+        },
+      });
       // Convert string dates to Date objects if they exist
       const processedSettings = courseData.settings ? {
         ...courseData.settings,
@@ -44,9 +53,24 @@ export class CourseService {
         endDate: courseData.settings.endDate ? new Date(courseData.settings.endDate) : undefined,
       } : undefined;
 
+      logger.info('Creating course model instance...');
       const course = new CourseModel({
-        ...courseData,
-        settings: processedSettings,
+        title: courseData.title,
+        description: courseData.description,
+        category: courseData.category,
+        level: courseData.level,
+        status: 'draft', // Default status
+        tags: courseData.tags || [],
+        prerequisites: courseData.prerequisites || [],
+        estimatedDuration: courseData.estimatedDuration || 0,
+        settings: processedSettings || {
+          isPublic: false,
+          allowEnrollment: true,
+          requiresApproval: false,
+          allowLateSubmissions: true,
+          enableDiscussions: true,
+          enableCollaboration: false,
+        },
         instructor: {
           _id: instructorId,
           name: instructorName,
@@ -55,22 +79,76 @@ export class CourseService {
         chapters: [],
         resources: [],
         collaborators: [],
+        stats: {
+          enrolledStudents: 0,
+          completedStudents: 0,
+          averageRating: 0, 
+          totalRatings: 0,
+          totalViews: 0,
+          lastAccessed: new Date(),
+        },
+        version: 1,
+        createdAt: new Date(),
+        lastModified: new Date(),
       });
 
+      logger.info('Generating slug...');
       // Generate slug from title
-      course.slug = course.generateSlug();
+      try {
+        course.slug = course.generateSlug();
+      } catch (slugError) {
+        logger.warn('Slug generation failed, using fallback:', slugError);
+        // Fallback slug generation
+        course.slug = courseData.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '') + '-' + Date.now();
+      }
 
+      logger.info(`Generated slug: ${course.slug}`);
+
+      logger.info('Checking slug uniqueness...');
       // Ensure slug is unique
       let slugCounter = 1;
       const originalSlug = course.slug;
-      while (await CourseModel.findBySlug(course.slug)) {
+      let maxAttempts = 10; // Prevent infinite loop
+      
+      while (maxAttempts > 0 && await CourseModel.findBySlug(course.slug)) {
         course.slug = `${originalSlug}-${slugCounter}`;
         slugCounter++;
+        maxAttempts--;
+      }
+      
+      if (maxAttempts === 0) {
+        // Ultimate fallback with timestamp
+        course.slug = `${originalSlug}-${Date.now()}`;
       }
 
+      logger.info('Saving course to database...');
       await course.save();
+      logger.info('Course saved successfully');
       return course;
     } catch (error: any) {
+      logger.error('Course creation failed with error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        code: error.code,
+      });
+      
+      // Check for specific MongoDB errors
+      if (error.name === 'ValidationError') {
+        const validationErrors = Object.keys(error.errors).map(key => 
+          `${key}: ${error.errors[key].message}`
+        );
+        throw new Error(`Validation error: ${validationErrors.join(', ')}`);
+      }
+      
+      if (error.code === 11000) {
+        throw new Error('Course with this title or slug already exists');
+      }
+      
       throw new Error(`Failed to create course: ${error.message}`);
     }
   }

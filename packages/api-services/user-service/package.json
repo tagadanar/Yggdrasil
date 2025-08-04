@@ -4,7 +4,7 @@
   "description": "User management service for Yggdrasil platform",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only -r dotenv/config src/index.ts",
     "test:start": "ts-node --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",

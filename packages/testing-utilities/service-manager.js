@@ -263,14 +263,12 @@ class ServiceManager {
     // Start services individually to avoid npm workspace command issues
     const rootDir = path.join(__dirname, '../..');
     
-    // Build authenticated MongoDB connection string for tests
-    const username = process.env.MONGO_APP_USERNAME || 'yggdrasil_app';
-    const password = process.env.MONGO_APP_PASSWORD || 'k1DMs0polKWKKVnJlYuX4IFCknZX0kXxU0fQaLaQ8To';
+    // Build MongoDB connection string for tests (with authentication)
     const database = process.env.MONGO_DATABASE || 'yggdrasil-dev';
-    const authenticatedMongoURI = `mongodb://${encodeURIComponent(username)}:${encodeURIComponent(password)}@localhost:27018/${database}?authSource=${database}`;
+    const authenticatedMongoURI = process.env.MONGODB_URI || `mongodb://yggdrasil_app:k1DMs0polKWKKVnJlYuX4IFCknZX0kXxU0fQaLaQ8To@localhost:27018/${database}?authSource=${database}`;
     
-    quietLog(`🔐 Worker ${WORKER_ID}: Using authenticated MongoDB URI for all services`);
-    console.log(`🔐 Database: ${database}, Username: ${username}`);
+    quietLog(`🔐 Worker ${WORKER_ID}: Using MongoDB URI for all services`);
+    console.log(`🔐 Database: ${database}`);
     
     // Clean environment for test mode without worker isolation
     const testEnv = { 
@@ -284,14 +282,9 @@ class ServiceManager {
       // Ensure all services use the same dev database (prevent worker isolation)
       DB_NAME: database,
       DB_COLLECTION_PREFIX: '', // Empty prefix to use main collections
-      // Ensure JWT secrets are available (loaded from .env)
-      JWT_SECRET: process.env.JWT_SECRET,
-      JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
-      // MongoDB authentication credentials for services
-      MONGO_APP_USERNAME: username,
-      MONGO_APP_PASSWORD: password,
-      MONGO_ROOT_USERNAME: process.env.MONGO_ROOT_USERNAME,
-      MONGO_ROOT_PASSWORD: process.env.MONGO_ROOT_PASSWORD,
+      // Ensure JWT secrets are available (use defaults if not in .env)
+      JWT_SECRET: process.env.JWT_SECRET || 'f0BZxij7u9u2k1mfOg4RB1o+YgBdBs34zToIVaKpdmM',
+      JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'cYUf4IvLNPUcpq8QO5usRe+sYtT2ETsF42+wscPAD/A',
       // Add database name for services that need it
       MONGO_DATABASE: database,
       // Service URLs for inter-service communication
@@ -314,13 +307,6 @@ class ServiceManager {
     
     // Start auth service first (most critical)
     quietLog(`🔐 Worker ${WORKER_ID}: Starting auth service on port ${BASE_PORT + 1}...`);
-    quietLog(`🔐 Worker ${WORKER_ID}: Auth service environment:`, {
-      NODE_ENV: testEnv.NODE_ENV,
-      DB_NAME: testEnv.DB_NAME,
-      DB_COLLECTION_PREFIX: testEnv.DB_COLLECTION_PREFIX,
-      WORKER_ID: testEnv.WORKER_ID,
-      PORT: (BASE_PORT + 1).toString()
-    });
     this.authProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/auth-service'),
       stdio: ['pipe', 'pipe', 'pipe'], 
@@ -335,22 +321,28 @@ class ServiceManager {
     quietLog(`📱 Worker ${WORKER_ID}: Starting frontend service on port ${BASE_PORT}...`);
     this.frontendProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/frontend'),
-      stdio: 'pipe',
+      stdio: ['pipe', 'pipe', 'pipe'],
       detached: false,
       env: { ...testEnv, PORT: BASE_PORT.toString() }
     });
     
-    // Forward auth service logs for debugging
-    if (this.authProcess.stdout) {
-      this.authProcess.stdout.on('data', (data) => {
-        console.log(`🔐 AUTH SERVICE: ${data.toString().trim()}`);
+    // Forward frontend logs for debugging
+    if (this.frontendProcess.stdout) {
+      this.frontendProcess.stdout.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) quietLog(`📱 FRONTEND: ${msg}`);
       });
     }
-    if (this.authProcess.stderr) {
-      this.authProcess.stderr.on('data', (data) => {
-        console.error(`🚨 AUTH SERVICE ERROR: ${data.toString().trim()}`);
+    if (this.frontendProcess.stderr) {
+      this.frontendProcess.stderr.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) console.error(`🚨 FRONTEND ERROR: ${msg}`);
       });
     }
+    this.frontendProcess.on('error', (error) => {
+      console.error(`🚨 FRONTEND SPAWN ERROR:`, error);
+    });
+    
     
     // Wait a bit before starting next batch
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -359,9 +351,26 @@ class ServiceManager {
     quietLog(`👤 Worker ${WORKER_ID}: Starting user service on port ${BASE_PORT + 2}...`);
     this.userProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/user-service'),
-      stdio: 'pipe',
+      stdio: ['pipe', 'pipe', 'pipe'],
       detached: false,
       env: { ...testEnv, PORT: (BASE_PORT + 2).toString() }
+    });
+    
+    // Forward user service logs for debugging
+    if (this.userProcess.stdout) {
+      this.userProcess.stdout.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) quietLog(`👤 USER SERVICE: ${msg}`);
+      });
+    }
+    if (this.userProcess.stderr) {
+      this.userProcess.stderr.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) console.error(`🚨 USER SERVICE ERROR: ${msg}`);
+      });
+    }
+    this.userProcess.on('error', (error) => {
+      console.error(`🚨 USER SERVICE SPAWN ERROR:`, error);
     });
     
     // Wait a bit
@@ -371,9 +380,26 @@ class ServiceManager {
     quietLog(`📰 Worker ${WORKER_ID}: Starting news service on port ${BASE_PORT + 3}...`);
     this.newsProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/news-service'),
-      stdio: 'pipe',
+      stdio: ['pipe', 'pipe', 'pipe'],
       detached: false,
       env: { ...testEnv, PORT: (BASE_PORT + 3).toString() }
+    });
+    
+    // Forward news service logs for debugging
+    if (this.newsProcess.stdout) {
+      this.newsProcess.stdout.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) quietLog(`📰 NEWS SERVICE: ${msg}`);
+      });
+    }
+    if (this.newsProcess.stderr) {
+      this.newsProcess.stderr.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) console.error(`🚨 NEWS SERVICE ERROR: ${msg}`);
+      });
+    }
+    this.newsProcess.on('error', (error) => {
+      console.error(`🚨 NEWS SERVICE SPAWN ERROR:`, error);
     });
 
     // Wait a bit
@@ -383,9 +409,26 @@ class ServiceManager {
     quietLog(`📚 Worker ${WORKER_ID}: Starting course service on port ${BASE_PORT + 4}...`);
     this.courseProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/course-service'),
-      stdio: 'pipe',
+      stdio: ['pipe', 'pipe', 'pipe'],
       detached: false,
       env: { ...testEnv, PORT: (BASE_PORT + 4).toString() }
+    });
+    
+    // Forward course service logs for debugging
+    if (this.courseProcess.stdout) {
+      this.courseProcess.stdout.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) quietLog(`📚 COURSE SERVICE: ${msg}`);
+      });
+    }
+    if (this.courseProcess.stderr) {
+      this.courseProcess.stderr.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) console.error(`🚨 COURSE SERVICE ERROR: ${msg}`);
+      });
+    }
+    this.courseProcess.on('error', (error) => {
+      console.error(`🚨 COURSE SERVICE SPAWN ERROR:`, error);
     });
 
     // Wait a bit
@@ -394,9 +437,26 @@ class ServiceManager {
     quietLog(`📅 Worker ${WORKER_ID}: Starting planning service on port ${BASE_PORT + 5}...`);
     this.planningProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/planning-service'),
-      stdio: 'pipe',
+      stdio: ['pipe', 'pipe', 'pipe'],
       detached: false,
       env: { ...testEnv, PORT: (BASE_PORT + 5).toString() }
+    });
+    
+    // Forward planning service logs for debugging
+    if (this.planningProcess.stdout) {
+      this.planningProcess.stdout.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) quietLog(`📅 PLANNING SERVICE: ${msg}`);
+      });
+    }
+    if (this.planningProcess.stderr) {
+      this.planningProcess.stderr.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) console.error(`🚨 PLANNING SERVICE ERROR: ${msg}`);
+      });
+    }
+    this.planningProcess.on('error', (error) => {
+      console.error(`🚨 PLANNING SERVICE SPAWN ERROR:`, error);
     });
 
     // Wait a bit
@@ -405,17 +465,46 @@ class ServiceManager {
     quietLog(`📊 Worker ${WORKER_ID}: Starting statistics service on port ${BASE_PORT + 6}...`);
     this.statisticsProcess = spawn('npm', ['run', 'dev'], {
       cwd: path.join(rootDir, 'packages/api-services/statistics-service'),
-      stdio: 'pipe',
+      stdio: ['pipe', 'pipe', 'pipe'],
       detached: false,
       env: { ...testEnv, PORT: (BASE_PORT + 6).toString() }
+    });
+    
+    // Forward statistics service logs for debugging
+    if (this.statisticsProcess.stdout) {
+      this.statisticsProcess.stdout.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) quietLog(`📊 STATISTICS SERVICE: ${msg}`);
+      });
+    }
+    if (this.statisticsProcess.stderr) {
+      this.statisticsProcess.stderr.on('data', (data) => {
+        const msg = data.toString().trim();
+        if (msg) console.error(`🚨 STATISTICS SERVICE ERROR: ${msg}`);
+      });
+    }
+    this.statisticsProcess.on('error', (error) => {
+      console.error(`🚨 STATISTICS SERVICE SPAWN ERROR:`, error);
     });
 
     // Store all process references
     this.processes = [this.frontendProcess, this.authProcess, this.userProcess, this.newsProcess, this.courseProcess, this.planningProcess, this.statisticsProcess];
     
-    // Handle errors for all processes
+    // Handle errors and add stderr logging for all processes
     this.processes.forEach((process, index) => {
       const names = ['frontend', 'auth', 'user', 'news', 'course', 'planning', 'statistics'];
+      const serviceName = names[index].toUpperCase();
+      
+      // Log stderr for all services to capture startup errors
+      if (process.stderr) {
+        process.stderr.on('data', (data) => {
+          const errorMsg = data.toString().trim();
+          if (errorMsg && !errorMsg.includes('[INFO]')) { // Skip ts-node-dev INFO messages
+            console.error(`🚨 ${serviceName} ERROR: ${errorMsg}`);
+          }
+        });
+      }
+      
       this.addProcessListener(process, 'error', (error) => {
         console.error(`❌ Failed to start ${names[index]} service:`, error);
         process.exit(1);
@@ -687,6 +776,25 @@ async function main() {
         await serviceManager.monitorProcessHealth();
         break;
         
+      case 'restart':
+        console.log('🔄 Restarting services...');
+        // First stop existing services
+        await serviceManager.stopServices();
+        // Wait a bit for complete cleanup
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Start services again
+        const restartSuccess = await serviceManager.startServices();
+        if (restartSuccess) {
+          console.log('✅ Services restarted successfully');
+        } else {
+          console.error('❌ Failed to restart services');
+          process.exit(1);
+        }
+        // Keep the process running
+        console.log('📋 Services running. Press Ctrl+C to stop.');
+        setInterval(() => {}, 1000);
+        break;
+        
       case 'clean':
         const ports = SERVICES.map(s => s.port);
         await serviceManager.killPortProcesses(ports);
@@ -694,7 +802,7 @@ async function main() {
         break;
         
       default:
-        console.log('Usage: node service-manager.js [start|stop|health|monitor|clean]');
+        console.log('Usage: node service-manager.js [start|stop|restart|health|monitor|clean]');
         process.exit(1);
     }
   } catch (error) {

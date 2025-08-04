@@ -168,12 +168,26 @@ export const CourseForm: React.FC<CourseFormProps> = ({
     setError(null);
 
     try {
+      // Convert date strings to datetime strings for API validation
+      const processedFormData = {
+        ...formData,
+        settings: {
+          ...formData.settings,
+          startDate: formData.settings.startDate 
+            ? new Date(formData.settings.startDate + 'T00:00:00').toISOString()
+            : undefined,
+          endDate: formData.settings.endDate 
+            ? new Date(formData.settings.endDate + 'T23:59:59').toISOString()
+            : undefined,
+        }
+      };
+
       let response;
       
       if (isEditing && course) {
-        response = await courseApi.updateCourse(course._id, formData);
+        response = await courseApi.updateCourse(course._id, processedFormData);
       } else {
-        response = await courseApi.createCourse(formData);
+        response = await courseApi.createCourse(processedFormData);
       }
 
       if (response.success) {
@@ -222,7 +236,7 @@ export const CourseForm: React.FC<CourseFormProps> = ({
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter course title"
-              data-testid="course-title"
+              data-testid="course-title-input"
             />
           </div>
 

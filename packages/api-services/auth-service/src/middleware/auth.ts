@@ -3,7 +3,6 @@
 
 import { AuthMiddleware } from '@yggdrasil/shared-utilities';
 import { UserModel } from '@yggdrasil/database-schemas';
-import { authLogger as logger } from '@yggdrasil/shared-utilities';
 
 // Re-export shared middleware with user lookup for auth service
 export const authenticateToken = AuthMiddleware.verifyTokenWithUserLookup(async (id: string) => {

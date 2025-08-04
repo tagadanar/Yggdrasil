@@ -334,7 +334,8 @@ test.describe('Planning Management', () => {
       await authHelper.loginAsAdmin();
       await page.goto('/planning');
       await page.waitForSelector('[data-testid="calendar-view"], .calendar-view, .fc-toolbar', { state: 'visible', timeout: 15000 });
-      await page.waitForLoadState('networkidle', { timeout: 10000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+      await page.waitForTimeout(1000); // Allow calendar to fully render
       
       // Test if filter functionality exists, if not, skip this part
       const filterButton = page.locator('[data-testid="filter-toggle"]');
@@ -386,11 +387,11 @@ test.describe('Planning Management', () => {
       await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
       
       // Test export functionality
-      await page.waitForTimeout(1000); // Wait for calendar to fully render
+      await page.waitForTimeout(2000); // Wait for calendar to fully render
       const exportButton = page.locator('[data-testid="export-calendar-button"]');
-      await exportButton.waitFor({ state: 'visible', timeout: 10000 });
-      await exportButton.waitFor({ state: 'attached', timeout: 5000 });
-      await page.waitForLoadState('networkidle', { timeout: 5000 });
+      await exportButton.waitFor({ state: 'visible', timeout: 15000 });
+      await exportButton.waitFor({ state: 'attached', timeout: 10000 });
+      // Skip networkidle wait due to rate limiting issues - button visibility is sufficient
       await exportButton.click();
       await page.waitForTimeout(500); // Small delay for modal to appear
       
@@ -594,11 +595,11 @@ test.describe('Planning Management', () => {
       await page.waitForSelector('[data-testid="calendar-view"]', { state: 'visible', timeout: 3000 });
       
       // Test Google Calendar sync functionality
-      await page.waitForTimeout(1000); // Wait for page to stabilize
+      await page.waitForTimeout(2000); // Wait for page to stabilize
       const googleSyncButton = page.locator('[data-testid="google-calendar-sync"]');
-      await googleSyncButton.waitFor({ state: 'visible', timeout: 10000 });
-      await googleSyncButton.waitFor({ state: 'attached', timeout: 5000 });
-      await page.waitForLoadState('networkidle', { timeout: 5000 });
+      await googleSyncButton.waitFor({ state: 'visible', timeout: 15000 });
+      await googleSyncButton.waitFor({ state: 'attached', timeout: 10000 });
+      // Skip networkidle wait due to rate limiting issues - button visibility is sufficient
       await googleSyncButton.click();
       await page.waitForTimeout(500); // Small delay for modal to appear
       

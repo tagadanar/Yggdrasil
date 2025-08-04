@@ -458,12 +458,18 @@ export class CleanAuthHelper {
   async getAccessToken(): Promise<string | null> {
     try {
       return await this.page.evaluate(() => {
-        const tokens = localStorage.getItem('yggdrasil_tokens');
-        if (tokens) {
-          const parsed = JSON.parse(tokens);
-          return parsed.accessToken || null;
-        }
-        return null;
+        // Read from cookies using js-cookie format
+        const getCookie = (name: string): string | null => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) {
+            const cookieValue = parts.pop()?.split(';').shift();
+            return cookieValue ? decodeURIComponent(cookieValue) : null;
+          }
+          return null;
+        };
+        
+        return getCookie('yggdrasil_access_token');
       });
     } catch (error) {
       console.error('🔐 CLEAN AUTH: Failed to get access token:', error);

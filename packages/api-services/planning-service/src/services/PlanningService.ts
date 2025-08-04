@@ -63,7 +63,7 @@ export class PlanningService {
   /**
    * Get events with filtering
    */
-  async getEvents(query: GetEventsQueryType & { userId: string }): Promise<Event[]> {
+  async getEvents(query: GetEventsQueryType & { userId: string }): Promise<EventDocument[]> {
     try {
       const filter: any = {};
 
@@ -101,7 +101,7 @@ export class PlanningService {
         .populate('linkedCourse', 'title')
         .sort({ startDate: 1 });
 
-      return events.map(PlanningService.eventDocumentToEvent);
+      return events;
     } catch (error) {
       throw new Error(`Failed to get events: ${error}`);
     }
@@ -315,7 +315,7 @@ export class PlanningService {
   /**
    * Generate iCal format
    */
-  private generateICalFormat(events: Event[], exportData: ExportCalendarType): ExportResult {
+  private generateICalFormat(events: EventDocument[], exportData: ExportCalendarType): ExportResult {
     const icalContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -351,7 +351,7 @@ export class PlanningService {
   /**
    * Generate CSV format
    */
-  private generateCSVFormat(events: Event[], exportData: ExportCalendarType): ExportResult {
+  private generateCSVFormat(events: EventDocument[], exportData: ExportCalendarType): ExportResult {
     const headers = ['Title', 'Start Date', 'End Date', 'Location', 'Type', 'Description'];
     let csvContent = headers.join(',') + '\n';
 

@@ -4,7 +4,8 @@
   "description": "Testing utilities and functional tests for Yggdrasil platform",
   "private": true,
   "scripts": {
-    "test:quiet": "QUIET_MODE=true node -r dotenv/config ../../node_modules/.bin/playwright test --config=playwright.enhanced.config.ts --reporter=./reporters/live-progress-reporter.js --workers=1",
+    "test:quiet": "QUIET_MODE=true node suite-orchestrator.js",
+    "test:quiet:legacy": "QUIET_MODE=true node -r dotenv/config ../../node_modules/.bin/playwright test --config=playwright.enhanced.config.ts --reporter=./reporters/live-progress-reporter.js --workers=1",
     "test:single": "node -r dotenv/config ../../node_modules/.bin/playwright test --config=playwright.enhanced.config.ts --reporter=line --workers=1",
     "test:debug": "node -r dotenv/config ../../node_modules/.bin/playwright test --config=playwright.enhanced.config.ts --reporter=line --headed --workers=1",
     "dev": "exec node service-manager.js start",

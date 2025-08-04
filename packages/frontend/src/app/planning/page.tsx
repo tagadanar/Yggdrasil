@@ -85,6 +85,7 @@ export default function PlanningPage() {
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'connected' | 'disconnected' | 'syncing' | 'error'>('disconnected');
   const [isMobile, setIsMobile] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   
   // Check if user can create/edit events
   const canModifyEvents = user?.role === 'admin' || user?.role === 'staff';
@@ -106,6 +107,29 @@ export default function PlanningPage() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Offline detection
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      setIsRealTimeConnected(true);
+    };
+    
+    const handleOffline = () => {
+      setIsOffline(true);
+      setIsRealTimeConnected(false);
+    };
+    
+    // Set initial status
+    setIsOffline(!navigator.onLine);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const loadData = async () => {
@@ -375,7 +399,7 @@ export default function PlanningPage() {
 
   if (loading) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['admin', 'staff']}>
         <DashboardLayout>
           <div className="flex justify-center items-center h-96">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 dark:border-primary-400"></div>
@@ -386,7 +410,7 @@ export default function PlanningPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={['admin', 'staff']}>
       <DashboardLayout>
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           {/* Header */}
@@ -515,6 +539,7 @@ export default function PlanningPage() {
               isRealTimeConnected={isRealTimeConnected}
               syncStatus={syncStatus}
               isMobile={isMobile}
+              isOffline={isOffline}
             />
           </div>
 

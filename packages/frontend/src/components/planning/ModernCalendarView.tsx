@@ -52,6 +52,7 @@ interface ModernCalendarViewProps {
   isRealTimeConnected?: boolean;
   syncStatus?: 'connected' | 'disconnected' | 'syncing' | 'error';
   isMobile?: boolean;
+  isOffline?: boolean;
 }
 
 export const ModernCalendarView: React.FC<ModernCalendarViewProps> = ({
@@ -67,7 +68,8 @@ export const ModernCalendarView: React.FC<ModernCalendarViewProps> = ({
   onDateSelect,
   isRealTimeConnected = false,
   syncStatus = 'disconnected',
-  isMobile = false
+  isMobile = false,
+  isOffline = false
 }) => {
   const calendarRef = useRef<FullCalendar>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -342,11 +344,19 @@ export const ModernCalendarView: React.FC<ModernCalendarViewProps> = ({
           {/* Sync status */}
           {getSyncStatusIndicator()}
           
+          {/* Offline indicator */}
+          {isOffline && (
+            <div className="flex items-center space-x-1" data-testid="offline-indicator">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <span className="text-xs text-red-600 dark:text-red-400">Offline</span>
+            </div>
+          )}
+
           {/* Real-time connection status */}
-          {isRealTimeConnected && (
+          {isRealTimeConnected && !isOffline && (
             <div className="flex items-center space-x-1" data-testid="realtime-status">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-xs text-green-600 dark:text-green-400">Live</span>
+              <span className="text-xs text-green-600 dark:text-green-400">Connected</span>
             </div>
           )}
           
@@ -491,10 +501,35 @@ export const ModernCalendarView: React.FC<ModernCalendarViewProps> = ({
 
       {/* Mobile navigation helpers */}
       {isMobile && (
-        <div className="hidden" data-testid="mobile-calendar-nav">
-          <div data-testid="swipe-prev"></div>
-          <div data-testid="swipe-next"></div>
-          <div data-testid="pull-to-refresh"></div>
+        <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600" data-testid="mobile-calendar-nav">
+          <button
+            onClick={navigatePrevious}
+            className="flex items-center px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-500"
+            data-testid="swipe-prev"
+            disabled={isLoading}
+          >
+            <ChevronLeftIcon className="h-4 w-4 mr-1" />
+            Previous
+          </button>
+          
+          <button
+            onClick={navigateToday}
+            className="px-3 py-2 bg-indigo-600 text-white rounded-md shadow-sm text-sm hover:bg-indigo-700"
+            data-testid="pull-to-refresh"
+            disabled={isLoading}
+          >
+            Today
+          </button>
+          
+          <button
+            onClick={navigateNext}
+            className="flex items-center px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-500"
+            data-testid="swipe-next"
+            disabled={isLoading}
+          >
+            Next
+            <ChevronRightIcon className="h-4 w-4 ml-1" />
+          </button>
         </div>
       )}
 

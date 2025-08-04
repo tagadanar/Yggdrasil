@@ -94,7 +94,10 @@ async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
   
   serviceManager.stderr?.on('data', (data) => {
     try {
-      console.error(`❌ Worker ${workerId} Service Manager Error:`, data.toString().trim());
+      const msg = data.toString().trim();
+      if (msg) {
+        console.error(`❌ Worker ${workerId} Service Manager Error:`, msg);
+      }
     } catch (error) {
       // Ignore EPIPE errors during shutdown
     }
@@ -104,7 +107,7 @@ async function startWorkerServices(workerId: number): Promise<ServiceProcess> {
   quietLog(`⏳ GLOBAL SETUP: Waiting for Worker ${workerId} services to be ready...`);
   
   let retries = 0;
-  const maxRetries = 60; // 30 seconds total with faster checks
+  const maxRetries = 240; // 120 seconds total with faster checks
   
   while (retries < maxRetries) {
     await sleep(500); // Check every 500ms for faster startup

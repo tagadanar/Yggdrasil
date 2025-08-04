@@ -31,8 +31,10 @@ export class CourseController {
   // =============================================================================
 
   createCourse = async (req: AuthRequest, res: Response): Promise<void> => {
+    const { user } = req;
+    let validation: any = null;
+    
     try {
-      const { user } = req;
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
           ResponseHelper.unauthorized('Authentication required'),
@@ -48,7 +50,7 @@ export class CourseController {
         return;
       }
 
-      const validation = CreateCourseSchema.safeParse(req.body);
+      validation = CreateCourseSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(HTTP_STATUS.BAD_REQUEST).json(
           ResponseHelper.badRequest('Invalid course data'),
@@ -67,8 +69,15 @@ export class CourseController {
         ResponseHelper.success(course, 'Course created successfully'),
       );
     } catch (error: any) {
+      logger.error('Course creation error:', {
+        message: error.message,
+        stack: error.stack,
+        userId: user?.userId,
+        courseData: validation?.data,
+      });
+      
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to create course'),
+        ResponseHelper.error(`Failed to create course: ${error.message}`),
       );
     }
   };

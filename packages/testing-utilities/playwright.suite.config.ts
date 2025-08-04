@@ -1,5 +1,6 @@
-// packages/testing-utilities/playwright.enhanced.config.ts
-// Enhanced Playwright configuration for single-worker testing
+// packages/testing-utilities/playwright.suite.config.ts
+// Playwright configuration for individual suite execution
+// Used by suite-orchestrator.js for sequential test runs
 
 // CRITICAL FIX: Prevent Winston Console EventEmitter memory leak warnings
 // Must be set before any other imports, especially Winston-related ones
@@ -59,28 +60,24 @@ export default defineConfig({
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env['CI'],
   
-  // No retries - tests should be deterministic with enhanced isolation
+  // No retries - tests should be deterministic
   retries: 0,
   
   // Single worker for stable execution
   workers: 1,
   
-  // Enhanced reporter configuration for single-worker analysis
+  // Reporter configuration for suite runs
+  // The orchestrator will specify reporters via command line
   reporter: process.env['CI'] ? [
     ['dot'],
-    ['json', { outputFile: 'test-results-enhanced/results.json' }],
-    ['./reporters/performance-reporter.ts', { outputDir: 'test-results-enhanced' }]
+    ['json', { outputFile: process.env['PLAYWRIGHT_JSON_OUTPUT_NAME'] || 'test-results-suite.json' }]
   ] : [
-    ['html', { outputFolder: 'test-results-enhanced' }],
-    ['json', { outputFile: 'test-results-enhanced/results.json' }],
-    ['./reporters/performance-reporter.ts', { outputDir: 'test-results-enhanced' }],
-    ['./reporters/live-progress-reporter.js'],
-    ['list', { printSteps: true }] // Default for detailed foreground analysis
+    ['list', { printSteps: false }]
   ],
   
   // Global test settings
   use: {
-    // Base URL for all tests - will be overridden per worker
+    // Base URL for all tests
     baseURL: 'http://localhost:3000',
     
     // Capture screenshots on failure
@@ -111,21 +108,9 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    // Add more browsers if needed
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
   ],
   
-  // Global timeout for entire test run - 30 minutes (reasonable for quiet mode)
-  globalTimeout: 30 * 60 * 1000,
-  
-  // Timeout for each test - 100 seconds (with stricter enforcement to prevent hangs)
+  // Timeout for each test - 100 seconds
   timeout: 100 * 1000,
   
   // Expect timeout
@@ -133,14 +118,12 @@ export default defineConfig({
     timeout: 30000, // 30 seconds
   },
   
-  // Services are managed by enhanced global setup/teardown for single-worker execution
+  // NO global setup/teardown - handled by orchestrator
+  // globalSetup: undefined,
+  // globalTeardown: undefined,
   
-  // Output directory for enhanced results
-  outputDir: 'test-results-enhanced/',
-  
-  // Enhanced global setup and teardown
-  globalSetup: require.resolve('./tests/enhanced-global-setup'),
-  globalTeardown: require.resolve('./tests/enhanced-global-teardown'),
+  // Output directory for suite results
+  outputDir: 'test-results-suite/',
   
   // Test match patterns
   testMatch: [
@@ -158,9 +141,9 @@ export default defineConfig({
   
   // Metadata
   metadata: {
-    framework: 'Enhanced Yggdrasil Testing Framework',
+    framework: 'Yggdrasil Suite Testing Framework',
     version: '1.0.0',
-    parallelization: 'Single-worker for stable execution',
-    raceConditions: 'Completely eliminated'
+    mode: 'Sequential suite execution with service restarts',
+    orchestrator: 'suite-orchestrator.js'
   }
 });

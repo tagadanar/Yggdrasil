@@ -156,7 +156,7 @@ export default function CoursesPage() {
   };
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={['teacher', 'staff', 'admin']}>
       <DashboardLayout>
         <div className="max-w-7xl mx-auto py-6">
           {viewMode === 'list' && (

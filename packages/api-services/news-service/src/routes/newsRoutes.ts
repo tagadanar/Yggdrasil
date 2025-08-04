@@ -1,14 +1,17 @@
 import { Router } from 'express';
 import { NewsController } from '../controllers/NewsController';
-import { authenticate, staffOnly, authenticated, requireRole } from '../middleware/authMiddleware';
+import { authenticate, staffOnly, requireRole } from '../middleware/authMiddleware';
+import { logger } from '@yggdrasil/shared-utilities';
 
 const router = Router();
 const newsController = new NewsController();
 
 // Root route - accessible to admin, staff, and students (excludes teachers per authorization matrix)
-router.get('/', authenticate, requireRole(['admin', 'staff', 'student']), (req: any, res) => {
+router.get('/', authenticate, requireRole('admin', 'staff', 'student'), (req: any, res) => {
   // News service info accessible to admin, staff, and students per authorization matrix
-  console.log('🔍 NEWS SERVICE: Route handler called for /, user:', req.user ? { id: req.user.id, role: req.user.role, email: req.user.email } : 'NO USER');
+  logger.info('News service root route accessed', { 
+    user: req.user ? { id: req.user.id, role: req.user.role, email: req.user.email } : null 
+  });
   return res.json({
     service: 'news-service',
     message: 'News service is running',

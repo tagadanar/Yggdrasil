@@ -127,7 +127,7 @@ export class StatisticsService {
   static async getStudentDashboard(userId: string): Promise<StudentDashboardData> {
     try {
       // Adjust time threshold for test environment to include all test data
-      const isTestEnv = process.env.NODE_ENV === 'test';
+      const isTestEnv = process.env['NODE_ENV'] === 'test';
 
       // Get student enrollments (no time filter in test env to see all test data)
       const enrollmentQuery: any = { studentId: userId };
@@ -312,7 +312,7 @@ export class StatisticsService {
       }
 
       // Adjust time threshold for test environment to find test courses
-      const isTestEnv = process.env.NODE_ENV === 'test';
+      const isTestEnv = process.env['NODE_ENV'] === 'test';
       const searchThreshold = isTestEnv
         ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago for tests
         : new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours only for production
@@ -428,10 +428,7 @@ export class StatisticsService {
   static async getTeacherDashboard(teacherId: string): Promise<TeacherDashboardData> {
     try {
       // Adjust time thresholds for test environment to include all test data
-      const isTestEnv = process.env.NODE_ENV === 'test';
-      const recentThreshold = isTestEnv
-        ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago for tests
-        : new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago for production
+      const isTestEnv = process.env['NODE_ENV'] === 'test';
       const testThreshold = isTestEnv
         ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago for tests
         : new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago for production

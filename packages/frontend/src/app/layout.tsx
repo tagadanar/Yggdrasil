@@ -1,7 +1,7 @@
 // packages/frontend/src/app/layout.tsx
 // Root layout component for Next.js 14 app directory
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { ThemeProvider } from '@/lib/theme/ThemeProvider';
@@ -9,7 +9,11 @@ import { ThemeProvider } from '@/lib/theme/ThemeProvider';
 export const metadata: Metadata = {
   title: 'Yggdrasil Educational Platform',
   description: 'Modern IT school management platform with beautiful light/dark mode',
-  viewport: 'width=device-width, initial-scale=1',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#0f172a' }

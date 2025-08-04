@@ -306,7 +306,7 @@ function NewsPageContent() {
 
   if (loading) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['admin', 'staff']}>
         <DashboardLayout>
           <div className="max-w-4xl mx-auto py-6">
             <div className="animate-pulse space-y-4">
@@ -325,7 +325,7 @@ function NewsPageContent() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={['admin', 'staff']}>
       <DashboardLayout>
         <div className="max-w-6xl mx-auto py-6">
           <div className="mb-8">
@@ -370,7 +370,7 @@ function NewsPageContent() {
           </div>
 
           {/* News Articles */}
-          <div className="space-y-6">
+          <div className="space-y-6" data-testid="news-list">
             {filteredArticles.length === 0 ? (
               <div className="text-center py-8">
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -647,7 +647,7 @@ function NewsPageContent() {
 export default function NewsPage() {
   return (
     <Suspense fallback={
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['admin', 'staff']}>
         <DashboardLayout>
           <div className="max-w-4xl mx-auto py-6">
             <div className="animate-pulse space-y-4">

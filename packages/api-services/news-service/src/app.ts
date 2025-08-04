@@ -64,7 +64,7 @@ export const createApp = async (skipDbConnection = false) => {
   }
 
   // Routes
-  console.log('🔥 NEWS SERVICE: MOUNTING ROUTES - SERVICE RESTARTED WITH NEW CODE');
+  logger.info('News service routes mounted successfully');
   app.use('/api/news', newsRoutes);
 
   // Health check
