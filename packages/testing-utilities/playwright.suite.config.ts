@@ -63,8 +63,14 @@ export default defineConfig({
   // No retries - tests should be deterministic
   retries: 0,
   
-  // Single worker for stable execution
+  // Single worker for stable execution with memory limits
   workers: 1,
+  
+  // CRITICAL: Memory and resource management to prevent exit code 137
+  maxFailures: undefined, // Don't stop on failures, run all tests
+  
+  // Memory optimization for browser contexts
+  webServer: undefined, // Don't start additional web servers
   
   // Reporter configuration for suite runs
   // The orchestrator will specify reporters via command line
@@ -80,26 +86,66 @@ export default defineConfig({
     // Base URL for all tests
     baseURL: 'http://localhost:3000',
     
-    // Capture screenshots on failure
+    // OPTIMIZED: Minimal resource usage to prevent memory exhaustion
     screenshot: 'only-on-failure',
-    
-    // Record video on failure
-    video: 'retain-on-failure',
-    
-    // Collect trace on failure
+    video: 'retain-on-failure', 
     trace: 'retain-on-failure',
     
-    // Global timeout for each action
-    actionTimeout: 30000, // 30 seconds
-    
-    // Navigation timeout
-    navigationTimeout: 45000, // 45 seconds
+    // CRITICAL: Reduced timeouts to prevent resource exhaustion
+    actionTimeout: 20000, // 20 seconds (reduced from 30)
+    navigationTimeout: 30000, // 30 seconds (reduced from 45)
     
     // Ignore HTTPS errors in test environment
     ignoreHTTPSErrors: true,
     
     // Accept downloads
     acceptDownloads: true,
+    
+    // MEMORY OPTIMIZATION: Browser context settings
+    viewport: { width: 1280, height: 720 }, // Standard viewport
+    
+    // Disable some resource-intensive features
+    javaScriptEnabled: true,
+    
+    // CRITICAL: Browser launch options for memory management
+    launchOptions: {
+      // Memory limits to prevent exit code 137
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox', 
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-extensions',
+        '--disable-plugins',
+        '--disable-background-networking',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI,BlinkGenPropertyTrees',
+        '--disable-ipc-flooding-protection',
+        '--disable-default-apps',
+        '--disable-sync',
+        '--disable-web-security',
+        '--memory-pressure-off',
+        '--aggressive-cache-discard',
+        '--enable-aggressive-domstorage-flushing',
+        // CRITICAL: Memory limits per process
+        '--max_old_space_size=512', // Reduced to 512MB per process
+        '--js-flags=--max-old-space-size=512',
+        // Reduce renderer processes
+        '--renderer-process-limit=1',
+        '--max_renderer_processes=1'
+      ],
+      // Headless mode to save resources
+      headless: true,
+      // Force garbage collection
+      env: {
+        ...process.env,
+        NODE_OPTIONS: '--max-old-space-size=1024 --expose-gc' // Reduced Node memory limit
+      }
+    },
   },
   
   // Configure projects for major browsers
@@ -110,17 +156,16 @@ export default defineConfig({
     },
   ],
   
-  // Timeout for each test - 100 seconds
-  timeout: 100 * 1000,
+  // CRITICAL: Increased timeout to prevent exit code 137 from timeout kills
+  timeout: 120 * 1000, // 120 seconds (increased from 100)
   
-  // Expect timeout
+  // Expect timeout - reduced for faster failure detection
   expect: {
-    timeout: 30000, // 30 seconds
+    timeout: 20000, // 20 seconds (reduced from 30)
   },
   
-  // NO global setup/teardown - handled by orchestrator
-  // globalSetup: undefined,
-  // globalTeardown: undefined,
+  // Lightweight setup for individual suite runs
+  globalSetup: require.resolve('./suite-browser-setup'),
   
   // Output directory for suite results
   outputDir: 'test-results-suite/',

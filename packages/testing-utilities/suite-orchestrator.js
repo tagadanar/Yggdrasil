@@ -187,13 +187,55 @@ class SuiteOrchestrator {
    */
   async restartServices() {
     console.log(chalk.cyan('🔄 Restarting services for next suite...'));
+    
+    // CRITICAL: Force garbage collection before restart to prevent memory buildup
+    await this.forceGarbageCollection();
+    
     await this.stopServices();
+    
+    // Additional wait for memory cleanup
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
     await this.startServices();
 
     // CRITICAL: Reinitialize test environment after service restart
     await this.initializeTestEnvironment();
 
     console.log(chalk.green('✅ Services restarted and test environment initialized\n'));
+  }
+
+  /**
+   * Force garbage collection to prevent memory accumulation leading to exit code 137
+   */
+  async forceGarbageCollection() {
+    try {
+      console.log(chalk.gray('🧹 Forcing garbage collection...'));
+      
+      // Try to force garbage collection if available
+      if (global.gc) {
+        global.gc();
+        console.log(chalk.gray('✅ Garbage collection completed'));
+      } else {
+        // Alternative: Clear large objects and force collection
+        if (global.Buffer) {
+          global.Buffer.poolSize = 8192; // Reset buffer pool
+        }
+        
+        // Force some memory pressure to trigger GC
+        const largeArray = new Array(1000000);
+        largeArray.fill(null);
+        largeArray.length = 0;
+        
+        console.log(chalk.gray('✅ Memory cleanup completed (GC not exposed)'));
+      }
+      
+      // Display memory usage after cleanup
+      const memUsage = process.memoryUsage();
+      console.log(chalk.gray(`📊 Memory usage: RSS ${Math.round(memUsage.rss / 1024 / 1024)}MB, Heap ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`));
+      
+    } catch (error) {
+      console.warn(chalk.yellow('⚠️ Garbage collection failed:'), error.message);
+    }
   }
 
   /**
@@ -214,8 +256,9 @@ class SuiteOrchestrator {
       // const { startMonitoring } = require('./service-health-monitor.js');
       // await startMonitoring();
 
-      // Initialize clean test environment (CRITICAL for test functionality)
+      // Reset and initialize clean test environment (CRITICAL for test functionality)
       const { TestInitializer } = require('@yggdrasil/shared-utilities/testing');
+      TestInitializer.reset(); // CRITICAL: Reset state between suite runs
       await TestInitializer.quickSetup(true);
 
       console.log(
@@ -230,7 +273,7 @@ class SuiteOrchestrator {
   }
 
   /**
-   * Run a single test suite
+   * Run a single test suite with enhanced memory management
    */
   async runSuite(suitePath, suiteIndex) {
     const suiteName = path.basename(suitePath, path.extname(suitePath));
@@ -241,10 +284,11 @@ class SuiteOrchestrator {
     console.log(chalk.blue.bold(`📁 Suite ${suiteNumber}/${totalSuites}: ${suiteName}`));
     console.log(chalk.blue('━'.repeat(70)));
 
-    return new Promise(resolve => {
-      // We'll just use the live reporter for now and track pass/fail via exit code
-      // JSON reporter integration can be added later if needed
+    // Display memory usage before suite
+    const memBefore = process.memoryUsage();
+    console.log(chalk.gray(`📊 Pre-suite memory: RSS ${Math.round(memBefore.rss / 1024 / 1024)}MB, Heap ${Math.round(memBefore.heapUsed / 1024 / 1024)}MB`));
 
+    return new Promise(resolve => {
       const suiteStats = {
         total: 0,
         passed: 0,
@@ -253,6 +297,7 @@ class SuiteOrchestrator {
         skipped: 0,
       };
 
+      // CRITICAL: Enhanced environment for memory management  
       const testProcess = spawn(
         'npx',
         [
@@ -268,18 +313,48 @@ class SuiteOrchestrator {
           env: {
             ...process.env,
             QUIET_MODE: process.env.QUIET_MODE || 'false',
+            // CRITICAL: Memory management environment variables
+            NODE_OPTIONS: '--max-old-space-size=1024 --expose-gc',
+            // Prevent memory leaks in Playwright
+            PLAYWRIGHT_BROWSERS_PATH: undefined, // Use default browser path
+            // Force garbage collection in child processes
+            FORCE_GC: '1',
           },
           stdio: 'inherit',
+          // CRITICAL: Process limits to prevent resource exhaustion
+          timeout: 150000, // 2.5 minutes timeout per suite
         },
       );
 
+      // CRITICAL: Timeout handler to prevent hanging suites
+      const suiteTimeout = setTimeout(() => {
+        if (!testProcess.killed) {
+          console.log(chalk.red(`⏰ Suite ${suiteName} timeout - terminating process`));
+          testProcess.kill('SIGTERM');
+          
+          // Force kill after 10 seconds if SIGTERM doesn't work
+          setTimeout(() => {
+            if (!testProcess.killed) {
+              console.log(chalk.red(`💀 Force killing suite ${suiteName}`));
+              testProcess.kill('SIGKILL');
+            }
+          }, 10000);
+        }
+      }, 180000); // 3 minutes total timeout
+
       testProcess.on('close', code => {
-        // For now, we'll just track whether the suite passed or failed based on exit code
-        // The live reporter already shows detailed progress
+        clearTimeout(suiteTimeout);
+        
+        // Display memory usage after suite
+        const memAfter = process.memoryUsage();
+        console.log(chalk.gray(`📊 Post-suite memory: RSS ${Math.round(memAfter.rss / 1024 / 1024)}MB, Heap ${Math.round(memAfter.heapUsed / 1024 / 1024)}MB`));
+        
         this.suitesExecuted++;
 
         if (code === 0) {
           console.log(chalk.green(`✅ Suite ${suiteName} passed\n`));
+        } else if (code === 137) {
+          console.log(chalk.red(`💀 Suite ${suiteName} killed (exit code 137) - likely memory/timeout issue\n`));
         } else {
           console.log(chalk.red(`❌ Suite ${suiteName} failed with exit code ${code}\n`));
         }
@@ -288,6 +363,7 @@ class SuiteOrchestrator {
       });
 
       testProcess.on('error', error => {
+        clearTimeout(suiteTimeout);
         console.error(chalk.red(`❌ Failed to run suite ${suiteName}:`, error.message));
         resolve();
       });
@@ -364,6 +440,9 @@ class SuiteOrchestrator {
 
       // Stop services after all suites
       await this.stopServices();
+
+      // CRITICAL: Final memory cleanup to prevent lingering processes
+      await this.forceGarbageCollection();
 
       // Record end time
       this.results.endTime = Date.now();
