@@ -209,15 +209,20 @@ class SuiteOrchestrator {
       const coordinator = getCoordinator();
       coordinator.reset(); // Start with clean state
 
-      // Start service health monitoring
-      const { startMonitoring } = require('./service-health-monitor.js');
-      await startMonitoring();
+      // DISABLED: Health monitoring interferes with orchestrated test restarts
+      // The orchestrator manages service lifecycle directly
+      // const { startMonitoring } = require('./service-health-monitor.js');
+      // await startMonitoring();
 
       // Initialize clean test environment (CRITICAL for test functionality)
       const { TestInitializer } = require('@yggdrasil/shared-utilities/testing');
       await TestInitializer.quickSetup(true);
 
-      console.log(chalk.gray('✅ Test environment initialized'));
+      console.log(
+        chalk.gray(
+          '✅ Test environment initialized (health monitoring disabled for orchestrated testing)',
+        ),
+      );
     } catch (error) {
       console.error(chalk.red('❌ Test environment initialization failed:'), error.message);
       throw error;
