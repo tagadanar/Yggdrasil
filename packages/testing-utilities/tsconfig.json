@@ -10,7 +10,7 @@
   },
   "include": [
     "tests/**/*",
-    "playwright.enhanced.config.ts"
+    "playwright.reorganized.config.ts"
   ],
   "references": [
     { "path": "../shared-utilities" },

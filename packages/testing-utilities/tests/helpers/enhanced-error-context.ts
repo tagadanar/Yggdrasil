@@ -79,7 +79,7 @@ ${context.error.stack}
 `);
 
     // Page State
-    if (context.page && !context.page.isClosed()) {
+    if (context.page && typeof context.page.isClosed === 'function' && !context.page.isClosed()) {
       try {
         const url = context.page.url();
         const title = await context.page.title();
@@ -264,7 +264,7 @@ ${recommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\\n')}
    */
   private generateRecommendations(context: ErrorContext): string[] {
     const recommendations: string[] = [];
-    const errorMsg = context.error.message.toLowerCase();
+    const errorMsg = (context.error?.message || '').toLowerCase();
 
     // Timeout errors
     if (errorMsg.includes('timeout')) {

@@ -1,0 +1,9 @@
+{
+  "servicesHealthy": true,
+  "restartInProgress": false,
+  "lastRestartTime": null,
+  "unhealthyServices": [],
+  "testsPaused": false,
+  "restartCount": 0,
+  "lastHealthCheck": null
+}

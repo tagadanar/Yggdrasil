@@ -97,29 +97,17 @@ npm run test:debug   # Visual debugging
 3. Fix application code (NEVER modify tests)
 4. Re-run to verify
 
-### Test Suites (26 comprehensive test suites):
+### Test Suites (10 reorganized business-focused suites):
 
-#### **Playwright Integration Tests** (testing-utilities):
-- **Focused Authentication Test** [CRITICAL]: Quick auth verification
-- **Authentication Security - Comprehensive Workflows** [CRITICAL]: JWT, sessions, security
-- **User Management - Core Functionality** [HIGH]: CRUD operations
-- **User Management - API Endpoints** [HIGH]: REST API validation
-- **User Management - UI Components** [HIGH]: Frontend interactions
-- **User Management - Integration Workflows** [HIGH]: End-to-end user flows
-- **Course Management** [HIGH]: Educational content workflows
-- **Instructor Teaching Workflow - Optimized** [HIGH]: Teaching scenarios
-- **Student Learning Journey - Optimized** [HIGH]: Learning progression
-- **News Management** [MEDIUM]: Article lifecycle
-- **Planning Management** [MEDIUM]: Calendar and events
-- **Statistics Management - Real Data Scenarios** [MEDIUM]: Analytics & reporting
-- **Platform Features** [MEDIUM]: Core platform functionality
-- **Profile Editing Functionality** [MEDIUM]: User profile management
-- **Role-Based Access Control Matrix** [HIGH]: RBAC validation
-- **UI States and Error Handling** [HIGH]: Frontend resilience
-- **Instructor Student Management Integration** [HIGH]: Teacher-student workflows
-- **Instructor Course Creation Integration** [HIGH]: Course creation flows
-- **Instructor Communication Integration** [MEDIUM]: Communication tools
-- **System Integration Tests** [CRITICAL]: Full E2E system validation
+#### **Reorganized Test Suites** (testing-utilities):
+- **Auth Security Suite** [CRITICAL]: JWT tokens, sessions, security workflows
+- **User Management Suite** [HIGH]: CRUD operations, RBAC, API endpoints, UI components
+- **Course Learning Suite** [HIGH]: Educational content workflows, learning progression
+- **Instructor Operations Suite** [HIGH]: Teaching workflows, course management, grading
+- **Content Management Suite** [MEDIUM]: News lifecycle, planning/calendar management
+- **Platform Core Suite** [MEDIUM]: System health, UI states, profile editing, navigation
+- **Access Analytics Suite** [HIGH]: RBAC matrix, statistics, audit logs, security monitoring
+- **System Integration Suite** [CRITICAL]: Full E2E workflows, service integration
 
 #### **Jest Unit/Service Tests** (individual packages):
 - **Auth Service Tests** [CRITICAL]: Unit + functional authentication
@@ -131,14 +119,14 @@ npm run test:debug   # Visual debugging
 
 ### Individual Test Examples:
 ```bash
-# Debug specific Playwright test suites
-npm run test:single -- --grep "Focused Authentication Test"
-npm run test:single -- --grep "Authentication Security"
-npm run test:single -- --grep "User Management - Core Functionality"
-npm run test:single -- --grep "Course Management"
-npm run test:single -- --grep "Instructor Teaching Workflow"
-npm run test:single -- --grep "Student Learning Journey"
-npm run test:single -- --grep "Statistics Management"
+# Debug specific reorganized test suites
+npm run test:single -- --grep "Auth Security"
+npm run test:single -- --grep "User Management"
+npm run test:single -- --grep "Course Learning"
+npm run test:single -- --grep "Instructor Operations"
+npm run test:single -- --grep "Content Management"
+npm run test:single -- --grep "Platform Core"
+npm run test:single -- --grep "Access Analytics"
 npm run test:single -- --grep "System Integration"
 
 # Run Jest tests by service
