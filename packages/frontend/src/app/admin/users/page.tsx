@@ -59,6 +59,8 @@ export default function AdminUsersPage() {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRole, setSelectedRole] = useState('all');
   
   useEffect(() => {
     // Load users when component mounts (user is guaranteed to be admin due to ProtectedRoute)
@@ -113,27 +115,28 @@ export default function AdminUsersPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Get form data directly from the form elements to avoid state timing issues
-    const form = e.target as HTMLFormElement;
-    const formElements = form.elements as HTMLFormControlsCollection;
-    
-    const currentFormData = {
-      email: (formElements.namedItem('email') as HTMLInputElement)?.value || '',
-      firstName: (formElements.namedItem('firstName') as HTMLInputElement)?.value || '',
-      lastName: (formElements.namedItem('lastName') as HTMLInputElement)?.value || '',
-      password: (formElements.namedItem('password') as HTMLInputElement)?.value || '',
-      role: (formElements.namedItem('role') as HTMLSelectElement)?.value || 'student',
-    } as UserFormData;
-    
-    setIsSubmitting(true);
     setFormErrors({});
     
+    // Get form data from the submitted form
+    const form = e.target as HTMLFormElement;
+    const submittedData = new FormData(form);
+    
+    const currentFormData = {
+      email: submittedData.get('email') as string || '',
+      firstName: submittedData.get('firstName') as string || '',
+      lastName: submittedData.get('lastName') as string || '',
+      password: submittedData.get('password') as string || '',
+      role: (submittedData.get('role') as string || 'student') as UserFormData['role'],
+    };
+    
     const errors = validateForm(currentFormData);
+    
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
-      setIsSubmitting(false);
       return;
     }
+    
+    setIsSubmitting(true);
     
     try {
       const response = await userApi.createUser({
@@ -191,15 +194,15 @@ export default function AdminUsersPage() {
     e.preventDefault();
     if (!selectedUser) return;
     
-    setIsSubmitting(true);
     setFormErrors({});
     
     const errors = validateForm(formData);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
-      setIsSubmitting(false);
       return;
     }
+    
+    setIsSubmitting(true);
     
     try {
       const response = await userApi.updateUser(selectedUser.id, {
@@ -298,6 +301,17 @@ export default function AdminUsersPage() {
     });
   };
 
+  // Filter users based on search term and selected role
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = searchTerm === '' || 
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${user.profile.firstName} ${user.profile.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRole = selectedRole === 'all' || user.role === selectedRole;
+    
+    return matchesSearch && matchesRole;
+  });
+
   return (
     <ProtectedRoute allowedRoles={['admin']}>
       <DashboardLayout>
@@ -309,8 +323,8 @@ export default function AdminUsersPage() {
             </p>
           </div>
 
-          {/* Create User Button */}
-          <div className="mb-6">
+          {/* Create User Button and Search/Filter Controls */}
+          <div className="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <Button
               onClick={() => setShowCreateForm(true)}
               variant="primary"
@@ -323,6 +337,39 @@ export default function AdminUsersPage() {
             >
               Create User
             </Button>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search Input */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-secondary-400 dark:text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="input pl-10 w-full sm:w-64"
+                  data-testid="search-input"
+                />
+              </div>
+
+              {/* Role Filter */}
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="input w-full sm:w-40"
+                data-testid="role-filter"
+              >
+                <option value="all">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+                <option value="teacher">Teacher</option>
+                <option value="student">Student</option>
+              </select>
+            </div>
           </div>
 
           {/* Error Message */}
@@ -375,62 +422,85 @@ export default function AdminUsersPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-secondary-800 divide-y divide-secondary-200 dark:divide-secondary-700">
-                    {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors duration-200" data-testid="user-row">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center">
-                                <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-                                  {user.profile.firstName.charAt(0)}{user.profile.lastName.charAt(0)}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
-                                {user.profile.firstName} {user.profile.lastName}
-                              </div>
-                              <div className="text-sm text-secondary-500 dark:text-secondary-400">
-                                {user.email}
-                              </div>
-                            </div>
+                    {filteredUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-8 text-center">
+                          <div className="text-secondary-500 dark:text-secondary-400">
+                            {users.length === 0 ? 'No users found.' : 'No users match your search criteria.'}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
-                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {user.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500 dark:text-secondary-400">
-                          {formatDate(user.createdAt)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <Button
-                            onClick={() => handleEditUser(user)}
-                            variant="ghost"
-                            size="sm"
-                            data-testid="edit-user-button"
-                            className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 mr-2"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            onClick={() => handleDeleteUser(user)}
-                            variant="ghost"
-                            size="sm"
-                            data-testid="delete-user-button"
-                            className="text-rose-600 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300"
-                          >
-                            Delete
-                          </Button>
+                          {users.length > 0 && (
+                            <Button
+                              onClick={() => {
+                                setSearchTerm('');
+                                setSelectedRole('all');
+                              }}
+                              variant="ghost"
+                              size="sm"
+                              className="mt-2"
+                            >
+                              Clear filters
+                            </Button>
+                          )}
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <tr key={user.id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors duration-200" data-testid="user-row">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10">
+                                <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center">
+                                  <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+                                    {user.profile.firstName.charAt(0)}{user.profile.lastName.charAt(0)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
+                                  {user.profile.firstName} {user.profile.lastName}
+                                </div>
+                                <div className="text-sm text-secondary-500 dark:text-secondary-400" data-testid="user-email">
+                                  {user.email}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
+                              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                              {user.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500 dark:text-secondary-400">
+                            {formatDate(user.createdAt)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <Button
+                              onClick={() => handleEditUser(user)}
+                              variant="ghost"
+                              size="sm"
+                              data-testid="edit-user-button"
+                              className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 mr-2"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              onClick={() => handleDeleteUser(user)}
+                              variant="ghost"
+                              size="sm"
+                              data-testid="delete-user-button"
+                              className="text-rose-600 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300"
+                            >
+                              Delete
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -439,9 +509,18 @@ export default function AdminUsersPage() {
 
           {/* Create User Form Modal */}
           {showCreateForm && (
-            <div className="modal-overlay flex items-center justify-center z-50" data-testid="create-user-modal">
-              <div className="modal-content p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Create New User</h2>
+            <div 
+              className="modal-overlay flex items-center justify-center z-50" 
+              data-testid="create-user-modal"
+              onClick={(e) => e.target === e.currentTarget && closeModal()}
+            >
+              <div 
+                className="modal-content p-6 w-full max-w-md" 
+                role="dialog" 
+                aria-modal="true" 
+                aria-labelledby="create-user-title"
+              >
+                <h2 id="create-user-title" className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Create New User</h2>
                 
                 <form onSubmit={handleCreateUser}>
                   {formErrors['general'] && (
@@ -556,11 +635,11 @@ export default function AdminUsersPage() {
                     <Button
                       type="submit"
                       variant="primary"
-                      disabled={false}
-                      loading={false}
+                      disabled={isSubmitting}
+                      loading={isSubmitting}
                       data-testid="create-user-submit"
                     >
-                      Create User
+                      {isSubmitting ? 'Creating...' : 'Create User'}
                     </Button>
                   </div>
                 </form>
@@ -570,9 +649,18 @@ export default function AdminUsersPage() {
 
           {/* Edit User Form Modal */}
           {showEditForm && selectedUser && (
-            <div className="modal-overlay flex items-center justify-center z-50" data-testid="edit-user-modal">
-              <div className="modal-content p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Edit User</h2>
+            <div 
+              className="modal-overlay flex items-center justify-center z-50" 
+              data-testid="edit-user-modal"
+              onClick={(e) => e.target === e.currentTarget && closeModal()}
+            >
+              <div 
+                className="modal-content p-6 w-full max-w-md" 
+                role="dialog" 
+                aria-modal="true" 
+                aria-labelledby="edit-user-title"
+              >
+                <h2 id="edit-user-title" className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Edit User</h2>
                 
                 <form onSubmit={handleUpdateUser}>
                   {formErrors['general'] && (
@@ -681,9 +769,18 @@ export default function AdminUsersPage() {
 
           {/* Delete User Confirmation Modal */}
           {showDeleteModal && selectedUser && (
-            <div className="modal-overlay flex items-center justify-center z-50" data-testid="delete-confirmation-modal">
-              <div className="modal-content p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Delete User</h2>
+            <div 
+              className="modal-overlay flex items-center justify-center z-50" 
+              data-testid="delete-confirmation-modal"
+              onClick={(e) => e.target === e.currentTarget && closeModal()}
+            >
+              <div 
+                className="modal-content p-6 w-full max-w-md" 
+                role="dialog" 
+                aria-modal="true" 
+                aria-labelledby="delete-user-title"
+              >
+                <h2 id="delete-user-title" className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4">Delete User</h2>
                 <p className="text-secondary-600 dark:text-secondary-400 mb-4">
                   Are you sure you want to delete this user?
                 </p>

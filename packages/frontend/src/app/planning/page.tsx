@@ -33,7 +33,7 @@ interface Event {
   title: string;
   description?: string;
   location?: string;
-  type: 'class' | 'exam' | 'meeting' | 'event';
+  type: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
   startDate: string;
   endDate: string;
   linkedCourse?: {
@@ -348,6 +348,10 @@ export default function PlanningPage() {
       window.URL.revokeObjectURL(url);
       
       setShowExportModal(false);
+      setSuccessMessage('Calendar exported');
+      
+      // Clear success message after a few seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error: any) {
       setError(error.message || 'Failed to export calendar');
     }
@@ -399,7 +403,7 @@ export default function PlanningPage() {
 
   if (loading) {
     return (
-      <ProtectedRoute allowedRoles={['admin', 'staff']}>
+      <ProtectedRoute allowedRoles={['admin', 'staff', 'student']}>
         <DashboardLayout>
           <div className="flex justify-center items-center h-96">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 dark:border-primary-400"></div>
@@ -410,7 +414,7 @@ export default function PlanningPage() {
   }
 
   return (
-    <ProtectedRoute allowedRoles={['admin', 'staff']}>
+    <ProtectedRoute allowedRoles={['admin', 'staff', 'student']}>
       <DashboardLayout>
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           {/* Header */}
@@ -453,6 +457,7 @@ export default function PlanningPage() {
                   size="sm"
                   icon={<ArrowDownTrayIcon className="h-4 w-4" />}
                   data-testid="export-calendar-button"
+                  aria-label="Export calendar"
                 >
                   {isMobile ? '' : 'Export'}
                 </Button>
@@ -466,7 +471,7 @@ export default function PlanningPage() {
                     icon={<PlusIcon className="h-4 w-4" />}
                     data-testid="create-event-button"
                   >
-                    {isMobile ? '' : 'Create Event'}
+                    {isMobile ? '' : 'New Event'}
                   </Button>
                 )}
               </div>

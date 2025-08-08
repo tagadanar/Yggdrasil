@@ -105,7 +105,7 @@ export const planningApi = {
   async getEvents(filters: {
     startDate?: string;
     endDate?: string;
-    type?: 'class' | 'exam' | 'meeting' | 'event';
+    type?: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
     courseId?: string;
     location?: string;
   } = {}) {
@@ -126,7 +126,7 @@ export const planningApi = {
     title: string;
     description?: string;
     location?: string;
-    type: 'class' | 'exam' | 'meeting' | 'event';
+    type: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
     startDate: string;
     endDate: string;
     linkedCourse?: string;
@@ -156,7 +156,7 @@ export const planningApi = {
     title?: string;
     description?: string;
     location?: string;
-    type?: 'class' | 'exam' | 'meeting' | 'event';
+    type?: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
     startDate?: string;
     endDate?: string;
     linkedCourse?: string;
@@ -211,7 +211,7 @@ export const planningApi = {
     format: 'ical' | 'csv';
     startDate: string;
     endDate: string;
-    eventType?: 'class' | 'exam' | 'meeting' | 'event';
+    eventType?: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
     includePrivate?: boolean;
   }) {
     const response = await planningApiClient.post('/export', exportData, {
@@ -276,7 +276,7 @@ export const planningApi = {
 
   // Search events
   async searchEvents(query: string, filters: {
-    type?: 'class' | 'exam' | 'meeting' | 'event';
+    type?: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
     startDate?: string;
     endDate?: string;
   } = {}) {

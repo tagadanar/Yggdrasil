@@ -14,7 +14,7 @@ export class PlanningController {
       const events = await PlanningController.planningService.getEvents({
         startDate: startDate as string,
         endDate: endDate as string,
-        type: type as 'class' | 'exam' | 'meeting' | 'event' | undefined,
+        type: type as 'class' | 'exam' | 'meeting' | 'event' | 'academic' | undefined,
         courseId: courseId as string,
         userId: req.user!._id.toString(),
       });

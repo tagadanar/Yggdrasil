@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import planningRoutes from './routes/planningRoutes';
+import promotionRoutes from './routes/promotionRoutes';
+import progressRoutes from './routes/progressRoutes';
 import { connectDatabase } from '@yggdrasil/database-schemas';
 import { logger } from '@yggdrasil/shared-utilities';
 
@@ -60,6 +62,8 @@ export const createApp = async (skipDbConnection = false) => {
 
   // Routes
   app.use('/api/planning', planningRoutes);
+  app.use('/api/promotions', promotionRoutes);
+  app.use('/api/progress', progressRoutes);
 
   // Health check
   app.get('/health', (_req, res) => {

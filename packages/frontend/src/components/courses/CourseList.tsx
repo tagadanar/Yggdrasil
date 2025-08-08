@@ -27,7 +27,7 @@ interface Course {
   estimatedDuration: number;
   settings: {
     isPublic: boolean;
-    allowEnrollment: boolean;
+    accessViaPromotion: boolean;
     requiresApproval: boolean;
     maxStudents?: number;
     startDate?: string;
@@ -37,7 +37,7 @@ interface Course {
     enableCollaboration: boolean;
   };
   stats: {
-    enrolledStudents: number;
+    activeStudents: number;
     completedStudents: number;
     averageProgress: number;
     averageRating?: number;
@@ -128,20 +128,6 @@ export const CourseList: React.FC<CourseListProps> = ({
     }
   };
 
-  const handleEnrollCourse = async (courseId: string) => {
-    try {
-      const response = await courseApi.enrollCourse(courseId);
-      if (response.success) {
-        alert('Enrolled successfully!');
-        loadCourses(); // Refresh the list
-      } else {
-        alert(response.error || 'Failed to enroll');
-      }
-    } catch (err: any) {
-      console.error('Error enrolling in course:', err);
-      alert(err.response?.data?.error || 'Failed to enroll');
-    }
-  };
 
   const handlePublishToggle = async (course: Course) => {
     try {
@@ -209,7 +195,7 @@ export const CourseList: React.FC<CourseListProps> = ({
             }`}
             data-testid="my-courses-tab"
           >
-            {user?.role === 'student' ? 'My Enrollments' : 'My Courses'}
+            {user?.role === 'student' ? 'My Accessible Courses' : 'My Courses'}
           </button>
           <button
             onClick={() => setViewMode('published')}
@@ -306,13 +292,13 @@ export const CourseList: React.FC<CourseListProps> = ({
         <div className="text-center py-12">
           <div className="text-gray-500 text-lg">
             {viewMode === 'my-courses' 
-              ? (user?.role === 'student' ? 'No enrolled courses yet.' : 'No courses created yet.')
+              ? (user?.role === 'student' ? 'No accessible courses yet.' : 'No courses created yet.')
               : 'No courses found.'
             }
           </div>
           {viewMode === 'my-courses' && user?.role === 'student' && (
             <p className="text-gray-400 mt-2">
-              Browse available courses to get started with your learning journey.
+              Courses become available through your promotion calendar.
             </p>
           )}
         </div>
@@ -371,7 +357,7 @@ export const CourseList: React.FC<CourseListProps> = ({
                   {course.estimatedDuration > 0 && (
                     <div>Duration: {Math.round(course.estimatedDuration / 60)}h</div>
                   )}
-                  <div>Students: {course.stats.enrolledStudents}</div>
+                  <div>Views: {course.stats.totalViews}</div>
                 </div>
 
                 {/* Tags */}
@@ -395,13 +381,13 @@ export const CourseList: React.FC<CourseListProps> = ({
 
                 {/* Action buttons */}
                 <div className="flex space-x-2">
-                  {user?.role === 'student' && course.status === 'published' && (
+                  {user?.role === 'student' && (
                     <button
-                      onClick={() => handleEnrollCourse(course._id)}
+                      onClick={() => onCourseView?.(course)}
                       className="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700"
-                      data-testid="enroll-btn"
+                      data-testid="view-course-btn"
                     >
-                      Enroll
+                      View Course
                     </button>
                   )}
                   
@@ -427,13 +413,15 @@ export const CourseList: React.FC<CourseListProps> = ({
                     </>
                   )}
                   
-                  <button
-                    onClick={() => onCourseView?.(course)}
-                    className="bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm hover:bg-gray-200"
-                    data-testid="continue-learning-btn"
-                  >
-                    View
-                  </button>
+                  {!canManageCourse(course) && user?.role !== 'student' && (
+                    <button
+                      onClick={() => onCourseView?.(course)}
+                      className="bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm hover:bg-gray-200"
+                      data-testid="view-course-btn"
+                    >
+                      View
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

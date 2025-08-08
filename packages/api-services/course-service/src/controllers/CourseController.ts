@@ -13,9 +13,7 @@ import {
   UpdateSectionSchema,
   CreateContentSchema,
   UpdateContentSchema,
-  SubmitExerciseSchema,
   CourseSearchSchema,
-  EnrollCourseSchema,
   type AuthRequest,
 } from '@yggdrasil/shared-utilities';
 
@@ -33,7 +31,7 @@ export class CourseController {
   createCourse = async (req: AuthRequest, res: Response): Promise<void> => {
     const { user } = req;
     let validation: any = null;
-    
+
     try {
       if (!user) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json(
@@ -75,16 +73,33 @@ export class CourseController {
         userId: user?.userId,
         courseData: validation?.data,
       });
-      
+
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
         ResponseHelper.error(`Failed to create course: ${error.message}`),
       );
     }
   };
 
-  getCourse = async (req: Request, res: Response): Promise<void> => {
+  getCourse = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+      const { user } = req;
+      if (!user) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json(
+          ResponseHelper.unauthorized('Authentication required'),
+        );
+        return;
+      }
+
       const { courseId } = req.params;
+
+      // Check if user has access to this course
+      const hasAccess = await this.courseService.checkCourseAccess(courseId!, user.userId, user.role);
+      if (!hasAccess) {
+        res.status(HTTP_STATUS.FORBIDDEN).json(
+          ResponseHelper.forbidden('You do not have access to this course'),
+        );
+        return;
+      }
 
       const course = await this.courseService.getCourseById(courseId!);
       if (!course) {
@@ -104,14 +119,31 @@ export class CourseController {
     }
   };
 
-  getCourseBySlug = async (req: Request, res: Response): Promise<void> => {
+  getCourseBySlug = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+      const { user } = req;
+      if (!user) {
+        res.status(HTTP_STATUS.UNAUTHORIZED).json(
+          ResponseHelper.unauthorized('Authentication required'),
+        );
+        return;
+      }
+
       const { slug } = req.params;
 
       const course = await this.courseService.getCourseBySlug(slug!);
       if (!course) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
           ResponseHelper.notFound('Course'),
+        );
+        return;
+      }
+
+      // Check if user has access to this course
+      const hasAccess = await this.courseService.checkCourseAccess(course._id.toString(), user.userId, user.role);
+      if (!hasAccess) {
+        res.status(HTTP_STATUS.FORBIDDEN).json(
+          ResponseHelper.forbidden('You do not have access to this course'),
         );
         return;
       }
@@ -262,19 +294,11 @@ export class CourseController {
         return;
       }
 
-      if (user.role === 'student') {
-        // For students, return enrolled courses
-        const enrollments = await this.courseService.getStudentEnrollments(user.userId);
-        res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success(enrollments, 'Enrolled courses retrieved successfully'),
-        );
-      } else {
-        // For teachers/staff/admins, return courses they created
-        const courses = await this.courseService.getCoursesByInstructor(user.userId);
-        res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success(courses, 'Your courses retrieved successfully'),
-        );
-      }
+      // Get courses accessible to this user based on their role and promotion
+      const courses = await this.courseService.getAccessibleCourses(user.userId, user.role);
+      res.status(HTTP_STATUS.OK).json(
+        ResponseHelper.success(courses, 'Accessible courses retrieved successfully'),
+      );
     } catch (error: any) {
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
         ResponseHelper.error('Failed to retrieve courses'),
@@ -639,175 +663,15 @@ export class CourseController {
   };
 
   // =============================================================================
-  // ENROLLMENT MANAGEMENT
+  // COURSE ACCESS VIA PROMOTIONS
   // =============================================================================
-
-  enrollCourse = async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-      const { user } = req;
-      if (!user) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required'),
-        );
-        return;
-      }
-
-      // Only students can enroll in courses
-      if (user.role !== 'student') {
-        res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden('Only students can enroll in courses'),
-        );
-        return;
-      }
-
-      const validation = EnrollCourseSchema.safeParse(req.body);
-      if (!validation.success) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid enrollment data'),
-        );
-        return;
-      }
-
-      const enrollment = await this.courseService.enrollStudent(
-        validation.data.courseId,
-        user.userId,
-      );
-
-      res.status(HTTP_STATUS.CREATED).json(
-        ResponseHelper.success(enrollment, 'Successfully enrolled in course'),
-      );
-    } catch (error: any) {
-      if (error.message.includes('already enrolled')) {
-        res.status(HTTP_STATUS.CONFLICT).json(
-          ResponseHelper.error('Student is already enrolled in this course'),
-        );
-      } else if (error.message.includes('not available for enrollment')) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.error('Course is not available for enrollment'),
-        );
-      } else if (error.message.includes('maximum enrollment capacity')) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.error('Course has reached maximum enrollment capacity'),
-        );
-      } else {
-        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-          ResponseHelper.error('Failed to enroll in course'),
-        );
-      }
-    }
-  };
-
-  getCourseEnrollments = async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-      const { user } = req;
-      if (!user) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required'),
-        );
-        return;
-      }
-
-      const { courseId } = req.params;
-
-      // Check if user can view enrollments (instructors and admins only)
-      if (!['teacher', 'staff', 'admin'].includes(user.role)) {
-        res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden('Insufficient permissions to view enrollments'),
-        );
-        return;
-      }
-
-      const enrollments = await this.courseService.getCourseEnrollments(courseId!);
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(enrollments, 'Course enrollments retrieved successfully'),
-      );
-    } catch (error: any) {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve course enrollments'),
-      );
-    }
-  };
+  
+  // Course enrollment is now managed through promotions
+  // Students access courses via their promotion calendar
 
   // =============================================================================
   // EXERCISE MANAGEMENT
   // =============================================================================
 
-  submitExercise = async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-      const { user } = req;
-      if (!user) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required'),
-        );
-        return;
-      }
-
-      // Only students can submit exercises
-      if (user.role !== 'student') {
-        res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden('Only students can submit exercises'),
-        );
-        return;
-      }
-
-      const { exerciseId } = req.params;
-      const validation = SubmitExerciseSchema.safeParse(req.body);
-      if (!validation.success) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Invalid exercise submission data'),
-        );
-        return;
-      }
-
-      const submission = await this.courseService.submitExercise(
-        exerciseId!,
-        user.userId,
-        validation.data,
-      );
-
-      res.status(HTTP_STATUS.CREATED).json(
-        ResponseHelper.success(submission, 'Exercise submitted successfully'),
-      );
-    } catch (error: any) {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to submit exercise'),
-      );
-    }
-  };
-
-  getExerciseSubmissions = async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-      const { user } = req;
-      if (!user) {
-        res.status(HTTP_STATUS.UNAUTHORIZED).json(
-          ResponseHelper.unauthorized('Authentication required'),
-        );
-        return;
-      }
-
-      const { exerciseId } = req.params;
-
-      let submissions;
-      if (user.role === 'student') {
-        // Students can only see their own submissions
-        submissions = await this.courseService.getExerciseSubmissions(exerciseId!, user.userId);
-      } else if (['teacher', 'staff', 'admin'].includes(user.role)) {
-        // Teachers/staff/admins can see all submissions
-        submissions = await this.courseService.getExerciseSubmissions(exerciseId!);
-      } else {
-        res.status(HTTP_STATUS.FORBIDDEN).json(
-          ResponseHelper.forbidden('Insufficient permissions to view submissions'),
-        );
-        return;
-      }
-
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(submissions, 'Exercise submissions retrieved successfully'),
-      );
-    } catch (error: any) {
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to retrieve exercise submissions'),
-      );
-    }
-  };
+  // NOTE: Exercise submission endpoints removed - functionality moved to promotion-based system
 }

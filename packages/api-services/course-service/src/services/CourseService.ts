@@ -3,11 +3,9 @@
 
 import {
   CourseModel,
-  CourseEnrollmentModel,
-  ExerciseSubmissionModel,
+  EventModel,
+  UserModel,
   type CourseDocument,
-  type CourseEnrollmentDocument,
-  type ExerciseSubmissionDocument,
 } from '@yggdrasil/database-schemas';
 import {
   CreateCourseRequest,
@@ -18,7 +16,6 @@ import {
   UpdateSectionRequest,
   CreateContentRequest,
   UpdateContentRequest,
-  SubmitExerciseRequest,
   CourseFilters,
   CourseSearchResult,
   UserRole,
@@ -65,8 +62,6 @@ export class CourseService {
         estimatedDuration: courseData.estimatedDuration || 0,
         settings: processedSettings || {
           isPublic: false,
-          allowEnrollment: true,
-          requiresApproval: false,
           allowLateSubmissions: true,
           enableDiscussions: true,
           enableCollaboration: false,
@@ -80,9 +75,7 @@ export class CourseService {
         resources: [],
         collaborators: [],
         stats: {
-          enrolledStudents: 0,
-          completedStudents: 0,
-          averageRating: 0, 
+          averageRating: 0,
           totalRatings: 0,
           totalViews: 0,
           lastAccessed: new Date(),
@@ -113,13 +106,13 @@ export class CourseService {
       let slugCounter = 1;
       const originalSlug = course.slug;
       let maxAttempts = 10; // Prevent infinite loop
-      
+
       while (maxAttempts > 0 && await CourseModel.findBySlug(course.slug)) {
         course.slug = `${originalSlug}-${slugCounter}`;
         slugCounter++;
         maxAttempts--;
       }
-      
+
       if (maxAttempts === 0) {
         // Ultimate fallback with timestamp
         course.slug = `${originalSlug}-${Date.now()}`;
@@ -136,19 +129,19 @@ export class CourseService {
         name: error.name,
         code: error.code,
       });
-      
+
       // Check for specific MongoDB errors
       if (error.name === 'ValidationError') {
-        const validationErrors = Object.keys(error.errors).map(key => 
-          `${key}: ${error.errors[key].message}`
+        const validationErrors = Object.keys(error.errors).map(key =>
+          `${key}: ${error.errors[key].message}`,
         );
         throw new Error(`Validation error: ${validationErrors.join(', ')}`);
       }
-      
+
       if (error.code === 11000) {
         throw new Error('Course with this title or slug already exists');
       }
-      
+
       throw new Error(`Failed to create course: ${error.message}`);
     }
   }
@@ -182,7 +175,7 @@ export class CourseService {
       }
 
       // Check permissions
-      if (!this.canModifyCourse(course, userId, userRole)) {
+      if (!(await this.canModifyCourse(courseId, userId, userRole))) {
         throw new Error('Insufficient permissions to modify this course');
       }
 
@@ -219,14 +212,13 @@ export class CourseService {
       }
 
       // Check permissions (only admins or course instructors can delete)
-      if (!this.canModifyCourse(course, userId, userRole)) {
+      if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
         throw new Error('Insufficient permissions to delete this course');
       }
 
       await CourseModel.findByIdAndDelete(courseId);
 
-      // Clean up related data
-      await CourseEnrollmentModel.deleteMany({ courseId });
+      // Clean up related data is handled by promotion system
 
       return true;
     } catch (error: any) {
@@ -304,7 +296,7 @@ export class CourseService {
         return null;
       }
 
-      if (!this.canModifyCourse(course, userId, userRole)) {
+      if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
         throw new Error('Insufficient permissions to modify this course');
       }
 
@@ -340,7 +332,7 @@ export class CourseService {
         return null;
       }
 
-      if (!this.canModifyCourse(course, userId, userRole)) {
+      if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
         throw new Error('Insufficient permissions to modify this course');
       }
 
@@ -371,7 +363,7 @@ export class CourseService {
         return null;
       }
 
-      if (!this.canModifyCourse(course, userId, userRole)) {
+      if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
         throw new Error('Insufficient permissions to modify this course');
       }
 
@@ -410,7 +402,7 @@ export class CourseService {
         return null;
       }
 
-      if (!this.canModifyCourse(course, userId, userRole)) {
+      if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
         throw new Error('Insufficient permissions to modify this course');
       }
 
@@ -452,7 +444,7 @@ export class CourseService {
         return null;
       }
 
-      if (!this.canModifyCourse(course, userId, userRole)) {
+      if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
         throw new Error('Insufficient permissions to modify this course');
       }
 
@@ -494,7 +486,7 @@ export class CourseService {
         return null;
       }
 
-      if (!this.canModifyCourse(course, userId, userRole)) {
+      if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
         throw new Error('Insufficient permissions to modify this course');
       }
 
@@ -541,7 +533,7 @@ export class CourseService {
         return null;
       }
 
-      if (!this.canModifyCourse(course, userId, userRole)) {
+      if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
         throw new Error('Insufficient permissions to modify this course');
       }
 
@@ -571,65 +563,109 @@ export class CourseService {
   }
 
   // =============================================================================
-  // COURSE ENROLLMENT
+  // COURSE ACCESS VIA PROMOTIONS
   // =============================================================================
 
-  async enrollStudent(courseId: string, studentId: string): Promise<CourseEnrollmentDocument> {
+  async checkCourseAccess(courseId: string, userId: string, userRole: UserRole): Promise<boolean> {
     try {
-      // Check if already enrolled
-      const existingEnrollment = await CourseEnrollmentModel.findEnrollment(courseId, studentId);
-      if (existingEnrollment) {
-        throw new Error('Student is already enrolled in this course');
+      // Admin and staff always have access
+      if (userRole === 'admin' || userRole === 'staff') {
+        return true;
       }
 
-      // Check if course allows enrollment
-      const course = await CourseModel.findById(courseId);
-      if (!course || course.status !== 'published' || !course.settings.allowEnrollment) {
-        throw new Error('Course is not available for enrollment');
-      }
-
-      // Check enrollment limits
-      if (course.settings.maxStudents) {
-        const enrollmentCount = await CourseEnrollmentModel.countDocuments({
-          courseId,
-          status: 'active',
-        });
-        if (enrollmentCount >= course.settings.maxStudents) {
-          throw new Error('Course has reached maximum enrollment capacity');
+      // Teachers have access to courses they created or are assigned to
+      if (userRole === 'teacher') {
+        const course = await CourseModel.findById(courseId);
+        if (course && course.instructor._id.toString() === userId) {
+          return true;
         }
+        
+        // Check if teacher is assigned to any events linked to this course
+        const events = await EventModel.find({
+          linkedCourse: courseId,
+          teacherId: userId,
+        });
+        return events.length > 0;
       }
 
-      const enrollment = new CourseEnrollmentModel({
-        courseId,
-        studentId,
-        status: 'active',
-      });
+      // Students access courses through their promotion
+      if (userRole === 'student') {
+        const user = await UserModel.findById(userId);
+        if (!user || !user.currentPromotionId) {
+          return false;
+        }
 
-      await enrollment.save();
+        // Check if the course is linked to any events in the student's promotion
+        const events = await EventModel.find({
+          linkedCourse: courseId,
+          promotionIds: user.currentPromotionId,
+        });
+        return events.length > 0;
+      }
 
-      // Update course stats
-      course.stats.enrolledStudents += 1;
-      await course.save();
-
-      return enrollment;
+      return false;
     } catch (error: any) {
-      throw new Error(`Failed to enroll student: ${error.message}`);
+      logger.error(`Failed to check course access for user ${userId} on course ${courseId}:`, error);
+      return false;
     }
   }
 
-  async getStudentEnrollments(studentId: string): Promise<CourseEnrollmentDocument[]> {
+  async getAccessibleCourses(userId: string, userRole: UserRole): Promise<CourseDocument[]> {
     try {
-      return await CourseEnrollmentModel.findByStudent(studentId);
-    } catch (error: any) {
-      throw new Error(`Failed to get student enrollments: ${error.message}`);
-    }
-  }
+      // Admin and staff can access all courses
+      if (userRole === 'admin' || userRole === 'staff') {
+        return await CourseModel.find({}).sort({ createdAt: -1 });
+      }
 
-  async getCourseEnrollments(courseId: string): Promise<CourseEnrollmentDocument[]> {
-    try {
-      return await CourseEnrollmentModel.findByCourse(courseId);
+      // Teachers get courses they created or are assigned to teach
+      if (userRole === 'teacher') {
+        // Get courses created by teacher
+        const ownCourses = await CourseModel.findByInstructor(userId);
+        
+        // Get courses they're assigned to teach via events
+        const assignedEvents = await EventModel.find({ teacherId: userId });
+        const assignedCourseIds = assignedEvents
+          .map(event => event.linkedCourse)
+          .filter(courseId => courseId);
+        
+        const assignedCourses = assignedCourseIds.length > 0 
+          ? await CourseModel.find({ _id: { $in: assignedCourseIds } })
+          : [];
+        
+        // Combine and deduplicate
+        const allCourses = [...ownCourses, ...assignedCourses];
+        const uniqueCourses = allCourses.filter((course, index, self) =>
+          index === self.findIndex(c => c._id.toString() === course._id.toString())
+        );
+        
+        return uniqueCourses;
+      }
+
+      // Students get courses through their promotion events
+      if (userRole === 'student') {
+        const user = await UserModel.findById(userId);
+        if (!user || !user.currentPromotionId) {
+          return [];
+        }
+
+        // Get events in the student's promotion that have linked courses
+        const promotionEvents = await EventModel.find({
+          promotionIds: user.currentPromotionId,
+          linkedCourse: { $exists: true, $ne: null },
+        });
+
+        const courseIds = promotionEvents.map(event => event.linkedCourse);
+        if (courseIds.length === 0) {
+          return [];
+        }
+
+        return await CourseModel.find({ _id: { $in: courseIds } }).sort({ createdAt: -1 });
+      }
+
+      return [];
     } catch (error: any) {
-      throw new Error(`Failed to get course enrollments: ${error.message}`);
+      logger.error(`Failed to get accessible courses for user ${userId}:`, error);
+      return [];
     }
   }
 
@@ -637,360 +673,36 @@ export class CourseService {
   // EXERCISE SUBMISSIONS
   // =============================================================================
 
-  async submitExercise(
-    exerciseId: string,
-    studentId: string,
-    submissionData: SubmitExerciseRequest,
-  ): Promise<ExerciseSubmissionDocument> {
-    try {
-      const submission = new ExerciseSubmissionModel({
-        exerciseId,
-        studentId,
-        code: submissionData.code,
-        answer: submissionData.answer,
-        files: submissionData.files || [],
-      });
-
-      await submission.save();
-
-      // Exercise evaluation logic
-      const evaluationResult = await this.evaluateExerciseSubmission(exerciseId, submissionData);
-
-      // Update submission with evaluation results
-      submission.result = evaluationResult;
-      submission.gradedAt = new Date();
-      await submission.save();
-
-      return submission;
-    } catch (error: any) {
-      throw new Error(`Failed to submit exercise: ${error.message}`);
-    }
-  }
-
-  async getExerciseSubmissions(
-    exerciseId: string,
-    studentId?: string,
-  ): Promise<ExerciseSubmissionDocument[]> {
-    try {
-      if (studentId) {
-        return await ExerciseSubmissionModel.find({ exerciseId, studentId });
-      }
-      return await ExerciseSubmissionModel.findByExercise(exerciseId);
-    } catch (error: any) {
-      throw new Error(`Failed to get exercise submissions: ${error.message}`);
-    }
-  }
+  // NOTE: Exercise submission functionality moved to promotion-based system
+  // Submissions are now handled through promotion events and separate submission service
 
   // =============================================================================
   // EXERCISE EVALUATION
   // =============================================================================
 
-  private async evaluateExerciseSubmission(
-    exerciseId: string,
-    submissionData: SubmitExerciseRequest,
-  ): Promise<any> {
-    try {
-      // Find the exercise definition in the course structure
-      const exercise = await this.findExerciseById(exerciseId);
-      if (!exercise) {
-        return {
-          isCorrect: false,
-          score: 0,
-          feedback: 'Exercise not found',
-          testResults: [],
-          executionTime: 0,
-        };
-      }
-
-      // Handle different exercise types
-      switch (exercise.type) {
-        case 'code':
-          return await this.evaluateCodeExercise(exercise, submissionData);
-        case 'quiz':
-          return await this.evaluateQuizExercise(exercise, submissionData);
-        case 'assignment':
-          return await this.evaluateAssignmentExercise(exercise, submissionData);
-        default:
-          return {
-            isCorrect: false,
-            score: 0,
-            feedback: `Unsupported exercise type: ${exercise.type}`,
-            testResults: [],
-            executionTime: 0,
-          };
-      }
-    } catch (error: any) {
-      return {
-        isCorrect: false,
-        score: 0,
-        feedback: `Evaluation error: ${error.message}`,
-        testResults: [],
-        executionTime: 0,
-      };
-    }
-  }
-
-  private async findExerciseById(exerciseId: string): Promise<any | null> {
-    try {
-      // Search through all courses to find the exercise
-      // In a real implementation, you might want to optimize this with better indexing
-      const courses = await CourseModel.find({ status: 'published' });
-
-      for (const course of courses) {
-        for (const chapter of course.chapters) {
-          for (const section of chapter.sections) {
-            for (const content of section.content) {
-              if (content.type === 'exercise' && content.data?.exercise &&
-                  content.data.exercise._id.toString() === exerciseId) {
-                return content.data.exercise;
-              }
-            }
-          }
-        }
-      }
-      return null;
-    } catch (error) {
-      logger.error('Error finding exercise:', error);
-      return null;
-    }
-  }
-
-  private async evaluateCodeExercise(exercise: any, submissionData: SubmitExerciseRequest): Promise<any> {
-    const startTime = Date.now();
-    const testResults: any[] = [];
-    let passedTests = 0;
-
-    try {
-      // Evaluate against test cases
-      if (exercise.testCases && exercise.testCases.length > 0) {
-        for (const testCase of exercise.testCases) {
-          try {
-            // Simulate code execution and comparison
-            // In a real implementation, you would use a secure code sandbox
-            const result = await this.executeCodeWithTestCase(
-              submissionData.code || '',
-              testCase,
-              exercise.programmingLanguage || 'javascript',
-            );
-
-            testResults.push({
-              testCaseId: testCase._id.toString(),
-              passed: result.passed,
-              actualOutput: result.actualOutput,
-              errorMessage: result.errorMessage,
-            });
-
-            if (result.passed) {
-              passedTests++;
-            }
-          } catch (error: any) {
-            testResults.push({
-              testCaseId: testCase._id.toString(),
-              passed: false,
-              actualOutput: '',
-              errorMessage: `Test execution error: ${error.message}`,
-            });
-          }
-        }
-      }
-
-      // Calculate score based on passed test cases
-      const totalTests = exercise.testCases?.length || 1;
-      const score = Math.round((passedTests / totalTests) * 100);
-      const isCorrect = score >= 70; // 70% threshold for correctness
-
-      // Generate feedback
-      let feedback = '';
-      if (score === 100) {
-        feedback = 'Excellent! All test cases passed. Your solution is correct.';
-      } else if (score >= 70) {
-        feedback = `Good work! ${passedTests}/${totalTests} test cases passed. Score: ${score}%`;
-      } else if (score > 0) {
-        feedback = `Keep trying! ${passedTests}/${totalTests} test cases passed. Review the failed test cases and try again.`;
-      } else {
-        feedback = 'No test cases passed. Please review the problem requirements and try again.';
-      }
-
-      // Add specific feedback for failed tests
-      if (passedTests < totalTests) {
-        const failedTests = testResults.filter(t => !t.passed);
-        if (failedTests.length > 0) {
-          feedback += ' Failed tests: ' + failedTests.map(t => t.errorMessage).join('; ');
-        }
-      }
-
-      return {
-        isCorrect,
-        score,
-        feedback,
-        testResults,
-        executionTime: Date.now() - startTime,
-        codeQuality: this.analyzeCodeQuality(submissionData.code || ''),
-      };
-
-    } catch (error: any) {
-      return {
-        isCorrect: false,
-        score: 0,
-        feedback: `Code evaluation failed: ${error.message}`,
-        testResults,
-        executionTime: Date.now() - startTime,
-      };
-    }
-  }
-
-  private async evaluateQuizExercise(exercise: any, submissionData: SubmitExerciseRequest): Promise<any> {
-    // For quiz exercises, compare the answer against correct answers
-    try {
-      const userAnswer = submissionData.answer?.trim().toLowerCase() || '';
-      let isCorrect = false;
-      let score = 0;
-
-      // Simple answer comparison (in practice, you'd have more sophisticated logic)
-      if (exercise.solution) {
-        const correctAnswer = exercise.solution.trim().toLowerCase();
-        isCorrect = userAnswer === correctAnswer;
-        score = isCorrect ? 100 : 0;
-      }
-
-      const feedback = isCorrect
-        ? 'Correct! Well done.'
-        : 'Incorrect answer. Please review the material and try again.';
-
-      return {
-        isCorrect,
-        score,
-        feedback,
-        testResults: [{
-          testCaseId: 'quiz-answer',
-          passed: isCorrect,
-          actualOutput: userAnswer,
-          errorMessage: isCorrect ? '' : 'Answer does not match expected solution',
-        }],
-        executionTime: 0,
-      };
-    } catch (error: any) {
-      return {
-        isCorrect: false,
-        score: 0,
-        feedback: `Quiz evaluation failed: ${error.message}`,
-        testResults: [],
-        executionTime: 0,
-      };
-    }
-  }
-
-  private async evaluateAssignmentExercise(_exercise: any, _submissionData: SubmitExerciseRequest): Promise<any> {
-    // Assignment exercises require manual grading, so we just save the submission
-    return {
-      isCorrect: false, // Will be updated when manually graded
-      score: 0, // Will be updated when manually graded
-      feedback: 'Assignment submitted successfully. Awaiting instructor review.',
-      testResults: [],
-      executionTime: 0,
-    };
-  }
-
-  private async executeCodeWithTestCase(
-    code: string,
-    testCase: any,
-    _language: string,
-  ): Promise<{ passed: boolean; actualOutput: string; errorMessage: string }> {
-    // This is a simplified mock implementation
-    // In a real system, you would use a secure sandboxed execution environment
-    try {
-      // For now, we'll do basic pattern matching and mock execution
-      if (!code || code.trim().length === 0) {
-        return {
-          passed: false,
-          actualOutput: '',
-          errorMessage: 'No code provided',
-        };
-      }
-
-      // Mock execution: simple pattern matching for common cases
-      const expectedOutput = testCase.expectedOutput.trim();
-      let actualOutput = '';
-
-      // Very basic simulation - in practice, you'd execute in a sandbox
-      if (code.includes('console.log') || code.includes('print')) {
-        // Extract potential output patterns
-        if (code.includes('"Hello World"') || code.includes("'Hello World'")) {
-          actualOutput = 'Hello World';
-        } else if (code.includes('input') && testCase.input) {
-          // Mock processing of input
-          actualOutput = `Processed: ${testCase.input}`;
-        } else {
-          actualOutput = 'Output generated';
-        }
-      }
-
-      const passed = actualOutput.trim() === expectedOutput;
-
-      return {
-        passed,
-        actualOutput,
-        errorMessage: passed ? '' : `Expected "${expectedOutput}", got "${actualOutput}"`,
-      };
-
-    } catch (error: any) {
-      return {
-        passed: false,
-        actualOutput: '',
-        errorMessage: `Execution error: ${error.message}`,
-      };
-    }
-  }
-
-  private analyzeCodeQuality(code: string): any {
-    // Basic code quality analysis
-    const lines = code.split('\n').filter(line => line.trim().length > 0);
-    const linesOfCode = lines.length;
-
-    // Simple heuristics for code quality
-    const codeSmells = [];
-    if (linesOfCode > 50) {
-      codeSmells.push('Long function - consider breaking into smaller functions');
-    }
-    if (code.includes('var ')) {
-      codeSmells.push('Use let/const instead of var');
-    }
-    if (!code.includes('//') && !code.includes('/*')) {
-      codeSmells.push('Consider adding comments to explain your code');
-    }
-
-    return {
-      linesOfCode,
-      complexity: Math.min(Math.floor(linesOfCode / 5), 10), // Simple complexity score
-      duplicateLines: 0, // Would require more sophisticated analysis
-      codeSmells,
-    };
-  }
+  // NOTE: Exercise evaluation moved to promotion-based system
 
   // =============================================================================
-  // PERMISSION HELPERS
+  // HELPER METHODS
   // =============================================================================
 
-  private canModifyCourse(course: CourseDocument, userId: string, userRole: UserRole): boolean {
-    // Admins can modify any course
-    if (userRole === 'admin') {
-      return true;
-    }
-
-    // Teachers and staff can modify courses they created or are collaborators on
-    if (userRole === 'teacher' || userRole === 'staff') {
-      // Check if user is the instructor
-      if (course.instructor._id.toString() === userId) {
+  private async canModifyCourse(courseId: string, userId: string, userRole: UserRole): Promise<boolean> {
+    try {
+      // Admin and staff can modify any course
+      if (userRole === 'admin' || userRole === 'staff') {
         return true;
       }
 
-      // Check if user is a collaborator
-      return course.collaborators.some(
-        collaborator => collaborator._id.toString() === userId,
-      );
+      // Teachers can only modify their own courses
+      if (userRole === 'teacher') {
+        const course = await CourseModel.findById(courseId);
+        return course?.instructor?._id?.toString() === userId;
+      }
+
+      return false;
+    } catch (error: any) {
+      logger.error(`Error checking course modification permission: ${error.message}`);
+      return false;
     }
-
-    return false;
   }
-
 }

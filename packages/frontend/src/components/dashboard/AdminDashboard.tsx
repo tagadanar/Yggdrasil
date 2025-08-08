@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { StatisticsApi } from '@/lib/api/statistics';
+import { AdminAttendanceDashboard } from '@/components/attendance/AdminAttendanceDashboard';
 import {
   UserGroupIcon,
   AcademicCapIcon,
@@ -16,14 +17,16 @@ import {
   DocumentDuplicateIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  CalendarDaysIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 
 interface PlatformStats {
   totalUsers: number;
   activeUsers: number;
   totalCourses: number;
-  totalEnrollments: number;
+  totalPromotions: number;
   totalSubmissions: number;
   platformEngagement: number;
 }
@@ -38,7 +41,7 @@ interface UserBreakdown {
 interface PopularCourse {
   courseId: string;
   title: string;
-  enrollments: number;
+  studentCount: number;
 }
 
 interface TopPerformingCourse {
@@ -68,6 +71,7 @@ export const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'analytics' | 'attendance'>('analytics');
 
   useEffect(() => {
     if (user) {
@@ -170,41 +174,76 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6" data-testid="admin-dashboard">
-      {/* Header with Export Button */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Platform Analytics</h1>
-        <div className="relative">
-          <button
-            onClick={() => setExportMenuOpen(!exportMenuOpen)}
-            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            data-testid="export-analytics"
-          >
-            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-            Export Analytics
-          </button>
-          {exportMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 border border-gray-200 dark:border-gray-700" data-testid="export-menu">
+      {/* Header with Tab Navigation */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>
+          {activeTab === 'analytics' && (
+            <div className="relative">
               <button
-                onClick={() => handleExport('csv')}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                data-testid="export-csv"
+                onClick={() => setExportMenuOpen(!exportMenuOpen)}
+                className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                data-testid="export-analytics"
               >
-                Export as CSV
+                <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                Export Analytics
               </button>
-              <button
-                onClick={() => handleExport('pdf')}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                data-testid="export-pdf"
-              >
-                Export as PDF
-              </button>
+              {exportMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 border border-gray-200 dark:border-gray-700" data-testid="export-menu">
+                  <button
+                    onClick={() => handleExport('csv')}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    data-testid="export-csv"
+                  >
+                    Export as CSV
+                  </button>
+                  <button
+                    onClick={() => handleExport('pdf')}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    data-testid="export-pdf"
+                  >
+                    Export as PDF
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
+        
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'analytics'
+                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <ChartBarIcon className="h-5 w-5 inline mr-2" />
+              Platform Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab('attendance')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'attendance'
+                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <CalendarDaysIcon className="h-5 w-5 inline mr-2" />
+              Attendance Management
+            </button>
+          </nav>
+        </div>
       </div>
 
-      {/* Platform Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Tab Content */}
+      {activeTab === 'analytics' && (
+        <>
+          {/* Platform Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="platform-stats-users">
           <div className="flex items-center justify-between">
             <div>
@@ -250,15 +289,15 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="platform-stats-enrollments">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="platform-stats-promotions">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Enrollments</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="total-enrollments">
-                {platformStats.totalEnrollments}
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Promotions</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="total-promotions">
+                {platformStats.totalPromotions}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Student-course connections
+                Active student cohorts
               </p>
             </div>
             <DocumentDuplicateIcon className="h-12 w-12 text-purple-600 dark:text-purple-400" />
@@ -283,12 +322,12 @@ export const AdminDashboard: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6" data-testid="platform-stats-averages">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Enrollments/Course</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="avg-enrollments">
-                {platformStats.totalCourses > 0 ? Math.round(platformStats.totalEnrollments / platformStats.totalCourses) : 0}
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Students/Promotion</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="avg-students">
+                {platformStats.totalPromotions > 0 ? Math.round(platformStats.totalUsers / platformStats.totalPromotions) : 0}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Students per course
+                Average cohort size
               </p>
             </div>
             <ChartBarIcon className="h-12 w-12 text-teal-600 dark:text-teal-400" />
@@ -347,7 +386,7 @@ export const AdminDashboard: React.FC = () => {
                           {course.title}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {course.enrollments} enrollments
+                          {course.studentCount} students
                         </p>
                       </div>
                     </div>
@@ -440,6 +479,13 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+        </>
+      )}
+
+      {/* Attendance Management Tab */}
+      {activeTab === 'attendance' && (
+        <AdminAttendanceDashboard />
+      )}
     </div>
   );
 };

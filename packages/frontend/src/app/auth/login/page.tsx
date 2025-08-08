@@ -122,10 +122,15 @@ export default function LoginPage() {
 
             {/* Password Field */}
             <div className="form-group">
-              <label htmlFor="password" className="form-label flex items-center gap-2">
-                <LockClosedIcon className="w-5 h-5 text-gray-400" />
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="form-label flex items-center gap-2">
+                  <LockClosedIcon className="w-5 h-5 text-gray-400" />
+                  Password
+                </label>
+                <a href="/auth/reset-password" className="text-sm text-primary-600 hover:text-primary-800">
+                  Forgot password?
+                </a>
+              </div>
               <div className="relative">
                 <input
                   {...register('password')}

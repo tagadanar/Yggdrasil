@@ -1,9 +1,17 @@
-// packages/testing-utilities/playwright.reorganized.config.ts
-// Playwright configuration optimized for reorganized test structure
-// 🎯 PRODUCTION-READY: Uses 10 reorganized test suites instead of 26 individual files
+// packages/testing-utilities/playwright.reorganized.config.ts  
+// Playwright configuration optimized for priority-ordered test structure
+// 🎯 PRODUCTION-READY: Uses 10 priority-ordered test suites, Auth-Security runs FIRST
+
+// All imports must be at the top
+import { EventEmitter } from 'events';
+import { config } from 'dotenv';
+import path from 'path';
+import { defineConfig, devices } from '@playwright/test';
+
+// Load environment variables
+config({ path: path.join(__dirname, '../../.env') });
 
 // CRITICAL FIX: Prevent Winston Console EventEmitter memory leak warnings
-import { EventEmitter } from 'events';
 EventEmitter.defaultMaxListeners = 100;
 process.setMaxListeners(100);
 
@@ -24,36 +32,29 @@ try {
   }
   
   const originalEmit = process.emit;
-  (process as any).emit = function(event: any, ...args: any[]): boolean {
+  (process as any).emit = function(event: string, ...args: any[]): boolean {
     if (event === 'warning' && args[0] && args[0].name === 'MaxListenersExceededWarning' && 
         args[0].message && args[0].message.includes('Console')) {
       return false;
     }
-    return originalEmit.call(this, event, ...(args as any[])) as boolean;
+    return originalEmit.apply(process, [event, ...args]) as boolean;
   };
 } catch (error) {
   // Console fix failed, continue anyway
 }
 
-// Load environment variables
-import { config } from 'dotenv';
-import path from 'path';
-config({ path: path.join(__dirname, '../../.env') });
-
-import { defineConfig, devices } from '@playwright/test';
-
 export default defineConfig({
-  // 🎯 REORGANIZED STRUCTURE: Point to reorganized tests only
+  // 🎯 PRIORITY-ORDERED STRUCTURE: Point to priority-ordered tests only
   testDir: './tests/reorganized',
   
-  // 🚀 PERFORMANCE: Optimized for 10 suites instead of 26 files
+  // 🚀 PERFORMANCE: Optimized for 10 priority-ordered suites instead of 26 files
   fullyParallel: false, // Clean architecture requires sequential execution
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 1 : 0,
   workers: 1, // Clean architecture uses single worker with service management
   
-  // ⏱️ TIMEOUTS: Optimized for reorganized structure
-  timeout: 60000, // 1 minute per test (reorganized tests are more focused)
+  // ⏱️ TIMEOUTS: Optimized for priority-ordered structure
+  timeout: 60000, // 1 minute per test (priority-ordered tests are more focused)
   expect: { timeout: 10000 }, // 10 seconds for assertions
   
   // 📊 REPORTING: Enhanced for production readiness
@@ -84,23 +85,25 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       
-      // 🎯 REORGANIZED TEST PATTERN: Run specific reorganized suites
+      // 🎯 PRIORITY-ORDERED TEST PATTERN: Run suites in critical-first order
       testMatch: [
-        // Core Authentication & User Management (Always working)
-        '**/reorganized/auth-security/**/*.spec.ts',
-        '**/reorganized/user-management/**/*.spec.ts',
+        // 🚨 CRITICAL FIRST: Authentication foundation (must run first)
+        '**/reorganized/01-auth-security/**/*.spec.ts',
         
-        // ✅ FIXED SUITES: Proven working with simplification pattern
-        '**/reorganized/course-learning/**/*.spec.ts',
-        '**/reorganized/instructor-operations/**/*.spec.ts',
+        // 🏗️ HIGH PRIORITY: Core business logic (builds on auth)
+        '**/reorganized/02-user-management/**/*.spec.ts',
+        '**/reorganized/03-course-learning/**/*.spec.ts', 
+        '**/reorganized/04-instructor-operations/**/*.spec.ts',
         
-        // 🔧 IMPROVED SUITE: Partially fixed, continuing improvement
-        '**/reorganized/content-management/**/*.spec.ts',
+        // 📋 MEDIUM PRIORITY: Supporting features
+        '**/reorganized/05-content-management/**/*.spec.ts',
+        '**/reorganized/06-platform-core/**/*.spec.ts',
         
-        // ⏳ REMAINING SUITES: Ready for mechanical fixes
-        '**/reorganized/platform-core/**/*.spec.ts',
-        '**/reorganized/access-analytics/**/*.spec.ts',
-        '**/reorganized/system-integration/**/*.spec.ts',
+        // 📊 ANALYTICS: System validation and monitoring  
+        '**/reorganized/07-access-analytics/**/*.spec.ts',
+        
+        // 🔄 CRITICAL LAST: Full end-to-end integration (runs last)
+        '**/reorganized/08-system-integration/**/*.spec.ts',
       ]
     },
   ],
@@ -115,16 +118,27 @@ export default defineConfig({
 
 // 📝 CONFIGURATION NOTES:
 // 
-// ✅ BENEFITS OF REORGANIZED STRUCTURE:
-// - 62% fewer test files (26 → 10)
-// - 62% fewer service initializations  
-// - Better thematic organization
-// - Simplified maintenance
-// - Proven fix patterns
+// ✅ BENEFITS OF PRIORITY-ORDERED STRUCTURE:
+// - 🚨 Auth-Security runs FIRST (most critical foundation)
+// - 📊 Logical execution order: Auth → Users → Business Logic → Supporting → Analytics → Integration
+// - 62% fewer test files (26 → 10) 
+// - 62% fewer service initializations
+// - Clear priority hierarchy in directory names (01-08)
+// - Simplified maintenance with proven patterns
 //
-// 🎯 USAGE:
-// npm run test:reorganized     # Run all reorganized tests
-// npm run test:reorganized -- --grep "Auth"  # Run specific suite
+// 🎯 EXECUTION ORDER:
+// 01-auth-security      → Authentication foundation (CRITICAL FIRST)
+// 02-user-management    → User operations (builds on auth)
+// 03-course-learning    → Educational content workflows  
+// 04-instructor-operations → Teaching workflows
+// 05-content-management → Content lifecycle
+// 06-platform-core     → UI/UX and platform features
+// 07-access-analytics  → Analytics and monitoring
+// 08-system-integration → Full E2E workflows (CRITICAL LAST)
+//
+// 🚀 USAGE:
+// npm run test:quiet        # Run all tests in priority order
+// npm run test:single -- --grep "01-auth"  # Run specific suite by prefix
 //
 // 🔧 PATTERN FOR FIXES:
 // Replace TestDataFactory → Simple authHelper.loginAsRole()

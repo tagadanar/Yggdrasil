@@ -38,7 +38,7 @@ interface Course {
   resources: CourseResource[];
   settings: {
     isPublic: boolean;
-    allowEnrollment: boolean;
+    accessViaPromotion: boolean;
     requiresApproval: boolean;
     maxStudents?: number;
     startDate?: string;
@@ -48,7 +48,7 @@ interface Course {
     enableCollaboration: boolean;
   };
   stats: {
-    enrolledStudents: number;
+    activeStudents: number;
     completedStudents: number;
     averageProgress: number;
     averageRating?: number;
@@ -120,7 +120,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'resources' | 'analytics' | 'progress'>('overview');
   const [selectedExercise, setSelectedExercise] = useState<any | null>(null);
   const [viewMode, setViewMode] = useState<'course' | 'exercise'>('course');
-  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
   const [progressData, setProgressData] = useState<any>(null);
 
   useEffect(() => {
@@ -157,7 +157,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
       const response = await StatisticsApi.getStudentCourseProgress(user._id, courseId);
       
       if (response.success && response.data) {
-        setIsEnrolled(response.data.enrollmentStatus !== 'dropped');
+        setHasAccess(response.data.accessStatus === 'active' || response.data.accessStatus === 'completed');
         
         // Calculate estimated time remaining based on progress
         const remainingProgress = 100 - response.data.overallProgress;
@@ -172,13 +172,13 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
         
         setProgressData(progressData);
       } else {
-        // If no progress data found, user might not be enrolled
-        setIsEnrolled(false);
+        // If no progress data found, user might not have access
+        setHasAccess(false);
       }
     } catch (err: any) {
       console.error('Error loading progress data:', err);
-      // On error, assume not enrolled
-      setIsEnrolled(false);
+      // On error, assume no access
+      setHasAccess(false);
     }
   };
 
@@ -192,22 +192,6 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
     );
   };
 
-  const handleEnrollCourse = async () => {
-    if (!course) return;
-    
-    try {
-      const response = await courseApi.enrollCourse(course._id);
-      if (response.success) {
-        alert('Enrolled successfully!');
-        loadCourse(); // Refresh course data
-      } else {
-        alert(response.error || 'Failed to enroll');
-      }
-    } catch (err: any) {
-      console.error('Error enrolling in course:', err);
-      alert(err.response?.data?.error || 'Failed to enroll');
-    }
-  };
 
   const toggleChapter = (chapterId: string) => {
     setExpandedChapters(prev => {
@@ -364,7 +348,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                 by {course.instructor.name}
               </span>
               <span className="text-sm text-gray-500">
-                {course.stats.enrolledStudents} students
+                {course.stats.totalViews} views
               </span>
               {course.estimatedDuration > 0 && (
                 <span className="text-sm text-gray-500">
@@ -375,14 +359,10 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
           </div>
           
           <div className="flex space-x-2">
-            {user?.role === 'student' && course.status === 'published' && course.settings.allowEnrollment && (
-              <button
-                onClick={handleEnrollCourse}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                data-testid="enroll-btn"
-              >
-                Enroll
-              </button>
+            {user?.role === 'student' && !hasAccess && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-2 text-sm text-yellow-800">
+                Access through your promotion calendar
+              </div>
             )}
             {canManageCourse() && onEdit && (
               <button
@@ -448,7 +428,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
             ))}
-            {user?.role === 'student' && isEnrolled && (
+            {user?.role === 'student' && hasAccess && (
               <button
                 onClick={() => setActiveTab('progress')}
                 className={`py-4 text-sm font-medium border-b-2 ${
@@ -495,8 +475,8 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                     <dd className="text-sm text-gray-900">{formatDuration(course.estimatedDuration)}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Students Enrolled</dt>
-                    <dd className="text-sm text-gray-900">{course.stats.enrolledStudents}</dd>
+                    <dt className="text-sm font-medium text-gray-500">Total Views</dt>
+                    <dd className="text-sm text-gray-900">{course.stats.totalViews}</dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Chapters</dt>
@@ -744,10 +724,10 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Course Analytics</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{course.stats.enrolledStudents}</div>
-                  <div className="text-sm text-blue-600">Enrolled Students</div>
+                  <div className="text-2xl font-bold text-blue-600">{course.stats.activeStudents}</div>
+                  <div className="text-sm text-blue-600">Active Students</div>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">{course.stats.completedStudents}</div>
@@ -781,7 +761,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
           )}
 
           {/* Progress Tab */}
-          {activeTab === 'progress' && user?.role === 'student' && isEnrolled && progressData && (
+          {activeTab === 'progress' && user?.role === 'student' && hasAccess && progressData && (
             <div className="space-y-6">
               <ProgressTracker
                 courseId={courseId}

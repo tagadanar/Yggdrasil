@@ -24,8 +24,6 @@ interface Course {
   estimatedDuration: number;
   settings: {
     isPublic: boolean;
-    allowEnrollment: boolean;
-    requiresApproval: boolean;
     maxStudents?: number;
     startDate?: string;
     endDate?: string;
@@ -34,7 +32,7 @@ interface Course {
     enableCollaboration: boolean;
   };
   stats: {
-    enrolledStudents: number;
+    activeStudents: number;
     completedStudents: number;
     averageProgress: number;
     averageRating?: number;
@@ -63,8 +61,6 @@ export const CourseForm: React.FC<CourseFormProps> = ({
     estimatedDuration: 60, // Default 1 hour
     settings: {
       isPublic: true,
-      allowEnrollment: true,
-      requiresApproval: false,
       maxStudents: undefined as number | undefined,
       startDate: '',
       endDate: '',
@@ -94,8 +90,6 @@ export const CourseForm: React.FC<CourseFormProps> = ({
         estimatedDuration: course.estimatedDuration || 60,
         settings: {
           isPublic: course.settings.isPublic ?? true,
-          allowEnrollment: course.settings.allowEnrollment ?? true,
-          requiresApproval: course.settings.requiresApproval ?? false,
           maxStudents: course.settings.maxStudents,
           startDate: course.settings.startDate ? course.settings.startDate.split('T')[0] || '' : '',
           endDate: course.settings.endDate ? course.settings.endDate.split('T')[0] || '' : '',
@@ -432,32 +426,6 @@ export const CourseForm: React.FC<CourseFormProps> = ({
                   </label>
                 </div>
 
-                <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="settings.allowEnrollment"
-                      checked={formData.settings.allowEnrollment}
-                      onChange={handleInputChange}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Allow enrollment</span>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="settings.requiresApproval"
-                      checked={formData.settings.requiresApproval}
-                      onChange={handleInputChange}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      data-testid="require-approval"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Require enrollment approval</span>
-                  </label>
-                </div>
 
                 <div>
                   <label className="flex items-center">

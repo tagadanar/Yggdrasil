@@ -159,7 +159,6 @@ export interface CourseResource {
 // Course settings
 export interface CourseSettings {
   isPublic: boolean;
-  allowEnrollment: boolean;
   requiresApproval: boolean;
   maxStudents?: number;
   startDate?: Date;
@@ -171,11 +170,8 @@ export interface CourseSettings {
 
 // Course statistics
 export interface CourseStats {
-  enrolledStudents: number;
-  completedStudents: number;
-  averageProgress: number; // percentage
-  averageRating?: number;
   totalViews: number;
+  averageRating?: number;
   lastAccessed?: Date;
 }
 
@@ -300,24 +296,6 @@ export interface CodeQualityMetrics {
   codeSmells: string[];
 }
 
-// Course enrollment and progress
-export interface CourseEnrollment {
-  _id: string;
-  courseId: string;
-  studentId: string;
-  enrolledAt: Date;
-  progress: CourseProgress;
-  status: 'active' | 'completed' | 'dropped';
-}
-
-export interface CourseProgress {
-  completedSections: string[];
-  completedExercises: string[];
-  completedQuizzes: string[];
-  lastAccessedAt: Date;
-  overallProgress: number; // percentage
-  timeSpent: number; // in minutes
-}
 
 // Search and filtering
 export interface CourseFilters {

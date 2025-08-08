@@ -4,7 +4,7 @@
 import { z } from 'zod';
 
 // Event validation schemas
-const eventTypeSchema = z.enum(['class', 'exam', 'meeting', 'event']);
+const eventTypeSchema = z.enum(['class', 'exam', 'meeting', 'event', 'academic']);
 const recurrencePatternSchema = z.enum(['daily', 'weekly', 'monthly', 'yearly']);
 // const attendeeStatusSchema = z.enum(['pending', 'accepted', 'declined']); // Unused schema
 

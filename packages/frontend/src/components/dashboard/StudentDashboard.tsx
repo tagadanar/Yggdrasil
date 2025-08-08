@@ -7,7 +7,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { courseApi } from '@/lib/api/courses';
 import { StatisticsApi } from '@/lib/api/statistics';
+import { promotionApi, getSemesterName } from '@/lib/api/promotions';
+import { progressApi, StudentProgress } from '@/lib/api/progress';
 import { ProgressTracker } from '../progress/ProgressTracker';
+import { StudentAttendance } from '@/components/attendance/StudentAttendance';
 import {
   BookOpenIcon,
   ClockIcon,
@@ -29,9 +32,29 @@ interface CourseProgress {
   progress: number;
   timeSpent: number;
   lastAccessed: Date;
-  enrollmentStatus: 'active' | 'completed' | 'dropped';
+  accessStatus: 'active' | 'completed' | 'available';
   instructor: string;
   estimatedCompletion: Date;
+}
+
+interface CurrentPromotion {
+  _id: string;
+  name: string;
+  semester: number;
+  intake: 'september' | 'march';
+  academicYear: string;
+  status: 'draft' | 'active' | 'completed' | 'archived';
+  upcomingEvents: Array<{
+    _id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    type: string;
+    linkedCourse?: {
+      _id: string;
+      title: string;
+    };
+  }>;
 }
 
 interface LearningStats {
@@ -72,6 +95,8 @@ export const StudentDashboard: React.FC = () => {
   const [learningStats, setLearningStats] = useState<LearningStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [currentPromotion, setCurrentPromotion] = useState<CurrentPromotion | null>(null);
+  const [studentProgress, setStudentProgress] = useState<StudentProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,19 +113,38 @@ export const StudentDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Progressive loading: Load critical stats first for faster perceived performance
-      // Add timeout to prevent hanging
+      // Load promotion data alongside dashboard stats
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Dashboard request timed out')), 15000)
       );
       
-      const response = await Promise.race([
-        StatisticsApi.getStudentDashboard(user._id),
-        timeoutPromise
-      ]) as any;
+      // Load current promotion and dashboard data in parallel
+      const [dashboardResponse, promotionResponse] = await Promise.all([
+        Promise.race([
+          StatisticsApi.getStudentDashboard(user._id),
+          timeoutPromise
+        ]) as Promise<any>,
+        promotionApi.getMyPromotion().catch(() => ({ success: false, data: null }))
+      ]);
       
-      if (response.success && response.data) {
-        const dashboardData = response.data;
+      // Set promotion data
+      if (promotionResponse.success && promotionResponse.data) {
+        setCurrentPromotion(promotionResponse.data);
+        
+        // Load real progress data for this promotion
+        try {
+          const progressResponse = await progressApi.getMyProgress(promotionResponse.data.promotion._id);
+          if (progressResponse.success && progressResponse.data) {
+            setStudentProgress(progressResponse.data);
+          }
+        } catch (error) {
+          console.warn('Failed to load progress data:', error);
+          // Don't fail the entire dashboard if progress fails
+        }
+      }
+      
+      if (dashboardResponse.success && dashboardResponse.data) {
+        const dashboardData = dashboardResponse.data;
         
         // Set basic stats immediately for faster UI feedback
         setLearningStats(dashboardData.learningStats);
@@ -115,7 +159,7 @@ export const StudentDashboard: React.FC = () => {
             progress: course.progress,
             timeSpent: course.timeSpent,
             lastAccessed: new Date(course.lastAccessed),
-            enrollmentStatus: course.enrollmentStatus,
+            accessStatus: course.accessStatus || 'active', // Updated from enrollmentStatus
             instructor: course.instructor,
             estimatedCompletion: new Date(course.estimatedCompletion)
           }));
@@ -144,7 +188,7 @@ export const StudentDashboard: React.FC = () => {
           setAchievements(transformedAchievements);
         }, 0);
       } else {
-        throw new Error(response.error || 'Failed to load dashboard data');
+        throw new Error(dashboardResponse.error || 'Failed to load dashboard data');
       }
 
     } catch (err: any) {
@@ -421,23 +465,65 @@ export const StudentDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Current Promotion */}
+      {currentPromotion && (
+        <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-lg text-white p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-xl font-semibold">{currentPromotion.name}</h2>
+                <span className="bg-white/20 px-2 py-1 rounded-full text-xs font-medium">
+                  {getSemesterName(currentPromotion.semester, currentPromotion.intake)}
+                </span>
+              </div>
+              <p className="text-green-100">
+                Academic Year {currentPromotion.academicYear} • {currentPromotion.upcomingEvents?.length || 0} upcoming events
+              </p>
+            </div>
+            <div className="text-center mt-4 sm:mt-0">
+              <div className="space-y-2">
+                <div className="text-2xl font-bold">{currentPromotion.semester}/10</div>
+                <div className="text-sm text-green-100">Semester Progress</div>
+                {studentProgress && (
+                  <div className="bg-white/20 rounded-lg p-3 mt-2">
+                    <div className="text-sm text-green-100 mb-1">Overall Progress</div>
+                    <div className="text-xl font-bold">{studentProgress.overallProgress}%</div>
+                    <div className="w-full bg-white/30 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-white h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${studentProgress.overallProgress}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-green-100 mt-1">
+                      Attendance: {studentProgress.attendanceRate}%
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Course Progress */}
       <div className="bg-white rounded-lg border">
         <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Your Courses</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {currentPromotion ? 'Your Courses' : 'Course Access'}
+          </h2>
         </div>
         <div className="p-6">
-          {courseProgress.length === 0 ? (
+          {!currentPromotion ? (
             <div className="text-center py-12" data-testid="courses-empty-state">
               <BookOpenIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <div className="text-gray-500">No courses enrolled yet</div>
-              <div className="text-sm text-gray-400 mt-2">Start learning by enrolling in courses!</div>
-              <button
-                className="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
-                onClick={() => window.location.href = '/courses'}
-              >
-                Browse Courses
-              </button>
+              <div className="text-gray-500">No promotion assigned</div>
+              <div className="text-sm text-gray-400 mt-2">Contact your administrator to be assigned to a promotion</div>
+            </div>
+          ) : courseProgress.length === 0 ? (
+            <div className="text-center py-12" data-testid="courses-empty-state">
+              <BookOpenIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <div className="text-gray-500">No courses available yet</div>
+              <div className="text-sm text-gray-400 mt-2">Courses will appear when events are scheduled in your promotion calendar</div>
             </div>
           ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -446,13 +532,13 @@ export const StudentDashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-gray-900">{course.courseTitle}</h3>
                   <span className={`px-2 py-1 text-xs rounded-full ${
-                    course.enrollmentStatus === 'completed' 
+                    course.accessStatus === 'completed' 
                       ? 'bg-green-100 text-green-800'
-                      : course.enrollmentStatus === 'active'
+                      : course.accessStatus === 'active'
                       ? 'bg-blue-100 text-blue-800'
                       : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {course.enrollmentStatus}
+                    {course.accessStatus}
                   </span>
                 </div>
                 
@@ -473,7 +559,7 @@ export const StudentDashboard: React.FC = () => {
                   <div>Instructor: {course.instructor}</div>
                   <div>Time spent: {formatTime(course.timeSpent)}</div>
                   <div>Last accessed: {formatDate(course.lastAccessed)}</div>
-                  {course.enrollmentStatus === 'active' && (
+                  {course.accessStatus === 'active' && (
                     <div>Est. completion: {formatDate(course.estimatedCompletion)}</div>
                   )}
                 </div>
@@ -482,7 +568,7 @@ export const StudentDashboard: React.FC = () => {
                   className="mt-3 w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm"
                   onClick={() => window.location.href = `/courses/${course.courseId}`}
                 >
-                  {course.enrollmentStatus === 'completed' ? 'Review Course' : 'Continue Learning'}
+                  {course.accessStatus === 'completed' ? 'Review Course' : 'Continue Learning'}
                 </button>
               </div>
             ))}
@@ -490,6 +576,67 @@ export const StudentDashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Upcoming Events */}
+      {currentPromotion && currentPromotion.upcomingEvents && currentPromotion.upcomingEvents.length > 0 && (
+        <div className="bg-white rounded-lg border">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-semibold text-gray-900">Upcoming Events</h2>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              {currentPromotion.upcomingEvents.slice(0, 5).map((event) => (
+                <div key={event._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-sm font-medium text-gray-900 truncate">{event.title}</h3>
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {event.type}
+                      </span>
+                      {event.linkedCourse && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {event.linkedCourse.title}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-gray-500">
+                      <CalendarIcon className="h-4 w-4" />
+                      {formatDate(new Date(event.startDate))} - {formatDate(new Date(event.endDate))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {currentPromotion.upcomingEvents.length > 5 && (
+              <div className="text-center mt-4">
+                <button
+                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                  onClick={() => window.location.href = '/planning'}
+                >
+                  View all {currentPromotion.upcomingEvents.length} events
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Attendance Section */}
+      {currentPromotion && (
+        <div className="bg-white rounded-lg border">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-semibold text-gray-900">My Attendance</h2>
+          </div>
+          <div className="p-6">
+            <StudentAttendance 
+              promotionId={currentPromotion._id} 
+              showSummary={true}
+              maxRecords={10}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Recent Activity */}
       <div className="bg-white rounded-lg border">

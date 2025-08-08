@@ -47,6 +47,13 @@ export interface UserDocument extends Document {
   isActive: boolean;
   lastLogin?: Date;
   tokenVersion: number;
+  // Promotion-related fields (for students only)
+  currentPromotionId?: mongoose.Types.ObjectId;
+  promotionHistory?: Array<{
+    promotionId: mongoose.Types.ObjectId;
+    joinedAt: Date;
+    leftAt?: Date;
+  }>;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -164,6 +171,26 @@ const UserSchema = new Schema<UserDocument>({
     type: Number,
     default: 0,
   },
+  // Promotion-related fields (for students only)
+  currentPromotionId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Promotion',
+  },
+  promotionHistory: [{
+    promotionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Promotion',
+      required: true,
+    },
+    joinedAt: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    leftAt: {
+      type: Date,
+    },
+  }],
 }, {
   timestamps: true,
   collection: 'users', // Always use 'users' collection
@@ -173,6 +200,7 @@ const UserSchema = new Schema<UserDocument>({
 UserSchema.index({ role: 1 });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ createdAt: -1 });
+UserSchema.index({ currentPromotionId: 1 }); // For finding students in a promotion
 
 // Pre-save middleware to hash password
 UserSchema.pre('save', async function(next) {

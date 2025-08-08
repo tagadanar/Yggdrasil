@@ -9,10 +9,12 @@ export interface Event {
   title: string;
   description?: string;
   location?: string;
-  type: 'class' | 'exam' | 'meeting' | 'event';
+  type: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
   startDate: Date;
   endDate: Date;
   linkedCourse?: mongoose.Types.ObjectId;
+  promotionIds?: mongoose.Types.ObjectId[]; // Events can be linked to multiple promotions
+  teacherId?: mongoose.Types.ObjectId; // Teacher assigned to this event
   recurrence?: {
     pattern: 'daily' | 'weekly' | 'monthly' | 'yearly';
     interval: number;
@@ -53,6 +55,8 @@ export interface EventModelType extends mongoose.Model<EventDocument> {
   findConflicts(startDate: Date, endDate: Date, location?: string, excludeId?: mongoose.Types.ObjectId): Promise<EventDocument[]>;
   findRecurring(): Promise<EventDocument[]>;
   findUpcoming(limit?: number): Promise<EventDocument[]>;
+  findByPromotion(promotionId: mongoose.Types.ObjectId): Promise<EventDocument[]>;
+  findByTeacher(teacherId: mongoose.Types.ObjectId): Promise<EventDocument[]>;
 }
 
 // Attendee Schema
@@ -118,7 +122,7 @@ const EventSchema = new Schema<EventDocument>({
   },
   type: {
     type: String,
-    enum: ['class', 'exam', 'meeting', 'event'],
+    enum: ['class', 'exam', 'meeting', 'event', 'academic'],
     required: true,
   },
   startDate: {
@@ -132,6 +136,14 @@ const EventSchema = new Schema<EventDocument>({
   linkedCourse: {
     type: Schema.Types.ObjectId,
     ref: 'Course',
+  },
+  promotionIds: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Promotion',
+  }],
+  teacherId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
   },
   recurrence: {
     type: RecurrenceSchema,
@@ -177,6 +189,9 @@ EventSchema.index({ createdBy: 1 }); // Filter by creator
 EventSchema.index({ isRecurring: 1 }); // Filter recurring events
 EventSchema.index({ parentEvent: 1 }); // Find event instances
 EventSchema.index({ isPublic: 1 }); // Public events
+EventSchema.index({ promotionIds: 1 }); // Filter by promotion
+EventSchema.index({ teacherId: 1 }); // Filter by teacher
+EventSchema.index({ promotionIds: 1, startDate: 1 }); // Promotion calendar queries
 EventSchema.index({
   title: 'text',
   description: 'text',
@@ -296,6 +311,12 @@ EventSchema.set('toJSON', {
     if (ret.parentEvent) {
       ret.parentEvent = ret.parentEvent.toString();
     }
+    if (ret.promotionIds) {
+      ret.promotionIds = ret.promotionIds.map((id: any) => id.toString());
+    }
+    if (ret.teacherId) {
+      ret.teacherId = ret.teacherId.toString();
+    }
     if (ret.attendees) {
       ret.attendees = ret.attendees.map((a: any) => ({
         ...a,
@@ -318,6 +339,12 @@ EventSchema.set('toObject', {
     }
     if (ret.parentEvent) {
       ret.parentEvent = ret.parentEvent.toString();
+    }
+    if (ret.promotionIds) {
+      ret.promotionIds = ret.promotionIds.map((id: any) => id.toString());
+    }
+    if (ret.teacherId) {
+      ret.teacherId = ret.teacherId.toString();
     }
     if (ret.attendees) {
       ret.attendees = ret.attendees.map((a: any) => ({
@@ -396,6 +423,14 @@ EventSchema.statics['findUpcoming'] = function(limit: number = 10) {
   })
     .sort({ startDate: 1 })
     .limit(limit);
+};
+
+EventSchema.statics['findByPromotion'] = function(promotionId: mongoose.Types.ObjectId) {
+  return this.find({ promotionIds: promotionId }).sort({ startDate: 1 });
+};
+
+EventSchema.statics['findByTeacher'] = function(teacherId: mongoose.Types.ObjectId) {
+  return this.find({ teacherId }).sort({ startDate: 1 });
 };
 
 // Create and export the model

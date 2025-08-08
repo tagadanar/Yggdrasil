@@ -9,8 +9,8 @@ const newsController = new NewsController();
 // Root route - accessible to admin, staff, and students (excludes teachers per authorization matrix)
 router.get('/', authenticate, requireRole('admin', 'staff', 'student'), (req: any, res) => {
   // News service info accessible to admin, staff, and students per authorization matrix
-  logger.info('News service root route accessed', { 
-    user: req.user ? { id: req.user.id, role: req.user.role, email: req.user.email } : null 
+  logger.info('News service root route accessed', {
+    user: req.user ? { id: req.user.id, role: req.user.role, email: req.user.email } : null,
   });
   return res.json({
     service: 'news-service',

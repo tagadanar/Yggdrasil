@@ -45,6 +45,17 @@ const menuItems: MenuItem[] = [
     allowedRoles: ['admin']
   },
   {
+    id: 'promotions',
+    name: 'Promotions',
+    href: '/promotions',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+    ),
+    allowedRoles: ['admin', 'staff']
+  },
+  {
     id: 'courses',
     name: 'Courses',
     href: '/courses',
@@ -67,6 +78,17 @@ const menuItems: MenuItem[] = [
     allowedRoles: ['admin', 'staff', 'teacher', 'student']
   },
   {
+    id: 'attendance',
+    name: 'Attendance',
+    href: '/attendance',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+    allowedRoles: ['admin', 'staff', 'teacher', 'student']
+  },
+  {
     id: 'statistics',
     name: 'Statistics',
     href: '/statistics',
@@ -80,7 +102,7 @@ const menuItems: MenuItem[] = [
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const pathname = usePathname();
   const [currentPath, setCurrentPath] = useState<string>('');
 
@@ -181,7 +203,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
           {/* User info at bottom */}
           <div className="p-4 border-t border-secondary-200 dark:border-secondary-700 bg-gradient-to-r from-secondary-50 to-secondary-100 dark:from-secondary-800/50 dark:to-secondary-700/50">
-            <div className="flex items-center">
+            <div className="flex items-center mb-3">
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-primary-600 dark:from-primary-400 dark:to-primary-500 rounded-full flex items-center justify-center shadow-lg shadow-primary-500/25 dark:shadow-primary-400/20 animate-float">
                   <span className="text-white font-bold text-sm">
@@ -198,6 +220,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </p>
               </div>
             </div>
+            
+            {/* Logout Button */}
+            <button
+              onClick={logout}
+              className="w-full flex items-center justify-center px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors duration-200 font-medium text-sm"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Logout
+            </button>
           </div>
         </div>
       </aside>

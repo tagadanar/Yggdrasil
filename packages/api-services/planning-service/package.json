@@ -69,6 +69,12 @@
       "!src/**/*.d.ts",
       "!src/index.ts"
     ],
-    "testTimeout": 30000
+    "testTimeout": 30000,
+    "moduleNameMapping": {
+      "^p-queue$": "<rootDir>/../../node_modules/p-queue/dist/index.js"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(p-queue|eventemitter3|@yggdrasil)/)"
+    ]
   }
 }

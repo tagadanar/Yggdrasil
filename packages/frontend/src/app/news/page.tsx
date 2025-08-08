@@ -306,7 +306,7 @@ function NewsPageContent() {
 
   if (loading) {
     return (
-      <ProtectedRoute allowedRoles={['admin', 'staff']}>
+      <ProtectedRoute>
         <DashboardLayout>
           <div className="max-w-4xl mx-auto py-6">
             <div className="animate-pulse space-y-4">
@@ -325,7 +325,7 @@ function NewsPageContent() {
   }
 
   return (
-    <ProtectedRoute allowedRoles={['admin', 'staff']}>
+    <ProtectedRoute>
       <DashboardLayout>
         <div className="max-w-6xl mx-auto py-6">
           <div className="mb-8">
@@ -647,7 +647,7 @@ function NewsPageContent() {
 export default function NewsPage() {
   return (
     <Suspense fallback={
-      <ProtectedRoute allowedRoles={['admin', 'staff']}>
+      <ProtectedRoute>
         <DashboardLayout>
           <div className="max-w-4xl mx-auto py-6">
             <div className="animate-pulse space-y-4">

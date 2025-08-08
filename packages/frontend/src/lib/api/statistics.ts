@@ -115,7 +115,7 @@ interface StudentDashboardData {
     progress: number;
     timeSpent: number;
     lastAccessed: Date;
-    enrollmentStatus: 'active' | 'completed' | 'dropped';
+    accessStatus: 'active' | 'completed' | 'available';
     instructor: string;
     estimatedCompletion: Date;
   }[];
@@ -151,7 +151,7 @@ interface TeacherDashboardData {
   courseAnalytics: {
     courseId: string;
     courseTitle: string;
-    enrolledStudents: number;
+    accessingStudents: number;
     completedStudents: number;
     averageProgress: number;
     averageScore: number;
@@ -172,7 +172,7 @@ interface AdminDashboardData {
     totalUsers: number;
     activeUsers: number;
     totalCourses: number;
-    totalEnrollments: number;
+    totalAccesses: number;
     totalSubmissions: number;
     platformEngagement: number;
   };
@@ -186,7 +186,7 @@ interface AdminDashboardData {
     mostPopularCourses: {
       courseId: string;
       title: string;
-      enrollments: number;
+      accesses: number;
     }[];
     topPerformingCourses: {
       courseId: string;
@@ -207,7 +207,7 @@ interface AdminDashboardData {
 interface CourseProgressData {
   courseId: string;
   courseTitle: string;
-  enrollmentStatus: 'active' | 'completed' | 'dropped';
+  accessStatus: 'active' | 'completed' | 'available';
   overallProgress: number;
   timeSpent: number;
   lastAccessedAt: Date;

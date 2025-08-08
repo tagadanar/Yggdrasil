@@ -72,12 +72,14 @@ export type { PaginatedResponse } from './types/api';
 export * from './types/news';
 export * from './types/course';
 export * from './types/planning';
+export * from './types/promotion';
 
 // Validation schemas
 export * from './validation/auth';
 export * from './validation/news';
 export * from './validation/course';
 export * from './validation/planning';
+export * from './validation/promotion';
 
 // Constants
 export * from './constants';
@@ -180,12 +182,6 @@ export type { EventQuery } from './events/event-store';
 export { Saga, SagaOrchestrator, createSaga } from './patterns/saga';
 export type { SagaStep, SagaResult, SagaOptions } from './patterns/saga';
 
-export {
-  CourseEnrollmentSaga,
-  createCourseEnrollmentSaga,
-  EnrollmentSagaUtils,
-} from './patterns/course-enrollment-saga';
-export type { CourseEnrollmentData } from './patterns/course-enrollment-saga';
 
 export { CommandBus, QueryBus, CQRSFactory, CQRSMiddleware } from './patterns/cqrs';
 export type {

@@ -14,7 +14,9 @@ import {
   DocumentCheckIcon,
   AcademicCapIcon,
   ArrowTrendingUpIcon,
-  ExclamationCircleIcon
+  ExclamationCircleIcon,
+  CalendarDaysIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
@@ -32,7 +34,7 @@ interface CourseStats {
 interface CourseAnalytics {
   courseId: string;
   courseTitle: string;
-  enrolledStudents: number;
+  activeStudents: number;
   completedStudents: number;
   averageProgress: number;
   averageScore: number;
@@ -48,11 +50,20 @@ interface RecentSubmission {
   needsGrading: boolean;
 }
 
+interface AttendanceStats {
+  totalEvents: number;
+  eventsWithAttendance: number;
+  overallAttendanceRate: number;
+  studentsAtRisk: number;
+  recentEvents: number;
+}
+
 export const TeacherDashboard: React.FC = () => {
   const { user } = useAuth();
   const [courseStats, setCourseStats] = useState<CourseStats | null>(null);
   const [courseAnalytics, setCourseAnalytics] = useState<CourseAnalytics[]>([]);
   const [recentSubmissions, setRecentSubmissions] = useState<RecentSubmission[]>([]);
+  const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTimeRange, setSelectedTimeRange] = useState('30days');
@@ -77,6 +88,16 @@ export const TeacherDashboard: React.FC = () => {
         setCourseStats(dashboardData.courseStats);
         setCourseAnalytics(dashboardData.courseAnalytics);
         setRecentSubmissions(dashboardData.recentSubmissions);
+        
+        // Mock attendance stats for now (would come from real API)
+        const mockAttendanceStats: AttendanceStats = {
+          totalEvents: 15,
+          eventsWithAttendance: 12,
+          overallAttendanceRate: 85.4,
+          studentsAtRisk: 3,
+          recentEvents: 5
+        };
+        setAttendanceStats(mockAttendanceStats);
       } else {
         setError(response.error || 'Failed to load dashboard data');
       }
@@ -243,6 +264,63 @@ export const TeacherDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Attendance Overview */}
+      {attendanceStats && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Attendance Overview</h2>
+              <button 
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+                onClick={() => window.location.href = '/attendance'}
+              >
+                Manage Attendance →
+              </button>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{attendanceStats.totalEvents}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Total Events</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {attendanceStats.eventsWithAttendance}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Attendance Marked</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {attendanceStats.overallAttendanceRate.toFixed(1)}%
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Average Attendance</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${
+                  attendanceStats.studentsAtRisk > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                }`}>
+                  {attendanceStats.studentsAtRisk}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Students at Risk</div>
+              </div>
+            </div>
+            
+            {attendanceStats.studentsAtRisk > 0 && (
+              <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div className="flex items-center">
+                  <BellIcon className="h-5 w-5 text-red-600 dark:text-red-400 mr-2" />
+                  <div className="text-sm text-red-800 dark:text-red-200">
+                    <strong>{attendanceStats.studentsAtRisk}</strong> students have attendance below 75%. 
+                    Consider reaching out for support.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Course Analytics Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -281,8 +359,8 @@ export const TeacherDashboard: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-gray-100" data-testid="enrolled-students">
-                      {course.enrolledStudents}
+                    <div className="text-sm text-gray-900 dark:text-gray-100" data-testid="active-students">
+                      {course.activeStudents}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                       {course.completedStudents} completed

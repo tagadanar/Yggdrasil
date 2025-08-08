@@ -11,13 +11,14 @@ export { DatabaseManager, dbManager } from './connection/multi-db';
 export * from './models/User';
 export * from './models/NewsArticle';
 export * from './models/Course';
-export * from './models/CourseEnrollment';
 export * from './models/Event';
+export * from './models/Promotion';
+export * from './models/EventAttendance';
+export * from './models/PromotionProgress';
 
 // Phase 4.1: Service-specific models
 export * from './models/AuthUser';
 export * from './models/UserProfile';
-export * from './models/EnrollmentData';
 
 // Migrations
 export { Migration, MigrationRunner, runMigrationCLI } from './migrations/migration-runner';

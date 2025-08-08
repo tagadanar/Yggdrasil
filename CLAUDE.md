@@ -80,6 +80,63 @@ const validated = loginSchema.parse(data);
 - JWT operations, response formatting
 - Service management, validation schemas
 
+## 🚨 BREAKING CHANGES - CRITICAL PRINCIPLE
+
+### ⚠️ **GOLDEN RULE: ALWAYS ANALYZE CHANGE CONSEQUENCES**
+
+**BEFORE making ANY modification that could affect other components:**
+
+#### **Step 1: Identify Potentially Breaking Changes**
+```typescript
+❌ BREAKING EXAMPLES:
+- API endpoint response format: { status: 'ok' } → { status: 'healthy' }
+- Function signatures: doSomething(a) → doSomething(a, b)
+- Database schemas: adding required fields
+- Environment variable names: JWT_SECRET → AUTH_SECRET
+- Service port changes: 3002 → 3007
+```
+
+#### **Step 2: MANDATORY Dependency Analysis**
+```bash
+# ALWAYS search for dependencies FIRST:
+grep -r "status.*ok" packages/           # Find all code expecting 'ok'
+grep -r "functionName" packages/         # Find all function calls
+git log --oneline -10 -- file/path      # Check recent changes
+```
+
+#### **Step 3: Decision Matrix**
+
+**IF the new approach is OBJECTIVELY better (security, performance, standards):**
+✅ **Update Everything Approach**
+1. Update all services to new standard
+2. Update all tests expecting old behavior  
+3. Update documentation
+4. Create migration plan if needed
+
+**IF the existing approach is established/working:**
+✅ **Adapt to Existing Approach**
+1. Fix your code to match existing patterns
+2. Update only the incorrect expectations
+3. Maintain system consistency
+
+#### **Step 4: Implementation Rules**
+- **NEVER** change service contracts without full dependency audit
+- **ALWAYS** fix tests when they have wrong expectations 
+- **SEARCH FIRST, CODE SECOND** - understand before changing
+- **When in doubt, choose consistency over perfection**
+
+### 🏆 **SUCCESS EXAMPLE: Health Check Fix**
+```diff
+❌ WRONG: Changed user-service to match incorrect test
+- { status: 'ok' } → { status: 'healthy' }
+
+✅ CORRECT: Fixed test to match established service pattern  
+- expect('healthy') → expect('ok')
+- Maintained consistency with news-service, planning-service
+```
+
+**Remember: In interconnected systems, every change ripples. Think before you code!**
+
 ## 🧪 Testing Commands
 
 ### Two-Command Architecture:

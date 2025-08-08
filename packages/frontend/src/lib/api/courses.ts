@@ -131,7 +131,7 @@ export const courseApi = {
     return response.data;
   },
 
-  // Get user's courses (enrolled for students, created for teachers)
+  // Get user's courses (accessible for students, created for teachers)
   async getMyCourses() {
     const response = await courseApiClient.get('/user/my-courses');
     return response.data;
@@ -160,8 +160,6 @@ export const courseApi = {
     estimatedDuration?: number;
     settings?: {
       isPublic?: boolean;
-      allowEnrollment?: boolean;
-      requiresApproval?: boolean;
       maxStudents?: number;
       startDate?: string;
       endDate?: string;
@@ -186,8 +184,6 @@ export const courseApi = {
     estimatedDuration?: number;
     settings?: {
       isPublic?: boolean;
-      allowEnrollment?: boolean;
-      requiresApproval?: boolean;
       maxStudents?: number;
       startDate?: string;
       endDate?: string;
@@ -317,22 +313,6 @@ export const courseApi = {
     isPublished?: boolean;
   }) {
     const response = await courseApiClient.put(`/${courseId}/chapters/${chapterId}/sections/${sectionId}/content/${contentId}`, updateData);
-    return response.data;
-  },
-
-  // =============================================================================
-  // COURSE ENROLLMENT
-  // =============================================================================
-
-  // Enroll in course (students only)
-  async enrollCourse(courseId: string) {
-    const response = await courseApiClient.post('/enroll', { courseId });
-    return response.data;
-  },
-
-  // Get course enrollments (instructors, admins only)
-  async getCourseEnrollments(courseId: string) {
-    const response = await courseApiClient.get(`/${courseId}/enrollments`);
     return response.data;
   },
 

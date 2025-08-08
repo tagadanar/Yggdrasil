@@ -12,17 +12,20 @@ import { AuthStateIsolator } from './auth-state-isolator';
  * Manages authentication with proper cleanup and state isolation
  */
 export class CleanAuthHelper {
-  private authHelper: AuthTestHelper;
-  private page: Page;
+  private authHelper: AuthTestHelper | null = null;
+  private page: Page | null;
   private maxRetries = 1; // OPTIMIZED: Reduced retries for faster tests
+  private cachedAdminToken: string | null = null;
 
-  constructor(page: Page) {
+  constructor(page: Page | null) {
     this.page = page;
-    this.authHelper = new AuthTestHelper(page, {
-      debug: false, // OPTIMIZED: Disable debug for faster execution
-      timeout: TEST_PERFORMANCE_CONFIG.timeouts.auth, // Use optimized auth timeout
-      retries: 1,  // OPTIMIZED: Reduced retries to speed up tests
-    });
+    if (page) {
+      this.authHelper = new AuthTestHelper(page, {
+        debug: false, // OPTIMIZED: Disable debug for faster execution
+        timeout: TEST_PERFORMANCE_CONFIG.timeouts.auth, // Use optimized auth timeout
+        retries: 1,  // OPTIMIZED: Reduced retries to speed up tests
+      });
+    }
   }
 
   /**
@@ -66,13 +69,17 @@ export class CleanAuthHelper {
    * Login as admin user with proper state tracking and retry logic
    */
   async loginAsAdmin(): Promise<AuthResult> {
+    if (!this.page || !this.authHelper) {
+      throw new Error('🔐 CLEAN AUTH: Cannot login as admin without page object. Use getAdminToken() for API-only authentication.');
+    }
+    
     return this.retryAuth(async () => {
-      await AuthStateIsolator.prepareForRoleChange(this.page, 'admin', 'Admin Login');
+      await AuthStateIsolator.prepareForRoleChange(this.page!, 'admin', 'Admin Login');
       // Only initialize if not already done
       if (!TestInitializer.isInitialized()) {
         await TestInitializer.quickSetup();
       }
-      const result = await this.authHelper.authenticateAs('admin');
+      const result = await this.authHelper!.authenticateAs('admin');
       
       if (!result.success) {
         throw new Error(`Admin authentication failed: ${result.error}`);
@@ -265,6 +272,14 @@ export class CleanAuthHelper {
    */
   async clearAuthState(): Promise<void> {
     try {
+      // Clear cached admin token
+      this.cachedAdminToken = null;
+      
+      if (!this.page) {
+        console.log('🔐 CLEAN AUTH: No page object, only clearing cached tokens');
+        return;
+      }
+      
       // Check if page is still available before attempting to clear storage
       if (this.page.isClosed()) {
         console.log('🔐 CLEAN AUTH: Page already closed, skipping storage cleanup');
@@ -308,8 +323,10 @@ export class CleanAuthHelper {
         throw navigationError;
       }
 
-      // Use centralized auth helper cleanup
-      await this.authHelper.clearAuthState();
+      // Use centralized auth helper cleanup if available
+      if (this.authHelper) {
+        await this.authHelper.clearAuthState();
+      }
       
       console.log('🔐 CLEAN AUTH: Authentication state cleared successfully');
     } catch (error) {
@@ -456,6 +473,11 @@ export class CleanAuthHelper {
    * Get access token for API requests
    */
   async getAccessToken(): Promise<string | null> {
+    if (!this.page) {
+      console.error('🔐 CLEAN AUTH: Cannot get access token without page object');
+      return null;
+    }
+    
     try {
       return await this.page.evaluate(() => {
         // Read from cookies using js-cookie format
@@ -474,6 +496,53 @@ export class CleanAuthHelper {
     } catch (error) {
       console.error('🔐 CLEAN AUTH: Failed to get access token:', error);
       return null;
+    }
+  }
+
+  /**
+   * Get admin token for API requests - works without page object
+   * Uses direct API authentication for testing purposes
+   */
+  async getAdminToken(): Promise<string> {
+    // Return cached token if available
+    if (this.cachedAdminToken) {
+      console.log('🔐 CLEAN AUTH: Returning cached admin token');
+      return this.cachedAdminToken;
+    }
+
+    try {
+      console.log('🔐 CLEAN AUTH: Getting admin token via API...');
+      
+      // Direct API call to authenticate as admin
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'admin@yggdrasil.edu',
+          password: 'Admin123!'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Admin authentication failed: ${response.status} ${response.statusText}`);
+      }
+
+      const authResult = await response.json();
+      
+      if (!authResult.success || !authResult.data || !authResult.data.tokens || !authResult.data.tokens.accessToken) {
+        throw new Error(`Admin authentication failed: ${authResult.error || 'No access token received'}`);
+      }
+
+      // Cache the token
+      this.cachedAdminToken = authResult.data.tokens.accessToken;
+      console.log('🔐 CLEAN AUTH: Admin token obtained successfully');
+      
+      return this.cachedAdminToken;
+    } catch (error) {
+      console.error('🔐 CLEAN AUTH: Failed to get admin token:', error);
+      throw new Error(`Failed to get admin token: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

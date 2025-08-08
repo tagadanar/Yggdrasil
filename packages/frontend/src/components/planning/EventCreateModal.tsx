@@ -57,19 +57,57 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
     // Combine date and time fields to create ISO strings for API
     const createISOString = (date: string, time: string) => {
       if (!date || !time) return '';
-      const dateTimeString = `${date}T${time}:00`;
-      return new Date(dateTimeString).toISOString();
+      try {
+        const dateTimeString = `${date}T${time}:00`;
+        const dateObject = new Date(dateTimeString);
+        if (isNaN(dateObject.getTime())) {
+          throw new Error(`Invalid date/time combination: ${dateTimeString}`);
+        }
+        return dateObject.toISOString();
+      } catch (error) {
+        console.error('Error creating ISO string:', error, { date, time });
+        return '';
+      }
     };
     
+    // Validate required fields
+    if (!formData.title?.trim()) {
+      alert('Title is required');
+      return;
+    }
+    if (!formData.type) {
+      alert('Event type is required');
+      return;
+    }
+    if (!formData.startDate || !formData.startTime || !formData.endTime) {
+      alert('Date and time are required');
+      return;
+    }
+
+    const startDateISO = createISOString(formData.startDate, formData.startTime);
+    const endDateISO = createISOString(formData.startDate, formData.endTime);
+
+    if (!startDateISO || !endDateISO) {
+      alert('Invalid date/time format');
+      return;
+    }
+
+    // Ensure end time is after start time
+    if (new Date(endDateISO) <= new Date(startDateISO)) {
+      alert('End time must be after start time');
+      return;
+    }
+
     const eventData: any = {
-      title: formData.title,
-      description: formData.description || undefined,
-      location: formData.location || undefined,
+      title: formData.title.trim(),
+      description: formData.description?.trim() || undefined,
+      location: formData.location?.trim() || undefined,
       type: formData.type,
-      startDate: createISOString(formData.startDate, formData.startTime),
-      endDate: createISOString(formData.startDate, formData.endTime), // Use same date but end time
+      startDate: startDateISO,
+      endDate: endDateISO,
       isPublic: formData.isPublic,
-      color: formData.color
+      color: formData.color,
+      isRecurring: showRecurrence && formData.isRecurring
     };
 
     if (showCourseLink && formData.linkedCourse) {
@@ -80,9 +118,15 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
       eventData.recurrence = {
         pattern: formData.recurrence.pattern,
         interval: formData.recurrence.interval,
-        endDate: formData.recurrence.endDate ? new Date(formData.recurrence.endDate).toISOString() : undefined,
+        count: 10, // Default to 10 occurrences if no end date specified
         days: formData.recurrence.days.length > 0 ? formData.recurrence.days : undefined
       };
+      
+      // If end date is specified, use that instead of count
+      if (formData.recurrence.endDate) {
+        eventData.recurrence.endDate = new Date(formData.recurrence.endDate).toISOString();
+        delete eventData.recurrence.count;
+      }
     }
 
     onSubmit(eventData);
@@ -113,7 +157,7 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
       <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white" data-testid="event-create-modal">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Create New Event</h3>
+          <h2 className="text-lg font-semibold text-gray-900">Create Event</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -131,6 +175,7 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
             </label>
             <input
               type="text"
+              name="title"
               required
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
@@ -144,6 +189,7 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
               Description
             </label>
             <textarea
+              name="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={3}
@@ -158,6 +204,7 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
             </label>
             <input
               type="text"
+              name="location"
               value={formData.location}
               onChange={(e) => handleInputChange('location', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -170,6 +217,7 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
               Event Type *
             </label>
             <select
+              name="eventType"
               required
               value={formData.type}
               onChange={(e) => handleInputChange('type', e.target.value)}
@@ -180,6 +228,24 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
               <option value="exam">Exam</option>
               <option value="meeting">Meeting</option>
               <option value="event">Event</option>
+              <option value="academic">Academic</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Visibility *
+            </label>
+            <select
+              name="visibility"
+              required
+              value={formData.isPublic ? 'public' : 'private'}
+              onChange={(e) => handleInputChange('isPublic', e.target.value === 'public')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              data-testid="event-visibility"
+            >
+              <option value="public">Public</option>
+              <option value="private">Private</option>
             </select>
           </div>
 
@@ -191,6 +257,7 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
               </label>
               <input
                 type="date"
+                name="startDate"
                 required
                 value={formData.startDate}
                 onChange={(e) => handleInputChange('startDate', e.target.value)}
@@ -206,6 +273,7 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
                 </label>
                 <input
                   type="time"
+                  name="startTime"
                   required
                   value={formData.startTime}
                   onChange={(e) => handleInputChange('startTime', e.target.value)}
@@ -220,6 +288,7 @@ export const EventCreateModal: React.FC<EventCreateModalProps> = ({
                 </label>
                 <input
                   type="time"
+                  name="endTime"
                   required
                   value={formData.endTime}
                   onChange={(e) => handleInputChange('endTime', e.target.value)}

@@ -5,9 +5,7 @@ import { Router } from 'express';
 import { CourseController } from '../controllers/CourseController';
 import {
   authenticateToken,
-  optionalAuth,
   requireTeacherOrAdmin,
-  requireStudentOnly,
 } from '../middleware/authMiddleware';
 import rateLimit from 'express-rate-limit';
 
@@ -31,14 +29,6 @@ const createCourseRateLimit = rateLimit({
   legacyHeaders: false,
 });
 
-const submissionRateLimit = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 50, // limit submissions to 50 per 5 minutes per IP
-  message: 'Too many submission attempts, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 // Apply rate limiting to all course routes
 router.use(courseRateLimit);
 
@@ -55,11 +45,11 @@ router.post(
   courseController.createCourse,
 );
 
-// Get course by ID (public for published courses, authenticated for others)
-router.get('/:courseId', optionalAuth, courseController.getCourse);
+// Get course by ID (requires authentication and promotion access)
+router.get('/:courseId', authenticateToken, courseController.getCourse);
 
-// Get course by slug (public for published courses)
-router.get('/slug/:slug', optionalAuth, courseController.getCourseBySlug);
+// Get course by slug (requires authentication and promotion access)
+router.get('/slug/:slug', authenticateToken, courseController.getCourseBySlug);
 
 // Update course (instructors, collaborators, admins only)
 router.put('/:courseId', authenticateToken, courseController.updateCourse);
@@ -149,43 +139,17 @@ router.put(
 );
 
 // =============================================================================
-// COURSE ENROLLMENT
+// COURSE ACCESS VIA PROMOTIONS
 // =============================================================================
 
-// Enroll in course (students only)
-router.post(
-  '/enroll',
-  authenticateToken,
-  requireStudentOnly,
-  courseController.enrollCourse,
-);
-
-// Get course enrollments (instructors, admins only)
-router.get(
-  '/:courseId/enrollments',
-  authenticateToken,
-  courseController.getCourseEnrollments,
-);
+// Course enrollment is now managed through promotions
+// Students access courses via their promotion calendar
 
 // =============================================================================
 // EXERCISE SUBMISSIONS
 // =============================================================================
 
-// Submit exercise solution (students only)
-router.post(
-  '/exercises/:exerciseId/submit',
-  submissionRateLimit,
-  authenticateToken,
-  requireStudentOnly,
-  courseController.submitExercise,
-);
-
-// Get exercise submissions
-router.get(
-  '/exercises/:exerciseId/submissions',
-  authenticateToken,
-  courseController.getExerciseSubmissions,
-);
+// NOTE: Exercise submission routes removed - functionality moved to promotion-based system
 
 // =============================================================================
 // COURSE MANAGEMENT SHORTCUTS

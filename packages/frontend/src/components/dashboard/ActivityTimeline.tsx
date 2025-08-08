@@ -16,7 +16,7 @@ import {
 
 interface ActivityItem {
   id: string;
-  type: 'exercise' | 'section' | 'course_complete' | 'assignment' | 'achievement' | 'enrollment' | 'submission';
+  type: 'exercise' | 'section' | 'course_complete' | 'assignment' | 'achievement' | 'promotion_join' | 'submission';
   title: string;
   description?: string;
   timestamp: Date;
@@ -60,7 +60,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
         return <DocumentTextIcon className={`${iconClasses} text-purple-600 dark:text-purple-400`} />;
       case 'achievement':
         return <TrophyIcon className={`${iconClasses} text-orange-600 dark:text-orange-400`} />;
-      case 'enrollment':
+      case 'promotion_join':
         return <UserIcon className={`${iconClasses} text-indigo-600 dark:text-indigo-400`} />;
       case 'submission':
         return <ExclamationCircleIcon className={`${iconClasses} text-red-600 dark:text-red-400`} />;
@@ -81,7 +81,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
         return 'bg-purple-100 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800';
       case 'achievement':
         return 'bg-orange-100 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800';
-      case 'enrollment':
+      case 'promotion_join':
         return 'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800';
       case 'submission':
         return 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800';

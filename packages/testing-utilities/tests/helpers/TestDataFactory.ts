@@ -8,8 +8,9 @@ import { connectDatabase, isDatabaseConnected } from '@yggdrasil/database-schema
 import { 
   UserModel, 
   CourseModel, 
-  CourseEnrollmentModel, 
-  ExerciseSubmissionModel
+  ExerciseSubmissionModel,
+  PromotionModel,
+  EventModel
 } from '@yggdrasil/database-schemas';
 
 // =============================================================================
@@ -84,9 +85,9 @@ export abstract class BaseDataFactory {
       const objectId = new mongoose.Types.ObjectId(courseId);
       
       if (mongoose.connection?.db) {
-        // Clean up course enrollments
-        const enrollments = mongoose.connection.db.collection('course_enrollments');
-        await enrollments.deleteMany({ courseId: objectId });
+        // Clean up course events (new promotion system)
+        const events = mongoose.connection.db.collection('events');
+        await events.deleteMany({ 'linkedCourse': objectId });
         
         // Clean up exercise submissions
         const submissions = mongoose.connection.db.collection('exercise_submissions');
@@ -110,9 +111,12 @@ export abstract class BaseDataFactory {
       const objectId = new mongoose.Types.ObjectId(userId);
       
       if (mongoose.connection?.db) {
-        // Clean up user enrollments
-        const enrollments = mongoose.connection.db.collection('course_enrollments');
-        await enrollments.deleteMany({ userId: objectId });
+        // Clean up user promotions (new promotion system)
+        const promotions = mongoose.connection.db.collection('promotions');
+        await promotions.updateMany(
+          { studentIds: objectId },
+          { $pull: { studentIds: objectId } }
+        );
         
         // Clean up user submissions
         const submissions = mongoose.connection.db.collection('exercise_submissions');
@@ -224,7 +228,7 @@ export class CourseDataFactory extends BaseDataFactory {
       estimatedDuration: options.estimatedDuration || 40, // hours
       tags: ['testing', 'automation', 'education'],
       isPublic: true,
-      enrollmentOpen: true,
+      isPublished: true,
       maxEnrollments: 100,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -351,94 +355,125 @@ export class CourseDataFactory extends BaseDataFactory {
 }
 
 // =============================================================================
-// ENROLLMENT DATA FACTORY - Creates realistic student enrollments with progress
+// PROMOTION DATA FACTORY - Creates realistic student promotions with progress
 // =============================================================================
 
-export class EnrollmentDataFactory extends BaseDataFactory {
+export class PromotionDataFactory extends BaseDataFactory {
   /**
-   * Create a realistic enrollment with progress tracking
+   * Create a realistic promotion with students and events
    */
-  async createEnrollment(
-    studentId: string, 
-    courseId: string, 
+  async createPromotion(
     options: {
-      status?: 'active' | 'completed' | 'dropped',
-      progressPercent?: number,
-      timeSpent?: number,
-      completedSections?: string[],
-      completedExercises?: string[]
+      name?: string,
+      semester?: number,
+      intake?: 'september' | 'march',
+      academicYear?: string,
+      studentIds?: string[],
+      status?: 'draft' | 'active' | 'completed' | 'archived'
     } = {}
   ): Promise<any> {
     await this.ensureDatabaseConnection();
-    
-    const enrollmentData = {
-      studentId: new mongoose.Types.ObjectId(studentId),
-      courseId: new mongoose.Types.ObjectId(courseId),
+
+    const currentYear = new Date().getFullYear();
+    const promotionData = {
+      name: options.name || `Test Promotion ${Math.floor(Math.random() * 1000)}`,
+      semester: options.semester ?? Math.floor(Math.random() * 10) + 1, // 1-10
+      intake: options.intake || (Math.random() > 0.5 ? 'september' : 'march'),
+      academicYear: options.academicYear || `${currentYear}-${currentYear + 1}`,
       status: options.status || 'active',
-      enrolledAt: new Date(Date.now() - (Math.random() * 30 * 24 * 60 * 60 * 1000)), // Random within last 30 days
-      progress: {
-        overallProgress: options.progressPercent || Math.floor(Math.random() * 100),
-        timeSpent: options.timeSpent || Math.floor(Math.random() * 1200), // Random 0-20 hours in minutes
-        lastAccessedAt: new Date(Date.now() - (Math.random() * 7 * 24 * 60 * 60 * 1000)), // Random within last 7 days
-        completedSections: options.completedSections || [],
-        completedExercises: options.completedExercises || []
+      studentIds: options.studentIds ? options.studentIds.map(id => new mongoose.Types.ObjectId(id)) : [],
+      eventIds: [],
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+      metadata: {
+        level: `Year ${Math.ceil((options.semester ?? 1) / 2)}`,
+        department: 'Computer Science',
+        maxStudents: 30,
+        description: 'Test promotion created by TestDataFactory'
       },
-      grade: options.status === 'completed' ? Math.floor(Math.random() * 30) + 70 : undefined, // 70-100% for completed
-      completedAt: options.status === 'completed' ? new Date() : undefined
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
-    const enrollment = await CourseEnrollmentModel.create(enrollmentData);
-    this.trackCreated('courseenrollments', enrollment._id.toString());
+    const promotion = await PromotionModel.create(promotionData);
+    this.trackCreated('promotions', promotion._id.toString());
     
-    console.log(`📝 Created enrollment: Student ${studentId} → Course ${courseId} (${enrollment.status})`);
-    return enrollment;
+    console.log(`🎓 Created promotion: ${promotion.name} (${promotion.studentIds.length} students)`);
+    return promotion;
   }
 
   /**
-   * Create multiple enrollments for a student with varied progress
+   * Create event linking course to promotion
    */
-  async createEnrollmentsForStudent(
+  async createPromotionEvent(
+    promotionId: string,
+    courseId: string,
+    options: {
+      title?: string,
+      startDate?: Date,
+      endDate?: Date,
+      type?: string
+    } = {}
+  ): Promise<any> {
+    await this.ensureDatabaseConnection();
+
+    const eventData = {
+      title: options.title || 'Test Course Event',
+      description: 'Course event created by TestDataFactory',
+      startDate: options.startDate || new Date(),
+      endDate: options.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week
+      type: options.type || 'course_session',
+      linkedCourse: new mongoose.Types.ObjectId(courseId),
+      promotionIds: [new mongoose.Types.ObjectId(promotionId)],
+      isPublic: false,
+      createdAt: new Date()
+    };
+
+    const event = await EventModel.create(eventData);
+    this.trackCreated('events', event._id.toString());
+
+    // Update promotion with event ID
+    await PromotionModel.findByIdAndUpdate(
+      promotionId,
+      { $push: { eventIds: event._id } }
+    );
+    
+    console.log(`📅 Created event: ${event.title} linking Course ${courseId} to Promotion ${promotionId}`);
+    return event;
+  }
+
+  /**
+   * Create multiple promotions for a student with course access
+   */
+  async createPromotionsForStudent(
     studentId: string, 
     courses: any[], 
-    progressPattern: 'mixed' | 'high' | 'low' = 'mixed'
+    pattern: 'current' | 'graduated' | 'mixed' = 'current'
   ): Promise<any[]> {
-    const enrollments = [];
-
-    for (let i = 0; i < courses.length; i++) {
-      let progressOptions: any = {};
-
-      switch (progressPattern) {
-        case 'high':
-          progressOptions = {
-            status: i === 0 ? 'completed' : 'active',
-            progressPercent: Math.floor(Math.random() * 30) + 70, // 70-100%
-            timeSpent: Math.floor(Math.random() * 300) + 300, // 5-10 hours
-          };
-          break;
-        case 'low':
-          progressOptions = {
-            status: 'active',
-            progressPercent: Math.floor(Math.random() * 30), // 0-30%
-            timeSpent: Math.floor(Math.random() * 120), // 0-2 hours
-          };
-          break;
-        default: // mixed
-          progressOptions = {
-            status: i === 0 ? 'completed' : i === courses.length - 1 ? 'active' : 'active',
-            progressPercent: Math.floor(Math.random() * 100),
-            timeSpent: Math.floor(Math.random() * 600), // 0-10 hours
-          };
+    const promotions = [];
+    
+    // Create 1-2 promotions based on pattern
+    const promotionCount = pattern === 'mixed' ? 2 : 1;
+    
+    for (let i = 0; i < promotionCount; i++) {
+      const semester = pattern === 'graduated' ? 10 : Math.floor(Math.random() * 8) + 1;
+      const status = pattern === 'graduated' ? 'completed' : 'active';
+      
+      const promotion = await this.createPromotion({
+        semester,
+        status,
+        studentIds: [studentId]
+      });
+      
+      // Create events linking courses to this promotion
+      for (const course of courses) {
+        await this.createPromotionEvent(promotion._id.toString(), course._id.toString());
       }
-
-      const enrollment = await this.createEnrollment(
-        studentId, 
-        courses[i]._id.toString(), 
-        progressOptions
-      );
-      enrollments.push(enrollment);
+      
+      promotions.push(promotion);
     }
 
-    return enrollments;
+    return promotions;
   }
 }
 
@@ -496,14 +531,14 @@ export class TestDataFactory {
   private testName: string;
   private userFactory: UserDataFactory;
   private courseFactory: CourseDataFactory;
-  private enrollmentFactory: EnrollmentDataFactory;
+  private promotionFactory: PromotionDataFactory;
   private submissionFactory: SubmissionDataFactory;
 
   constructor(testName: string) {
     this.testName = testName;
     this.userFactory = new UserDataFactory(testName);
     this.courseFactory = new CourseDataFactory(testName);
-    this.enrollmentFactory = new EnrollmentDataFactory(testName);
+    this.promotionFactory = new PromotionDataFactory(testName);
     this.submissionFactory = new SubmissionDataFactory(testName);
   }
 
@@ -519,7 +554,7 @@ export class TestDataFactory {
   // Expose individual factories
   get users() { return this.userFactory; }
   get courses() { return this.courseFactory; }
-  get enrollments() { return this.enrollmentFactory; }
+  get promotions() { return this.promotionFactory; }
   get submissions() { return this.submissionFactory; }
 
   /**

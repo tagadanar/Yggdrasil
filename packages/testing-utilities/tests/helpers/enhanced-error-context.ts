@@ -306,7 +306,15 @@ ${recommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\\n')}
    */
   private async saveErrorContext(report: string, testInfo: TestInfo): Promise<void> {
     try {
-      const outputPath = testInfo.outputPath('error-context.md');
+      // Check if testInfo.outputDir exists, if not skip saving to file
+      if (!testInfo.outputDir) {
+        console.warn('TestInfo.outputDir not available, skipping error context file save');
+        return;
+      }
+
+      // Use testInfo.outputDir combined with path joining for Playwright 1.40
+      const path = require('path');
+      const outputPath = path.join(testInfo.outputDir, 'error-context.md');
       await fs.promises.writeFile(outputPath, report, 'utf8');
 
       // Attach to test report

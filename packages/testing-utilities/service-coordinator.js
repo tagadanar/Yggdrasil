@@ -141,7 +141,6 @@ class ServiceCoordinator extends EventEmitter {
     this.state.unhealthyServices = [];
     this.state.lastHealthCheck = new Date().toISOString();
     this.emit('stateChanged');
-    console.log('✅ SERVICE COORDINATOR: All services marked as healthy');
   }
   
   /**

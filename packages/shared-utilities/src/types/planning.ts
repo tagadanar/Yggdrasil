@@ -9,7 +9,7 @@ export interface Event {
   title: string;
   description?: string;
   location?: string;
-  type: 'class' | 'exam' | 'meeting' | 'event';
+  type: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
   startDate: Date;
   endDate: Date;
   linkedCourse?: string; // Course ID
@@ -38,7 +38,7 @@ export interface Event {
 export interface EventListItem {
   _id: string;
   title: string;
-  type: 'class' | 'exam' | 'meeting' | 'event';
+  type: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
   startDate: Date;
   endDate: Date;
   location?: string;
@@ -55,7 +55,7 @@ export interface EventListItem {
 export interface GetEventsQueryType {
   startDate?: string;
   endDate?: string;
-  type?: 'class' | 'exam' | 'meeting' | 'event';
+  type?: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
   courseId?: string;
   location?: string;
   isPublic?: boolean;
@@ -66,7 +66,7 @@ export interface CreateEventType {
   title: string;
   description?: string;
   location?: string;
-  type: 'class' | 'exam' | 'meeting' | 'event';
+  type: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
   startDate: string | Date;
   endDate: string | Date;
   linkedCourse?: string;
@@ -86,7 +86,7 @@ export interface UpdateEventType {
   title?: string;
   description?: string;
   location?: string;
-  type?: 'class' | 'exam' | 'meeting' | 'event';
+  type?: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
   startDate?: string | Date;
   endDate?: string | Date;
   linkedCourse?: string;
@@ -107,7 +107,7 @@ export interface ExportCalendarType {
   format: 'ical' | 'csv';
   startDate: string;
   endDate: string;
-  eventType?: 'class' | 'exam' | 'meeting' | 'event';
+  eventType?: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
   includePrivate?: boolean;
 }
 
@@ -162,7 +162,7 @@ export interface CalendarEventType {
   borderColor?: string;
   backgroundColor?: string;
   extendedProps?: {
-    type: 'class' | 'exam' | 'meeting' | 'event';
+    type: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
     location?: string;
     description?: string;
     linkedCourse?: string;

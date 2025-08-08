@@ -34,8 +34,6 @@ interface Course {
   estimatedDuration: number;
   settings: {
     isPublic: boolean;
-    allowEnrollment: boolean;
-    requiresApproval: boolean;
     maxStudents?: number;
     startDate?: string;
     endDate?: string;
@@ -44,7 +42,7 @@ interface Course {
     enableCollaboration: boolean;
   };
   stats: {
-    enrolledStudents: number;
+    accessedStudents: number;
     completedStudents: number;
     averageProgress: number;
     averageRating?: number;
@@ -59,7 +57,7 @@ export default function CoursesPage() {
 
   const getTitleBasedOnRole = () => {
     if (user?.role === 'student') {
-      return 'My Enrollments';
+      return 'My Accessible Courses';
     } else if (user?.role === 'teacher') {
       return 'My Courses';
     } else if (user?.role === 'admin' || user?.role === 'staff') {
@@ -72,7 +70,7 @@ export default function CoursesPage() {
     if (user?.role === 'teacher' || user?.role === 'admin' || user?.role === 'staff') {
       return 'Create, manage, and track your educational courses';
     } else if (user?.role === 'student') {
-      return 'Explore and enroll in courses to advance your learning';
+      return 'Access courses through your promotion calendar';
     }
     return 'Course management and learning platform';
   };
@@ -156,7 +154,7 @@ export default function CoursesPage() {
   };
 
   return (
-    <ProtectedRoute allowedRoles={['teacher', 'staff', 'admin']}>
+    <ProtectedRoute allowedRoles={['student', 'teacher', 'staff', 'admin']}>
       <DashboardLayout>
         <div className="max-w-7xl mx-auto py-6">
           {viewMode === 'list' && (
