@@ -162,45 +162,63 @@ export class StatisticsController {
         return;
       }
 
-      // Get the student's enrollment and progress for this course
-      const { CourseEnrollmentModel } = require('@yggdrasil/database-schemas');
-      const enrollment = await CourseEnrollmentModel.findOne({
-        studentId: userId,
-        courseId: courseId,
-      }).populate('courseId', 'title chapters');
+      // Get the student's promotion-based progress for this course
+      const { PromotionProgressModel, UserModel, CourseModel } = require('@yggdrasil/database-schemas');
 
-      if (!enrollment) {
+      // Get the student's current promotion
+      const student = await UserModel.findById(userId);
+      if (!student?.currentPromotionId) {
         res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Enrollment not found'),
+          ResponseHelper.notFound('Student not enrolled in any promotion'),
         );
         return;
       }
 
-      // Transform enrollment data to match frontend expectations
+      // Get or create promotion progress
+      const promotionProgress = await PromotionProgressModel.findOrCreateForStudent(
+        student.currentPromotionId,
+        userId,
+      );
+
+      // Find course progress in the promotion
+      const courseProgress = promotionProgress.coursesProgress.find(
+        (cp: any) => cp.courseId.toString() === courseId,
+      );
+
+      // Get course details
+      const course = await CourseModel.findById(courseId);
+      if (!course) {
+        res.status(HTTP_STATUS.NOT_FOUND).json(
+          ResponseHelper.notFound('Course not found'),
+        );
+        return;
+      }
+
+      // Transform promotion progress data to match frontend expectations
       const progressData = {
         courseId,
-        courseTitle: enrollment.courseId.title,
-        enrollmentStatus: enrollment.status,
-        overallProgress: enrollment.progress?.overallProgress || 0,
-        timeSpent: enrollment.progress?.timeSpent || 0,
-        lastAccessedAt: enrollment.progress?.lastAccessedAt || enrollment.enrolledAt,
-        completedSections: enrollment.progress?.completedSections || [],
-        completedExercises: enrollment.progress?.completedExercises || [],
-        chapters: enrollment.courseId.chapters?.map((chapter: any) => ({
+        courseTitle: course.title,
+        enrollmentStatus: courseProgress ? 'active' : 'not_started',
+        overallProgress: courseProgress?.progressPercentage || 0,
+        timeSpent: 0, // Not tracked in promotion system yet
+        lastAccessedAt: courseProgress?.lastActivityAt || new Date(),
+        completedSections: [], // Will need to track this separately if needed
+        completedExercises: [], // Will need to track this separately if needed
+        chapters: course.chapters?.map((chapter: any) => ({
           id: chapter._id,
           title: chapter.title,
-          isCompleted: false, // Calculate based on progress
+          isCompleted: courseProgress
+            ? (courseProgress.chaptersCompleted / courseProgress.totalChapters) * 100 >= 100
+            : false,
           sections: chapter.sections?.map((section: any) => ({
             id: section._id,
             title: section.title,
-            isCompleted: enrollment.progress?.completedSections?.includes(section._id.toString()) || false,
+            isCompleted: false, // Would need more granular tracking
             items: section.content?.map((content: any) => ({
               id: content._id,
               title: content.title || `${content.type} content`,
               type: content.type,
-              isCompleted: content.type === 'exercise'
-                ? enrollment.progress?.completedExercises?.includes(content._id.toString()) || false
-                : enrollment.progress?.completedSections?.includes(section._id.toString()) || false,
+              isCompleted: false, // Would need more granular tracking
               isOptional: false,
               estimatedMinutes: content.type === 'video' ? 15 : content.type === 'exercise' ? 30 : 10,
             })) || [],

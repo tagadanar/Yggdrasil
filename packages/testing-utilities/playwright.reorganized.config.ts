@@ -1,4 +1,4 @@
-// packages/testing-utilities/playwright.reorganized.config.ts  
+// packages/testing-utilities/playwright.reorganized.config.ts
 // Playwright configuration optimized for priority-ordered test structure
 // 🎯 PRODUCTION-READY: Uses 10 priority-ordered test suites, Auth-Security runs FIRST
 
@@ -23,17 +23,17 @@ try {
     (console as any).setMaxListeners = function(_n: number) { return this; };
     (console as any).setMaxListeners(100);
   }
-  
+
   if ((console as any)._stdout && typeof (console as any)._stdout.setMaxListeners === 'function') {
     (console as any)._stdout.setMaxListeners(100);
   }
   if ((console as any)._stderr && typeof (console as any)._stderr.setMaxListeners === 'function') {
     (console as any)._stderr.setMaxListeners(100);
   }
-  
+
   const originalEmit = process.emit;
   (process as any).emit = function(event: string, ...args: any[]): boolean {
-    if (event === 'warning' && args[0] && args[0].name === 'MaxListenersExceededWarning' && 
+    if (event === 'warning' && args[0] && args[0].name === 'MaxListenersExceededWarning' &&
         args[0].message && args[0].message.includes('Console')) {
       return false;
     }
@@ -46,37 +46,37 @@ try {
 export default defineConfig({
   // 🎯 PRIORITY-ORDERED STRUCTURE: Point to priority-ordered tests only
   testDir: './tests/reorganized',
-  
+
   // 🚀 PERFORMANCE: Optimized for 10 priority-ordered suites instead of 26 files
   fullyParallel: false, // Clean architecture requires sequential execution
   forbidOnly: !!process.env['CI'],
-  retries: process.env['CI'] ? 1 : 0,
+  retries: process.env['CI'] ? 2 : 0, // More retries in CI, none locally for speed
   workers: 1, // Clean architecture uses single worker with service management
-  
-  // ⏱️ TIMEOUTS: Optimized for priority-ordered structure
-  timeout: 60000, // 1 minute per test (priority-ordered tests are more focused)
-  expect: { timeout: 10000 }, // 10 seconds for assertions
-  
+
+  // ⏱️ TIMEOUTS: Optimized for faster execution
+  timeout: 45000, // 45 seconds per test (reduced from 60s)
+  expect: { timeout: 8000 }, // 8 seconds for assertions (reduced from 10s)
+
   // 📊 REPORTING: Enhanced for production readiness
   reporter: [
     ['line'],
     ['html', { outputFolder: 'test-results-reorganized' }],
-    ['json', { outputFile: 'test-results-reorganized.json' }]
+    ['json', { outputFile: 'test-results-reorganized.json' }],
   ],
-  
+
   // 📁 OUTPUT: Separate results for reorganized tests
   outputDir: 'test-results-reorganized/',
-  
+
   use: {
     // 🔧 CLEAN ARCHITECTURE: Optimized settings
     baseURL: 'http://localhost:3000',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    
-    // 🎯 PERFORMANCE: Reduced overhead for reorganized structure
-    actionTimeout: 15000,
-    navigationTimeout: 30000,
+
+    // 🎯 PERFORMANCE: Optimized timeouts for faster test execution
+    actionTimeout: 12000, // Reduced from 15s
+    navigationTimeout: 20000, // Reduced from 30s
   },
 
   // 🏗️ PROJECT CONFIGURATION: Optimized for reorganized structure
@@ -84,44 +84,44 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      
+
       // 🎯 PRIORITY-ORDERED TEST PATTERN: Run suites in critical-first order
       testMatch: [
         // 🚨 CRITICAL FIRST: Authentication foundation (must run first)
         '**/reorganized/01-auth-security/**/*.spec.ts',
-        
+
         // 🏗️ HIGH PRIORITY: Core business logic (builds on auth)
         '**/reorganized/02-user-management/**/*.spec.ts',
-        '**/reorganized/03-course-learning/**/*.spec.ts', 
+        '**/reorganized/03-course-learning/**/*.spec.ts',
         '**/reorganized/04-instructor-operations/**/*.spec.ts',
-        
+
         // 📋 MEDIUM PRIORITY: Supporting features
         '**/reorganized/05-content-management/**/*.spec.ts',
         '**/reorganized/06-platform-core/**/*.spec.ts',
-        
-        // 📊 ANALYTICS: System validation and monitoring  
+
+        // 📊 ANALYTICS: System validation and monitoring
         '**/reorganized/07-access-analytics/**/*.spec.ts',
-        
+
         // 🔄 CRITICAL LAST: Full end-to-end integration (runs last)
         '**/reorganized/08-system-integration/**/*.spec.ts',
-      ]
+      ],
     },
   ],
 
   // 🔧 GLOBAL SETUP: Clean architecture with service management
   globalSetup: require.resolve('./tests/enhanced-global-setup'),
   globalTeardown: require.resolve('./tests/enhanced-global-teardown'),
-  
+
   // 📊 WEB SERVER: Managed by global setup (clean architecture)
   // webServer configuration handled by global setup for proper service coordination
 });
 
 // 📝 CONFIGURATION NOTES:
-// 
+//
 // ✅ BENEFITS OF PRIORITY-ORDERED STRUCTURE:
 // - 🚨 Auth-Security runs FIRST (most critical foundation)
 // - 📊 Logical execution order: Auth → Users → Business Logic → Supporting → Analytics → Integration
-// - 62% fewer test files (26 → 10) 
+// - 62% fewer test files (26 → 10)
 // - 62% fewer service initializations
 // - Clear priority hierarchy in directory names (01-08)
 // - Simplified maintenance with proven patterns
@@ -129,7 +129,7 @@ export default defineConfig({
 // 🎯 EXECUTION ORDER:
 // 01-auth-security      → Authentication foundation (CRITICAL FIRST)
 // 02-user-management    → User operations (builds on auth)
-// 03-course-learning    → Educational content workflows  
+// 03-course-learning    → Educational content workflows
 // 04-instructor-operations → Teaching workflows
 // 05-content-management → Content lifecycle
 // 06-platform-core     → UI/UX and platform features

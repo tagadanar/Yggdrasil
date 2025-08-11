@@ -23,7 +23,6 @@ export const CreateCourseSchema = z.object({
   estimatedDuration: z.number().min(1).max(50000).optional(), // in minutes
   settings: z.object({
     isPublic: z.boolean().optional(),
-    allowEnrollment: z.boolean().optional(),
     requiresApproval: z.boolean().optional(),
     maxStudents: z.number().min(1).max(10000).optional(),
     startDate: z.string().datetime().optional(),
@@ -57,7 +56,6 @@ export const UpdateCourseSchema = z.object({
   estimatedDuration: z.number().min(1).max(50000).optional(),
   settings: z.object({
     isPublic: z.boolean().optional(),
-    allowEnrollment: z.boolean().optional(),
     requiresApproval: z.boolean().optional(),
     maxStudents: z.number().min(1).max(10000).optional(),
     startDate: z.string().datetime().optional(),

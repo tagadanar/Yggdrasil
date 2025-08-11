@@ -9,7 +9,7 @@ import { promotionApi, getSemesterName, getSemesterColor, getStatusColor } from 
 import { PromotionWithDetails } from '@yggdrasil/shared-utilities';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { 
+import {
   ArrowLeftIcon,
   PencilIcon,
   UserGroupIcon,
@@ -23,7 +23,9 @@ import {
   InformationCircleIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
+import { PromotionProgressModal } from './PromotionProgressModal';
 
 interface PromotionDetailProps {
   promotionId: string;
@@ -41,6 +43,7 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'events' | 'calendar'>('overview');
+  const [showProgressModal, setShowProgressModal] = useState(false);
 
   useEffect(() => {
     loadPromotion();
@@ -75,7 +78,7 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({
 
     try {
       const response = await promotionApi.removeStudentFromPromotion(promotion._id, studentId);
-      
+
       if (response.success) {
         // Reload promotion to get updated data
         await loadPromotion();
@@ -97,7 +100,7 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({
 
     try {
       const response = await promotionApi.unlinkEventFromPromotion(promotion._id, eventId);
-      
+
       if (response.success) {
         // Reload promotion to get updated data
         await loadPromotion();
@@ -189,15 +192,25 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({
           </div>
         </div>
 
-        {canManage && onEdit && (
+        <div className="flex items-center gap-3">
           <Button
-            onClick={() => onEdit(promotion)}
-            variant="primary"
-            icon={<PencilIcon className="w-5 h-5" />}
+            onClick={() => setShowProgressModal(true)}
+            variant="secondary"
+            icon={<ChartBarIcon className="w-5 h-5" />}
+            data-testid="view-progress"
           >
-            Edit Promotion
+            View Progress
           </Button>
-        )}
+          {canManage && onEdit && (
+            <Button
+              onClick={() => onEdit(promotion)}
+              variant="primary"
+              icon={<PencilIcon className="w-5 h-5" />}
+            >
+              Edit Promotion
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -522,6 +535,16 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({
           </div>
         )}
       </div>
+
+      {/* Progress Modal */}
+      {promotion && (
+        <PromotionProgressModal
+          promotionId={promotion._id}
+          promotionName={promotion.name}
+          isOpen={showProgressModal}
+          onClose={() => setShowProgressModal(false)}
+        />
+      )}
     </div>
   );
 };

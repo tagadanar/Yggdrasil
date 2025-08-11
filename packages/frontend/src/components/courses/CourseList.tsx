@@ -58,7 +58,7 @@ export const CourseList: React.FC<CourseListProps> = ({
   showCreateButton = true,
   onCourseCreate,
   onCourseEdit,
-  onCourseView
+  onCourseView,
 }) => {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -81,7 +81,7 @@ export const CourseList: React.FC<CourseListProps> = ({
       setError(null);
 
       let response;
-      
+
       if (viewMode === 'my-courses' && user) {
         response = await courseApi.getMyCourses();
       } else if (viewMode === 'published') {
@@ -92,13 +92,13 @@ export const CourseList: React.FC<CourseListProps> = ({
           search: searchQuery || undefined,
           category: selectedCategory || undefined,
           level: selectedLevel || undefined,
-          limit: 50
+          limit: 50,
         });
       }
 
       if (response.success) {
-        const coursesData = viewMode === 'all' && response.data.courses 
-          ? response.data.courses 
+        const coursesData = viewMode === 'all' && response.data.courses
+          ? response.data.courses
           : response.data;
         setCourses(Array.isArray(coursesData) ? coursesData : []);
       } else {
@@ -148,7 +148,7 @@ export const CourseList: React.FC<CourseListProps> = ({
   const canManageCourse = (course: Course) => {
     if (!user) return false;
     return (
-      user.role === 'admin' || 
+      user.role === 'admin' ||
       course.instructor._id === (user as SharedUser)._id ||
       user.role === 'staff'
     );
@@ -182,7 +182,7 @@ export const CourseList: React.FC<CourseListProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="course-list">
       {/* Header with view mode selector */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex space-x-4">
@@ -291,7 +291,7 @@ export const CourseList: React.FC<CourseListProps> = ({
       {courses.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-gray-500 text-lg">
-            {viewMode === 'my-courses' 
+            {viewMode === 'my-courses'
               ? (user?.role === 'student' ? 'No accessible courses yet.' : 'No courses created yet.')
               : 'No courses found.'
             }
@@ -308,7 +308,7 @@ export const CourseList: React.FC<CourseListProps> = ({
             <div
               key={course._id}
               className="bg-white rounded-lg border hover:shadow-lg transition-shadow duration-200"
-              data-testid="course-card"
+              data-testid={`course-card-${course._id}`}
             >
               {/* Course thumbnail */}
               <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
@@ -385,12 +385,12 @@ export const CourseList: React.FC<CourseListProps> = ({
                     <button
                       onClick={() => onCourseView?.(course)}
                       className="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700"
-                      data-testid="view-course-btn"
+                      data-testid={`view-course-${course._id}`}
                     >
                       View Course
                     </button>
                   )}
-                  
+
                   {canManageCourse(course) && (
                     <>
                       <button
@@ -412,12 +412,12 @@ export const CourseList: React.FC<CourseListProps> = ({
                       </button>
                     </>
                   )}
-                  
+
                   {!canManageCourse(course) && user?.role !== 'student' && (
                     <button
                       onClick={() => onCourseView?.(course)}
                       className="bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm hover:bg-gray-200"
-                      data-testid="view-course-btn"
+                      data-testid={`view-course-${course._id}`}
                     >
                       View
                     </button>

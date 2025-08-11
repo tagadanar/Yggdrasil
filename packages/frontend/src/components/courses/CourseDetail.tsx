@@ -10,6 +10,7 @@ import { StatisticsApi } from '@/lib/api/statistics';
 import { User as SharedUser } from '@yggdrasil/shared-utilities/client';
 import { ExerciseSubmission } from './ExerciseSubmission';
 import { ProgressTracker } from '../progress/ProgressTracker';
+import { CourseContentEditor } from './CourseContentEditor';
 
 interface Course {
   _id: string;
@@ -109,7 +110,7 @@ interface CourseDetailProps {
 export const CourseDetail: React.FC<CourseDetailProps> = ({
   courseId,
   onEdit,
-  onBack
+  onBack,
 }) => {
   const { user } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
@@ -122,6 +123,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
   const [viewMode, setViewMode] = useState<'course' | 'exercise'>('course');
   const [hasAccess, setHasAccess] = useState(false);
   const [progressData, setProgressData] = useState<any>(null);
+  const [isEditingContent, setIsEditingContent] = useState(false);
 
   useEffect(() => {
     loadCourse();
@@ -155,21 +157,21 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
     try {
       // Call real statistics service API to get student course progress
       const response = await StatisticsApi.getStudentCourseProgress(user._id, courseId);
-      
+
       if (response.success && response.data) {
         setHasAccess(response.data.accessStatus === 'active' || response.data.accessStatus === 'completed');
-        
+
         // Calculate estimated time remaining based on progress
         const remainingProgress = 100 - response.data.overallProgress;
         const estimatedTimeRemaining = Math.round((course?.estimatedDuration || 60) * (remainingProgress / 100));
-        
+
         const progressData = {
           overallProgress: response.data.overallProgress,
           timeSpent: response.data.timeSpent,
           estimatedTimeRemaining,
-          chapters: response.data.chapters
+          chapters: response.data.chapters,
         };
-        
+
         setProgressData(progressData);
       } else {
         // If no progress data found, user might not have access
@@ -185,7 +187,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
   const canManageCourse = () => {
     if (!user || !course) return false;
     return (
-      user.role === 'admin' || 
+      user.role === 'admin' ||
       course.instructor._id === (user as SharedUser)._id ||
       user.role === 'staff' ||
       course.collaborators.some(collab => collab._id === (user as SharedUser)._id)
@@ -261,7 +263,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
         difficulty: content.data?.exercise?.difficulty || 'medium',
         programmingLanguage: content.data?.exercise?.programmingLanguage,
         maxAttempts: content.data?.exercise?.maxAttempts,
-        timeLimit: content.data?.exercise?.timeLimit
+        timeLimit: content.data?.exercise?.timeLimit,
       };
       setSelectedExercise(exercise);
       setViewMode('exercise');
@@ -275,6 +277,25 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
   const handleBackFromExercise = () => {
     setSelectedExercise(null);
     setViewMode('course');
+  };
+
+  const handleContentUpdate = async (updatedChapters: any[]) => {
+    if (!course) return;
+
+    try {
+      // Update the local state immediately for better UX
+      setCourse({ ...course, chapters: updatedChapters });
+
+      // Here you would typically save to the backend
+      // const response = await courseApi.updateCourseContent(courseId, { chapters: updatedChapters });
+      // if (!response.success) {
+      //   throw new Error(response.error);
+      // }
+    } catch (error) {
+      console.error('Error updating course content:', error);
+      // Revert local changes if backend save fails
+      loadCourse();
+    }
   };
 
   if (loading) {
@@ -313,7 +334,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6" data-testid="course-detail">
       {/* Header */}
       <div className="bg-white rounded-lg border p-6">
         <div className="flex items-start justify-between mb-4">
@@ -328,13 +349,13 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                 </button>
               )}
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="course-title">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="course-detail-title">
               {course.title}
             </h1>
             <p className="text-gray-600 mb-4" data-testid="course-description">
               {course.description}
             </p>
-            
+
             <div className="flex flex-wrap items-center gap-4">
               <span className={`px-3 py-1 text-sm font-medium rounded-full ${getLevelBadgeColor(course.level)}`}>
                 {course.level}
@@ -357,7 +378,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
               )}
             </div>
           </div>
-          
+
           <div className="flex space-x-2">
             {user?.role === 'student' && !hasAccess && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-2 text-sm text-yellow-800">
@@ -392,7 +413,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
               </div>
             </div>
           )}
-          
+
           {course.prerequisites.length > 0 && (
             <div>
               <span className="text-sm font-medium text-gray-700 mr-2">Prerequisites:</span>
@@ -515,14 +536,32 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
           {/* Content Tab */}
           {activeTab === 'content' && (
             <div className="space-y-4" data-testid="course-chapters">
-              <h3 className="text-lg font-semibold text-gray-900">Course Content</h3>
-              
-              {course.chapters.length === 0 ? (
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Course Content</h3>
+                {canManageCourse() && (
+                  <button
+                    onClick={() => setIsEditingContent(!isEditingContent)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
+                    data-testid="edit-content-btn"
+                  >
+                    {isEditingContent ? 'View Mode' : 'Edit Content'}
+                  </button>
+                )}
+              </div>
+
+              {isEditingContent && canManageCourse() ? (
+                <CourseContentEditor
+                  courseId={courseId}
+                  chapters={course.chapters}
+                  onContentUpdate={handleContentUpdate}
+                  canEdit={canManageCourse()}
+                />
+              ) : course.chapters.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="text-gray-500">No chapters added yet.</div>
                   {canManageCourse() && (
                     <button
-                      onClick={onEdit}
+                      onClick={() => setIsEditingContent(true)}
                       className="mt-2 text-blue-600 hover:text-blue-800"
                       data-testid="add-chapter-btn"
                     >
@@ -562,13 +601,13 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                             </span>
                           </div>
                         </button>
-                        
+
                         {expandedChapters.has(chapter._id) && (
                           <div className="px-4 pb-3 border-t bg-gray-50">
                             {chapter.description && (
                               <p className="text-sm text-gray-600 mb-3 pt-3">{chapter.description}</p>
                             )}
-                            
+
                             {chapter.sections.length === 0 ? (
                               <div className="py-4 text-center text-gray-500 text-sm">
                                 No sections in this chapter yet.
@@ -605,13 +644,13 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                                           </span>
                                         </div>
                                       </button>
-                                      
+
                                       {expandedSections.has(section._id) && (
                                         <div className="px-3 pb-2 border-t bg-gray-50">
                                           {section.description && (
                                             <p className="text-xs text-gray-600 mb-2 pt-2">{section.description}</p>
                                           )}
-                                          
+
                                           {section.content.length === 0 ? (
                                             <div className="py-2 text-center text-gray-500 text-xs">
                                               No content in this section yet.
@@ -624,8 +663,8 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                                                   <div
                                                     key={content._id}
                                                     className={`flex items-center justify-between py-1 ${
-                                                      content.type === 'exercise' && user?.role === 'student' 
-                                                        ? 'cursor-pointer hover:bg-gray-50 rounded px-2 -mx-2' 
+                                                      content.type === 'exercise' && user?.role === 'student'
+                                                        ? 'cursor-pointer hover:bg-gray-50 rounded px-2 -mx-2'
                                                         : ''
                                                     }`}
                                                     onClick={() => handleContentClick(content)}
@@ -678,7 +717,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
           {activeTab === 'resources' && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">Course Resources</h3>
-              
+
               {course.resources.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="text-gray-500">No resources added yet.</div>
@@ -723,7 +762,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
           {activeTab === 'analytics' && canManageCourse() && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Course Analytics</h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">{course.stats.activeStudents}</div>
@@ -742,7 +781,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                   <div className="text-sm text-purple-600">Total Views</div>
                 </div>
               </div>
-              
+
               {course.stats.averageRating && (
                 <div className="bg-white border rounded-lg p-4">
                   <div className="text-lg font-medium text-gray-900 mb-2">Course Rating</div>
@@ -772,7 +811,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                 estimatedTimeRemaining={progressData.estimatedTimeRemaining}
                 onItemClick={async (itemId, itemType) => {
                   // Handle item click - mark progress and navigate
-                  
+
                   if (user?._id) {
                     try {
                       // Mark progress based on item type
@@ -784,7 +823,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                         // For other content types, mark section as completed
                         await StatisticsApi.markSectionComplete(user._id, courseId, itemId);
                       }
-                      
+
                       // Reload progress data to reflect changes
                       loadProgressData();
                     } catch (error) {

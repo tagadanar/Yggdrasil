@@ -22,7 +22,7 @@ import { ProgressTrackingService } from './ProgressTrackingService';
 
 export class PromotionService {
   private progressService: ProgressTrackingService;
-  
+
   constructor() {
     this.progressService = new ProgressTrackingService();
   }
@@ -197,7 +197,7 @@ export class PromotionService {
 
       if (existingPromotions.length > 0) {
         const conflictingStudents = studentIds.filter(id =>
-          existingPromotions.some(p => p.studentIds.some(sid => sid.toString() === id))
+          existingPromotions.some(p => p.studentIds.some(sid => sid.toString() === id)),
         );
         throw new Error(`Students already in other promotions: ${conflictingStudents.join(', ')}`);
       }
@@ -213,14 +213,14 @@ export class PromotionService {
       // Update students' currentPromotionId
       await UserModel.updateMany(
         { _id: { $in: studentIds } },
-        { 
+        {
           $set: { currentPromotionId: promotion._id },
-          $push: { 
+          $push: {
             promotionHistory: {
               promotionId: promotion._id,
               joinedAt: new Date(),
-            }
-          }
+            },
+          },
         },
       );
 
@@ -256,21 +256,21 @@ export class PromotionService {
       // Update student's promotion references
       await UserModel.updateOne(
         { _id: studentId },
-        { 
+        {
           $unset: { currentPromotionId: 1 },
           $set: {
             'promotionHistory.$[elem].leftAt': new Date(),
-          }
+          },
         },
         {
           arrayFilters: [{ 'elem.promotionId': promotion._id, 'elem.leftAt': { $exists: false } }],
-        }
+        },
       );
 
       logger.info(`Removed student ${studentId} from promotion ${promotionId}`);
       return promotion;
     } catch (error: any) {
-      logger.error(`Failed to remove student from promotion:`, error);
+      logger.error('Failed to remove student from promotion:', error);
       throw new Error(`Failed to remove student: ${error.message}`);
     }
   }
@@ -310,7 +310,7 @@ export class PromotionService {
       logger.info(`Linked ${eventIds.length} events to promotion ${promotionId}`);
       return promotion;
     } catch (error: any) {
-      logger.error(`Failed to link events to promotion:`, error);
+      logger.error('Failed to link events to promotion:', error);
       throw new Error(`Failed to link events: ${error.message}`);
     }
   }
@@ -337,7 +337,7 @@ export class PromotionService {
       logger.info(`Unlinked event ${eventId} from promotion ${promotionId}`);
       return promotion;
     } catch (error: any) {
-      logger.error(`Failed to unlink event from promotion:`, error);
+      logger.error('Failed to unlink event from promotion:', error);
       throw new Error(`Failed to unlink event: ${error.message}`);
     }
   }
@@ -366,9 +366,16 @@ export class PromotionService {
   async getStudentPromotion(studentId: string): Promise<PromotionDocument | null> {
     try {
       const objectId = new mongoose.Types.ObjectId(studentId);
-      return await PromotionModel.findByStudent(objectId);
+
+      // Find promotion that contains this student
+      const promotion = await PromotionModel.findOne({
+        studentIds: objectId,
+      });
+
+      return promotion;
     } catch (error: any) {
-      logger.error(`Failed to get student promotion:`, error);
+      console.error('❌ PROMOTION SERVICE ERROR:', error);
+      logger.error('Failed to get student promotion:', error);
       throw new Error(`Failed to get student promotion: ${error.message}`);
     }
   }
@@ -376,56 +383,79 @@ export class PromotionService {
   async getStudentPromotionView(studentId: string): Promise<StudentPromotionView | null> {
     try {
       const promotion = await this.getStudentPromotion(studentId);
-      if (!promotion) return null;
+      if (!promotion) {
+        return null;
+      }
 
-      // Get upcoming events for the promotion
-      const upcomingEvents = await EventModel.find({
+      // Get ALL events for the promotion (not just upcoming)
+      // This is needed for /my-courses page to show all accessible courses
+      const allEvents = await EventModel.find({
         _id: { $in: promotion.eventIds },
-        startDate: { $gte: new Date() },
       })
-        .populate('linkedCourse', '_id title slug')
-        .populate('teacherId', '_id profile.firstName profile.lastName')
+        .populate({
+          path: 'linkedCourse',
+          select: '_id title slug description category level estimatedDuration thumbnail',
+          populate: {
+            path: 'instructor',
+            select: '_id email profile.firstName profile.lastName',
+          },
+        })
         .sort({ startDate: 1 })
-        .limit(10)
         .lean();
+
+      // Also get upcoming events separately for the progress view
+      const upcomingEvents = allEvents.filter(e => e.startDate >= new Date()).slice(0, 10);
 
       // Get real progress data
       const studentProgress = await this.progressService.getStudentProgress(
-        studentId, 
-        promotion._id.toString()
+        studentId,
+        promotion._id.toString(),
       );
-      
+
       const progress: MembershipProgress = {
         eventsAttended: [], // Placeholder - would need event IDs from attendance
         coursesCompleted: studentProgress.coursesCompleted,
         overallProgress: studentProgress.overallProgress,
       };
 
+      // Format events with full course details for /my-courses page
+      const formatEvent = (e: any) => ({
+        _id: e._id.toString(),
+        title: e.title,
+        type: e.type,
+        startDate: e.startDate,
+        endDate: e.endDate,
+        linkedCourse: e.linkedCourse ? {
+          _id: (e.linkedCourse as any)._id.toString(),
+          title: (e.linkedCourse as any).title,
+          slug: (e.linkedCourse as any).slug,
+          description: (e.linkedCourse as any).description,
+          category: (e.linkedCourse as any).category,
+          level: (e.linkedCourse as any).level,
+          instructor: {
+            _id: (e.linkedCourse as any).instructor?._id?.toString() || 'unknown',
+            name: (e.linkedCourse as any).instructor?.email || 'Unknown Instructor',
+            email: (e.linkedCourse as any).instructor?.email || 'unknown@example.com',
+          },
+          estimatedDuration: (e.linkedCourse as any).estimatedDuration,
+          thumbnail: (e.linkedCourse as any).thumbnail,
+        } : undefined,
+        teacher: undefined, // Simplified for now
+      });
+
       return {
         promotion: {
           ...promotion.toJSON(),
           _id: promotion._id.toString(),
         },
-        upcomingEvents: upcomingEvents.map(e => ({
-          _id: e._id.toString(),
-          title: e.title,
-          type: e.type,
-          startDate: e.startDate,
-          endDate: e.endDate,
-          linkedCourse: e.linkedCourse ? {
-            _id: (e.linkedCourse as any)._id.toString(),
-            title: (e.linkedCourse as any).title,
-            slug: (e.linkedCourse as any).slug,
-          } : undefined,
-          teacher: e.teacherId ? {
-            _id: (e.teacherId as any)._id.toString(),
-            name: `${(e.teacherId as any).profile.firstName} ${(e.teacherId as any).profile.lastName}`,
-          } : undefined,
-        })),
+        // Include ALL events for /my-courses page to extract courses
+        events: allEvents.map(formatEvent),
+        // Keep upcomingEvents for backward compatibility
+        upcomingEvents: upcomingEvents.map(formatEvent),
         progress,
       };
     } catch (error: any) {
-      logger.error(`Failed to get student promotion view:`, error);
+      logger.error('Failed to get student promotion view:', error);
       throw new Error(`Failed to get student promotion view: ${error.message}`);
     }
   }
@@ -452,7 +482,7 @@ export class PromotionService {
       // Calculate next semester
       const nextSemester = PromotionModel.getNextSemester(currentPromotion.semester);
       const nextIntake = nextSemester % 2 === 1 ? 'september' : 'march';
-      
+
       // Calculate next academic year
       let nextAcademicYear = currentPromotion.academicYear;
       if (currentPromotion.intake === 'march' && nextIntake === 'september') {
@@ -462,7 +492,7 @@ export class PromotionService {
       }
 
       // Find or create next semester promotion
-      let nextPromotion = await PromotionModel.findOne({
+      const nextPromotion = await PromotionModel.findOne({
         semester: nextSemester,
         intake: nextIntake,
         academicYear: nextAcademicYear,
@@ -482,7 +512,7 @@ export class PromotionService {
       logger.info(`Progressed student ${studentId} from semester ${currentPromotion.semester} to ${nextSemester}`);
       return nextPromotion;
     } catch (error: any) {
-      logger.error(`Failed to progress student:`, error);
+      logger.error('Failed to progress student:', error);
       throw new Error(`Failed to progress student: ${error.message}`);
     }
   }

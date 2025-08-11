@@ -18,14 +18,14 @@ router.use(AuthMiddleware.verifyTokenWithUserLookup(async (id) => UserModel.find
 // POST /api/progress/events/:eventId/attendance - Mark single student attendance
 router.post(
   '/events/:eventId/attendance',
-  AuthMiddleware.requireRole(['teacher', 'admin', 'staff']),
+  AuthMiddleware.requireRole('teacher', 'admin', 'staff'),
   ProgressController.markAttendance,
 );
 
 // POST /api/progress/events/:eventId/attendance/bulk - Bulk mark attendance
 router.post(
   '/events/:eventId/attendance/bulk',
-  AuthMiddleware.requireRole(['teacher', 'admin', 'staff']),
+  AuthMiddleware.requireRole('teacher', 'admin', 'staff'),
   ProgressController.bulkMarkAttendance,
 );
 
@@ -52,21 +52,21 @@ router.get('/students/:studentId', ProgressController.getStudentProgress);
 // GET /api/progress/promotions/:promotionId - Get all students' progress in promotion
 router.get(
   '/promotions/:promotionId',
-  AuthMiddleware.requireRole(['teacher', 'admin', 'staff']),
+  AuthMiddleware.requireRole('teacher', 'admin', 'staff'),
   ProgressController.getPromotionProgress,
 );
 
 // PUT /api/progress/course - Update course progress
 router.put(
   '/course',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   ProgressController.updateCourseProgress,
 );
 
 // POST /api/progress/course/complete - Mark course as completed
 router.post(
   '/course/complete',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   ProgressController.markCourseCompleted,
 );
 
@@ -77,7 +77,7 @@ router.post(
 // GET /api/progress/promotions/:promotionId/statistics - Get promotion statistics
 router.get(
   '/promotions/:promotionId/statistics',
-  AuthMiddleware.requireRole(['teacher', 'admin', 'staff']),
+  AuthMiddleware.requireRole('teacher', 'admin', 'staff'),
   ProgressController.getPromotionStatistics,
 );
 
@@ -87,14 +87,14 @@ router.get('/promotions/:promotionId/top-performers', ProgressController.getTopP
 // GET /api/progress/promotions/:promotionId/at-risk - Get at-risk students
 router.get(
   '/promotions/:promotionId/at-risk',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   ProgressController.getAtRiskStudents,
 );
 
 // GET /api/progress/promotions/:promotionId/report - Generate progress report
 router.get(
   '/promotions/:promotionId/report',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   ProgressController.generateProgressReport,
 );
 

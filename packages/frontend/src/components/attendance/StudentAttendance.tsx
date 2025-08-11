@@ -6,17 +6,17 @@
 import React, { useState, useEffect } from 'react';
 import { progressApi } from '@/lib/api/progress';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { 
-  CalendarDaysIcon, 
+import {
+  CalendarDaysIcon,
   CheckCircleIcon,
   XCircleIcon,
   ExclamationTriangleIcon,
   ClockIcon,
   ChartBarIcon,
   InformationCircleIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
-  EyeIcon
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid, XCircleIcon as XCircleSolid } from '@heroicons/react/24/solid';
 
@@ -59,7 +59,7 @@ interface StudentAttendanceProps {
 export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
   promotionId,
   showSummary = true,
-  maxRecords = 50
+  maxRecords = 50,
 }) => {
   const { user } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -84,7 +84,7 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
 
       // Load student's attendance records
       const response = await progressApi.getStudentAttendance(user.id, promotionId);
-      
+
       if (response.success && response.data) {
         const attendanceRecords = response.data.slice(0, maxRecords);
         setAttendance(attendanceRecords);
@@ -108,7 +108,7 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
 
     // Calculate streaks
     const { longestStreak, currentStreak } = calculateStreaks(records);
-    
+
     // Calculate consecutive absences
     let consecutiveAbsences = 0;
     for (let i = records.length - 1; i >= 0; i--) {
@@ -122,12 +122,12 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
     // Calculate trend (simplified - compare first half vs second half)
     const firstHalf = records.slice(0, Math.floor(total / 2));
     const secondHalf = records.slice(Math.floor(total / 2));
-    
+
     let trend: 'improving' | 'declining' | 'stable' = 'stable';
     if (firstHalf.length > 0 && secondHalf.length > 0) {
       const firstHalfRate = (firstHalf.filter(r => r.attended).length / firstHalf.length) * 100;
       const secondHalfRate = (secondHalf.filter(r => r.attended).length / secondHalf.length) * 100;
-      
+
       if (secondHalfRate > firstHalfRate + 10) {
         trend = 'improving';
       } else if (secondHalfRate < firstHalfRate - 10) {
@@ -142,7 +142,7 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
       recentTrend: trend,
       consecutiveAbsences,
       longestStreak,
-      currentStreak
+      currentStreak,
     };
   };
 
@@ -183,8 +183,8 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
-      case 'improving': return <TrendingUpIcon className="h-4 w-4 text-green-500" />;
-      case 'declining': return <TrendingDownIcon className="h-4 w-4 text-red-500" />;
+      case 'improving': return <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />;
+      case 'declining': return <ArrowTrendingDownIcon className="h-4 w-4 text-red-500" />;
       default: return <ClockIcon className="h-4 w-4 text-gray-500" />;
     }
   };
@@ -194,14 +194,14 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
       weekday: 'short',
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -295,7 +295,7 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
 
           <div className="bg-white rounded-lg border p-4">
             <div className="flex items-center">
-              <TrendingUpIcon className="h-8 w-8 text-blue-600" />
+              <ArrowTrendingUpIcon className="h-8 w-8 text-blue-600" />
               <div className="ml-3">
                 <div className="text-2xl font-bold text-gray-900">{summary.longestStreak}</div>
                 <div className="text-sm text-gray-600">Longest Streak</div>
@@ -392,7 +392,7 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-3">
                     <div className="text-right">
                       <div className={`text-sm font-medium ${
@@ -406,7 +406,7 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
                         </div>
                       )}
                     </div>
-                    
+
                     {(record.notes || record.markedBy) && (
                       <button
                         onClick={() => setSelectedRecord(record)}
@@ -424,7 +424,7 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
               <CalendarDaysIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
               <div className="font-medium mb-2">No attendance records found</div>
               <div className="text-sm">
-                {filter === 'all' 
+                {filter === 'all'
                   ? 'You don\'t have any event attendance records yet.'
                   : `No ${filter} attendance records found.`
                 }
@@ -447,27 +447,27 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
                 <XCircleIcon className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="space-y-3">
               <div>
                 <div className="text-sm font-medium text-gray-700">Event</div>
                 <div className="text-gray-900">{selectedRecord.eventId.title}</div>
               </div>
-              
+
               <div>
                 <div className="text-sm font-medium text-gray-700">Status</div>
                 <div className={`font-medium ${selectedRecord.attended ? 'text-green-600' : 'text-red-600'}`}>
                   {selectedRecord.attended ? 'Present' : 'Absent'}
                 </div>
               </div>
-              
+
               {selectedRecord.notes && (
                 <div>
                   <div className="text-sm font-medium text-gray-700">Notes</div>
                   <div className="text-gray-900">{selectedRecord.notes}</div>
                 </div>
               )}
-              
+
               {selectedRecord.markedBy && (
                 <div>
                   <div className="text-sm font-medium text-gray-700">Marked by</div>
@@ -476,7 +476,7 @@ export const StudentAttendance: React.FC<StudentAttendanceProps> = ({
                   </div>
                 </div>
               )}
-              
+
               {selectedRecord.attendedAt && (
                 <div>
                   <div className="text-sm font-medium text-gray-700">Recorded on</div>

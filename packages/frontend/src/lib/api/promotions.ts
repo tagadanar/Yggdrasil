@@ -1,8 +1,8 @@
 // packages/frontend/src/lib/api/promotions.ts
 // API client functions for promotion management
 
-import { 
-  Promotion, 
+import {
+  Promotion,
   PromotionWithDetails,
   StudentPromotionView,
   CreatePromotionRequest,
@@ -12,15 +12,34 @@ import {
   LinkEventsToPromotionRequest,
 } from '@yggdrasil/shared-utilities';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_PLANNING_SERVICE_URL || 'http://localhost:3005';
+// Use frontend URL for API calls - Next.js will handle proxying to services
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 // Helper function for API calls
 async function apiCall<T>(
-  endpoint: string, 
-  options: RequestInit = {}
+  endpoint: string,
+  options: RequestInit = {},
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   try {
-    const token = localStorage.getItem('yggdrasil_access_token');
+    // First try localStorage (for compatibility), then try to get token from cookies
+    let token = localStorage.getItem('yggdrasil_access_token') || localStorage.getItem('access_token');
+
+    // If no token in localStorage, try to get from cookies (for tests)
+    if (!token && typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';');
+      for (const cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'yggdrasil_access_token') {
+          token = value;
+          break;
+        }
+      }
+    }
+
+    // Create an AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     const response = await fetch(`${API_BASE_URL}/api/promotions${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
@@ -28,8 +47,11 @@ async function apiCall<T>(
         ...options.headers,
       },
       credentials: 'include',
+      signal: controller.signal,
       ...options,
     });
+
+    clearTimeout(timeoutId);
 
     const result = await response.json();
 
@@ -38,8 +60,10 @@ async function apiCall<T>(
     }
 
     return { success: true, data: result.data };
-  } catch (error) {
-    console.error('API call failed:', error);
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      return { success: false, error: 'Request timeout - please try again' };
+    }
     return { success: false, error: 'Network error' };
   }
 }
@@ -175,7 +199,7 @@ export const getSemesterName = (semester: number, intake: 'september' | 'march')
 // Calculate academic year for a given semester and intake
 export const getAcademicYear = (semester: number, intake: 'september' | 'march', baseYear?: number): string => {
   const currentYear = baseYear || new Date().getFullYear();
-  
+
   if (intake === 'september') {
     // September intake starts in fall
     const startYear = currentYear + Math.floor((semester - 1) / 2);

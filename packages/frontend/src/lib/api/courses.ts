@@ -8,19 +8,19 @@ import { tokenStorage } from '@/lib/auth/tokenStorage';
 function getCourseServiceUrl(): string {
   // In test environment, detect worker-specific Course Service URL from frontend port
   if (process.env.NODE_ENV === 'test' || typeof window !== 'undefined') {
-    const frontendPort = typeof window !== 'undefined' 
-      ? parseInt(window.location.port, 10) 
+    const frontendPort = typeof window !== 'undefined'
+      ? parseInt(window.location.port, 10)
       : parseInt(process.env['PORT'] || '3000', 10);
-    
+
     // Calculate course service port from frontend port (frontend + 4)
     const coursePort = frontendPort + 4;
-    
+
     // Use localhost if we're in a test environment or browser
     if (typeof window !== 'undefined' || process.env.NODE_ENV === 'test') {
       return `http://localhost:${coursePort}`;
     }
   }
-  
+
   // Fallback to environment variable or default
   return process.env['NEXT_PUBLIC_COURSE_SERVICE_URL'] || 'http://localhost:3004';
 }
@@ -48,7 +48,7 @@ courseApiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add response interceptor to handle token refresh
@@ -58,11 +58,11 @@ courseApiClient.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
-    
+
     // If we get a 401 and haven't already tried to refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       const refreshToken = tokenStorage.getRefreshToken();
       if (refreshToken) {
         try {
@@ -70,11 +70,11 @@ courseApiClient.interceptors.response.use(
           const response = await axios.post(`${process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3001'}/api/auth/refresh`, {
             refreshToken,
           });
-          
+
           if (response.data.success && response.data.data.tokens) {
             const tokens = response.data.data.tokens;
             tokenStorage.setTokens(tokens);
-            
+
             // Retry the original request with new token
             originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
             return courseApiClient(originalRequest);
@@ -90,9 +90,9 @@ courseApiClient.interceptors.response.use(
         // Let the ProtectedRoute component handle redirect
       }
     }
-    
+
     return Promise.reject(error);
-  }
+  },
 );
 
 // Course management API methods
@@ -118,7 +118,7 @@ export const courseApi = {
     limit?: number;
   } = {}) {
     const params = new URLSearchParams();
-    
+
     if (filters.search) params.append('search', filters.search);
     if (filters.category) params.append('category', filters.category);
     if (filters.level) params.append('level', filters.level);
@@ -139,8 +139,23 @@ export const courseApi = {
 
   // Get course by ID
   async getCourseById(courseId: string) {
-    const response = await courseApiClient.get(`/${courseId}`);
-    return response.data;
+    console.log('🔍 DEBUG: courseApi.getCourseById called with courseId:', courseId);
+    console.log('🔍 DEBUG: Course service URL:', COURSE_SERVICE_URL);
+    console.log('🔍 DEBUG: Making request to:', `${COURSE_SERVICE_URL}/api/courses/${courseId}`);
+
+    const token = tokenStorage.getAccessToken();
+    console.log('🔍 DEBUG: Access token available:', !!token);
+    console.log('🔍 DEBUG: Access token preview:', token?.substring(0, 20) + '...');
+
+    try {
+      const response = await courseApiClient.get(`/${courseId}`);
+      console.log('🔍 DEBUG: Course API response:', response.status, response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('🔍 DEBUG: Course API error:', error.response?.status, error.response?.data || error.message);
+      console.error('🔍 DEBUG: Full error:', error);
+      throw error;
+    }
   },
 
   // Get course by slug
@@ -346,7 +361,7 @@ export const courseApi = {
     // This would typically be a separate endpoint, but for now we'll derive from search
     const response = await courseApiClient.get('/');
     const categories = new Set();
-    
+
     if (response.data.success && response.data.data.courses) {
       response.data.data.courses.forEach((course: any) => {
         if (course.category) {
@@ -354,7 +369,7 @@ export const courseApi = {
         }
       });
     }
-    
+
     return Array.from(categories);
   },
 
@@ -362,7 +377,7 @@ export const courseApi = {
   async getCourseInstructors() {
     const response = await courseApiClient.get('/');
     const instructors = new Map();
-    
+
     if (response.data.success && response.data.data.courses) {
       response.data.data.courses.forEach((course: any) => {
         if (course.instructor) {
@@ -370,9 +385,9 @@ export const courseApi = {
         }
       });
     }
-    
+
     return Array.from(instructors.values());
-  }
+  },
 };
 
 export default courseApi;

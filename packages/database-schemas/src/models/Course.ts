@@ -322,10 +322,6 @@ const CourseSettingsSchema = new Schema({
     type: Boolean,
     default: true,
   },
-  allowEnrollment: {
-    type: Boolean,
-    default: true,
-  },
   requiresApproval: {
     type: Boolean,
     default: false,
@@ -353,16 +349,6 @@ const CourseSettingsSchema = new Schema({
 
 // Course Statistics Schema
 const CourseStatsSchema = new Schema({
-  enrolledStudents: {
-    type: Number,
-    default: 0,
-    min: 0,
-  },
-  completedStudents: {
-    type: Number,
-    default: 0,
-    min: 0,
-  },
   averageProgress: {
     type: Number,
     default: 0,

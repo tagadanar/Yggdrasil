@@ -18,7 +18,7 @@ export default function PromotionDetailPage() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'events'>('overview');
 
-  const promotionId = params.id as string;
+  const promotionId = params['id'] as string;
 
   // Check permissions
   useEffect(() => {

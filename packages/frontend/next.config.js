@@ -30,11 +30,19 @@ const nextConfig = {
         destination: `${process.env.PLANNING_SERVICE_URL || 'http://localhost:3005'}/api/planning/:path*`,
       },
       {
+        source: '/api/promotions/:path*',
+        destination: `${process.env.PLANNING_SERVICE_URL || 'http://localhost:3005'}/api/promotions/:path*`,
+      },
+      {
+        source: '/api/progress/:path*',
+        destination: `${process.env.PLANNING_SERVICE_URL || 'http://localhost:3005'}/api/progress/:path*`,
+      },
+      {
         source: '/api/statistics/:path*',
         destination: `${process.env.STATISTICS_SERVICE_URL || 'http://localhost:3006'}/api/statistics/:path*`,
       },
     ];
   },
-}
+};
 
 module.exports = nextConfig;

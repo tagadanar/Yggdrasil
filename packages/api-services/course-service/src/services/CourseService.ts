@@ -576,10 +576,23 @@ export class CourseService {
       // Teachers have access to courses they created or are assigned to
       if (userRole === 'teacher') {
         const course = await CourseModel.findById(courseId);
-        if (course && course.instructor._id.toString() === userId) {
-          return true;
+        logger.info(`DEBUG: checkCourseAccess - courseId: ${courseId}, userId: ${userId}`);
+        if (course) {
+          logger.info(`DEBUG: Found course - title: ${course.title}`);
+          logger.info(`DEBUG: Course instructor._id: ${course.instructor._id.toString()}`);
+          logger.info(`DEBUG: User userId: ${userId}`);
+          logger.info(`DEBUG: ID comparison: '${course.instructor._id.toString()}' === '${userId}'`);
+          logger.info(`DEBUG: ID match result: ${course.instructor._id.toString() === userId}`);
+          logger.info('DEBUG: Course instructor object:', JSON.stringify(course.instructor));
+
+          if (course.instructor._id.toString() === userId) {
+            logger.info('DEBUG: ID match confirmed - returning true for instructor access');
+            return true;
+          }
+        } else {
+          logger.warn(`DEBUG: Course not found: ${courseId}`);
         }
-        
+
         // Check if teacher is assigned to any events linked to this course
         const events = await EventModel.find({
           linkedCourse: courseId,
@@ -621,36 +634,37 @@ export class CourseService {
       if (userRole === 'teacher') {
         // Get courses created by teacher
         const ownCourses = await CourseModel.findByInstructor(userId);
-        
+
         // Get courses they're assigned to teach via events
         const assignedEvents = await EventModel.find({ teacherId: userId });
         const assignedCourseIds = assignedEvents
           .map(event => event.linkedCourse)
           .filter(courseId => courseId);
-        
-        const assignedCourses = assignedCourseIds.length > 0 
+
+        const assignedCourses = assignedCourseIds.length > 0
           ? await CourseModel.find({ _id: { $in: assignedCourseIds } })
           : [];
-        
+
         // Combine and deduplicate
         const allCourses = [...ownCourses, ...assignedCourses];
         const uniqueCourses = allCourses.filter((course, index, self) =>
-          index === self.findIndex(c => c._id.toString() === course._id.toString())
+          index === self.findIndex(c => c._id.toString() === course._id.toString()),
         );
-        
+
         return uniqueCourses;
       }
 
       // Students get courses through their promotion events
       if (userRole === 'student') {
         const user = await UserModel.findById(userId);
+
         if (!user || !user.currentPromotionId) {
           return [];
         }
 
         // Get events in the student's promotion that have linked courses
         const promotionEvents = await EventModel.find({
-          promotionIds: user.currentPromotionId,
+          promotionIds: { $in: [user.currentPromotionId] },
           linkedCourse: { $exists: true, $ne: null },
         });
 

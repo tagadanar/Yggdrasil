@@ -32,18 +32,18 @@ export interface EventAttendanceModelType extends mongoose.Model<EventAttendance
     markedBy?: mongoose.Types.ObjectId,
     notes?: string
   ): Promise<EventAttendanceDocument>;
-  
+
   getEventAttendance(eventId: mongoose.Types.ObjectId): Promise<EventAttendanceDocument[]>;
   getStudentAttendance(
     studentId: mongoose.Types.ObjectId,
     promotionId?: mongoose.Types.ObjectId
   ): Promise<EventAttendanceDocument[]>;
-  
+
   calculateAttendanceRate(
     studentId: mongoose.Types.ObjectId,
     promotionId: mongoose.Types.ObjectId
   ): Promise<number>;
-  
+
   bulkMarkAttendance(
     eventId: mongoose.Types.ObjectId,
     promotionId: mongoose.Types.ObjectId,
@@ -107,10 +107,10 @@ EventAttendanceSchema.statics['markAttendance'] = async function(
   promotionId: mongoose.Types.ObjectId,
   attended: boolean,
   markedBy?: mongoose.Types.ObjectId,
-  notes?: string
+  notes?: string,
 ): Promise<EventAttendanceDocument> {
   const existingRecord = await this.findOne({ eventId, studentId });
-  
+
   if (existingRecord) {
     // Update existing record
     existingRecord.attended = attended;
@@ -119,7 +119,7 @@ EventAttendanceSchema.statics['markAttendance'] = async function(
     existingRecord.notes = notes;
     return await existingRecord.save();
   }
-  
+
   // Create new record
   return await this.create({
     eventId,
@@ -134,7 +134,7 @@ EventAttendanceSchema.statics['markAttendance'] = async function(
 
 // Static method: Get event attendance
 EventAttendanceSchema.statics['getEventAttendance'] = function(
-  eventId: mongoose.Types.ObjectId
+  eventId: mongoose.Types.ObjectId,
 ): Promise<EventAttendanceDocument[]> {
   return this.find({ eventId })
     .populate('studentId', 'email profile.firstName profile.lastName')
@@ -144,13 +144,13 @@ EventAttendanceSchema.statics['getEventAttendance'] = function(
 // Static method: Get student attendance
 EventAttendanceSchema.statics['getStudentAttendance'] = function(
   studentId: mongoose.Types.ObjectId,
-  promotionId?: mongoose.Types.ObjectId
+  promotionId?: mongoose.Types.ObjectId,
 ): Promise<EventAttendanceDocument[]> {
   const query: any = { studentId };
   if (promotionId) {
     query.promotionId = promotionId;
   }
-  
+
   return this.find(query)
     .populate('eventId', 'title startDate endDate type')
     .sort({ 'eventId.startDate': -1 });
@@ -159,15 +159,15 @@ EventAttendanceSchema.statics['getStudentAttendance'] = function(
 // Static method: Calculate attendance rate
 EventAttendanceSchema.statics['calculateAttendanceRate'] = async function(
   studentId: mongoose.Types.ObjectId,
-  promotionId: mongoose.Types.ObjectId
+  promotionId: mongoose.Types.ObjectId,
 ): Promise<number> {
   const attendance = await this.find({ studentId, promotionId });
-  
+
   if (attendance.length === 0) {
     return 100; // No events yet, consider as 100%
   }
-  
-  const attendedCount = attendance.filter(record => record.attended).length;
+
+  const attendedCount = attendance.filter((record: EventAttendanceDocument) => record.attended).length;
   return Math.round((attendedCount / attendance.length) * 100);
 };
 
@@ -180,7 +180,7 @@ EventAttendanceSchema.statics['bulkMarkAttendance'] = async function(
     attended: boolean;
     notes?: string;
   }>,
-  markedBy: mongoose.Types.ObjectId
+  markedBy: mongoose.Types.ObjectId,
 ): Promise<EventAttendanceDocument[]> {
   const bulkOps = attendanceRecords.map(record => ({
     updateOne: {
@@ -203,9 +203,9 @@ EventAttendanceSchema.statics['bulkMarkAttendance'] = async function(
       upsert: true,
     },
   }));
-  
+
   await this.bulkWrite(bulkOps);
-  
+
   // Return updated records
   const studentIds = attendanceRecords.map(r => r.studentId);
   return await this.find({ eventId, studentId: { $in: studentIds } });

@@ -288,8 +288,11 @@ export class PromotionController {
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
+      // Use the correct ID field for the student
+      const studentId = req.user!._id?.toString() || req.user!.userId || req.user!.id;
+
       const promotionView = await PromotionController.promotionService.getStudentPromotionView(
-        req.user!._id.toString(),
+        studentId,
       );
 
       if (!promotionView) {

@@ -1,9 +1,0 @@
-{
-  "servicesHealthy": true,
-  "restartInProgress": false,
-  "lastRestartTime": null,
-  "unhealthyServices": [],
-  "testsPaused": false,
-  "restartCount": 0,
-  "lastHealthCheck": "2025-08-08T22:52:53.475Z"
-}

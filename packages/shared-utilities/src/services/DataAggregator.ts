@@ -7,7 +7,6 @@ export class DataAggregator {
   private cache: Cache;
   private userClient = ServiceClientFactory.getUserServiceClient();
   private courseClient = ServiceClientFactory.getCourseServiceClient();
-  private enrollmentClient = ServiceClientFactory.getEnrollmentServiceClient();
   private newsClient = ServiceClientFactory.getNewsServiceClient();
   private planningClient = ServiceClientFactory.getPlanningServiceClient();
 
@@ -18,40 +17,6 @@ export class DataAggregator {
     });
   }
 
-  async getUserWithEnrollments(userId: string) {
-    const cacheKey = `user:${userId}:enrollments`;
-    const cached = this.cache.get(cacheKey);
-    if (cached) return cached;
-
-    try {
-      // Parallel data fetching
-      const [user, enrollments] = await Promise.all([
-        this.userClient.get(`/users/${userId}`),
-        this.enrollmentClient.get(`/enrollments/user/${userId}`),
-      ]);
-
-      // Fetch course details for enrollments
-      const courseIds = (enrollments as any[]).map((e: any) => e.courseId);
-      const courses = await Promise.all(
-        courseIds.map(id => this.courseClient.get(`/courses/${id}`)),
-      );
-
-      // Aggregate data
-      const result = {
-        ...(user as any),
-        enrollments: (enrollments as any[]).map((enrollment: any, index: number) => ({
-          ...enrollment,
-          course: courses[index],
-        })),
-      };
-
-      this.cache.set(cacheKey, result);
-      return result;
-    } catch (error) {
-      logger.error('Failed to aggregate user data:', error);
-      throw new AggregationError('Failed to fetch user with enrollments');
-    }
-  }
 
   async getCourseWithInstructor(courseId: string) {
     const cacheKey = `course:${courseId}:instructor`;
@@ -75,38 +40,6 @@ export class DataAggregator {
     }
   }
 
-  async getCourseWithEnrollments(courseId: string) {
-    const cacheKey = `course:${courseId}:enrollments`;
-    const cached = this.cache.get(cacheKey);
-    if (cached) return cached;
-
-    try {
-      // Parallel data fetching
-      const [course, enrollments] = await Promise.all([
-        this.courseClient.get(`/courses/${courseId}`),
-        this.enrollmentClient.get(`/enrollments/course/${courseId}`),
-      ]);
-
-      // Get user details for enrollments
-      const userIds = (enrollments as any[]).map((e: any) => e.userId);
-      const users = await Promise.all(userIds.map(id => this.userClient.get(`/users/${id}`)));
-
-      // Aggregate data
-      const result = {
-        ...(course as any),
-        enrollments: (enrollments as any[]).map((enrollment: any, index: number) => ({
-          ...enrollment,
-          user: users[index],
-        })),
-      };
-
-      this.cache.set(cacheKey, result);
-      return result;
-    } catch (error) {
-      logger.error('Failed to aggregate course enrollment data:', error);
-      throw new AggregationError('Failed to fetch course with enrollments');
-    }
-  }
 
   async getDashboardData(userId: string) {
     const cacheKey = `dashboard:${userId}`;

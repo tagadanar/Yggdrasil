@@ -6,9 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { progressApi } from '@/lib/api/progress';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { 
-  ChartBarIcon, 
-  CalendarDaysIcon, 
+import {
+  ChartBarIcon,
+  CalendarDaysIcon,
   UserGroupIcon,
   DocumentArrowDownIcon,
   FunnelIcon,
@@ -16,8 +16,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ClockIcon,
-  TrendingUpIcon,
-  TrendingDownIcon
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
 } from '@heroicons/react/24/outline';
 
 interface AttendanceStats {
@@ -63,7 +63,7 @@ interface AttendanceReportProps {
 export const AttendanceReport: React.FC<AttendanceReportProps> = ({
   promotionId,
   dateRange,
-  showStudentDetails = true
+  showStudentDetails = true,
 }) => {
   const { user } = useAuth();
   const [stats, setStats] = useState<AttendanceStats | null>(null);
@@ -75,7 +75,7 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
   const [filters, setFilters] = useState({
     attendanceThreshold: 75,
     showOnlyAtRisk: false,
-    sortBy: 'attendanceRate' as 'attendanceRate' | 'name' | 'eventsAttended'
+    sortBy: 'attendanceRate' as 'attendanceRate' | 'name' | 'eventsAttended',
   });
 
   useEffect(() => {
@@ -91,10 +91,10 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
 
       // Load overall promotion statistics
       const statsResponse = await progressApi.getPromotionStatistics(promotionId!);
-      
+
       if (statsResponse.success) {
         const rawStats = statsResponse.data;
-        
+
         // Transform to our interface
         const transformedStats: AttendanceStats = {
           totalEvents: rawStats.totalEvents || 0,
@@ -103,15 +103,15 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
           presentCount: Math.round((rawStats.averageAttendance || 0) * (rawStats.totalStudents || 0) / 100),
           absentCount: Math.round((100 - (rawStats.averageAttendance || 0)) * (rawStats.totalStudents || 0) / 100),
           averageAttendancePerEvent: rawStats.averageAttendance || 0,
-          attendanceTrend: rawStats.attendanceTrend || 'stable'
+          attendanceTrend: rawStats.attendanceTrend || 'stable',
         };
-        
+
         setStats(transformedStats);
       }
 
       // Load detailed student attendance data
       const progressResponse = await progressApi.getPromotionProgress(promotionId!);
-      
+
       if (progressResponse.success && progressResponse.data) {
         const studentAttendance: StudentAttendanceData[] = progressResponse.data.map((student: any) => ({
           studentId: student.studentId,
@@ -121,7 +121,7 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
           eventsAttended: Math.round((student.attendanceRate || 0) * (stats?.totalEvents || 0) / 100),
           attendanceRate: student.attendanceRate || 0,
           status: getAttendanceStatus(student.attendanceRate || 0),
-          recentTrend: student.attendanceTrend || 'stable'
+          recentTrend: student.attendanceTrend || 'stable',
         }));
 
         setStudentData(studentAttendance);
@@ -157,8 +157,8 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
-      case 'improving': return <TrendingUpIcon className="h-4 w-4 text-green-500" />;
-      case 'declining': return <TrendingDownIcon className="h-4 w-4 text-red-500" />;
+      case 'improving': return <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />;
+      case 'declining': return <ArrowTrendingDownIcon className="h-4 w-4 text-red-500" />;
       default: return <ClockIcon className="h-4 w-4 text-gray-500" />;
     }
   };
@@ -219,7 +219,7 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Attendance Report</h2>
             <p className="text-gray-600">
-              {dateRange 
+              {dateRange
                 ? `${dateRange.startDate} - ${dateRange.endDate}`
                 : 'All time data'
               }
@@ -256,7 +256,7 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg border p-4">
             <div className="flex items-center">
               <CalendarDaysIcon className="h-8 w-8 text-purple-600" />
@@ -266,7 +266,7 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg border p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -281,7 +281,7 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
               {getTrendIcon(stats.attendanceTrend)}
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg border p-4">
             <div className="flex items-center">
               <div className="flex space-x-4 w-full">
@@ -414,7 +414,7 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
                         <div className="text-sm text-gray-600">{student.email}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-4">
                       <div className="text-right">
                         <div className="text-sm font-medium">
@@ -424,11 +424,11 @@ export const AttendanceReport: React.FC<AttendanceReportProps> = ({
                           {student.attendanceRate.toFixed(1)}% attendance
                         </div>
                       </div>
-                      
+
                       <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(student.status)}`}>
                         {student.status}
                       </span>
-                      
+
                       {getTrendIcon(student.recentTrend)}
                     </div>
                   </div>

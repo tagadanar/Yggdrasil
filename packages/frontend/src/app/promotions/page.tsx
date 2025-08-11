@@ -18,9 +18,13 @@ import { AcademicCapIcon, ChartBarIcon, UserGroupIcon, PlusIcon } from '@heroico
 type ViewMode = 'list' | 'create' | 'edit' | 'detail';
 
 export default function PromotionsPage() {
+  console.log('🚀 PromotionsPage component mounting/rendering');
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | PromotionWithDetails | null>(null);
+
+  console.log('🚀 PromotionsPage - User:', user ? { email: user.email, role: user.role } : 'null');
+  console.log('🚀 PromotionsPage - ViewMode:', viewMode);
 
   const handleCreatePromotion = () => {
     setSelectedPromotion(null);
@@ -57,7 +61,7 @@ export default function PromotionsPage() {
             onCancel={handleBackToList}
           />
         );
-      
+
       case 'edit':
         return (
           <PromotionForm
@@ -66,7 +70,7 @@ export default function PromotionsPage() {
             onCancel={handleBackToList}
           />
         );
-      
+
       case 'detail':
         return selectedPromotion ? (
           <PromotionDetail
@@ -87,7 +91,7 @@ export default function PromotionsPage() {
             </Button>
           </div>
         );
-      
+
       default:
         return (
           <PromotionList

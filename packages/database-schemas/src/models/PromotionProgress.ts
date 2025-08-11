@@ -2,6 +2,7 @@
 // Student progress tracking within promotions
 
 import mongoose, { Document, Schema } from 'mongoose';
+import { EventAttendanceModel } from './EventAttendance';
 
 // CourseProgress sub-document
 export interface CourseProgressItem {
@@ -22,22 +23,22 @@ export interface PromotionProgress {
   _id: string;
   promotionId: mongoose.Types.ObjectId;
   studentId: mongoose.Types.ObjectId;
-  
+
   // Course tracking
   coursesProgress: CourseProgressItem[];
   coursesCompleted: mongoose.Types.ObjectId[];
   coursesInProgress: mongoose.Types.ObjectId[];
   coursesNotStarted: mongoose.Types.ObjectId[];
-  
+
   // Event tracking
   totalEvents: number;
   eventsAttended: number;
   attendanceRate: number; // 0-100
-  
+
   // Overall metrics
   overallProgress: number; // 0-100
   averageGrade?: number; // Average across all courses
-  
+
   // Milestones
   milestones: {
     firstCourseStarted?: Date;
@@ -45,12 +46,12 @@ export interface PromotionProgress {
     halfwayCompleted?: Date;
     allCoursesCompleted?: Date;
   };
-  
+
   // Metadata
   lastCalculated: Date;
   calculationVersion: number; // For tracking calculation algorithm changes
   notes?: string;
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,17 +70,17 @@ export interface PromotionProgressModelType extends mongoose.Model<PromotionProg
     promotionId: mongoose.Types.ObjectId,
     studentId: mongoose.Types.ObjectId
   ): Promise<PromotionProgressDocument>;
-  
+
   recalculateForPromotion(promotionId: mongoose.Types.ObjectId): Promise<void>;
   recalculateForStudent(studentId: mongoose.Types.ObjectId, promotionId: mongoose.Types.ObjectId): Promise<PromotionProgressDocument>;
-  
+
   getPromotionStatistics(promotionId: mongoose.Types.ObjectId): Promise<{
     averageProgress: number;
     averageAttendance: number;
     completionRate: number;
     atRiskStudents: number;
   }>;
-  
+
   getTopPerformers(promotionId: mongoose.Types.ObjectId, limit?: number): Promise<PromotionProgressDocument[]>;
   getStrugglingStudents(promotionId: mongoose.Types.ObjectId, threshold?: number): Promise<PromotionProgressDocument[]>;
 }
@@ -148,7 +149,7 @@ const PromotionProgressSchema = new Schema<PromotionProgressDocument>({
     ref: 'User',
     required: true,
   },
-  
+
   // Course tracking
   coursesProgress: [CourseProgressSchema],
   coursesCompleted: [{
@@ -163,7 +164,7 @@ const PromotionProgressSchema = new Schema<PromotionProgressDocument>({
     type: Schema.Types.ObjectId,
     ref: 'Course',
   }],
-  
+
   // Event tracking
   totalEvents: {
     type: Number,
@@ -179,7 +180,7 @@ const PromotionProgressSchema = new Schema<PromotionProgressDocument>({
     min: 0,
     max: 100,
   },
-  
+
   // Overall metrics
   overallProgress: {
     type: Number,
@@ -193,13 +194,13 @@ const PromotionProgressSchema = new Schema<PromotionProgressDocument>({
     min: 0,
     max: 100,
   },
-  
+
   // Milestones
   milestones: {
     type: MilestonesSchema,
     default: () => ({}),
   },
-  
+
   // Metadata
   lastCalculated: {
     type: Date,
@@ -228,88 +229,87 @@ PromotionProgressSchema.index({ lastCalculated: 1 }); // For recalculation jobs
 // Instance method: Recalculate progress
 PromotionProgressSchema.methods['recalculate'] = async function(): Promise<void> {
   const progress = this as PromotionProgressDocument;
-  
+
   // Get promotion details to know total courses
   const Promotion = mongoose.model('Promotion');
-  const EventAttendance = mongoose.model('EventAttendance');
   const promotion = await Promotion.findById(progress.promotionId).populate('eventIds');
-  
+
   if (!promotion) {
     throw new Error('Promotion not found');
   }
-  
+
   // Calculate attendance
-  const attendance = await EventAttendance.calculateAttendanceRate(
+  const attendance = await EventAttendanceModel.calculateAttendanceRate(
     progress.studentId,
-    progress.promotionId
+    progress.promotionId,
   );
   progress.attendanceRate = attendance;
-  
+
   // Calculate course progress
   let totalCourseProgress = 0;
   let completedCourses = 0;
   let totalGrade = 0;
   let gradedCourses = 0;
-  
+
   for (const courseProgress of progress.coursesProgress) {
     totalCourseProgress += courseProgress.progressPercentage;
-    
+
     if (courseProgress.progressPercentage === 100) {
       completedCourses++;
       if (!courseProgress.completedAt) {
         courseProgress.completedAt = new Date();
       }
     }
-    
+
     if (courseProgress.averageScore !== undefined) {
       totalGrade += courseProgress.averageScore;
       gradedCourses++;
     }
   }
-  
+
   // Calculate overall progress (weighted: 70% courses, 30% attendance)
-  const courseProgressAvg = progress.coursesProgress.length > 0 
-    ? totalCourseProgress / progress.coursesProgress.length 
+  const courseProgressAvg = progress.coursesProgress.length > 0
+    ? totalCourseProgress / progress.coursesProgress.length
     : 0;
-  
+
   progress.overallProgress = Math.round(
-    (courseProgressAvg * 0.7) + (progress.attendanceRate * 0.3)
+    (courseProgressAvg * 0.7) + (progress.attendanceRate * 0.3),
   );
-  
+
   // Update average grade
   if (gradedCourses > 0) {
     progress.averageGrade = Math.round(totalGrade / gradedCourses);
   }
-  
+
   // Update milestones
   if (!progress.milestones.firstCourseStarted && progress.coursesProgress.length > 0) {
     progress.milestones.firstCourseStarted = new Date();
   }
-  
+
   if (!progress.milestones.firstCourseCompleted && completedCourses > 0) {
     progress.milestones.firstCourseCompleted = new Date();
   }
-  
+
   const halfwayPoint = Math.floor(progress.coursesProgress.length / 2);
   if (!progress.milestones.halfwayCompleted && completedCourses >= halfwayPoint && halfwayPoint > 0) {
     progress.milestones.halfwayCompleted = new Date();
   }
-  
-  if (!progress.milestones.allCoursesCompleted && 
-      progress.coursesProgress.length > 0 && 
+
+  if (!progress.milestones.allCoursesCompleted &&
+      progress.coursesProgress.length > 0 &&
       completedCourses === progress.coursesProgress.length) {
     progress.milestones.allCoursesCompleted = new Date();
   }
-  
+
   // Update course arrays
   progress.coursesCompleted = progress.coursesProgress
     .filter(cp => cp.progressPercentage === 100)
     .map(cp => cp.courseId);
-  
+
   progress.coursesInProgress = progress.coursesProgress
     .filter(cp => cp.progressPercentage > 0 && cp.progressPercentage < 100)
     .map(cp => cp.courseId);
-  
+
   progress.lastCalculated = new Date();
   await progress.save();
 };
@@ -317,15 +317,15 @@ PromotionProgressSchema.methods['recalculate'] = async function(): Promise<void>
 // Instance method: Update course progress
 PromotionProgressSchema.methods['updateCourseProgress'] = async function(
   courseId: mongoose.Types.ObjectId,
-  progressUpdate: Partial<CourseProgressItem>
+  progressUpdate: Partial<CourseProgressItem>,
 ): Promise<void> {
   const progress = this as PromotionProgressDocument;
-  
+
   // Find or create course progress entry
-  let courseProgress = progress.coursesProgress.find(
-    cp => cp.courseId.equals(courseId)
+  const courseProgress = progress.coursesProgress.find(
+    cp => cp.courseId.equals(courseId),
   );
-  
+
   if (!courseProgress) {
     // Create new course progress entry
     progress.coursesProgress.push({
@@ -343,17 +343,17 @@ PromotionProgressSchema.methods['updateCourseProgress'] = async function(
     Object.assign(courseProgress, progressUpdate);
     courseProgress.lastActivityAt = new Date();
   }
-  
+
   // Recalculate overall progress
   await progress.recalculate();
 };
 
 // Instance method: Mark course as completed
 PromotionProgressSchema.methods['markCourseCompleted'] = async function(
-  courseId: mongoose.Types.ObjectId
+  courseId: mongoose.Types.ObjectId,
 ): Promise<void> {
   const progress = this as PromotionProgressDocument;
-  
+
   await progress.updateCourseProgress(courseId, {
     progressPercentage: 100,
     completedAt: new Date(),
@@ -363,10 +363,10 @@ PromotionProgressSchema.methods['markCourseCompleted'] = async function(
 // Static method: Find or create for student
 PromotionProgressSchema.statics['findOrCreateForStudent'] = async function(
   promotionId: mongoose.Types.ObjectId,
-  studentId: mongoose.Types.ObjectId
+  studentId: mongoose.Types.ObjectId,
 ): Promise<PromotionProgressDocument> {
   let progress = await this.findOne({ promotionId, studentId });
-  
+
   if (!progress) {
     progress = await this.create({
       promotionId,
@@ -382,27 +382,27 @@ PromotionProgressSchema.statics['findOrCreateForStudent'] = async function(
       milestones: {},
     });
   }
-  
+
   return progress;
 };
 
 // Static method: Recalculate for entire promotion
 PromotionProgressSchema.statics['recalculateForPromotion'] = async function(
-  promotionId: mongoose.Types.ObjectId
+  promotionId: mongoose.Types.ObjectId,
 ): Promise<void> {
   const progressRecords = await this.find({ promotionId });
-  
+
   // Recalculate in batches to avoid overwhelming the system
   const batchSize = 10;
   for (let i = 0; i < progressRecords.length; i += batchSize) {
     const batch = progressRecords.slice(i, i + batchSize);
-    await Promise.all(batch.map(record => record.recalculate()));
+    await Promise.all(batch.map((record: PromotionProgressDocument) => record.recalculate()));
   }
 };
 
 // Static method: Get promotion statistics
 PromotionProgressSchema.statics['getPromotionStatistics'] = async function(
-  promotionId: mongoose.Types.ObjectId
+  promotionId: mongoose.Types.ObjectId,
 ): Promise<any> {
   const stats = await this.aggregate([
     { $match: { promotionId } },
@@ -413,15 +413,15 @@ PromotionProgressSchema.statics['getPromotionStatistics'] = async function(
         averageAttendance: { $avg: '$attendanceRate' },
         totalStudents: { $sum: 1 },
         completedStudents: {
-          $sum: { $cond: [{ $eq: ['$overallProgress', 100] }, 1, 0] }
+          $sum: { $cond: [{ $eq: ['$overallProgress', 100] }, 1, 0] },
         },
         atRiskStudents: {
-          $sum: { $cond: [{ $lt: ['$overallProgress', 30] }, 1, 0] }
+          $sum: { $cond: [{ $lt: ['$overallProgress', 30] }, 1, 0] },
         },
       },
     },
   ]);
-  
+
   if (stats.length === 0) {
     return {
       averageProgress: 0,
@@ -430,7 +430,7 @@ PromotionProgressSchema.statics['getPromotionStatistics'] = async function(
       atRiskStudents: 0,
     };
   }
-  
+
   const result = stats[0];
   return {
     averageProgress: Math.round(result.averageProgress || 0),
@@ -446,18 +446,18 @@ PromotionProgressSchema.set('toJSON', {
     ret._id = ret._id.toString();
     ret.promotionId = ret.promotionId.toString();
     ret.studentId = ret.studentId.toString();
-    
+
     // Transform course IDs
     ret.coursesCompleted = ret.coursesCompleted.map((id: any) => id.toString());
     ret.coursesInProgress = ret.coursesInProgress.map((id: any) => id.toString());
     ret.coursesNotStarted = ret.coursesNotStarted.map((id: any) => id.toString());
-    
+
     // Transform course progress items
     ret.coursesProgress = ret.coursesProgress.map((cp: any) => ({
       ...cp,
       courseId: cp.courseId.toString(),
     }));
-    
+
     delete ret.__v;
     return ret;
   },

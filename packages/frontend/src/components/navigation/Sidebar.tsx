@@ -23,6 +23,18 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   {
+    id: 'dashboard',
+    name: 'Dashboard',
+    href: '/dashboard',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+      </svg>
+    ),
+    allowedRoles: ['admin', 'staff', 'teacher', 'student'],
+  },
+  {
     id: 'news',
     name: 'News',
     href: '/news',
@@ -31,7 +43,7 @@ const menuItems: MenuItem[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
       </svg>
     ),
-    allowedRoles: ['admin', 'staff', 'teacher', 'student']
+    allowedRoles: ['admin', 'staff', 'teacher', 'student'],
   },
   {
     id: 'users',
@@ -42,7 +54,7 @@ const menuItems: MenuItem[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
       </svg>
     ),
-    allowedRoles: ['admin']
+    allowedRoles: ['admin'],
   },
   {
     id: 'promotions',
@@ -53,7 +65,7 @@ const menuItems: MenuItem[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
       </svg>
     ),
-    allowedRoles: ['admin', 'staff']
+    allowedRoles: ['admin', 'staff'],
   },
   {
     id: 'courses',
@@ -64,18 +76,18 @@ const menuItems: MenuItem[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
       </svg>
     ),
-    allowedRoles: ['admin', 'staff', 'teacher', 'student']
+    allowedRoles: ['admin', 'staff', 'teacher', 'student'],
   },
   {
     id: 'planning',
-    name: 'Planning',
+    name: 'Calendar',
     href: '/planning',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     ),
-    allowedRoles: ['admin', 'staff', 'teacher', 'student']
+    allowedRoles: ['admin', 'staff', 'teacher', 'student'],
   },
   {
     id: 'attendance',
@@ -86,7 +98,7 @@ const menuItems: MenuItem[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
     ),
-    allowedRoles: ['admin', 'staff', 'teacher', 'student']
+    allowedRoles: ['admin', 'staff', 'teacher', 'student'],
   },
   {
     id: 'statistics',
@@ -97,8 +109,8 @@ const menuItems: MenuItem[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
-    allowedRoles: ['admin', 'staff', 'teacher', 'student']
-  }
+    allowedRoles: ['admin', 'staff', 'teacher', 'student'],
+  },
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -114,14 +126,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }, [pathname, currentPath]);
 
   // Filter menu items based on user role
-  const visibleMenuItems = menuItems.filter(item => 
-    user?.role && item.allowedRoles.includes(user.role)
+  const visibleMenuItems = menuItems.filter(item =>
+    user?.role && item.allowedRoles.includes(user.role),
   );
 
   // Robust active route detection with both pathname and local state
   const isActiveRoute = (href: string) => {
     const activePath = currentPath || pathname;
-    
+
     if (href === '/news') {
       return activePath === '/news' || activePath === '/';
     }
@@ -132,12 +144,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {/* Mobile backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-20 md:hidden animate-fade-in"
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
       <aside
         data-testid="sidebar-nav"
@@ -152,9 +164,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="flex items-center justify-between p-6 border-b border-secondary-200 dark:border-secondary-700 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20">
             <Link href="/news" className="flex items-center group">
               <div className="relative mr-3">
-                <img 
-                  src="/logo101.png" 
-                  alt="Yggdrasil Logo" 
+                <img
+                  src="/logo101.png"
+                  alt="Yggdrasil Logo"
                   className="w-8 h-8 transition-transform duration-200 group-hover:scale-110 animate-float"
                 />
                 <div className="absolute inset-0 bg-primary-500 opacity-0 group-hover:opacity-10 rounded-full transition-opacity duration-200"></div>
@@ -181,8 +193,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 href={item.href}
                 data-testid={`nav-${item.id}`}
                 className={`
-                  ${isActiveRoute(item.href) 
-                    ? 'nav-link-active' 
+                  ${isActiveRoute(item.href)
+                    ? 'nav-link-active'
                     : 'nav-link-inactive'
                   }
                 `}
@@ -220,7 +232,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </p>
               </div>
             </div>
-            
+
             {/* Logout Button */}
             <button
               onClick={logout}

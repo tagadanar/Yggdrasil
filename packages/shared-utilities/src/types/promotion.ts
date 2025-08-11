@@ -99,6 +99,34 @@ export interface PromotionWithDetails extends Promotion {
 
 export interface StudentPromotionView {
   promotion: Promotion;
+  // All events in the promotion (for /my-courses page to extract courses)
+  events: Array<{
+    _id: string;
+    title: string;
+    type: string;
+    startDate: Date | string;
+    endDate: Date | string;
+    linkedCourse?: {
+      _id: string;
+      title: string;
+      slug: string;
+      description: string;
+      category: string;
+      level: 'beginner' | 'intermediate' | 'advanced';
+      instructor: {
+        _id: string;
+        name: string;
+        email: string;
+      };
+      estimatedDuration: number;
+      thumbnail?: string;
+    };
+    teacher?: {
+      _id: string;
+      name: string;
+    };
+  }>;
+  // Upcoming events only (for dashboard/calendar views)
   upcomingEvents: Array<{
     _id: string;
     title: string;
