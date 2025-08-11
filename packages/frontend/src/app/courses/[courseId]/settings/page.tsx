@@ -97,7 +97,11 @@ export default function CourseSettingsPage() {
   const isInstructor = user && course && (
     user.role === 'admin' ||
     user.role === 'staff' ||
-    course.instructor._id.toString() === user._id
+    // Handle different ID formats from auth token and database
+    course.instructor._id.toString() === user._id ||
+    course.instructor._id.toString() === user.id ||
+    course.instructor._id === user._id ||
+    course.instructor._id === user.id
   );
 
   // Debug logging

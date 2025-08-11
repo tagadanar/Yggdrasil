@@ -21,14 +21,14 @@ router.get('/', PromotionController.getPromotions);
 // POST /api/promotions - Create a new promotion (admin/staff only)
 router.post(
   '/',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   PromotionController.createPromotion,
 );
 
 // GET /api/promotions/my - Get student's own promotion (students only)
 router.get(
   '/my',
-  AuthMiddleware.requireRole(['student']),
+  AuthMiddleware.requireRole('student'),
   PromotionController.getMyPromotion,
 );
 
@@ -38,7 +38,7 @@ router.get('/:promotionId', PromotionController.getPromotion);
 // PUT /api/promotions/:promotionId - Update promotion (admin/staff only)
 router.put(
   '/:promotionId',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   PromotionController.updatePromotion,
 );
 
@@ -56,14 +56,14 @@ router.delete(
 // POST /api/promotions/:promotionId/students - Add students to promotion (admin/staff only)
 router.post(
   '/:promotionId/students',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   PromotionController.addStudentsToPromotion,
 );
 
 // DELETE /api/promotions/:promotionId/students/:studentId - Remove student from promotion (admin/staff only)
 router.delete(
   '/:promotionId/students/:studentId',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   PromotionController.removeStudentFromPromotion,
 );
 
@@ -74,14 +74,14 @@ router.delete(
 // POST /api/promotions/:promotionId/events - Link events to promotion (admin/staff only)
 router.post(
   '/:promotionId/events',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   PromotionController.linkEventsToPromotion,
 );
 
 // DELETE /api/promotions/:promotionId/events/:eventId - Unlink event from promotion (admin/staff only)
 router.delete(
   '/:promotionId/events/:eventId',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   PromotionController.unlinkEventFromPromotion,
 );
 
@@ -95,7 +95,7 @@ router.get('/:promotionId/calendar', PromotionController.getPromotionCalendar);
 // POST /api/promotions/progress - Progress student to next semester (admin/staff only)
 router.post(
   '/progress',
-  AuthMiddleware.requireRole(['admin', 'staff']),
+  AuthMiddleware.requireRole('admin', 'staff'),
   PromotionController.progressStudent,
 );
 

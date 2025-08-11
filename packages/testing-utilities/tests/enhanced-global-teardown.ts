@@ -81,8 +81,8 @@ async function stopServicesForSingleWorker(): Promise<void> {
             console.log(`📝 Sending SIGTERM to process ${process.pid}`);
             process.kill('SIGTERM');
 
-            // 2. Wait 5 seconds for graceful exit
-            await sleep(5000);
+            // 2. Wait 3 seconds for graceful exit (optimized from 5s)
+            await sleep(3000);
 
             // 3. Send SIGKILL only if process still alive
             if (!process.killed) {
@@ -118,7 +118,7 @@ async function globalTeardown(_config: FullConfig) {
     try {
       const { stopMonitoring } = require('../service-health-monitor.js');
       stopMonitoring();
-      
+
       // Cleanup service coordinator
       const { getInstance: getCoordinator } = require('../service-coordinator.js');
       const coordinator = getCoordinator();
@@ -127,7 +127,7 @@ async function globalTeardown(_config: FullConfig) {
     } catch (monitorError) {
       console.warn('⚠️ Health monitor/coordinator stop had issues:', monitorError instanceof Error ? monitorError.message : String(monitorError));
     }
-    
+
     // First, stop all services
     await stopServicesForSingleWorker();
 
@@ -148,7 +148,7 @@ async function globalTeardown(_config: FullConfig) {
     try {
       const loggerStats = LoggerFactory.getStats();
       console.log(`📊 Logger cleanup: ${loggerStats.count} loggers, services: [${loggerStats.services.join(', ')}]`);
-      
+
       LoggerFactory.cleanup();
       console.log('✅ Logger cleanup completed successfully');
     } catch (error) {

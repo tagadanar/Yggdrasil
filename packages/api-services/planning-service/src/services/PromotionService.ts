@@ -414,7 +414,7 @@ export class PromotionService {
 
       const progress: MembershipProgress = {
         eventsAttended: [], // Placeholder - would need event IDs from attendance
-        coursesCompleted: studentProgress.coursesCompleted,
+        coursesCompleted: studentProgress.coursesCompleted.map(id => id.toString()),
         overallProgress: studentProgress.overallProgress,
       };
 
@@ -447,7 +447,7 @@ export class PromotionService {
         promotion: {
           ...promotion.toJSON(),
           _id: promotion._id.toString(),
-        },
+        } as any,
         // Include ALL events for /my-courses page to extract courses
         events: allEvents.map(formatEvent),
         // Keep upcomingEvents for backward compatibility
@@ -487,8 +487,8 @@ export class PromotionService {
       let nextAcademicYear = currentPromotion.academicYear;
       if (currentPromotion.intake === 'march' && nextIntake === 'september') {
         // Moving from spring to fall of next academic year
-        const [startYear, endYear] = currentPromotion.academicYear.split('-').map(Number);
-        nextAcademicYear = `${endYear}-${endYear + 1}`;
+        const [_startYear, endYear] = currentPromotion.academicYear.split('-').map(Number);
+        nextAcademicYear = `${endYear!}-${endYear! + 1}`;
       }
 
       // Find or create next semester promotion

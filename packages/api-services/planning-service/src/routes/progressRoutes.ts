@@ -42,7 +42,7 @@ router.get('/students/:studentId/attendance', ProgressController.getStudentAtten
 // GET /api/progress/my-progress - Get my own progress (students)
 router.get('/my-progress', (req, res) => {
   const studentId = req.user!._id.toString();
-  req.params.studentId = studentId;
+  (req.params as any).studentId = studentId;
   return ProgressController.getStudentProgress(req, res);
 });
 

@@ -9,7 +9,6 @@ import {
   EventAttendanceDocument,
   CourseModel,
   EventModel,
-  PromotionModel,
 } from '@yggdrasil/database-schemas';
 import { planningLogger as logger } from '@yggdrasil/shared-utilities';
 
@@ -77,6 +76,10 @@ export class ProgressTrackingService {
       const promotionId = event.promotionIds.find(pId => 
         student.currentPromotionId?.equals(pId)
       ) || event.promotionIds[0];
+      
+      if (!promotionId) {
+        throw new Error('No valid promotion found for this event');
+      }
       
       const attendance = await EventAttendanceModel.markAttendance(
         new mongoose.Types.ObjectId(eventId),
