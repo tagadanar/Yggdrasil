@@ -99,9 +99,7 @@ export default function CourseSettingsPage() {
     user.role === 'staff' ||
     // Handle different ID formats from auth token and database
     course.instructor._id.toString() === user._id ||
-    course.instructor._id.toString() === user.id ||
-    course.instructor._id === user._id ||
-    course.instructor._id === user.id
+    course.instructor._id === user._id
   );
 
   // Debug logging

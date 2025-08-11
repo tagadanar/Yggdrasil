@@ -9,6 +9,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { planningApi } from '@/lib/api/planning';
 import { courseApi } from '@/lib/api/courses';
+import { Event } from '@yggdrasil/shared-utilities';
 import { CalendarView } from '@/components/planning/CalendarView';
 import { ModernCalendarView } from '@/components/planning/ModernCalendarView';
 import { GoogleCalendarSync } from '@/components/planning/GoogleCalendarSync';
@@ -28,7 +29,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 
-interface Event {
+interface PlanningEvent {
   _id: string;
   title: string;
   description?: string;
@@ -54,7 +55,7 @@ interface Course {
 
 export default function PlanningPage() {
   const { user } = useAuth();
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<PlanningEvent[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

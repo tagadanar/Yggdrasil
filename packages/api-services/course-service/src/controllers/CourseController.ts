@@ -4,8 +4,7 @@
 import { Request, Response } from 'express';
 import { 
   ResponseHelper, 
-  courseLogger as logger,
-  UserRole 
+  courseLogger as logger
 } from '@yggdrasil/shared-utilities';
 import { CourseService } from '../services/CourseService';
 import { AuthRequest } from '../middleware/authMiddleware';
@@ -189,7 +188,7 @@ export class CourseController {
     }
   }
 
-  getPublishedCourses = async (req: Request, res: Response): Promise<Response> => {
+  getPublishedCourses = async (_req: Request, res: Response): Promise<Response> => {
     try {
       const courses = await this.courseService.getPublishedCourses();
       return res.status(200).json(ResponseHelper.success(courses, 'Published courses retrieved successfully'));
@@ -231,7 +230,7 @@ export class CourseController {
       }
 
       const userId = user.id || user.userId || user._id;
-      const course = await this.courseService.addChapter(courseId, chapterData, userId, user.role);
+      const course = await this.courseService.addChapter(courseId!, chapterData, userId, user.role);
       if (!course) {
         return res.status(404).json(ResponseHelper.notFound('Course not found'));
       }
@@ -257,7 +256,7 @@ export class CourseController {
       }
 
       const userId = user.id || user.userId || user._id;
-      const course = await this.courseService.updateChapter(courseId, chapterId, updateData, userId, user.role);
+      const course = await this.courseService.updateChapter(courseId!, chapterId!, updateData, userId, user.role);
       if (!course) {
         return res.status(404).json(ResponseHelper.notFound('Course or chapter not found'));
       }
@@ -282,7 +281,7 @@ export class CourseController {
       }
 
       const userId = user.id || user.userId || user._id;
-      const course = await this.courseService.deleteChapter(courseId, chapterId, userId, user.role);
+      const course = await this.courseService.deleteChapter(courseId!, chapterId!, userId, user.role);
       if (!course) {
         return res.status(404).json(ResponseHelper.notFound('Course or chapter not found'));
       }
@@ -312,7 +311,7 @@ export class CourseController {
       }
 
       const userId = user.id || user.userId || user._id;
-      const course = await this.courseService.addSection(courseId, chapterId, sectionData, userId, user.role);
+      const course = await this.courseService.addSection(courseId!, chapterId!, sectionData, userId, user.role);
       if (!course) {
         return res.status(404).json(ResponseHelper.notFound('Course or chapter not found'));
       }
@@ -338,7 +337,7 @@ export class CourseController {
       }
 
       const userId = user.id || user.userId || user._id;
-      const course = await this.courseService.updateSection(courseId, chapterId, sectionId, updateData, userId, user.role);
+      const course = await this.courseService.updateSection(courseId!, chapterId!, sectionId!, updateData, userId, user.role);
       if (!course) {
         return res.status(404).json(ResponseHelper.notFound('Course, chapter, or section not found'));
       }
@@ -368,7 +367,7 @@ export class CourseController {
       }
 
       const userId = user.id || user.userId || user._id;
-      const course = await this.courseService.addContent(courseId, chapterId, sectionId, contentData, userId, user.role);
+      const course = await this.courseService.addContent(courseId!, chapterId!, sectionId!, contentData, userId, user.role);
       if (!course) {
         return res.status(404).json(ResponseHelper.notFound('Course, chapter, or section not found'));
       }
@@ -394,7 +393,7 @@ export class CourseController {
       }
 
       const userId = user.id || user.userId || user._id;
-      const course = await this.courseService.updateContent(courseId, chapterId, sectionId, contentId, updateData, userId, user.role);
+      const course = await this.courseService.updateContent(courseId!, chapterId!, sectionId!, contentId!, updateData, userId, user.role);
       if (!course) {
         return res.status(404).json(ResponseHelper.notFound('Course, chapter, section, or content not found'));
       }
@@ -426,98 +425,98 @@ export class CourseController {
     return this.searchCourses(req, res);
   }
 
-  async getCourseStudents(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Student management moved to promotion-based system');
+  async getCourseStudents(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Student management moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async addStudentToCourse(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Student enrollment moved to promotion-based system');
+  async addStudentToCourse(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Student enrollment moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async removeStudentFromCourse(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Student enrollment moved to promotion-based system');
+  async removeStudentFromCourse(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Student enrollment moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async getCourseAnalytics(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Course analytics moved to statistics service');
+  async getCourseAnalytics(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Course analytics moved to statistics service', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async enroll(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Enrollment moved to promotion-based system');
+  async enroll(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Enrollment moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async unenroll(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Enrollment moved to promotion-based system');
+  async unenroll(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Enrollment moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async getProgress(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Progress tracking moved to promotion-based system');
+  async getProgress(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Progress tracking moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async updateProgress(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Progress tracking moved to promotion-based system');
+  async updateProgress(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Progress tracking moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async getChapter(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Chapter access moved to course access system');
+  async getChapter(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Chapter access moved to course access system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async getSection(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Section access moved to course access system');
+  async getSection(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Section access moved to course access system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async getExercise(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Exercise management moved to promotion-based system');
+  async getExercise(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Exercise management moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async submitExercise(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Exercise submissions moved to promotion-based system');
+  async submitExercise(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Exercise submissions moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async getSubmissions(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Submissions moved to promotion-based system');
+  async getSubmissions(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Submissions moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async getRatings(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Course ratings not yet implemented');
+  async getRatings(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Course ratings not yet implemented', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async rateCourse(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Course ratings not yet implemented');
+  async rateCourse(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Course ratings not yet implemented', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async deleteSection(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Section deletion not yet implemented');
+  async deleteSection(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Section deletion not yet implemented', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async addExercise(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Exercise management moved to promotion-based system');
+  async addExercise(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Exercise management moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async updateExercise(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Exercise management moved to promotion-based system');
+  async updateExercise(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Exercise management moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 
-  async deleteExercise(req: Request, res: Response): Promise<Response> {
-    const response = ResponseHelper.notImplemented('Exercise management moved to promotion-based system');
+  async deleteExercise(_req: Request, res: Response): Promise<Response> {
+    const response = ResponseHelper.error('Exercise management moved to promotion-based system', 501);
     return res.status(response.statusCode).json(response);
   }
 }

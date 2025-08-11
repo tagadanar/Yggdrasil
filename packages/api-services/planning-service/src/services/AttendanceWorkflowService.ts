@@ -48,13 +48,13 @@ interface AttendanceNotification {
 }
 
 export class AttendanceWorkflowService {
-  private progressService: ProgressTrackingService;
+  // private _progressService: ProgressTrackingService; // Reserved for future attendance progress integration
   private config: WorkflowConfig;
   private isRunning = false;
   private jobSchedules: Map<string, cron.ScheduledTask> = new Map();
 
   constructor() {
-    this.progressService = new ProgressTrackingService();
+    // this._progressService = new ProgressTrackingService(); // Reserved for future use
     this.config = this.getDefaultConfig();
   }
 
@@ -111,7 +111,6 @@ export class AttendanceWorkflowService {
     
     for (const [name, task] of this.jobSchedules.entries()) {
       task.stop();
-      task.destroy();
       logger.info(`Stopped job: ${name}`);
     }
     
@@ -204,7 +203,7 @@ export class AttendanceWorkflowService {
 
         // Check consecutive absences
         if (this.config.enabledAlerts.includes('consecutive_absences')) {
-          const consecutiveAbsences = await this.getConsecutiveAbsences(student._id, promotionId);
+          const consecutiveAbsences = await this.getConsecutiveAbsences(student._id as any, promotionId);
           
           if (consecutiveAbsences >= this.config.consecutiveAbsenceLimit) {
             alerts.push({

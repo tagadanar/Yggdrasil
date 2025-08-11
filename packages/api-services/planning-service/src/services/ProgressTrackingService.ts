@@ -279,8 +279,9 @@ export class ProgressTrackingService {
         course.chapters.forEach(chapter => {
           if (chapter.sections) {
             chapter.sections.forEach(section => {
-              if (section.exercises) {
-                totalExercises += section.exercises.length;
+              if (section.content) {
+                // Count content items that are exercises
+                totalExercises += section.content.filter(item => item.type === 'exercise').length;
               }
             });
           }

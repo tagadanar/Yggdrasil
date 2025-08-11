@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { courseApi } from '@/lib/api/courses';
 import { CourseDetail } from '@/components/courses/CourseDetail';
 import { Button } from '@/components/ui/Button';
+import { Course } from '@yggdrasil/shared-utilities';
 import {
   PencilIcon,
   Cog6ToothIcon,
@@ -18,7 +19,7 @@ export default function CoursePage() {
   const { user } = useAuth();
   const params = useParams();
   const router = useRouter();
-  const [course, setCourse] = useState(null);
+  const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
 
   const courseId = params['courseId'] as string;

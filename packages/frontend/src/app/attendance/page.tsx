@@ -16,9 +16,9 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function AttendancePage() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

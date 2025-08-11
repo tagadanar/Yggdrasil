@@ -6,46 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { courseApi } from '@/lib/api/courses';
-import { User as SharedUser } from '@yggdrasil/shared-utilities/client';
+import { User as SharedUser, Course } from '@yggdrasil/shared-utilities/client';
 
-interface Course {
-  _id: string;
-  title: string;
-  description: string;
-  slug: string;
-  category: string;
-  level: 'beginner' | 'intermediate' | 'advanced';
-  status: 'draft' | 'published' | 'archived';
-  instructor: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  thumbnail?: string;
-  tags: string[];
-  prerequisites: string[];
-  estimatedDuration: number;
-  settings: {
-    isPublic: boolean;
-    accessViaPromotion: boolean;
-    requiresApproval: boolean;
-    maxStudents?: number;
-    startDate?: string;
-    endDate?: string;
-    allowLateSubmissions: boolean;
-    enableDiscussions: boolean;
-    enableCollaboration: boolean;
-  };
-  stats: {
-    activeStudents: number;
-    completedStudents: number;
-    averageProgress: number;
-    averageRating?: number;
-    totalViews: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface CourseListProps {
   showCreateButton?: boolean;

@@ -64,18 +64,15 @@ export default function CourseAnalyticsPage() {
         setLoading(true);
 
         // Load course analytics data
-        const [analyticsResponse, performanceResponse] = await Promise.all([
-          StatisticsApi.getCourseAnalytics(courseId),
-          StatisticsApi.getCourseStudentPerformance(courseId),
-        ]);
+        const analyticsResponse = await StatisticsApi.getCourseAnalytics(courseId);
 
         if (analyticsResponse.success && analyticsResponse.data) {
           setAnalytics(analyticsResponse.data);
         }
 
-        if (performanceResponse.success && performanceResponse.data) {
-          setStudentPerformance(performanceResponse.data);
-        }
+        // TODO: Implement getCourseStudentPerformance method in StatisticsApi
+        // For now, using mock data
+        setStudentPerformance([]);
       } catch (err) {
         console.error('Error loading analytics:', err);
         // Mock data for testing

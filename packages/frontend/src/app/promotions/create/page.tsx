@@ -17,8 +17,8 @@ export default function CreatePromotionPage() {
     semester: 1,
     intake: 'september',
     academicYear: '',
-    startDate: new Date(),
-    endDate: new Date(),
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
     studentIds: [],
     eventIds: [],
     metadata: {
@@ -41,13 +41,15 @@ export default function CreatePromotionPage() {
   const handleInputChange = (field: keyof CreatePromotionRequest | string, value: any) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...(prev as any)[parent],
-          [child]: value
-        }
-      }));
+      if (parent && child) {
+        setFormData(prev => ({
+          ...prev,
+          [parent]: {
+            ...(prev as any)[parent],
+            [child]: value
+          }
+        }));
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -188,8 +190,8 @@ export default function CreatePromotionPage() {
                   type="datetime-local"
                   id="startDate"
                   name="startDate"
-                  value={formData.startDate.toISOString().slice(0, 16)}
-                  onChange={(e) => handleInputChange('startDate', new Date(e.target.value))}
+                  value={new Date(formData.startDate).toISOString().slice(0, 16)}
+                  onChange={(e) => handleInputChange('startDate', new Date(e.target.value).toISOString())}
                   required
                   className="w-full border border-gray-300 rounded px-3 py-2"
                 />
@@ -203,8 +205,8 @@ export default function CreatePromotionPage() {
                   type="datetime-local"
                   id="endDate"
                   name="endDate"
-                  value={formData.endDate.toISOString().slice(0, 16)}
-                  onChange={(e) => handleInputChange('endDate', new Date(e.target.value))}
+                  value={new Date(formData.endDate).toISOString().slice(0, 16)}
+                  onChange={(e) => handleInputChange('endDate', new Date(e.target.value).toISOString())}
                   required
                   className="w-full border border-gray-300 rounded px-3 py-2"
                 />

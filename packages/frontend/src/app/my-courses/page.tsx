@@ -12,6 +12,7 @@ import { courseApi } from '@/lib/api/courses';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
+import { StudentPromotionView } from '@yggdrasil/shared-utilities';
 import {
   AcademicCapIcon,
   CalendarDaysIcon,
@@ -44,18 +45,10 @@ interface PromotionEvent {
   linkedCourse?: Course;
 }
 
-interface StudentPromotion {
-  _id: string;
-  name: string;
-  semester: number;
-  intake: 'september' | 'march';
-  academicYear: string;
-  events: PromotionEvent[];
-}
 
 export default function MyCoursesPage() {
   const { user } = useAuth();
-  const [promotion, setPromotion] = useState<StudentPromotion | null>(null);
+  const [promotion, setPromotion] = useState<StudentPromotionView | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

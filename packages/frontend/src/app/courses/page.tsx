@@ -12,43 +12,10 @@ import { CourseForm } from '@/components/courses/CourseForm';
 import { CourseDetail } from '@/components/courses/CourseDetail';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Course } from '@yggdrasil/shared-utilities';
 import { AcademicCapIcon, ChartBarIcon, UserGroupIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'detail';
-
-interface Course {
-  _id: string;
-  title: string;
-  description: string;
-  slug: string;
-  category: string;
-  level: 'beginner' | 'intermediate' | 'advanced';
-  status: 'draft' | 'published' | 'archived';
-  instructor: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  tags: string[];
-  prerequisites: string[];
-  estimatedDuration: number;
-  settings: {
-    isPublic: boolean;
-    maxStudents?: number;
-    startDate?: string;
-    endDate?: string;
-    allowLateSubmissions: boolean;
-    enableDiscussions: boolean;
-    enableCollaboration: boolean;
-  };
-  stats: {
-    accessedStudents: number;
-    completedStudents: number;
-    averageProgress: number;
-    averageRating?: number;
-    totalViews: number;
-  };
-}
 
 export default function CoursesPage() {
   const { user } = useAuth();

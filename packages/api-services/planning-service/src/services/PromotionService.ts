@@ -453,7 +453,7 @@ export class PromotionService {
         // Keep upcomingEvents for backward compatibility
         upcomingEvents: upcomingEvents.map(formatEvent),
         progress,
-      };
+      } as StudentPromotionView;
     } catch (error: any) {
       logger.error('Failed to get student promotion view:', error);
       throw new Error(`Failed to get student promotion view: ${error.message}`);
