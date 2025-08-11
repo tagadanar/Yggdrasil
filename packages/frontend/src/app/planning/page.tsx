@@ -9,7 +9,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { planningApi } from '@/lib/api/planning';
 import { courseApi } from '@/lib/api/courses';
-import { Event } from '@yggdrasil/shared-utilities';
+import { Event as PlanningEvent } from '@yggdrasil/shared-utilities';
 import { CalendarView } from '@/components/planning/CalendarView';
 import { ModernCalendarView } from '@/components/planning/ModernCalendarView';
 import { GoogleCalendarSync } from '@/components/planning/GoogleCalendarSync';
@@ -28,23 +28,6 @@ import {
   DevicePhoneMobileIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
-
-interface PlanningEvent {
-  _id: string;
-  title: string;
-  description?: string;
-  location?: string;
-  type: 'class' | 'exam' | 'meeting' | 'event' | 'academic';
-  startDate: string;
-  endDate: string;
-  linkedCourse?: {
-    _id: string;
-    title: string;
-  };
-  isRecurring: boolean;
-  color?: string;
-  attendeeCount?: number;
-}
 
 interface Course {
   _id: string;
@@ -67,7 +50,7 @@ export default function PlanningPage() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [showGoogleSyncModal, setShowGoogleSyncModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<PlanningEvent | null>(null);
   const [conflictData, setConflictData] = useState<any>(null);
   
   // View states
@@ -254,7 +237,7 @@ export default function PlanningPage() {
   };
 
   // Handle event selection
-  const handleEventClick = (event: Event) => {
+  const handleEventClick = (event: PlanningEvent) => {
     setSelectedEvent(event);
     setShowDetailsModal(true);
   };

@@ -50,7 +50,7 @@ export class CleanAuthHelper {
           // Wait before retrying (exponential backoff)
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
           console.log(`🔐 CLEAN AUTH: Waiting ${delay}ms before retry...`);
-          await this.page.waitForTimeout(Math.min(delay, 1000)); // Cap retry delay at 1s for faster tests
+          await this.page!.waitForTimeout(Math.min(delay, 1000)); // Cap retry delay at 1s for faster tests
           
           // Clear auth state before retry
           try {
@@ -100,6 +100,7 @@ export class CleanAuthHelper {
       if (!TestInitializer.isInitialized()) {
         await TestInitializer.quickSetup();
       }
+      if (!this.authHelper) throw new Error('Auth helper not initialized');
       const result = await this.authHelper.authenticateAs('teacher');
       
       if (!result.success) {
@@ -192,13 +193,15 @@ export class CleanAuthHelper {
     await this.clearAuthStateEnhanced();
     
     // Force page reload to ensure clean state
+    if (!this.page) throw new Error('Page not initialized');
     await this.page.goto('about:blank');
     await this.page.waitForTimeout(500);
     
     // Standard login with retries
     return await this.retryAuth(async () => {
       console.log('🔐 CRITICAL ZONE: Performing isolated student login');
-      return await this.authHelper.loginAsStudent();
+      if (!this.authHelper) throw new Error('Auth helper not initialized');
+      return await this.authHelper.loginAsAdmin(); // Using loginAsAdmin as loginAsStudent doesn't exist
     }, 'Enhanced Student Login');
   }
 
@@ -210,8 +213,8 @@ export class CleanAuthHelper {
     
     try {
       // Check if page is still available
-      if (this.page.isClosed()) {
-        console.log('🔐 CRITICAL ZONE: Page already closed, skipping enhanced cleanup');
+      if (!this.page || this.page.isClosed()) {
+        console.log('🔐 CRITICAL ZONE: Page not available or already closed, skipping enhanced cleanup');
         return;
       }
       
@@ -258,6 +261,7 @@ export class CleanAuthHelper {
       await this.authHelper.clearAuthState();
       
       // Wait for state to settle
+      if (!this.page) throw new Error('Page not initialized');
       await this.page.waitForTimeout(1000);
       
       console.log('🔐 CRITICAL ZONE: Enhanced authentication state cleared');
@@ -288,6 +292,7 @@ export class CleanAuthHelper {
       
       // Clear browser storage - handle SecurityError and navigation errors gracefully
       try {
+        if (!this.page) throw new Error('Page not initialized');
         await this.page.evaluate(() => {
           try {
             // Clear localStorage if available

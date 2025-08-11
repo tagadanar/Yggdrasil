@@ -5,40 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { courseApi } from '@/lib/api/courses';
-
-interface Course {
-  _id: string;
-  title: string;
-  description: string;
-  slug: string;
-  category: string;
-  level: 'beginner' | 'intermediate' | 'advanced';
-  status: 'draft' | 'published' | 'archived';
-  instructor: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  tags: string[];
-  prerequisites: string[];
-  estimatedDuration: number;
-  settings: {
-    isPublic: boolean;
-    maxStudents?: number;
-    startDate?: string;
-    endDate?: string;
-    allowLateSubmissions: boolean;
-    enableDiscussions: boolean;
-    enableCollaboration: boolean;
-  };
-  stats: {
-    activeStudents: number;
-    completedStudents: number;
-    averageProgress: number;
-    averageRating?: number;
-    totalViews: number;
-  };
-}
+import { Course } from '@yggdrasil/shared-utilities';
 
 interface CourseFormProps {
   course?: Course | null;

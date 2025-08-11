@@ -8,98 +8,10 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { courseApi } from '@/lib/api/courses';
 import { StatisticsApi } from '@/lib/api/statistics';
 import { User as SharedUser } from '@yggdrasil/shared-utilities/client';
+import { Course, Chapter, CourseResource, Section, Content } from '@yggdrasil/shared-utilities';
 import { ExerciseSubmission } from './ExerciseSubmission';
 import { ProgressTracker } from '../progress/ProgressTracker';
 import { CourseContentEditor } from './CourseContentEditor';
-
-interface Course {
-  _id: string;
-  title: string;
-  description: string;
-  slug: string;
-  category: string;
-  level: 'beginner' | 'intermediate' | 'advanced';
-  status: 'draft' | 'published' | 'archived';
-  instructor: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  collaborators: Array<{
-    _id: string;
-    name: string;
-    email: string;
-    role: 'instructor' | 'assistant';
-  }>;
-  thumbnail?: string;
-  tags: string[];
-  prerequisites: string[];
-  estimatedDuration: number;
-  chapters: Chapter[];
-  resources: CourseResource[];
-  settings: {
-    isPublic: boolean;
-    accessViaPromotion: boolean;
-    requiresApproval: boolean;
-    maxStudents?: number;
-    startDate?: string;
-    endDate?: string;
-    allowLateSubmissions: boolean;
-    enableDiscussions: boolean;
-    enableCollaboration: boolean;
-  };
-  stats: {
-    activeStudents: number;
-    completedStudents: number;
-    averageProgress: number;
-    averageRating?: number;
-    totalViews: number;
-    lastAccessed?: string;
-  };
-  version: number;
-  lastModified: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Chapter {
-  _id: string;
-  title: string;
-  description?: string;
-  order: number;
-  sections: Section[];
-  isPublished: boolean;
-  estimatedDuration: number;
-}
-
-interface Section {
-  _id: string;
-  title: string;
-  description?: string;
-  order: number;
-  content: Content[];
-  isPublished: boolean;
-  estimatedDuration: number;
-}
-
-interface Content {
-  _id: string;
-  type: 'text' | 'video' | 'exercise' | 'quiz' | 'file';
-  title?: string;
-  order: number;
-  data: any;
-  isPublished: boolean;
-}
-
-interface CourseResource {
-  _id: string;
-  name: string;
-  type: 'file' | 'link' | 'reference';
-  url: string;
-  description?: string;
-  size?: number;
-  uploadedAt: string;
-}
 
 interface CourseDetailProps {
   courseId: string;

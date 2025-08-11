@@ -75,9 +75,10 @@ export default function MyCoursesPage() {
       setPromotion(promotionResponse.data);
 
       // Extract courses from promotion events
-      const coursesFromEvents = promotionResponse.data.events
-        ?.filter((event: PromotionEvent) => event.linkedCourse)
-        .map((event: PromotionEvent) => event.linkedCourse!)
+      const promotionData = promotionResponse.data as StudentPromotionView;
+      const coursesFromEvents = promotionData.events
+        ?.filter((event: any) => event.linkedCourse)
+        .map((event: any) => event.linkedCourse!)
         .filter((course: Course, index: number, self: Course[]) =>
           // Remove duplicates by ID
           self.findIndex(c => c._id === course._id) === index,
@@ -168,10 +169,10 @@ export default function MyCoursesPage() {
                 <AcademicCapIcon className="w-6 h-6 text-blue-600" />
                 <div>
                   <h3 className="text-lg font-medium text-blue-900">
-                    {promotion.name}
+                    {promotion.promotion.name}
                   </h3>
                   <p className="text-sm text-blue-700">
-                    {promotion.academicYear} • Semester {promotion.semester} • {promotion.intake} intake
+                    {promotion.promotion.academicYear} • Semester {promotion.promotion.semester} • {promotion.promotion.intake} intake
                   </p>
                 </div>
               </div>

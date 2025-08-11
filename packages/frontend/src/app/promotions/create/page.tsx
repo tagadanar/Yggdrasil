@@ -19,8 +19,6 @@ export default function CreatePromotionPage() {
     academicYear: '',
     startDate: new Date().toISOString(),
     endDate: new Date().toISOString(),
-    studentIds: [],
-    eventIds: [],
     metadata: {
       level: '',
       department: '',

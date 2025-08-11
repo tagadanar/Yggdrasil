@@ -106,7 +106,7 @@ export const AdminAttendanceDashboard: React.FC = () => {
       setPromotions(mockPromotions);
       
       if (mockPromotions.length > 0) {
-        setSelectedPromotion(mockPromotions[0]._id);
+        setSelectedPromotion(mockPromotions[0]?._id || null);
       }
 
       // Generate mock alerts
@@ -149,13 +149,14 @@ export const AdminAttendanceDashboard: React.FC = () => {
     try {
       const response = await progressApi.getPromotionStatistics(selectedPromotion);
       
-      if (response.success) {
+      if (response.success && response.data) {
+        const data = response.data as any; // Cast to any since PromotionStatistics interface may not have all properties
         const stats: QuickStats = {
-          totalStudents: response.data.totalStudents || 0,
-          totalEvents: response.data.totalEvents || 0,
-          overallAttendanceRate: response.data.averageAttendance || 0,
-          atRiskStudents: response.data.atRiskStudents || 0,
-          recentEvents: response.data.recentEvents || 0
+          totalStudents: data.totalStudents || 0,
+          totalEvents: data.totalEvents || 0,
+          overallAttendanceRate: data.averageAttendance || 0,
+          atRiskStudents: data.atRiskStudents || 0,
+          recentEvents: data.recentEvents || 0
         };
         
         setQuickStats(stats);

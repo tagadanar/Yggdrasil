@@ -9,7 +9,7 @@ import {
   EventAttendanceModel,
   PromotionProgressModel 
 } from '@yggdrasil/database-schemas';
-import { ProgressTrackingService } from './ProgressTrackingService';
+// import { ProgressTrackingService } from './ProgressTrackingService'; // Reserved for future attendance progress integration
 import { logger } from '@yggdrasil/shared-utilities';
 import { Types } from 'mongoose';
 
