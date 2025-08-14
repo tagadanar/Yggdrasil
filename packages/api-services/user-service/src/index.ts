@@ -11,6 +11,7 @@ import fs from 'fs';
 import { createApp } from './app';
 import { connectDatabase } from '@yggdrasil/database-schemas';
 import { logger, initializeJWT } from '@yggdrasil/shared-utilities';
+import { startMonitoring } from './middleware/monitoring';
 
 // Load environment variables from project root
 // Use absolute path resolution to find .env file regardless of working directory
@@ -20,15 +21,15 @@ const possiblePaths = [
   path.resolve(process.cwd(), '.env'),
   path.resolve(process.cwd(), '../../.env'),
   path.resolve(process.cwd(), '../../../.env'),
-  '/home/tagada/Desktop/Yggdrasil/.env'
+  '/home/tagada/Desktop/Yggdrasil/.env',
 ];
 
 const envPath = possiblePaths.find(p => fs.existsSync(p));
 if (envPath) {
   dotenv.config({ path: envPath });
-  console.log(`🔧 USER SERVICE: Loaded .env from ${envPath}`);
+  logger.info(`🔧 USER SERVICE: Loaded .env from ${envPath}`);
 } else {
-  console.warn('⚠️ USER SERVICE: Could not find .env file, using existing environment variables');
+  logger.warn('⚠️ USER SERVICE: Could not find .env file, using existing environment variables');
 }
 
 // Calculate worker-specific port for parallel testing
@@ -77,11 +78,11 @@ logger.debug(`🔧 USER SERVICE: Final PORT: ${PORT}`);
 async function startServer() {
   try {
     logger.info('🔧 USER SERVICE: Starting server...');
-    
+
     // Initialize JWT system first (same as auth service)
     logger.info('🔑 Initializing JWT system...');
     initializeJWT();
-    
+
     logger.debug(`🔧 USER SERVICE: NODE_ENV: ${process.env['NODE_ENV']}`);
     logger.debug(`🔧 USER SERVICE: Received DB_NAME: ${process.env['DB_NAME']}`);
     logger.debug(
@@ -139,6 +140,11 @@ async function startServer() {
 
     // Create Express app
     const app = createApp();
+
+    // Start monitoring (memory leak detection, resource logging)
+    if (process.env['NODE_ENV'] !== 'test') {
+      startMonitoring();
+    }
 
     // Start server
     const server = app.listen(PORT, () => {

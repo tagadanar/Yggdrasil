@@ -8,13 +8,20 @@ import { AuthenticatedRequest } from '../middleware/auth';
 
 export class UserController {
   // REFACTOR: Extract error mapping to private method
-  private static handleServiceResult(res: Response, result: UserServiceResult, successMessage: string): void {
+  private static handleServiceResult(
+    res: Response,
+    result: UserServiceResult,
+    successMessage: string,
+  ): void {
     if (result.success) {
       const response = ResponseHelper.success(result.data, successMessage);
       res.status(HTTP_STATUS.OK).json(response);
     } else {
       // REFACTOR: Cleaner error mapping
-      if (result.error?.includes('Invalid user ID') || result.error?.includes('Invalid profile data')) {
+      if (
+        result.error?.includes('Invalid user ID') ||
+        result.error?.includes('Invalid profile data')
+      ) {
         const errorResponse = ResponseHelper.badRequest(result.error);
         res.status(errorResponse.statusCode).json(errorResponse);
       } else if (result.error === 'User not found') {
@@ -27,6 +34,12 @@ export class UserController {
     }
   }
 
+  // REFACTOR: Extract common catch block error handling
+  private static handleControllerError(res: Response, _error: unknown): void {
+    const errorResponse = ResponseHelper.error('Internal server error');
+    res.status(errorResponse.statusCode).json(errorResponse);
+  }
+
   // Protected: Get user by ID with authentication
   static async getUserById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
@@ -34,8 +47,7 @@ export class UserController {
       const result = await UserService.getUserById(id!);
       UserController.handleServiceResult(res, result, 'User retrieved successfully');
     } catch (error) {
-      const errorResponse = ResponseHelper.error('Internal server error');
-      res.status(errorResponse.statusCode).json(errorResponse);
+      UserController.handleControllerError(res, error);
     }
   }
 
@@ -48,8 +60,7 @@ export class UserController {
       const result = await UserService.updateUserProfile(id!, profileData);
       UserController.handleServiceResult(res, result, 'Profile updated successfully');
     } catch (error) {
-      const errorResponse = ResponseHelper.error('Internal server error');
-      res.status(errorResponse.statusCode).json(errorResponse);
+      UserController.handleControllerError(res, error);
     }
   }
 
@@ -60,8 +71,7 @@ export class UserController {
       const result = await UserService.getUserPreferences(id!);
       UserController.handleServiceResult(res, result, 'Preferences retrieved successfully');
     } catch (error) {
-      const errorResponse = ResponseHelper.error('Internal server error');
-      res.status(errorResponse.statusCode).json(errorResponse);
+      UserController.handleControllerError(res, error);
     }
   }
 
@@ -86,7 +96,9 @@ export class UserController {
           const errorResponse = ResponseHelper.conflict(result.error);
           res.status(errorResponse.statusCode).json(errorResponse);
         } else if (result.error?.includes('Validation error')) {
-          const errorResponse = ResponseHelper.validationError([{field: 'general', message: result.error}]);
+          const errorResponse = ResponseHelper.validationError([
+            { field: 'general', message: result.error },
+          ]);
           res.status(errorResponse.statusCode).json(errorResponse);
         } else {
           const errorResponse = ResponseHelper.error(result.error || 'Failed to create user');
@@ -94,8 +106,7 @@ export class UserController {
         }
       }
     } catch (error) {
-      const errorResponse = ResponseHelper.error('Internal server error');
-      res.status(errorResponse.statusCode).json(errorResponse);
+      UserController.handleControllerError(res, error);
     }
   }
 
@@ -104,7 +115,9 @@ export class UserController {
     try {
       // Check if user is admin or staff
       if (!req.user || !['admin', 'staff'].includes(req.user.role)) {
-        const errorResponse = ResponseHelper.forbidden('Only administrators and staff can list users');
+        const errorResponse = ResponseHelper.forbidden(
+          'Only administrators and staff can list users',
+        );
         res.status(errorResponse.statusCode).json(errorResponse);
         return;
       }
@@ -124,8 +137,7 @@ export class UserController {
         res.status(errorResponse.statusCode).json(errorResponse);
       }
     } catch (error) {
-      const errorResponse = ResponseHelper.error('Internal server error');
-      res.status(errorResponse.statusCode).json(errorResponse);
+      UserController.handleControllerError(res, error);
     }
   }
 
@@ -163,8 +175,7 @@ export class UserController {
         }
       }
     } catch (error) {
-      const errorResponse = ResponseHelper.error('Internal server error');
-      res.status(errorResponse.statusCode).json(errorResponse);
+      UserController.handleControllerError(res, error);
     }
   }
 
@@ -180,8 +191,7 @@ export class UserController {
       const result = await UserService.getUserById(req.user.userId);
       UserController.handleServiceResult(res, result, 'Profile retrieved successfully');
     } catch (error) {
-      const errorResponse = ResponseHelper.error('Internal server error');
-      res.status(errorResponse.statusCode).json(errorResponse);
+      UserController.handleControllerError(res, error);
     }
   }
 
@@ -198,8 +208,7 @@ export class UserController {
       const result = await UserService.updateUserProfile(req.user.userId, profileData);
       UserController.handleServiceResult(res, result, 'Profile updated successfully');
     } catch (error) {
-      const errorResponse = ResponseHelper.error('Internal server error');
-      res.status(errorResponse.statusCode).json(errorResponse);
+      UserController.handleControllerError(res, error);
     }
   }
 
@@ -212,8 +221,7 @@ export class UserController {
       const result = await UserService.updateUser(id!, userData);
       UserController.handleServiceResult(res, result, 'User updated successfully');
     } catch (error) {
-      const errorResponse = ResponseHelper.error('Internal server error');
-      res.status(errorResponse.statusCode).json(errorResponse);
+      UserController.handleControllerError(res, error);
     }
   }
 }

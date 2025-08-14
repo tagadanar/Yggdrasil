@@ -2,7 +2,12 @@
 // TDD: REFACTOR phase - Clean implementation while keeping tests green
 
 import { UserModel, UserDocument } from '@yggdrasil/database-schemas';
-import { ValidationHelper, userLogger as logger } from '@yggdrasil/shared-utilities';
+import {
+  ValidationHelper,
+  userLogger as logger,
+  PASSWORD_CONFIG,
+  SecurityLogger,
+} from '@yggdrasil/shared-utilities';
 import bcrypt from 'bcrypt';
 
 // REFACTOR: Better type definitions
@@ -64,6 +69,20 @@ export interface ListUsersOptions {
   offset?: number;
 }
 
+export interface UserQueryFilter {
+  role?: string;
+  email?: string;
+  isActive?: boolean;
+}
+
+export interface UserUpdateData {
+  email?: string;
+  role?: string;
+  profile?: Record<string, any>;
+  isActive?: boolean;
+  password?: string;
+}
+
 // REFACTOR: Extract error messages as constants
 const ERROR_MESSAGES = {
   INVALID_USER_ID: 'Invalid user ID format',
@@ -114,7 +133,6 @@ export class UserService {
           user: this.transformUserDocument(user),
         },
       };
-
     } catch (error) {
       return {
         success: false,
@@ -134,7 +152,10 @@ export class UserService {
     return null;
   }
 
-  static async updateUserProfile(userId: string, profileData: ProfileUpdateData): Promise<UserServiceResult> {
+  static async updateUserProfile(
+    userId: string,
+    profileData: ProfileUpdateData,
+  ): Promise<UserServiceResult> {
     logger.debug('🔄 UPDATE PROFILE: Received data:', JSON.stringify(profileData, null, 2));
 
     // REFACTOR: Use extracted error message
@@ -170,18 +191,25 @@ export class UserService {
       const updateData: Record<string, any> = {};
 
       // Basic profile fields
-      if (profileData.firstName !== undefined) updateData['profile.firstName'] = profileData.firstName;
+      if (profileData.firstName !== undefined)
+        updateData['profile.firstName'] = profileData.firstName;
       if (profileData.lastName !== undefined) updateData['profile.lastName'] = profileData.lastName;
-      if (profileData.department !== undefined) updateData['profile.department'] = profileData.department;
-      if (profileData.studentId !== undefined) updateData['profile.studentId'] = profileData.studentId;
+      if (profileData.department !== undefined)
+        updateData['profile.department'] = profileData.department;
+      if (profileData.studentId !== undefined)
+        updateData['profile.studentId'] = profileData.studentId;
       if (profileData.bio !== undefined) updateData['profile.bio'] = profileData.bio;
-      if (profileData.officeHours !== undefined) updateData['profile.officeHours'] = profileData.officeHours;
-      if (profileData.specialties !== undefined) updateData['profile.specialties'] = profileData.specialties;
+      if (profileData.officeHours !== undefined)
+        updateData['profile.officeHours'] = profileData.officeHours;
+      if (profileData.specialties !== undefined)
+        updateData['profile.specialties'] = profileData.specialties;
 
       // Contact info fields
       if (profileData.contactInfo) {
-        if (profileData.contactInfo.phone !== undefined) updateData['profile.contactInfo.phone'] = profileData.contactInfo.phone;
-        if (profileData.contactInfo.address !== undefined) updateData['profile.contactInfo.address'] = profileData.contactInfo.address;
+        if (profileData.contactInfo.phone !== undefined)
+          updateData['profile.contactInfo.phone'] = profileData.contactInfo.phone;
+        if (profileData.contactInfo.address !== undefined)
+          updateData['profile.contactInfo.address'] = profileData.contactInfo.address;
       }
 
       logger.info('🔄 UPDATE PROFILE: Update data to save:', JSON.stringify(updateData, null, 2));
@@ -209,7 +237,6 @@ export class UserService {
           user: this.transformUserDocument(updatedUser),
         },
       };
-
     } catch (error) {
       return {
         success: false,
@@ -243,7 +270,6 @@ export class UserService {
           preferences: user.preferences,
         },
       };
-
     } catch (error) {
       return {
         success: false,
@@ -294,7 +320,6 @@ export class UserService {
           user: this.transformUserDocument(newUser),
         },
       };
-
     } catch (error: any) {
       if (error.name === 'ValidationError') {
         return {
@@ -315,16 +340,13 @@ export class UserService {
       const { role, limit = 50, offset = 0 } = options;
 
       // Build query
-      const query: any = {};
+      const query: UserQueryFilter = {};
       if (role) {
         query.role = role;
       }
 
       // Execute query with pagination
-      const users = await UserModel.find(query)
-        .skip(offset)
-        .limit(limit)
-        .sort({ createdAt: -1 });
+      const users = await UserModel.find(query).skip(offset).limit(limit).sort({ createdAt: -1 });
 
       // Get total count for pagination
       const total = await UserModel.countDocuments(query);
@@ -340,7 +362,6 @@ export class UserService {
           },
         },
       };
-
     } catch (error) {
       return {
         success: false,
@@ -374,7 +395,6 @@ export class UserService {
         success: true,
         data: {},
       };
-
     } catch (error) {
       return {
         success: false,
@@ -384,7 +404,10 @@ export class UserService {
   }
 
   // Admin Only: Full user update (role, email, profile, active status)
-  static async updateUser(userId: string, userData: Partial<CreateUserData>): Promise<UserServiceResult> {
+  static async updateUser(
+    userId: string,
+    userData: Partial<CreateUserData>,
+  ): Promise<UserServiceResult> {
     if (!ValidationHelper.isValidObjectId(userId)) {
       return {
         success: false,
@@ -401,7 +424,7 @@ export class UserService {
         };
       }
 
-      const updateData: any = {};
+      const updateData: UserUpdateData = {};
 
       // Update email if provided
       if (userData.email && userData.email !== user.email) {
@@ -432,7 +455,21 @@ export class UserService {
 
       // Update password if provided
       if (userData.password) {
-        updateData.password = await bcrypt.hash(userData.password, 12);
+        try {
+          // Log security operation for audit trail
+          SecurityLogger.logAuthOperation('password_hash', user.email);
+
+          // Use same password hashing approach as model middleware
+          const salt = await bcrypt.genSalt(PASSWORD_CONFIG.SALT_ROUNDS);
+          updateData.password = await bcrypt.hash(userData.password, salt);
+        } catch (error) {
+          SecurityLogger.logAuthOperation('password_hash_error', user.email);
+          logger.error('Password hashing failed during user update:', error);
+          return {
+            success: false,
+            error: ERROR_MESSAGES.INTERNAL_ERROR,
+          };
+        }
       }
 
       const updatedUser = await UserModel.findByIdAndUpdate(
@@ -454,7 +491,6 @@ export class UserService {
           user: this.transformUserDocument(updatedUser),
         },
       };
-
     } catch (error) {
       return {
         success: false,
