@@ -9,6 +9,9 @@ import { courseApi } from '@/lib/api/courses';
 import { StatisticsApi } from '@/lib/api/statistics';
 import { User as SharedUser } from '@yggdrasil/shared-utilities/client';
 import { Course, Chapter, CourseResource, Section, Content } from '@yggdrasil/shared-utilities';
+import { useAsyncResource } from '@/hooks/useAsyncResource';
+import { useModalManager } from '@/hooks/useModalManager';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ExerciseSubmission } from './ExerciseSubmission';
 import { ProgressTracker } from '../progress/ProgressTracker';
 import { CourseContentEditor } from './CourseContentEditor';
@@ -25,76 +28,72 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
   onBack,
 }) => {
   const { user } = useAuth();
-  const [course, setCourse] = useState<Course | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'resources' | 'analytics' | 'progress'>('overview');
-  const [selectedExercise, setSelectedExercise] = useState<any | null>(null);
-  const [viewMode, setViewMode] = useState<'course' | 'exercise'>('course');
-  const [hasAccess, setHasAccess] = useState(false);
-  const [progressData, setProgressData] = useState<any>(null);
-  const [isEditingContent, setIsEditingContent] = useState(false);
-
-  useEffect(() => {
-    loadCourse();
-    if (user?.role === 'student') {
-      loadProgressData();
-    }
-  }, [courseId, user]);
-
-  const loadCourse = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
+  
+  // Enhanced course data fetching with caching
+  const courseResource = useAsyncResource(
+    async () => {
       const response = await courseApi.getCourseById(courseId);
       if (response.success) {
-        setCourse(response.data);
+        return response.data;
       } else {
-        setError(response.error || 'Failed to load course');
+        throw new Error(response.error || 'Failed to load course');
       }
-    } catch (err: any) {
-      console.error('Error loading course:', err);
-      setError(err.response?.data?.error || 'Failed to load course');
-    } finally {
-      setLoading(false);
+    },
+    {
+      dependencies: [courseId],
+      cacheTime: 5 * 60 * 1000, // Cache for 5 minutes
+      component: 'CourseDetail'
     }
-  };
+  );
 
-  const loadProgressData = async () => {
-    if (!user || user.role !== 'student' || !courseId || !user._id) return;
+  // Enhanced progress data fetching for students
+  const progressResource = useAsyncResource(
+    async () => {
+      if (!user || user.role !== 'student' || !courseId || !user._id) {
+        return null;
+      }
 
-    try {
-      // Call real statistics service API to get student course progress
       const response = await StatisticsApi.getStudentCourseProgress(user._id, courseId);
-
       if (response.success && response.data) {
-        setHasAccess(response.data.accessStatus === 'active' || response.data.accessStatus === 'completed');
-
-        // Calculate estimated time remaining based on progress
         const remainingProgress = 100 - response.data.overallProgress;
-        const estimatedTimeRemaining = Math.round((course?.estimatedDuration || 60) * (remainingProgress / 100));
+        const estimatedTimeRemaining = Math.round(
+          (courseResource.data?.estimatedDuration || 60) * (remainingProgress / 100)
+        );
 
-        const progressData = {
+        return {
+          hasAccess: response.data.accessStatus === 'active' || response.data.accessStatus === 'completed',
           overallProgress: response.data.overallProgress,
           timeSpent: response.data.timeSpent,
           estimatedTimeRemaining,
           chapters: response.data.chapters,
         };
-
-        setProgressData(progressData);
-      } else {
-        // If no progress data found, user might not have access
-        setHasAccess(false);
       }
-    } catch (err: any) {
-      console.error('Error loading progress data:', err);
-      // On error, assume no access
-      setHasAccess(false);
+      return { hasAccess: false };
+    },
+    {
+      dependencies: [user?._id, courseId, user?.role, courseResource.data?.estimatedDuration],
+      cacheTime: 2 * 60 * 1000, // Cache for 2 minutes (more dynamic)
+      component: 'CourseDetail-Progress'
     }
-  };
+  );
+
+  // Modal management for exercises and content editing
+  const modalManager = useModalManager();
+
+  // Persistent UI states with localStorage
+  const [expandedChapters, setExpandedChapters] = useLocalStorage<string[]>(`course-${courseId}-expanded-chapters`, []);
+  const [expandedSections, setExpandedSections] = useLocalStorage<string[]>(`course-${courseId}-expanded-sections`, []);
+  const [activeTab, setActiveTab] = useLocalStorage<'overview' | 'content' | 'resources' | 'analytics' | 'progress'>(`course-${courseId}-active-tab`, 'overview');
+  
+  // Simple state for selected exercise (doesn't need persistence)
+  const [selectedExercise, setSelectedExercise] = useState<any | null>(null);
+
+  // Computed values from resources
+  const course = courseResource.data;
+  const loading = courseResource.loading;
+  const error = courseResource.error;
+  const progressData = progressResource.data;
+  const hasAccess = progressData?.hasAccess || false;
 
   const canManageCourse = () => {
     if (!user || !course) return false;
@@ -107,27 +106,24 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
   };
 
 
+  // Enhanced toggle functions with persistent arrays
   const toggleChapter = (chapterId: string) => {
     setExpandedChapters(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(chapterId)) {
-        newSet.delete(chapterId);
+      if (prev.includes(chapterId)) {
+        return prev.filter(id => id !== chapterId);
       } else {
-        newSet.add(chapterId);
+        return [...prev, chapterId];
       }
-      return newSet;
     });
   };
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(sectionId)) {
-        newSet.delete(sectionId);
+      if (prev.includes(sectionId)) {
+        return prev.filter(id => id !== sectionId);
       } else {
-        newSet.add(sectionId);
+        return [...prev, sectionId];
       }
-      return newSet;
     });
   };
 
@@ -158,7 +154,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
     return `${mins}m`;
   };
 
-  // Exercise handlers
+  // Enhanced exercise handlers with modal management
   const handleContentClick = (content: Content) => {
     if (content.type === 'exercise' && user?.role === 'student') {
       // Convert content data to exercise format
@@ -177,36 +173,39 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
         maxAttempts: content.data?.exercise?.maxAttempts,
         timeLimit: content.data?.exercise?.timeLimit,
       };
+      
       setSelectedExercise(exercise);
-      setViewMode('exercise');
+      modalManager.open('exercise', { exercise });
     }
   };
 
   const handleExerciseSubmissionComplete = (submission: any) => {
-    // Could update progress tracking here
+    // Refresh progress data after submission
+    progressResource.refresh();
+    modalManager.close('exercise');
   };
 
   const handleBackFromExercise = () => {
     setSelectedExercise(null);
-    setViewMode('course');
+    modalManager.close('exercise');
   };
 
   const handleContentUpdate = async (updatedChapters: any[]) => {
     if (!course) return;
 
     try {
-      // Update the local state immediately for better UX
-      setCourse({ ...course, chapters: updatedChapters });
-
       // Here you would typically save to the backend
       // const response = await courseApi.updateCourseContent(courseId, { chapters: updatedChapters });
       // if (!response.success) {
       //   throw new Error(response.error);
       // }
+      
+      // Refresh course data to get latest changes
+      courseResource.refresh();
     } catch (error) {
       console.error('Error updating course content:', error);
-      // Revert local changes if backend save fails
-      loadCourse();
+      // Refresh course data to revert any local changes
+      courseResource.refresh();
     }
   };
 
@@ -233,8 +232,8 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
     );
   }
 
-  // Show exercise submission interface if in exercise mode
-  if (viewMode === 'exercise' && selectedExercise) {
+  // Show exercise submission interface if modal is open
+  if (modalManager.isOpen('exercise') && selectedExercise) {
     return (
       <ExerciseSubmission
         exercise={selectedExercise}
@@ -452,16 +451,16 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                 <h3 className="text-lg font-semibold text-gray-900">Course Content</h3>
                 {canManageCourse() && (
                   <button
-                    onClick={() => setIsEditingContent(!isEditingContent)}
+                    onClick={() => modalManager.toggle('contentEditor')}
                     className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
                     data-testid="edit-content-btn"
                   >
-                    {isEditingContent ? 'View Mode' : 'Edit Content'}
+                    {modalManager.isOpen('contentEditor') ? 'View Mode' : 'Edit Content'}
                   </button>
                 )}
               </div>
 
-              {isEditingContent && canManageCourse() ? (
+              {modalManager.isOpen('contentEditor') && canManageCourse() ? (
                 <CourseContentEditor
                   courseId={courseId}
                   chapters={course.chapters}
@@ -473,7 +472,7 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                   <div className="text-gray-500">No chapters added yet.</div>
                   {canManageCourse() && (
                     <button
-                      onClick={() => setIsEditingContent(true)}
+                      onClick={() => modalManager.open('contentEditor')}
                       className="mt-2 text-blue-600 hover:text-blue-800"
                       data-testid="add-chapter-btn"
                     >
@@ -507,14 +506,14 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                               {chapter.sections.length} sections
                             </span>
                             <span className={`transform transition-transform ${
-                              expandedChapters.has(chapter._id) ? 'rotate-180' : ''
+                              expandedChapters.includes(chapter._id) ? 'rotate-180' : ''
                             }`}>
                               ▼
                             </span>
                           </div>
                         </button>
 
-                        {expandedChapters.has(chapter._id) && (
+                        {expandedChapters.includes(chapter._id) && (
                           <div className="px-4 pb-3 border-t bg-gray-50">
                             {chapter.description && (
                               <p className="text-sm text-gray-600 mb-3 pt-3">{chapter.description}</p>
@@ -550,14 +549,14 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                                             {section.content.length} items
                                           </span>
                                           <span className={`transform transition-transform text-xs ${
-                                            expandedSections.has(section._id) ? 'rotate-180' : ''
+                                            expandedSections.includes(section._id) ? 'rotate-180' : ''
                                           }`}>
                                             ▼
                                           </span>
                                         </div>
                                       </button>
 
-                                      {expandedSections.has(section._id) && (
+                                      {expandedSections.includes(section._id) && (
                                         <div className="px-3 pb-2 border-t bg-gray-50">
                                           {section.description && (
                                             <p className="text-xs text-gray-600 mb-2 pt-2">{section.description}</p>
@@ -736,8 +735,8 @@ export const CourseDetail: React.FC<CourseDetailProps> = ({
                         await StatisticsApi.markSectionComplete(user._id, courseId, itemId);
                       }
 
-                      // Reload progress data to reflect changes
-                      loadProgressData();
+                      // Refresh progress data to reflect changes
+                      progressResource.refresh();
                     } catch (error) {
                       console.error('Error updating progress:', error);
                     }

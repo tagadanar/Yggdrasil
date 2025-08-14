@@ -37,7 +37,6 @@
 @layer base {
   * {
     @apply border-secondary-200 dark:border-secondary-700;
-    transition: var(--theme-transition);
   }
   
   html {
@@ -532,5 +531,32 @@
 
   .dark .fc-scrollgrid-section-liquid > td {
     @apply border-secondary-700;
+  }
+}
+
+/* Performance-optimized transition utilities */
+@layer utilities {
+  .transition-colors {
+    transition: color var(--theme-transition), background-color var(--theme-transition), border-color var(--theme-transition);
+  }
+  
+  .transition-transform {
+    transition: transform var(--theme-transition);
+  }
+  
+  .transition-opacity {
+    transition: opacity var(--theme-transition);
+  }
+  
+  .transition-shadow {
+    transition: box-shadow var(--theme-transition);
+  }
+  
+  .transition-size {
+    transition: width var(--theme-transition), height var(--theme-transition);
+  }
+  
+  .transition-common {
+    transition: color var(--theme-transition), background-color var(--theme-transition), border-color var(--theme-transition), opacity var(--theme-transition), transform var(--theme-transition);
   }
 }

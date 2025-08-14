@@ -15,7 +15,9 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "typecheck": "tsc --noEmit",
     "seed": "ts-node src/scripts/seed-demo-data.ts",
-    "seed:demo": "ts-node src/scripts/seed-demo-data.ts"
+    "seed:demo": "ts-node src/scripts/seed-demo-data.ts",
+    "seed:dev": "ts-node src/scripts/comprehensive-dev-seeder.ts",
+    "seed:comprehensive": "ts-node src/scripts/comprehensive-dev-seeder.ts"
   },
   "files": [
     "dist"

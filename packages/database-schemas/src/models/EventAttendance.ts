@@ -228,8 +228,8 @@ EventAttendanceSchema.set('toJSON', {
   },
 });
 
-// Create and export the model
-export const EventAttendanceModel = mongoose.model<EventAttendanceDocument, EventAttendanceModelType>(
+// Create and export the model with overwrite protection
+export const EventAttendanceModel = (mongoose.models['EventAttendance'] || mongoose.model<EventAttendanceDocument, EventAttendanceModelType>(
   'EventAttendance',
   EventAttendanceSchema,
-) as EventAttendanceModelType;
+)) as EventAttendanceModelType;

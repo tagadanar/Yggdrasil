@@ -11,9 +11,12 @@ import {
   AddStudentsToPromotionRequest,
   LinkEventsToPromotionRequest,
 } from '@yggdrasil/shared-utilities';
+import { tokenStorage } from '@/lib/auth/tokenStorage';
+import { createComponentLogger } from '@/lib/errors/logger';
 
 // Use frontend URL for API calls - Next.js will handle proxying to services
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3000';
+const logger = createComponentLogger('PromotionAPI');
 
 // Helper function for API calls
 async function apiCall<T>(
@@ -21,20 +24,8 @@ async function apiCall<T>(
   options: RequestInit = {},
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   try {
-    // First try localStorage (for compatibility), then try to get token from cookies
-    let token = localStorage.getItem('yggdrasil_access_token') || localStorage.getItem('access_token');
-
-    // If no token in localStorage, try to get from cookies (for tests)
-    if (!token && typeof document !== 'undefined') {
-      const cookies = document.cookie.split(';');
-      for (const cookie of cookies) {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'yggdrasil_access_token') {
-          token = value;
-          break;
-        }
-      }
-    }
+    // Use secure tokenStorage instead of direct localStorage access
+    const token = tokenStorage.getAccessToken();
 
     // Create an AbortController for timeout
     const controller = new AbortController();
@@ -56,13 +47,24 @@ async function apiCall<T>(
     const result = await response.json();
 
     if (!response.ok) {
+      logger.error('API request failed', { 
+        endpoint, 
+        status: response.status, 
+        statusText: response.statusText 
+      });
       return { success: false, error: result.message || 'API request failed' };
     }
 
     return { success: true, data: result.data };
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
-      return { success: false, error: 'Request timeout - please try again' };
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        logger.warn('API request timeout', { endpoint });
+        return { success: false, error: 'Request timeout - please try again' };
+      }
+      logger.error('API network error', { endpoint, error: error.message });
+    } else {
+      logger.error('Unknown API error', { endpoint });
     }
     return { success: false, error: 'Network error' };
   }
@@ -166,10 +168,20 @@ export const promotionApi = {
     return apiCall<StudentPromotionView>('/my');
   },
 
+  // Get student's own validation status and progress (students only)
+  getMyValidationStatus: async (): Promise<{ success: boolean; data?: any; error?: string }> => {
+    return apiCall<any>('/my/validation-status');
+  },
+
   // Get teacher's assigned events
   getTeacherEvents: async (teacherId: string, timeframe: 'week' | 'month' | 'all' = 'week'): Promise<{ success: boolean; data?: any; error?: string }> => {
     const params = new URLSearchParams({ timeframe });
     return apiCall<any>(`/teacher/${teacherId}/events?${params.toString()}`);
+  },
+
+  // Get students enrolled in a course through promotions (teacher/admin/staff)
+  getCourseStudents: async (courseId: string): Promise<{ success: boolean; data?: any[]; error?: string }> => {
+    return apiCall<any[]>(`/course/${courseId}/students`);
   },
 
   // =============================================================================
@@ -182,6 +194,100 @@ export const promotionApi = {
       method: 'POST',
       body: JSON.stringify({ studentId, currentPromotionId }),
     });
+  },
+
+  // =============================================================================
+  // SEMESTER VALIDATION SYSTEM
+  // =============================================================================
+
+  // Initialize semester system (admin only)
+  initializeSemesters: async (academicYear?: string): Promise<{ success: boolean; data?: any; error?: string }> => {
+    const params = academicYear ? `?academicYear=${academicYear}` : '';
+    return apiCall<any>(`/semester/initialize${params}`, { method: 'POST' });
+  },
+
+  // Get all semesters with statistics
+  getSemesters: async (academicYear?: string): Promise<{ success: boolean; data?: any; error?: string }> => {
+    const params = academicYear ? `?academicYear=${academicYear}` : '';
+    return apiCall<any>(`/semester/all${params}`);
+  },
+
+  // Get semester system health check
+  getSemesterHealthCheck: async (): Promise<{ success: boolean; data?: any; error?: string }> => {
+    return apiCall<any>('/semester/health');
+  },
+
+  // Get students pending validation
+  getStudentsPendingValidation: async (promotionId?: string): Promise<{ success: boolean; data?: any[]; error?: string }> => {
+    const params = promotionId ? `?promotionId=${promotionId}` : '';
+    return apiCall<any[]>(`/validation/pending${params}`);
+  },
+
+  // Get validation statistics and insights
+  getValidationInsights: async (semesterId?: string): Promise<{ success: boolean; data?: any; error?: string }> => {
+    const params = semesterId ? `?semesterId=${semesterId}` : '';
+    return apiCall<any>(`/validation/insights${params}`);
+  },
+
+  // Evaluate single student
+  evaluateStudent: async (studentId: string, criteria?: any): Promise<{ success: boolean; data?: any; error?: string }> => {
+    return apiCall<any>(`/validation/evaluate/${studentId}`, {
+      method: 'POST',
+      body: JSON.stringify({ criteria }),
+    });
+  },
+
+  // Evaluate multiple students in batch
+  evaluateStudentsBatch: async (studentIds: string[], criteria?: any): Promise<{ success: boolean; data?: any[]; error?: string }> => {
+    return apiCall<any[]>('/validation/evaluate-batch', {
+      method: 'POST',
+      body: JSON.stringify({ studentIds, criteria }),
+    });
+  },
+
+  // Perform bulk validation
+  performBulkValidation: async (request: {
+    studentIds: string[];
+    decision: 'approve' | 'reject' | 'conditional';
+    reason?: string;
+    notes?: string;
+    customCriteria?: any;
+  }): Promise<{ success: boolean; data?: any; error?: string }> => {
+    return apiCall<any>('/validation/bulk-validate', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  // Flag students for validation
+  flagStudentsForValidation: async (semesterIds?: string[]): Promise<{ success: boolean; data?: any; error?: string }> => {
+    return apiCall<any>('/validation/flag-students', {
+      method: 'POST',
+      body: JSON.stringify({ semesterIds }),
+    });
+  },
+
+  // Process validated students for progression
+  processStudentProgressions: async (): Promise<{ success: boolean; data?: any; error?: string }> => {
+    return apiCall<any>('/validation/process-progressions', { method: 'POST' });
+  },
+
+  // Assign new students to S1
+  assignNewStudentsToS1: async (studentIds: string[], intake: 'september' | 'march' = 'september'): Promise<{ success: boolean; data?: any; error?: string }> => {
+    return apiCall<any>('/semester/assign-s1', {
+      method: 'POST',
+      body: JSON.stringify({ studentIds, intake }),
+    });
+  },
+
+  // Get auto-validation candidates
+  getAutoValidationCandidates: async (): Promise<{ success: boolean; data?: any[]; error?: string }> => {
+    return apiCall<any[]>('/validation/auto-candidates');
+  },
+
+  // Process auto-validations
+  processAutoValidations: async (): Promise<{ success: boolean; data?: any; error?: string }> => {
+    return apiCall<any>('/validation/process-auto', { method: 'POST' });
   },
 };
 
@@ -230,7 +336,7 @@ export const getSemesterColor = (semester: number): string => {
     'bg-teal-100 text-teal-800',      // Semester 9
     'bg-gray-100 text-gray-800',      // Semester 10
   ];
-  return colors[semester - 1] || colors[9];
+  return colors[semester - 1] || colors[9] || 'bg-gray-100 text-gray-800';
 };
 
 // Get status color for UI

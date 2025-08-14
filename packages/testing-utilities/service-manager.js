@@ -295,7 +295,7 @@ class ServiceManager {
       PLANNING_SERVICE_URL: `http://localhost:${BASE_PORT + 5}`,
       STATISTICS_SERVICE_URL: `http://localhost:${BASE_PORT + 6}`,
       // Frontend environment variables
-      NEXT_PUBLIC_API_URL: `http://localhost:${BASE_PORT + 1}`,
+      NEXT_PUBLIC_API_URL: `http://localhost:${BASE_PORT}`,
       NEXT_PUBLIC_USER_SERVICE_URL: `http://localhost:${BASE_PORT + 2}`,
       NEXT_PUBLIC_NEWS_SERVICE_URL: `http://localhost:${BASE_PORT + 3}`,
       NEXT_PUBLIC_COURSE_SERVICE_URL: `http://localhost:${BASE_PORT + 4}`,

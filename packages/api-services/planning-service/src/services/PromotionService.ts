@@ -517,6 +517,70 @@ export class PromotionService {
     }
   }
 
+  /**
+   * Get students enrolled in a course through promotions
+   */
+  async getCourseStudents(courseId: string): Promise<any[]> {
+    try {
+      // 1. Find all events linked to this course
+      const courseEvents = await EventModel.find({
+        linkedCourse: new mongoose.Types.ObjectId(courseId),
+      }).lean();
+
+      if (courseEvents.length === 0) {
+        return []; // No events linked to this course
+      }
+
+      const eventIds = courseEvents.map(event => event._id);
+
+      // 2. Find promotions that contain these events
+      const promotions = await PromotionModel.find({
+        eventIds: { $in: eventIds },
+      }).populate('studentIds', 'email profile role').lean();
+
+      // 3. Flatten and enrich student data
+      const courseStudents: any[] = [];
+      
+      for (const promotion of promotions) {
+        if (promotion.studentIds && Array.isArray(promotion.studentIds)) {
+          for (const student of promotion.studentIds) {
+            // Type guard to ensure student is populated
+            if (typeof student === 'object' && student !== null && 'email' in student) {
+              courseStudents.push({
+                _id: student._id,
+                name: `${(student as any).profile?.firstName || ''} ${(student as any).profile?.lastName || ''}`.trim() || student.email,
+                email: student.email,
+                promotionId: promotion._id.toString(),
+                promotionName: promotion.name,
+                startedAt: promotion.createdAt,
+                progress: 0, // TODO: Get real progress data
+                completion: 0, // TODO: Get real completion data
+                lastActivity: new Date(),
+                status: 'active', // TODO: Get real status
+                grade: null, // TODO: Get real grade
+              });
+            }
+          }
+        }
+      }
+
+      // Remove duplicates (student might be in multiple promotions)
+      const uniqueStudents = courseStudents.reduce((acc, student) => {
+        const exists = acc.find((s: any) => s._id.toString() === student._id.toString());
+        if (!exists) {
+          acc.push(student);
+        }
+        return acc;
+      }, []);
+
+      logger.info(`Found ${uniqueStudents.length} students for course ${courseId}`);
+      return uniqueStudents;
+    } catch (error: any) {
+      logger.error('Failed to get course students:', error);
+      throw new Error(`Failed to get course students: ${error.message}`);
+    }
+  }
+
   // =============================================================================
   // PERMISSIONS
   // =============================================================================

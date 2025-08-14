@@ -86,11 +86,12 @@ export const progressApi = {
     attended: boolean,
     notes?: string
   ) {
-    return apiClient.post(`/progress/events/${eventId}/attendance`, {
+    const response = await apiClient.post(`/progress/events/${eventId}/attendance`, {
       studentId,
       attended,
       notes,
     });
+    return response.data;
   },
 
   /**
@@ -101,17 +102,19 @@ export const progressApi = {
     promotionId: string,
     attendanceRecords: AttendanceRecord[]
   ) {
-    return apiClient.post(`/progress/events/${eventId}/attendance/bulk`, {
+    const response = await apiClient.post(`/progress/events/${eventId}/attendance/bulk`, {
       promotionId,
       attendanceRecords,
     });
+    return response.data;
   },
 
   /**
    * Get attendance for a specific event
    */
   async getEventAttendance(eventId: string) {
-    return apiClient.get(`/progress/events/${eventId}/attendance`);
+    const response = await apiClient.get(`/progress/events/${eventId}/attendance`);
+    return response.data;
   },
 
   /**
@@ -119,7 +122,8 @@ export const progressApi = {
    */
   async getStudentAttendance(studentId: string, promotionId?: string) {
     const params = promotionId ? { promotionId } : {};
-    return apiClient.get(`/progress/students/${studentId}/attendance`, { params });
+    const response = await apiClient.get(`/progress/students/${studentId}/attendance`, { params });
+    return response.data;
   },
 
   // =============================================================================
@@ -130,16 +134,18 @@ export const progressApi = {
    * Get progress for a specific student
    */
   async getStudentProgress(studentId: string, promotionId: string): Promise<{ success: boolean; data: StudentProgress }> {
-    return apiClient.get(`/progress/students/${studentId}`, {
+    const response = await apiClient.get(`/progress/students/${studentId}`, {
       params: { promotionId },
     });
+    return response.data;
   },
 
   /**
    * Get progress for all students in a promotion
    */
   async getPromotionProgress(promotionId: string) {
-    return apiClient.get(`/progress/promotions/${promotionId}`);
+    const response = await apiClient.get(`/progress/promotions/${promotionId}`);
+    return response.data;
   },
 
   /**
@@ -150,22 +156,24 @@ export const progressApi = {
     promotionId: string,
     courseProgress: CourseProgressUpdate
   ) {
-    return apiClient.put('/progress/course', {
+    const response = await apiClient.put('/progress/course', {
       studentId,
       promotionId,
       courseProgress,
     });
+    return response.data;
   },
 
   /**
    * Mark a course as completed for a student
    */
   async markCourseCompleted(studentId: string, promotionId: string, courseId: string) {
-    return apiClient.post('/progress/course/complete', {
+    const response = await apiClient.post('/progress/course/complete', {
       studentId,
       promotionId,
       courseId,
     });
+    return response.data;
   },
 
   // =============================================================================
@@ -176,7 +184,8 @@ export const progressApi = {
    * Get statistics for a promotion
    */
   async getPromotionStatistics(promotionId: string): Promise<{ success: boolean; data: PromotionStatistics }> {
-    return apiClient.get(`/progress/promotions/${promotionId}/statistics`);
+    const response = await apiClient.get(`/progress/promotions/${promotionId}/statistics`);
+    return response.data;
   },
 
   /**
@@ -184,7 +193,8 @@ export const progressApi = {
    */
   async getTopPerformers(promotionId: string, limit?: number) {
     const params = limit ? { limit } : {};
-    return apiClient.get(`/progress/promotions/${promotionId}/top-performers`, { params });
+    const response = await apiClient.get(`/progress/promotions/${promotionId}/top-performers`, { params });
+    return response.data;
   },
 
   /**
@@ -199,21 +209,24 @@ export const progressApi = {
     if (progressThreshold !== undefined) params.progressThreshold = progressThreshold;
     if (attendanceThreshold !== undefined) params.attendanceThreshold = attendanceThreshold;
     
-    return apiClient.get(`/progress/promotions/${promotionId}/at-risk`, { params });
+    const response = await apiClient.get(`/progress/promotions/${promotionId}/at-risk`, { params });
+    return response.data;
   },
 
   /**
    * Generate a progress report for a promotion
    */
   async generateProgressReport(promotionId: string): Promise<{ success: boolean; data: ProgressReport[] }> {
-    return apiClient.get(`/progress/promotions/${promotionId}/report`);
+    const response = await apiClient.get(`/progress/promotions/${promotionId}/report`);
+    return response.data;
   },
 
   /**
    * Trigger recalculation of all progress in a promotion
    */
   async recalculateProgress(promotionId: string) {
-    return apiClient.post(`/progress/promotions/${promotionId}/recalculate`);
+    const response = await apiClient.post(`/progress/promotions/${promotionId}/recalculate`);
+    return response.data;
   },
 
   // =============================================================================
@@ -225,9 +238,10 @@ export const progressApi = {
    */
   async getMyProgress(promotionId: string) {
     // Use a special endpoint that automatically uses the current user's ID
-    return apiClient.get('/progress/my-progress', {
+    const response = await apiClient.get('/progress/my-progress', {
       params: { promotionId },
     });
+    return response.data;
   },
 
   /**

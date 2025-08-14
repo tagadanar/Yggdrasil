@@ -661,5 +661,5 @@ CourseSchema.statics['searchCourses'] = function(query: string, filters: any = {
   }
 };
 
-// Create and export the model
-export const CourseModel = mongoose.model<CourseDocument, CourseModelType>('Course', CourseSchema) as CourseModelType;
+// Create and export the model with overwrite protection
+export const CourseModel = (mongoose.models['Course'] || mongoose.model<CourseDocument, CourseModelType>('Course', CourseSchema)) as CourseModelType;

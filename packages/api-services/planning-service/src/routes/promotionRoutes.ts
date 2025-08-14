@@ -32,6 +32,13 @@ router.get(
   PromotionController.getMyPromotion,
 );
 
+// GET /api/promotions/my/validation-status - Get student's own validation status and progress (students only)
+router.get(
+  '/my/validation-status',
+  AuthMiddleware.requireRole('student'),
+  PromotionController.getMyValidationStatus,
+);
+
 // GET /api/promotions/:promotionId - Get promotion details
 router.get('/:promotionId', PromotionController.getPromotion);
 
@@ -67,6 +74,13 @@ router.delete(
   PromotionController.removeStudentFromPromotion,
 );
 
+// GET /api/promotions/course/:courseId/students - Get students enrolled in course through promotions (teacher/admin/staff)
+router.get(
+  '/course/:courseId/students',
+  AuthMiddleware.requireRole('teacher', 'admin', 'staff'),
+  PromotionController.getCourseStudents,
+);
+
 // =============================================================================
 // Event Management
 // =============================================================================
@@ -97,6 +111,89 @@ router.post(
   '/progress',
   AuthMiddleware.requireRole('admin', 'staff'),
   PromotionController.progressStudent,
+);
+
+// =============================================================================
+// Semester Validation System
+// =============================================================================
+
+// POST /api/promotions/semester/initialize - Initialize semester system (admin only)
+router.post(
+  '/semester/initialize',
+  AuthMiddleware.adminOnly,
+  PromotionController.initializeSemesters,
+);
+
+// GET /api/promotions/semester/all - Get all semesters with statistics
+router.get('/semester/all', PromotionController.getSemesters);
+
+// GET /api/promotions/semester/health - Get semester system health check
+router.get('/semester/health', PromotionController.getSemesterHealthCheck);
+
+// GET /api/promotions/validation/pending - Get students pending validation (admin/staff only)
+router.get(
+  '/validation/pending',
+  AuthMiddleware.requireRole('admin', 'staff'),
+  PromotionController.getStudentsPendingValidation,
+);
+
+// GET /api/promotions/validation/insights - Get validation statistics and insights
+router.get('/validation/insights', PromotionController.getValidationInsights);
+
+// POST /api/promotions/validation/evaluate/:studentId - Evaluate single student (admin/staff only)
+router.post(
+  '/validation/evaluate/:studentId',
+  AuthMiddleware.requireRole('admin', 'staff'),
+  PromotionController.evaluateStudent,
+);
+
+// POST /api/promotions/validation/evaluate-batch - Evaluate multiple students (admin/staff only)
+router.post(
+  '/validation/evaluate-batch',
+  AuthMiddleware.requireRole('admin', 'staff'),
+  PromotionController.evaluateStudentsBatch,
+);
+
+// POST /api/promotions/validation/bulk-validate - Perform bulk validation (admin/staff only)
+router.post(
+  '/validation/bulk-validate',
+  AuthMiddleware.requireRole('admin', 'staff'),
+  PromotionController.performBulkValidation,
+);
+
+// POST /api/promotions/validation/flag-students - Flag students for validation (admin/staff only)
+router.post(
+  '/validation/flag-students',
+  AuthMiddleware.requireRole('admin', 'staff'),
+  PromotionController.flagStudentsForValidation,
+);
+
+// POST /api/promotions/validation/process-progressions - Process validated students for progression (admin/staff only)
+router.post(
+  '/validation/process-progressions',
+  AuthMiddleware.requireRole('admin', 'staff'),
+  PromotionController.processStudentProgressions,
+);
+
+// POST /api/promotions/semester/assign-s1 - Assign new students to S1 (admin/staff only)
+router.post(
+  '/semester/assign-s1',
+  AuthMiddleware.requireRole('admin', 'staff'),
+  PromotionController.assignNewStudentsToS1,
+);
+
+// GET /api/promotions/validation/auto-candidates - Get auto-validation candidates (admin/staff only)
+router.get(
+  '/validation/auto-candidates',
+  AuthMiddleware.requireRole('admin', 'staff'),
+  PromotionController.getAutoValidationCandidates,
+);
+
+// POST /api/promotions/validation/process-auto - Process auto-validations (admin only)
+router.post(
+  '/validation/process-auto',
+  AuthMiddleware.adminOnly,
+  PromotionController.processAutoValidations,
 );
 
 export default router;

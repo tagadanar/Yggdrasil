@@ -63,18 +63,7 @@ const logLevels = {
   trace: 5,
 };
 
-// Color scheme for console output
-const logColors = {
-  error: 'red',
-  warn: 'yellow',
-  info: 'green',
-  http: 'magenta',
-  debug: 'blue',
-  trace: 'gray',
-};
-
-// Add colors to winston
-winston.addColors(logColors);
+// Colors are configured in the colorize format directly
 
 // Define format for different environments
 const devFormat = winston.format.combine(

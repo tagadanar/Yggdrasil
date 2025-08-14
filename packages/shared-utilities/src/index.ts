@@ -173,7 +173,7 @@ export { DataAggregator, dataAggregator, AggregationError } from './services/Dat
 
 // Phase 4.2: Event-Driven Architecture
 export { EventBus, createEventBus } from './events/event-bus';
-export type { Event, EventHandler, EventBusOptions } from './events/event-bus';
+export type { SystemEvent, EventHandler, EventBusOptions } from './events/event-bus';
 export type { Events } from './events/event-bus';
 
 export { EventStore } from './events/event-store';

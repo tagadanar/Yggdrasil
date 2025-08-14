@@ -3,6 +3,9 @@
 
 import axios, { AxiosInstance } from 'axios';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
+import { createComponentLogger } from '@/lib/errors/logger';
+
+const logger = createComponentLogger('Course');
 
 // Dynamic Course Service URL detection for worker-specific testing
 function getCourseServiceUrl(): string {
@@ -139,21 +142,23 @@ export const courseApi = {
 
   // Get course by ID
   async getCourseById(courseId: string) {
-    console.log('🔍 DEBUG: courseApi.getCourseById called with courseId:', courseId);
-    console.log('🔍 DEBUG: Course service URL:', COURSE_SERVICE_URL);
-    console.log('🔍 DEBUG: Making request to:', `${COURSE_SERVICE_URL}/api/courses/${courseId}`);
-
-    const token = tokenStorage.getAccessToken();
-    console.log('🔍 DEBUG: Access token available:', !!token);
-    console.log('🔍 DEBUG: Access token preview:', token?.substring(0, 20) + '...');
-
     try {
+      logger.debug('Fetching course by ID', { courseId });
+      
       const response = await courseApiClient.get(`/${courseId}`);
-      console.log('🔍 DEBUG: Course API response:', response.status, response.data);
+      
+      logger.debug('Course fetched successfully', { 
+        courseId, 
+        title: response.data.data?.title 
+      });
+      
       return response.data;
     } catch (error: any) {
-      console.error('🔍 DEBUG: Course API error:', error.response?.status, error.response?.data || error.message);
-      console.error('🔍 DEBUG: Full error:', error);
+      logger.error('Failed to fetch course', { 
+        courseId,
+        error: error.message,
+        status: error.response?.status 
+      });
       throw error;
     }
   },

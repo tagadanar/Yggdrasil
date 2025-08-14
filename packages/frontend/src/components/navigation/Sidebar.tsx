@@ -111,9 +111,20 @@ const menuItems: MenuItem[] = [
     ),
     allowedRoles: ['admin', 'staff', 'teacher', 'student'],
   },
+  {
+    id: 'validation',
+    name: 'Validation',
+    href: '/admin/validation',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    allowedRoles: ['admin', 'staff'],
+  },
 ];
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+const SidebarComponent = ({ isOpen, onClose }: SidebarProps) => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [currentPath, setCurrentPath] = useState<string>('');
@@ -248,4 +259,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       </aside>
     </>
   );
-}
+};
+
+export const Sidebar = React.memo(SidebarComponent);

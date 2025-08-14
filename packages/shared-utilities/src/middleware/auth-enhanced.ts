@@ -126,8 +126,8 @@ export class EnhancedAuthMiddleware {
         }
 
         // Look up user in database
-        // CRITICAL FIX: JWT tokens use '_id' field, not 'userId' or 'id'
-        const userId = verification.data!._id || verification.data!.userId || verification.data!.id;
+        // CRITICAL FIX: JWT tokens use 'userId' and 'id' fields (not '_id')
+        const userId = verification.data!.userId || verification.data!.id;
         const dbUser = await userLookupFn(userId);
 
         if (!dbUser) {

@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { courseApi } from '@/lib/api/courses';
+import { promotionApi } from '@/lib/api/promotions';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import {
@@ -55,77 +56,15 @@ export default function CourseManagePage() {
       try {
         setLoading(true);
 
-        // Mock promotion students data for testing
-        const mockStudents: PromotionStudent[] = [
-          {
-            _id: 's1',
-            name: 'Alice Johnson',
-            email: 'alice.johnson@example.com',
-            promotionId: 'promo-2025-1',
-            promotionName: 'Web Development 2025',
-            startedAt: '2025-01-01T00:00:00Z',
-            progress: 85,
-            completion: 78,
-            lastActivity: '2025-01-08T14:30:00Z',
-            status: 'active',
-            grade: 92,
-          },
-          {
-            _id: 's2',
-            name: 'Bob Smith',
-            email: 'bob.smith@example.com',
-            promotionId: 'promo-2025-1',
-            promotionName: 'Web Development 2025',
-            startedAt: '2025-01-02T00:00:00Z',
-            progress: 45,
-            completion: 38,
-            lastActivity: '2025-01-06T10:15:00Z',
-            status: 'active',
-            grade: 76,
-          },
-          {
-            _id: 's3',
-            name: 'Carol Davis',
-            email: 'carol.davis@example.com',
-            promotionId: 'promo-2024-4',
-            promotionName: 'Web Development Q4 2024',
-            startedAt: '2024-12-15T00:00:00Z',
-            progress: 100,
-            completion: 100,
-            lastActivity: '2025-01-07T16:45:00Z',
-            status: 'completed',
-            grade: 95,
-          },
-          {
-            _id: 's4',
-            name: 'David Wilson',
-            email: 'david.wilson@example.com',
-            promotionId: 'promo-2025-1',
-            promotionName: 'Web Development 2025',
-            startedAt: '2025-01-03T00:00:00Z',
-            progress: 25,
-            completion: 20,
-            lastActivity: '2024-12-28T08:22:00Z',
-            status: 'inactive',
-            grade: 62,
-          },
-          {
-            _id: 's5',
-            name: 'Eve Brown',
-            email: 'eve.brown@example.com',
-            promotionId: 'promo-2025-1',
-            promotionName: 'Web Development 2025',
-            startedAt: '2025-01-04T00:00:00Z',
-            progress: 67,
-            completion: 61,
-            lastActivity: '2025-01-08T11:20:00Z',
-            status: 'active',
-            grade: 88,
-          },
-        ];
-
-        setStudents(mockStudents);
-        setFilteredStudents(mockStudents);
+        // Fetch real students enrolled in this course through promotions
+        const response = await promotionApi.getCourseStudents(courseId);
+        
+        if (response.success && response.data) {
+          setStudents(response.data);
+          setFilteredStudents(response.data);
+        } else {
+          throw new Error(response.error || 'Failed to load students');
+        }
       } catch (err) {
         console.error('Error loading promotion students:', err);
         setMessage({ type: 'error', text: 'Failed to load promotion students' });

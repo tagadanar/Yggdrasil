@@ -10,6 +10,7 @@ import { tokenStorage } from '@/lib/auth/tokenStorage';
 import { tokenSync } from '@/lib/auth/tokenSync';
 import { authFlowManager } from '@/lib/auth/AuthFlowManager';
 import { authStateValidator } from '@/lib/auth/AuthStateValidator';
+import { createComponentLogger } from '@/lib/errors/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +23,8 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const logger = createComponentLogger('AuthProvider');
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -133,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tokenStorage.clearTokens();
       }
     } catch (error) {
-      console.error('Auth initialization error:', error);
+      logger.error('Auth initialization failed', { error });
       tokenStorage.clearTokens();
     } finally {
       setIsLoading(false);
@@ -187,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             navigationResult = await authFlowManager.handleLoginSuccess(result.user, router);
           } catch (navError) {
-            console.error('Navigation failed with exception:', navError);
+            logger.error('Post-login navigation failed', { error: navError });
             navigationResult = {
               success: false,
               error: 'Navigation exception: ' + (navError instanceof Error ? navError.message : String(navError))
@@ -204,7 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: result.error || 'Invalid email or password' };
       }
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login failed with network error', { error });
       return { success: false, error: 'Network error. Please try again.' };
     }
   };
@@ -224,7 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: result.error || 'Registration failed' };
       }
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration failed with network error', { error });
       return { success: false, error: 'Registration failed' };
     } finally {
       setIsLoading(false);
@@ -237,7 +240,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await authApi.logout(tokens.accessToken);
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout failed', { error });
     } finally {
       setUser(null);
       setTokens(null);
@@ -265,7 +268,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
     } catch (error) {
-      console.error('Token refresh error:', error);
+      logger.error('Token refresh failed', { error });
       return false;
     }
   };

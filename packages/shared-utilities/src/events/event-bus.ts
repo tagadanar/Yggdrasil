@@ -8,7 +8,7 @@ import { logger } from '../logging/logger';
  * Core event interface for the event-driven architecture.
  * All events in the system must conform to this structure.
  */
-export interface Event<T = any> {
+export interface SystemEvent<T = any> {
   /** Unique identifier for the event */
   id: string;
   /** Event type in dot notation (e.g., 'user.created', 'course.updated') */
@@ -28,7 +28,7 @@ export interface Event<T = any> {
  * Can be synchronous or asynchronous.
  */
 export interface EventHandler<T = any> {
-  (event: Event<T>): Promise<void> | void;
+  (event: SystemEvent<T>): Promise<void> | void;
 }
 
 /**
@@ -161,7 +161,7 @@ export class EventBus {
         if (!msg) return;
 
         try {
-          const event: Event = JSON.parse(msg.content.toString());
+          const event: SystemEvent = JSON.parse(msg.content.toString());
           await this.handleEvent(event);
           this.channel!.ack(msg);
         } catch (error) {
@@ -199,8 +199,8 @@ export class EventBus {
    *
    * @param event - Event to publish (without id, timestamp, and source)
    */
-  async publish<T>(event: Omit<Event<T>, 'id' | 'timestamp' | 'source'>): Promise<void> {
-    const fullEvent: Event<T> = {
+  async publish<T>(event: Omit<SystemEvent<T>, 'id' | 'timestamp' | 'source'>): Promise<void> {
+    const fullEvent: SystemEvent<T> = {
       ...event,
       id: uuidv4(),
       timestamp: new Date(),
@@ -308,7 +308,7 @@ export class EventBus {
   /**
    * Handle incoming events by dispatching to registered handlers.
    */
-  private async handleEvent(event: Event): Promise<void> {
+  private async handleEvent(event: SystemEvent): Promise<void> {
     const handlers = this.handlers.get(event.type);
     if (!handlers || handlers.size === 0) {
       logger.debug(`No handlers for event type: ${event.type}`);

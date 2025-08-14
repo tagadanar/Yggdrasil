@@ -44,6 +44,8 @@ export class TestInitializer {
       debug = false,
     } = options;
 
+    // Environment variables should already be loaded by Playwright config
+
     // Always use authenticated connection string for tests
     const dbConnectionString = connectionString || getTestDatabaseConnectionString();
 

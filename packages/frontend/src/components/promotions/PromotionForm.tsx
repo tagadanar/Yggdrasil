@@ -129,19 +129,19 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
 
     // Required fields
     if (!formData.name.trim()) {
-      errors.name = 'Promotion name is required';
+      errors['name'] = 'Promotion name is required';
     }
 
     if (!formData.academicYear) {
-      errors.academicYear = 'Academic year is required';
+      errors['academicYear'] = 'Academic year is required';
     }
 
     if (!formData.startDate) {
-      errors.startDate = 'Start date is required';
+      errors['startDate'] = 'Start date is required';
     }
 
     if (!formData.endDate) {
-      errors.endDate = 'End date is required';
+      errors['endDate'] = 'End date is required';
     }
 
     // Date validation
@@ -150,7 +150,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
       const endDate = new Date(formData.endDate);
       
       if (endDate <= startDate) {
-        errors.endDate = 'End date must be after start date';
+        errors['endDate'] = 'End date must be after start date';
       }
     }
 
@@ -158,12 +158,12 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
     const isOddSemester = formData.semester % 2 === 1;
     if ((formData.intake === 'september' && !isOddSemester) || 
         (formData.intake === 'march' && isOddSemester)) {
-      errors.intake = `${formData.intake} intake is not valid for semester ${formData.semester}`;
+      errors['intake'] = `${formData.intake} intake is not valid for semester ${formData.semester}`;
     }
 
     // Max students validation
     if (formData.metadata.maxStudents && formData.metadata.maxStudents < 1) {
-      errors.maxStudents = 'Maximum students must be at least 1';
+      errors['maxStudents'] = 'Maximum students must be at least 1';
     }
 
     setValidationErrors(errors);
@@ -292,12 +292,12 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
-                  validationErrors.name ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                  validationErrors['name'] ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
                 }`}
                 placeholder="e.g., Fall Year 1 (Semester 1) 2024-2025"
               />
-              {validationErrors.name && (
-                <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors.name}</p>
+              {validationErrors['name'] && (
+                <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors['name']}</p>
               )}
             </div>
 
@@ -313,7 +313,7 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                   disabled={!!promotion} // Can't change semester for existing promotions
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                     promotion ? 'opacity-50 cursor-not-allowed' : ''
-                  } ${validationErrors.semester ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'}`}
+                  } ${validationErrors['semester'] ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'}`}
                 >
                   {semesters.map(sem => (
                     <option key={sem} value={sem}>
@@ -321,8 +321,8 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                     </option>
                   ))}
                 </select>
-                {validationErrors.semester && (
-                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors.semester}</p>
+                {validationErrors['semester'] && (
+                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors['semester']}</p>
                 )}
               </div>
 
@@ -336,13 +336,13 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                   disabled={!!promotion} // Can't change intake for existing promotions
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                     promotion ? 'opacity-50 cursor-not-allowed' : ''
-                  } ${validationErrors.intake ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'}`}
+                  } ${validationErrors['intake'] ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'}`}
                 >
                   <option value="september">September (Fall)</option>
                   <option value="march">March (Spring)</option>
                 </select>
-                {validationErrors.intake && (
-                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors.intake}</p>
+                {validationErrors['intake'] && (
+                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors['intake']}</p>
                 )}
               </div>
             </div>
@@ -358,15 +358,15 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                 disabled={!!promotion} // Can't change academic year for existing promotions
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                   promotion ? 'opacity-50 cursor-not-allowed' : ''
-                } ${validationErrors.academicYear ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'}`}
+                } ${validationErrors['academicYear'] ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'}`}
               >
                 <option value="">Select Academic Year</option>
                 {academicYears.map(year => (
                   <option key={year} value={year}>{year}</option>
                 ))}
               </select>
-              {validationErrors.academicYear && (
-                <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors.academicYear}</p>
+              {validationErrors['academicYear'] && (
+                <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors['academicYear']}</p>
               )}
             </div>
           </div>
@@ -388,11 +388,11 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                   value={formData.startDate}
                   onChange={(e) => handleInputChange('startDate', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
-                    validationErrors.startDate ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                    validationErrors['startDate'] ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                {validationErrors.startDate && (
-                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors.startDate}</p>
+                {validationErrors['startDate'] && (
+                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors['startDate']}</p>
                 )}
               </div>
 
@@ -405,11 +405,11 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                   value={formData.endDate}
                   onChange={(e) => handleInputChange('endDate', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
-                    validationErrors.endDate ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                    validationErrors['endDate'] ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                {validationErrors.endDate && (
-                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors.endDate}</p>
+                {validationErrors['endDate'] && (
+                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors['endDate']}</p>
                 )}
               </div>
             </div>
@@ -456,13 +456,13 @@ export const PromotionForm: React.FC<PromotionFormProps> = ({
                 value={formData.metadata.maxStudents || ''}
                 onChange={(e) => handleInputChange('metadata.maxStudents', e.target.value ? parseInt(e.target.value) : undefined)}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
-                  validationErrors.maxStudents ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                  validationErrors['maxStudents'] ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
                 }`}
                 placeholder="Leave empty for no limit"
                 min="1"
               />
-              {validationErrors.maxStudents && (
-                <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors.maxStudents}</p>
+              {validationErrors['maxStudents'] && (
+                <p className="text-red-600 dark:text-red-400 text-sm mt-1">{validationErrors['maxStudents']}</p>
               )}
             </div>
 

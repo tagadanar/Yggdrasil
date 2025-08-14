@@ -3,6 +3,7 @@
 
 import axios, { AxiosInstance } from 'axios';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
+import { createComponentLogger } from '@/lib/errors/logger';
 
 // Dynamic Statistics Service URL detection for worker-specific testing
 function getStatisticsServiceUrl(): string {
@@ -233,6 +234,8 @@ interface CourseProgressData {
   }[];
 }
 
+const logger = createComponentLogger('StatisticsAPI');
+
 export class StatisticsApi {
   
   // =============================================================================
@@ -250,7 +253,7 @@ export class StatisticsApi {
         data: response.data.data
       };
     } catch (error: any) {
-      console.error('Error fetching student dashboard:', error);
+      logger.error('Failed to fetch student dashboard', { error, userId });
       return {
         success: false,
         error: error.response?.data?.error || error.message || 'Failed to fetch student dashboard'

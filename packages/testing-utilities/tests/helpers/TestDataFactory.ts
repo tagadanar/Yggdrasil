@@ -9,6 +9,7 @@ import {
   UserModel,
   CourseModel,
   PromotionModel,
+  PromotionProgressModel,
   EventModel,
 } from '@yggdrasil/database-schemas';
 
@@ -682,6 +683,128 @@ export class PromotionDataFactory extends BaseDataFactory {
     this.trackCreated('promotionprogresses', progress._id.toString());
 
     console.log(`📊 Created promotion progress for student ${studentId} in promotion ${promotionId} (${Math.round(overallProgress)}% overall)`);
+    return progress;
+  }
+
+  /**
+   * Create simple promotion progress for semester validation tests
+   */
+  async createPromotionProgress(
+    studentId: string,
+    options: {
+      semester?: number;
+      validationStatus?: 'pending_validation' | 'validated' | 'failed' | 'conditional';
+      averageGrade?: number;
+      attendanceRate?: number;
+      currentSemester?: number;
+      targetSemester?: number;
+    } = {}
+  ): Promise<any> {
+    await this.ensureDatabaseConnection();
+
+    console.log(`🔧 DEBUG: Creating promotion progress for student ${studentId} with options:`, options);
+    
+    // Verify the student exists first
+    const student = await UserModel.findById(studentId);
+    console.log(`🔍 DEBUG: Student exists:`, !!student);
+    if (student) {
+      console.log(`🔍 DEBUG: Student profile:`, student.profile);
+    }
+
+    // Find or create a promotion for the given semester
+    let promotionId;
+    if (options.semester) {
+      const intake = options.semester % 2 === 1 ? 'september' : 'march';
+      console.log(`🔍 DEBUG: Looking for promotion with semester ${options.semester}, intake ${intake}`);
+      
+      let promotion = await PromotionModel.findOne({
+        semester: options.semester,
+        intake,
+        'metadata.semesterSystem': true,
+      });
+
+      if (!promotion) {
+        console.log(`🔧 DEBUG: Creating new promotion for semester ${options.semester}`);
+        // Create a semester promotion if it doesn't exist
+        promotion = await this.createPromotion({
+          name: `Semester ${options.semester} - ${intake.charAt(0).toUpperCase() + intake.slice(1)}`,
+          semester: options.semester,
+          intake,
+          studentIds: [studentId],
+        });
+        console.log(`✅ DEBUG: Created promotion:`, promotion._id);
+      } else {
+        console.log(`✅ DEBUG: Found existing promotion:`, promotion._id);
+      }
+      promotionId = promotion._id.toString();
+    } else {
+      console.log(`🔧 DEBUG: Creating basic promotion for student`);
+      // Create a basic promotion
+      const promotion = await this.createPromotion({
+        studentIds: [studentId],
+      });
+      promotionId = promotion._id.toString();
+      console.log(`✅ DEBUG: Created basic promotion:`, promotionId);
+    }
+
+    console.log(`🔍 DEBUG: Final promotionId: ${promotionId}, studentId: ${studentId}`);
+    console.log(`🔍 DEBUG: promotionId ObjectId:`, new mongoose.Types.ObjectId(promotionId));
+    console.log(`🔍 DEBUG: studentId ObjectId:`, new mongoose.Types.ObjectId(studentId));
+
+    const progressData = {
+      promotionId: new mongoose.Types.ObjectId(promotionId),
+      studentId: new mongoose.Types.ObjectId(studentId),
+      currentSemester: options.currentSemester || options.semester || 1,
+      targetSemester: options.targetSemester,
+      validationStatus: options.validationStatus || 'pending_validation',
+      averageGrade: options.averageGrade || 75,
+      attendanceRate: options.attendanceRate || 80,
+      coursesProgress: [],
+      coursesCompleted: [],
+      coursesInProgress: [],
+      coursesNotStarted: [],
+      totalEvents: 10,
+      eventsAttended: Math.floor((options.attendanceRate || 80) / 10),
+      overallProgress: options.averageGrade || 75,
+      milestones: {},
+      validationCriteria: {
+        minGrade: 60,
+        minAttendance: 70,
+        coursesRequired: 3,
+        autoValidation: false,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    console.log(`🔧 DEBUG: Creating PromotionProgress with data:`, {
+      promotionId: progressData.promotionId.toString(),
+      studentId: progressData.studentId.toString(),
+      validationStatus: progressData.validationStatus,
+    });
+
+    const progress = await PromotionProgressModel.create(progressData);
+    this.trackCreated('promotionprogresses', progress._id.toString());
+
+    console.log(`📊 DEBUG: Created promotion progress: ${progress._id}`);
+    console.log(`🔍 DEBUG: Created progress promotionId:`, progress.promotionId);
+    console.log(`🔍 DEBUG: Created progress studentId:`, progress.studentId);
+    
+    // Double-check that the references are valid
+    const checkProgress = await PromotionProgressModel.findById(progress._id);
+    console.log(`✅ DEBUG: Verification - Progress exists:`, !!checkProgress);
+    if (checkProgress) {
+      console.log(`✅ DEBUG: Stored studentId:`, checkProgress.studentId);
+      console.log(`✅ DEBUG: Stored promotionId:`, checkProgress.promotionId);
+    }
+
+    // Verify the documents exist after creation
+    const verifyStudent = await UserModel.findById(progress.studentId);
+    const verifyPromotion = await PromotionModel.findById(progress.promotionId);
+    console.log(`✅ DEBUG: Verification - Student exists:`, !!verifyStudent);
+    console.log(`✅ DEBUG: Verification - Promotion exists:`, !!verifyPromotion);
+
+    console.log(`📊 Created promotion progress for validation testing: student ${studentId}, semester ${options.semester}, status ${options.validationStatus}`);
     return progress;
   }
 }

@@ -9,6 +9,7 @@ export class DataAggregator {
   private courseClient = ServiceClientFactory.getCourseServiceClient();
   private newsClient = ServiceClientFactory.getNewsServiceClient();
   private planningClient = ServiceClientFactory.getPlanningServiceClient();
+  private enrollmentClient = ServiceClientFactory.getEnrollmentServiceClient();
 
   constructor() {
     this.cache = new Cache({
@@ -17,6 +18,77 @@ export class DataAggregator {
     });
   }
 
+  /**
+   * Get user with their enrollments and course details populated
+   */
+  async getUserWithEnrollments(userId: string) {
+    const cacheKey = `user:${userId}:enrollments`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+      // Fetch user and enrollments in parallel
+      const [user, enrollments] = await Promise.all([
+        this.userClient.get(`/users/${userId}`) as Promise<any>,
+        this.enrollmentClient.get(`/enrollments/user/${userId}`) as Promise<any[]>,
+      ]);
+
+      // Fetch course details for each enrollment
+      const enrollmentsWithCourses = await Promise.all(
+        enrollments.map(async (enrollment) => {
+          const course = await this.courseClient.get(`/courses/${enrollment.courseId}`);
+          return { ...enrollment, course };
+        })
+      );
+
+      const result = {
+        ...user,
+        enrollments: enrollmentsWithCourses,
+      };
+
+      this.cache.set(cacheKey, result);
+      return result;
+    } catch (error) {
+      logger.error('Failed to aggregate user with enrollments:', error);
+      throw new AggregationError('Failed to fetch user with enrollments');
+    }
+  }
+
+  /**
+   * Get course with all enrollments and student details populated
+   */
+  async getCourseWithEnrollments(courseId: string) {
+    const cacheKey = `course:${courseId}:enrollments`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+      // Fetch course and its enrollments in parallel
+      const [course, enrollments] = await Promise.all([
+        this.courseClient.get(`/courses/${courseId}`) as Promise<any>,
+        this.enrollmentClient.get(`/enrollments/course/${courseId}`) as Promise<any[]>,
+      ]);
+
+      // Fetch user details for each enrollment
+      const enrollmentsWithUsers = await Promise.all(
+        enrollments.map(async (enrollment) => {
+          const user = await this.userClient.get(`/users/${enrollment.userId}`);
+          return { ...enrollment, user };
+        })
+      );
+
+      const result = {
+        ...course,
+        enrollments: enrollmentsWithUsers,
+      };
+
+      this.cache.set(cacheKey, result);
+      return result;
+    } catch (error) {
+      logger.error('Failed to aggregate course with enrollments:', error);
+      throw new AggregationError('Failed to fetch course with enrollments');
+    }
+  }
 
   async getCourseWithInstructor(courseId: string) {
     const cacheKey = `course:${courseId}:instructor`;
@@ -48,21 +120,21 @@ export class DataAggregator {
 
     try {
       // Parallel data fetching for dashboard
-      const [user, enrollments, recentNews, upcomingEvents] = await Promise.all([
+      const [user, promotions, recentNews, upcomingEvents] = await Promise.all([
         this.userClient.get(`/users/${userId}`),
-        this.enrollmentClient.get(`/enrollments/user/${userId}?status=active`),
+        this.planningClient.get(`/promotions/user/${userId}`),
         this.newsClient.get('/articles/recent?limit=5'),
         this.planningClient.get(`/events/upcoming?userId=${userId}&limit=5`),
       ]);
 
-      // Get progress for active enrollments
-      const progressPromises = (enrollments as any[]).map((enrollment: any) =>
-        this.enrollmentClient.get(`/progress/${enrollment._id}`),
+      // Get progress for active promotions
+      const progressPromises = (promotions as any[]).map((promotion: any) =>
+        this.planningClient.get(`/promotions/progress/${promotion._id}`),
       );
       const progressData = await Promise.all(progressPromises);
 
-      // Get course details for enrollments
-      const courseIds = (enrollments as any[]).map((e: any) => e.courseId);
+      // Get course details for promotions
+      const courseIds = (promotions as any[]).map((p: any) => p.courseId);
       const courses = await Promise.all(
         courseIds.map(id => this.courseClient.get(`/courses/${id}`)),
       );
@@ -70,16 +142,16 @@ export class DataAggregator {
       // Aggregate dashboard data
       const result = {
         user,
-        activeEnrollments: (enrollments as any[]).map((enrollment: any, index: number) => ({
-          ...enrollment,
+        activePromotions: (promotions as any[]).map((promotion: any, index: number) => ({
+          ...promotion,
           course: courses[index],
           progress: progressData[index],
         })),
         recentNews,
         upcomingEvents,
         summary: {
-          totalCourses: (enrollments as any[]).length,
-          completedCourses: (enrollments as any[]).filter((e: any) => e.status === 'completed')
+          totalCourses: (promotions as any[]).length,
+          completedCourses: (promotions as any[]).filter((p: any) => p.status === 'completed')
             .length,
           averageProgress: this.calculateAverageProgress(progressData as any[]),
           totalTimeSpent: (progressData as any[]).reduce(
@@ -107,8 +179,8 @@ export class DataAggregator {
       const [userStats, courseStats, enrollmentStats, activityStats] = await Promise.all([
         this.userClient.get('/users/stats'),
         this.courseClient.get('/courses/stats'),
-        this.enrollmentClient.get('/enrollments/stats'),
-        this.enrollmentClient.get('/activity/stats'),
+        this.planningClient.get('/promotions/stats'),
+        this.planningClient.get('/activity/stats'),
       ]);
 
       const result = {
@@ -139,7 +211,7 @@ export class DataAggregator {
     const aggregated: any = { ...user };
 
     if (aggregateFields.includes('enrollments')) {
-      aggregated.enrollments = await this.enrollmentClient.get(`/enrollments/user/${userId}`);
+      aggregated.promotions = await this.planningClient.get(`/promotions/user/${userId}`);
     }
 
     if (aggregateFields.includes('courses') && user.role === 'teacher') {
@@ -172,11 +244,11 @@ export class DataAggregator {
     }
 
     if (aggregateFields.includes('enrollments')) {
-      aggregated.enrollments = await this.enrollmentClient.get(`/enrollments/course/${courseId}`);
+      aggregated.promotions = await this.planningClient.get(`/promotions/course/${courseId}`);
     }
 
     if (aggregateFields.includes('statistics')) {
-      aggregated.statistics = await this.enrollmentClient.get(`/courses/${courseId}/statistics`);
+      aggregated.statistics = await this.planningClient.get(`/courses/${courseId}/statistics`);
     }
 
     return aggregated;
@@ -192,7 +264,7 @@ export class DataAggregator {
 
   private async getStatistics(userId: string) {
     try {
-      return await this.enrollmentClient.get(`/users/${userId}/statistics`);
+      return await this.planningClient.get(`/users/${userId}/statistics`);
     } catch (error) {
       logger.error('Failed to get user statistics:', error);
       return null;
@@ -201,7 +273,7 @@ export class DataAggregator {
 
   private async getRecentActivity(userId: string) {
     try {
-      return await this.enrollmentClient.get(`/users/${userId}/activity/recent?limit=10`);
+      return await this.planningClient.get(`/users/${userId}/activity/recent?limit=10`);
     } catch (error) {
       logger.error('Failed to get recent activity:', error);
       return null;

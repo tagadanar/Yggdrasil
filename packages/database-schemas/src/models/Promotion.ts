@@ -68,6 +68,34 @@ const MetadataSchema = new Schema({
     trim: true,
     maxlength: 500,
   },
+  // Semester validation system fields
+  semesterSystem: {
+    type: Boolean,
+    default: false,
+  },
+  permanent: {
+    type: Boolean,
+    default: false,
+  },
+  minPassingGrade: {
+    type: Number,
+    min: 0,
+    max: 100,
+  },
+  minAttendance: {
+    type: Number,
+    min: 0,
+    max: 100,
+  },
+  coursesRequired: {
+    type: Number,
+    min: 0,
+    max: 20,
+  },
+  autoValidation: {
+    type: Boolean,
+    default: false,
+  },
 }, { _id: false });
 
 // Main Promotion Schema
@@ -258,16 +286,17 @@ PromotionSchema.pre('save', function(next) {
 PromotionSchema.set('toJSON', {
   transform: function(_doc: any, ret: any) {
     ret._id = ret._id.toString();
-    ret.studentIds = ret.studentIds.map((id: any) => id.toString());
-    ret.eventIds = ret.eventIds.map((id: any) => id.toString());
-    ret.createdBy = ret.createdBy.toString();
+    // Add null checks to prevent map() errors
+    ret.studentIds = ret.studentIds && Array.isArray(ret.studentIds) ? ret.studentIds.map((id: any) => id ? id.toString() : id) : [];
+    ret.eventIds = ret.eventIds && Array.isArray(ret.eventIds) ? ret.eventIds.map((id: any) => id ? id.toString() : id) : [];
+    ret.createdBy = ret.createdBy ? ret.createdBy.toString() : ret.createdBy;
     delete ret.__v;
     return ret;
   },
 });
 
-// Create and export the model
-export const PromotionModel = mongoose.model<PromotionDocument, PromotionModelType>(
+// Create and export the model with overwrite protection
+export const PromotionModel = (mongoose.models['Promotion'] || mongoose.model<PromotionDocument, PromotionModelType>(
   'Promotion',
   PromotionSchema,
-) as PromotionModelType;
+)) as PromotionModelType;

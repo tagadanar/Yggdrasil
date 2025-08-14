@@ -51,9 +51,9 @@ export class TestDatabaseManager {
       // Get base URI from config
       let baseUri = config.MONGODB_URI;
       
-      // In test environments, use simple connection without authentication
-      if (config.NODE_ENV === 'test') {
-        logger.debug('✅ Using simple MongoDB connection for test environment');
+      // Check if the baseUri already contains authentication credentials
+      if (baseUri.includes('@')) {
+        logger.debug('✅ Using pre-authenticated MongoDB connection');
         this.authenticatedUri = baseUri;
         return baseUri;
       }

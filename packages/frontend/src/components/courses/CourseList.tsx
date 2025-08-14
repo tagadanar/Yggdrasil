@@ -3,10 +3,10 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useMemo } from 'react';
+import { Course } from '@yggdrasil/shared-utilities/client';
+import { useCourses } from '@/hooks/useCourses';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { courseApi } from '@/lib/api/courses';
-import { User as SharedUser, Course } from '@yggdrasil/shared-utilities/client';
 
 
 interface CourseListProps {
@@ -16,123 +16,67 @@ interface CourseListProps {
   onCourseView?: (course: Course) => void;
 }
 
-export const CourseList: React.FC<CourseListProps> = ({
+const CourseListComponent: React.FC<CourseListProps> = ({
   showCreateButton = true,
   onCourseCreate,
   onCourseEdit,
   onCourseView,
 }) => {
   const { user } = useAuth();
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedLevel, setSelectedLevel] = useState('');
-  const [categories, setCategories] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'my-courses' | 'published' | 'all'>('my-courses');
+  const {
+    courses,
+    loading,
+    error,
+    categories,
+    viewMode,
+    setViewMode,
+    searchQuery,
+    setSearchQuery,
+    selectedCategory,
+    setSelectedCategory,
+    selectedLevel,
+    setSelectedLevel,
+    loadCourses,
+    publishCourse,
+    canManageCourse,
+  } = useCourses();
 
-  useEffect(() => {
-    loadCourses();
-    loadCategories();
-  }, [viewMode, user]);
 
-  const loadCourses = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      let response;
-
-      if (viewMode === 'my-courses' && user) {
-        response = await courseApi.getMyCourses();
-      } else if (viewMode === 'published') {
-        response = await courseApi.getPublishedCourses();
-      } else {
-        // Search all courses with filters
-        response = await courseApi.searchCourses({
-          search: searchQuery || undefined,
-          category: selectedCategory || undefined,
-          level: selectedLevel || undefined,
-          limit: 50,
-        });
-      }
-
-      if (response.success) {
-        const coursesData = viewMode === 'all' && response.data.courses
-          ? response.data.courses
-          : response.data;
-        setCourses(Array.isArray(coursesData) ? coursesData : []);
-      } else {
-        setError(response.error || 'Failed to load courses');
-      }
-    } catch (err: any) {
-      console.error('Error loading courses:', err);
-      setError(err.response?.data?.error || 'Failed to load courses');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadCategories = async () => {
-    try {
-      const categoryList = await courseApi.getCourseCategories();
-      setCategories(categoryList as string[]);
-    } catch (err) {
-      console.error('Error loading categories:', err);
-    }
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (viewMode === 'all') {
       loadCourses();
     }
-  };
+  }, [viewMode, loadCourses]);
 
-
-  const handlePublishToggle = async (course: Course) => {
+  const handlePublishToggle = useCallback(async (course: Course) => {
     try {
       const publish = course.status !== 'published';
-      const response = await courseApi.publishCourse(course._id, publish);
-      if (response.success) {
-        alert(`Course ${publish ? 'published' : 'unpublished'} successfully!`);
-        loadCourses(); // Refresh the list
-      } else {
-        alert(response.error || 'Failed to update course status');
-      }
+      await publishCourse(course._id, publish);
+      alert(`Course ${publish ? 'published' : 'unpublished'} successfully!`);
     } catch (err: any) {
       console.error('Error updating course status:', err);
       alert(err.response?.data?.error || 'Failed to update course status');
     }
-  };
+  }, [publishCourse]);
 
-  const canManageCourse = (course: Course) => {
-    if (!user) return false;
-    return (
-      user.role === 'admin' ||
-      course.instructor._id === (user as SharedUser)._id ||
-      user.role === 'staff'
-    );
-  };
-
-  const getLevelBadgeColor = (level: string) => {
+  const getLevelBadgeColor = useCallback((level: string) => {
     switch (level) {
       case 'beginner': return 'bg-green-100 text-green-800';
       case 'intermediate': return 'bg-yellow-100 text-yellow-800';
       case 'advanced': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
+  }, []);
 
-  const getStatusBadgeColor = (status: string) => {
+  const getStatusBadgeColor = useCallback((status: string) => {
     switch (status) {
       case 'published': return 'bg-green-100 text-green-800';
       case 'draft': return 'bg-yellow-100 text-yellow-800';
       case 'archived': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -394,4 +338,5 @@ export const CourseList: React.FC<CourseListProps> = ({
   );
 };
 
+export const CourseList = React.memo(CourseListComponent);
 export default CourseList;

@@ -114,10 +114,19 @@ export class CleanAuthHelper {
   }
 
   /**
-   * Clear authentication state
+   * Clear authentication state - includes cookies, localStorage, and sessionStorage
    */
   async clearAuthState(): Promise<void> {
+    // Clear cookies
     await this.page.context().clearCookies();
+    
+    // Clear localStorage and sessionStorage for complete isolation
+    await this.page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    }).catch(() => {
+      // Ignore errors if page is not available
+    });
   }
 
   /**

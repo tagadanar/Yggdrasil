@@ -104,6 +104,9 @@ export default defineConfig({
 
         // 🔄 CRITICAL LAST: Full end-to-end integration (runs last)
         '**/reorganized/08-system-integration/**/*.spec.ts',
+
+        // 🎓 SEMESTER VALIDATION: Academic progression system
+        '**/reorganized/09-semester-validation/**/*.spec.ts',
       ],
     },
   ],

@@ -6,6 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { courseApi } from '@/lib/api/courses';
 import { Course } from '@yggdrasil/shared-utilities';
+import { useForm } from '@/hooks/useForm';
+import { useApi } from '@/hooks/useApi';
 
 interface CourseFormProps {
   course?: Course | null;
@@ -13,41 +15,95 @@ interface CourseFormProps {
   onCancel: () => void;
 }
 
+// Form data interface for type safety
+interface CourseFormData {
+  title: string;
+  description: string;
+  category: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  tags: string[];
+  prerequisites: string[];
+  estimatedDuration: number;
+  settings: {
+    isPublic: boolean;
+    maxStudents?: number;
+    startDate: string;
+    endDate: string;
+    allowLateSubmissions: boolean;
+    enableDiscussions: boolean;
+    enableCollaboration: boolean;
+  };
+}
+
 export const CourseForm: React.FC<CourseFormProps> = ({
   course,
   onSave,
   onCancel
 }) => {
-  const [formData, setFormData] = useState({
+  // Separate state for UI-only elements
+  const [tagInput, setTagInput] = useState('');
+  const [prerequisiteInput, setPrerequisiteInput] = useState('');
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+
+  const isEditing = !!course;
+
+  // Enhanced form management with useForm hook
+  const form = useForm<CourseFormData>({
     title: '',
     description: '',
     category: '',
-    level: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
-    tags: [] as string[],
-    prerequisites: [] as string[],
-    estimatedDuration: 60, // Default 1 hour
+    level: 'beginner',
+    tags: [],
+    prerequisites: [],
+    estimatedDuration: 60,
     settings: {
       isPublic: true,
-      maxStudents: undefined as number | undefined,
+      maxStudents: undefined,
       startDate: '',
       endDate: '',
       allowLateSubmissions: true,
       enableDiscussions: true,
       enableCollaboration: false
     }
+  }, {
+    component: 'CourseForm',
+    onSubmit: async (data) => {
+      // Convert date strings to datetime strings for API validation
+      const processedFormData = {
+        ...data,
+        settings: {
+          ...data.settings,
+          startDate: data.settings.startDate 
+            ? new Date(data.settings.startDate + 'T00:00:00').toISOString()
+            : undefined,
+          endDate: data.settings.endDate 
+            ? new Date(data.settings.endDate + 'T23:59:59').toISOString()
+            : undefined,
+        }
+      };
+
+      let response;
+      if (isEditing && course) {
+        response = await courseApi.updateCourse(course._id, processedFormData);
+      } else {
+        response = await courseApi.createCourse(processedFormData);
+      }
+
+      if (response.success) {
+        onSave(response.data);
+      } else {
+        throw new Error(response.error || 'Failed to save course');
+      }
+    },
+    onSuccess: (data) => {
+      // Additional success handling if needed
+    }
   });
 
-  const [tagInput, setTagInput] = useState('');
-  const [prerequisiteInput, setPrerequisiteInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
-
-  const isEditing = !!course;
-
+  // Populate form when course data is available
   useEffect(() => {
     if (course) {
-      setFormData({
+      form.setData({
         title: course.title,
         description: course.description,
         category: course.category,
@@ -66,102 +122,38 @@ export const CourseForm: React.FC<CourseFormProps> = ({
         }
       });
     }
-  }, [course]);
+  }, [course, form.setData]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (name.startsWith('settings.')) {
-      const settingName = name.replace('settings.', '');
-      setFormData(prev => ({
-        ...prev,
-        settings: {
-          ...prev.settings,
-          [settingName]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
-                       type === 'number' ? (value ? parseInt(value) : undefined) : value
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'number' ? parseInt(value) : value
-      }));
-    }
-  };
-
+  // Enhanced tag management with form integration
   const addTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, tagInput.trim()]
-      }));
+    if (tagInput.trim() && !form.data.tags.includes(tagInput.trim())) {
+      form.setValue('tags', [...form.data.tags, tagInput.trim()]);
       setTagInput('');
     }
   };
 
   const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
+    form.setValue('tags', form.data.tags.filter(tag => tag !== tagToRemove));
   };
 
+  // Enhanced prerequisite management with form integration
   const addPrerequisite = () => {
-    if (prerequisiteInput.trim() && !formData.prerequisites.includes(prerequisiteInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        prerequisites: [...prev.prerequisites, prerequisiteInput.trim()]
-      }));
+    if (prerequisiteInput.trim() && !form.data.prerequisites.includes(prerequisiteInput.trim())) {
+      form.setValue('prerequisites', [...form.data.prerequisites, prerequisiteInput.trim()]);
       setPrerequisiteInput('');
     }
   };
 
   const removePrerequisite = (prerequisiteToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      prerequisites: prev.prerequisites.filter(prereq => prereq !== prerequisiteToRemove)
-    }));
+    form.setValue('prerequisites', form.data.prerequisites.filter(prereq => prereq !== prerequisiteToRemove));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Convert date strings to datetime strings for API validation
-      const processedFormData = {
-        ...formData,
-        settings: {
-          ...formData.settings,
-          startDate: formData.settings.startDate 
-            ? new Date(formData.settings.startDate + 'T00:00:00').toISOString()
-            : undefined,
-          endDate: formData.settings.endDate 
-            ? new Date(formData.settings.endDate + 'T23:59:59').toISOString()
-            : undefined,
-        }
-      };
-
-      let response;
-      
-      if (isEditing && course) {
-        response = await courseApi.updateCourse(course._id, processedFormData);
-      } else {
-        response = await courseApi.createCourse(processedFormData);
-      }
-
-      if (response.success) {
-        onSave(response.data);
-      } else {
-        setError(response.error || 'Failed to save course');
-      }
-    } catch (err: any) {
-      console.error('Error saving course:', err);
-      setError(err.response?.data?.error || 'Failed to save course');
-    } finally {
-      setLoading(false);
-    }
+  // Settings handler for nested form fields
+  const handleSettingsChange = (field: keyof CourseFormData['settings'], value: any) => {
+    form.setValue('settings', {
+      ...form.data.settings,
+      [field]: value
+    });
   };
 
   return (
@@ -175,13 +167,21 @@ export const CourseForm: React.FC<CourseFormProps> = ({
         </p>
       </div>
 
-      {error && (
+      {/* Enhanced error display */}
+      {Object.keys(form.errors).length > 0 && (
         <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
+          <h4 className="font-medium mb-2">Please fix the following errors:</h4>
+          <ul className="text-sm space-y-1">
+            {Object.entries(form.errors).map(([field, error]) => (
+              <li key={field}>
+                <span className="capitalize">{field.replace(/([A-Z])/g, ' $1')}:</span> {error}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={form.handleSubmit} className="space-y-6">
         {/* Basic Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="md:col-span-2">
@@ -190,14 +190,12 @@ export const CourseForm: React.FC<CourseFormProps> = ({
             </label>
             <input
               type="text"
-              name="title"
               id="title"
               required
-              value={formData.title}
-              onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter course title"
               data-testid="course-title-input"
+              {...form.register('title')}
             />
           </div>
 
@@ -206,15 +204,13 @@ export const CourseForm: React.FC<CourseFormProps> = ({
               Course Description *
             </label>
             <textarea
-              name="description"
               id="description"
               required
               rows={4}
-              value={formData.description}
-              onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Describe what students will learn in this course"
               data-testid="course-description"
+              {...form.register('description')}
             />
           </div>
 
@@ -223,13 +219,11 @@ export const CourseForm: React.FC<CourseFormProps> = ({
               Category *
             </label>
             <select
-              name="category"
               id="category"
               required
-              value={formData.category}
-              onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               data-testid="course-category"
+              {...form.register('category')}
             >
               <option value="">Select a category</option>
               <option value="programming">Programming</option>
@@ -248,13 +242,11 @@ export const CourseForm: React.FC<CourseFormProps> = ({
               Difficulty Level *
             </label>
             <select
-              name="level"
               id="level"
               required
-              value={formData.level}
-              onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               data-testid="course-level"
+              {...form.register('level')}
             >
               <option value="beginner">Beginner</option>
               <option value="intermediate">Intermediate</option>
@@ -268,14 +260,12 @@ export const CourseForm: React.FC<CourseFormProps> = ({
             </label>
             <input
               type="number"
-              name="estimatedDuration"
               id="estimatedDuration"
               min="1"
-              value={formData.estimatedDuration}
-              onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="60"
               data-testid="course-duration"
+              {...form.register('estimatedDuration')}
             />
           </div>
         </div>
@@ -304,7 +294,7 @@ export const CourseForm: React.FC<CourseFormProps> = ({
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {formData.tags.map((tag, index) => (
+            {form.data.tags.map((tag, index) => (
               <span
                 key={index}
                 className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm flex items-center gap-1"
@@ -345,7 +335,7 @@ export const CourseForm: React.FC<CourseFormProps> = ({
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {formData.prerequisites.map((prereq, index) => (
+            {form.data.prerequisites.map((prereq, index) => (
               <span
                 key={index}
                 className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm flex items-center gap-1"
@@ -385,8 +375,8 @@ export const CourseForm: React.FC<CourseFormProps> = ({
                     <input
                       type="checkbox"
                       name="settings.isPublic"
-                      checked={formData.settings.isPublic}
-                      onChange={handleInputChange}
+                      checked={form.data.settings.isPublic}
+                      onChange={(e) => handleSettingsChange('isPublic', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Public course</span>
@@ -399,8 +389,8 @@ export const CourseForm: React.FC<CourseFormProps> = ({
                     <input
                       type="checkbox"
                       name="settings.enableDiscussions"
-                      checked={formData.settings.enableDiscussions}
-                      onChange={handleInputChange}
+                      checked={form.data.settings.enableDiscussions}
+                      onChange={(e) => handleSettingsChange('enableDiscussions', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Enable discussions</span>
@@ -412,8 +402,8 @@ export const CourseForm: React.FC<CourseFormProps> = ({
                     <input
                       type="checkbox"
                       name="settings.allowLateSubmissions"
-                      checked={formData.settings.allowLateSubmissions}
-                      onChange={handleInputChange}
+                      checked={form.data.settings.allowLateSubmissions}
+                      onChange={(e) => handleSettingsChange('allowLateSubmissions', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Allow late submissions</span>
@@ -425,8 +415,8 @@ export const CourseForm: React.FC<CourseFormProps> = ({
                     <input
                       type="checkbox"
                       name="settings.enableCollaboration"
-                      checked={formData.settings.enableCollaboration}
-                      onChange={handleInputChange}
+                      checked={form.data.settings.enableCollaboration}
+                      onChange={(e) => handleSettingsChange('enableCollaboration', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Enable collaboration</span>
@@ -441,11 +431,10 @@ export const CourseForm: React.FC<CourseFormProps> = ({
                   </label>
                   <input
                     type="number"
-                    name="settings.maxStudents"
                     id="maxStudents"
                     min="1"
-                    value={formData.settings.maxStudents || ''}
-                    onChange={handleInputChange}
+                    value={form.data.settings.maxStudents || ''}
+                    onChange={(e) => handleSettingsChange('maxStudents', e.target.value ? parseInt(e.target.value) : undefined)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Unlimited"
                     data-testid="max-students"
@@ -458,10 +447,9 @@ export const CourseForm: React.FC<CourseFormProps> = ({
                   </label>
                   <input
                     type="date"
-                    name="settings.startDate"
                     id="startDate"
-                    value={formData.settings.startDate}
-                    onChange={handleInputChange}
+                    value={form.data.settings.startDate}
+                    onChange={(e) => handleSettingsChange('startDate', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -472,10 +460,9 @@ export const CourseForm: React.FC<CourseFormProps> = ({
                   </label>
                   <input
                     type="date"
-                    name="settings.endDate"
                     id="endDate"
-                    value={formData.settings.endDate}
-                    onChange={handleInputChange}
+                    value={form.data.settings.endDate}
+                    onChange={(e) => handleSettingsChange('endDate', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -495,11 +482,11 @@ export const CourseForm: React.FC<CourseFormProps> = ({
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={form.isSubmitting}
             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             data-testid="submit-course"
           >
-            {loading ? 'Saving...' : (isEditing ? 'Update Course' : 'Create Course')}
+            {form.isSubmitting ? 'Saving...' : (isEditing ? 'Update Course' : 'Create Course')}
           </button>
         </div>
       </form>

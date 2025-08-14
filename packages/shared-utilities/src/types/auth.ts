@@ -214,8 +214,8 @@ export interface UserPreferences {
 }
 
 // Express Request with authenticated user
+// Note: The global Express Request interface is extended in auth-enhanced.ts
+// with AuthenticatedUser. This type alias provides backward compatibility.
 import { Request } from 'express';
 
-export interface AuthRequest extends Request {
-  user?: User; // Will be populated by auth middleware
-}
+export type AuthRequest = Request; // Uses global Express.Request extension

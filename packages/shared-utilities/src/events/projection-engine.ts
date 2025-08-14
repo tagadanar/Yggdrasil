@@ -1,6 +1,6 @@
 // packages/shared-utilities/src/events/projection-engine.ts
 import { EventStore } from './event-store';
-import { Event } from './event-bus';
+import { SystemEvent } from './event-bus';
 import { logger } from '../logging/logger';
 import mongoose, { Schema, Document, Connection } from 'mongoose';
 
@@ -14,7 +14,7 @@ export interface ProjectionHandler {
   /** Events this handler is interested in (patterns supported) */
   eventTypes: string[];
   /** Process an event and update the projection */
-  handle(event: Event): Promise<void>;
+  handle(event: SystemEvent): Promise<void>;
   /** Rebuild the entire projection from scratch */
   rebuild?(fromSequence?: number): Promise<void>;
   /** Reset the projection to initial state */
@@ -415,7 +415,7 @@ export class ProjectionEngine {
         }
 
         // Filter events for this projection
-        const relevantEvents = events.filter(event =>
+        const relevantEvents = events.filter((event: SystemEvent) =>
           this.isEventRelevant(event, handler.eventTypes),
         );
 
@@ -468,7 +468,7 @@ export class ProjectionEngine {
   private async processEventWithRetry(
     projectionName: string,
     handler: ProjectionHandler,
-    event: Event,
+    event: SystemEvent,
   ): Promise<void> {
     let lastError: Error | undefined;
 
@@ -555,7 +555,7 @@ export class ProjectionEngine {
   /**
    * Check if an event is relevant for the given event types.
    */
-  private isEventRelevant(event: Event, eventTypes: string[]): boolean {
+  private isEventRelevant(event: SystemEvent, eventTypes: string[]): boolean {
     return eventTypes.some(pattern => {
       if (pattern.includes('*')) {
         // Simple wildcard matching
@@ -658,7 +658,7 @@ export namespace ProjectionHandlers {
 
     constructor(private userSummaryModel: mongoose.Model<any>) {}
 
-    async handle(event: Event): Promise<void> {
+    async handle(event: SystemEvent): Promise<void> {
       switch (event.type) {
         case 'user.created':
           await this.handleUserCreated(event);
@@ -675,7 +675,7 @@ export namespace ProjectionHandlers {
       }
     }
 
-    private async handleUserCreated(event: Event): Promise<void> {
+    private async handleUserCreated(event: SystemEvent): Promise<void> {
       const { userId, email, role, profile } = event.data;
 
       await this.userSummaryModel.create({
@@ -691,19 +691,19 @@ export namespace ProjectionHandlers {
       });
     }
 
-    private async handleUserUpdated(event: Event): Promise<void> {
+    private async handleUserUpdated(event: SystemEvent): Promise<void> {
       const { userId, changes } = event.data;
 
       await this.userSummaryModel.updateOne({ userId }, { $set: changes });
     }
 
-    private async handleUserDeleted(event: Event): Promise<void> {
+    private async handleUserDeleted(event: SystemEvent): Promise<void> {
       const { userId } = event.data;
 
       await this.userSummaryModel.deleteOne({ userId });
     }
 
-    private async handleEnrollmentCreated(event: Event): Promise<void> {
+    private async handleEnrollmentCreated(event: SystemEvent): Promise<void> {
       const { userId } = event.data;
 
       await this.userSummaryModel.updateOne({ userId }, { $inc: { enrollmentCount: 1 } });
@@ -731,7 +731,7 @@ export namespace ProjectionHandlers {
 
     constructor(private analyticsModel: mongoose.Model<any>) {}
 
-    async handle(event: Event): Promise<void> {
+    async handle(event: SystemEvent): Promise<void> {
       switch (event.type) {
         case 'enrollment.created':
           await this.handleEnrollmentCreated(event);
@@ -745,7 +745,7 @@ export namespace ProjectionHandlers {
       }
     }
 
-    private async handleEnrollmentCreated(event: Event): Promise<void> {
+    private async handleEnrollmentCreated(event: SystemEvent): Promise<void> {
       const { courseId, userId } = event.data;
 
       await this.analyticsModel.updateOne(
@@ -763,7 +763,7 @@ export namespace ProjectionHandlers {
       );
     }
 
-    private async handleEnrollmentCancelled(event: Event): Promise<void> {
+    private async handleEnrollmentCancelled(event: SystemEvent): Promise<void> {
       const { courseId, userId } = event.data;
 
       await this.analyticsModel.updateOne(
@@ -775,7 +775,7 @@ export namespace ProjectionHandlers {
       );
     }
 
-    private async handleProgressUpdated(event: Event): Promise<void> {
+    private async handleProgressUpdated(event: SystemEvent): Promise<void> {
       const { courseId, progress } = event.data;
 
       if (progress >= 100) {

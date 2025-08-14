@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { useForm } from '@/hooks/useForm';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useApi } from '@/hooks/useApi';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Card } from '@/components/ui/Card';
@@ -22,10 +25,30 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 
+// Form data interface for type safety
+interface ProfileFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  department: string;
+  phone: string;
+  bio: string;
+  studentId: string;
+  officeHours: string;
+  specialties: string;
+}
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
+  
+  // Separate accessibility settings with useLocalStorage hooks
+  const [highContrast, setHighContrast] = useLocalStorage('highContrast', false);
+  const [fontSize, setFontSize] = useLocalStorage('fontSize', 'medium');
+
+  // Main profile form with useForm hook
+  const form = useForm<ProfileFormData>({
     firstName: '',
     lastName: '',
     email: '',
@@ -35,13 +58,44 @@ export default function ProfilePage() {
     bio: '',
     studentId: '',
     officeHours: '',
-    specialties: ''
+    specialties: '',
+  }, {
+    component: 'ProfilePage',
+    onSubmit: async (data) => {
+      const profileUpdateData: any = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        department: data.department,
+        bio: data.bio,
+        officeHours: data.officeHours,
+        studentId: data.studentId,
+        contactInfo: {
+          phone: data.phone
+        }
+      };
+      
+      if (data.specialties) {
+        profileUpdateData.specialties = data.specialties.split(',').map(s => s.trim()).filter(s => s);
+      }
+
+      const { userApi } = await import('@/lib/api/client');
+      const result = await userApi.updateProfile(profileUpdateData);
+      
+      if (result.success) {
+        setIsEditing(false);
+      } else {
+        throw new Error(result.error || 'Failed to update profile');
+      }
+    },
+    onSuccess: () => {
+      setIsEditing(false);
+    }
   });
 
   // Update form data when user is loaded
   useEffect(() => {
     if (user) {
-      setFormData({
+      form.setData({
         firstName: user.profile?.firstName || '',
         lastName: user.profile?.lastName || '',
         email: user.email || '',
@@ -51,69 +105,40 @@ export default function ProfilePage() {
         bio: user.profile?.bio || '',
         studentId: user.profile?.studentId || '',
         officeHours: user.profile?.officeHours || '',
-        specialties: user.profile?.specialties?.join(', ') || ''
+        specialties: user.profile?.specialties?.join(', ') || '',
       });
     }
-  }, [user]);
+  }, [user, form.setData]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  // Apply accessibility settings on load and changes
+  useEffect(() => {
+    if (highContrast) {
+      document.body.classList.add('high-contrast');
+    } else {
+      document.body.classList.remove('high-contrast');
+    }
+  }, [highContrast]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) return;
-    
-    try {
-      const { userApi } = await import('@/lib/api/client');
-      
-      const profileUpdateData: any = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        department: formData.department,
-        bio: formData.bio,
-        officeHours: formData.officeHours,
-        studentId: formData.studentId,
-        contactInfo: {
-          phone: formData.phone
-        }
-      };
-      
-      if (formData.specialties) {
-        profileUpdateData.specialties = formData.specialties.split(',').map(s => s.trim()).filter(s => s);
-      }
-      
-      const result = await userApi.updateProfile(profileUpdateData);
-      
-      if (result.success) {
-        setIsEditing(false);
-      }
-    } catch (error) {
-      // Handle error silently for now
+  useEffect(() => {
+    if (fontSize === 'large') {
+      document.body.style.fontSize = '20px';
+    } else {
+      document.body.style.fontSize = '';
+    }
+  }, [fontSize]);
+
+  // Accessibility setting handlers
+  const handleAccessibilityChange = (setting: 'highContrast' | 'fontSize', value: any) => {
+    if (setting === 'highContrast') {
+      setHighContrast(value);
+    } else if (setting === 'fontSize') {
+      setFontSize(value);
     }
   };
 
   const handleCancel = () => {
-    // Reset form data to current user data
-    if (user) {
-      setFormData({
-        firstName: user.profile?.firstName || '',
-        lastName: user.profile?.lastName || '',
-        email: user.email || '',
-        role: user.role || '',
-        department: user.profile?.department || '',
-        phone: user.profile?.contactInfo?.phone || '',
-        bio: user.profile?.bio || '',
-        studentId: user.profile?.studentId || '',
-        officeHours: user.profile?.officeHours || '',
-        specialties: user.profile?.specialties?.join(', ') || ''
-      });
-    }
+    // Reset form data to current user data using form.reset()
+    form.reset();
     setIsEditing(false);
   };
 
@@ -163,8 +188,9 @@ export default function ProfilePage() {
                     form="profile-form"
                     icon={<CheckIcon className="w-5 h-5" />}
                     variant="primary"
+                    disabled={form.isSubmitting}
                   >
-                    Save Changes
+                    {form.isSubmitting ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </div>
               )
@@ -179,21 +205,37 @@ export default function ProfilePage() {
               </div>
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900" data-testid="profile-name">
-                  {formData.firstName && formData.lastName ? `${formData.firstName} ${formData.lastName}` : 'User Profile'}
+                  {form.data.firstName && form.data.lastName ? `${form.data.firstName} ${form.data.lastName}` : 'User Profile'}
                 </h2>
                 <p className="text-lg text-gray-600" data-testid="profile-email">
-                  {formData.email}
+                  {form.data.email}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getRoleColor(formData.role)}`}>
-                    {formData.role.toUpperCase()}
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getRoleColor(form.data.role)}`}>
+                    {form.data.role.toUpperCase()}
                   </span>
                 </div>
               </div>
             </div>
           </Card>
 
-          <form id="profile-form" onSubmit={handleSubmit}>
+          {/* Show form errors if any */}
+          {Object.keys(form.errors).length > 0 && (
+            <Card className="border-red-200 bg-red-50">
+              <div className="text-red-800">
+                <h3 className="font-medium mb-2">Please fix the following errors:</h3>
+                <ul className="text-sm space-y-1">
+                  {Object.entries(form.errors).map(([field, error]) => (
+                    <li key={field} className="flex items-center gap-2">
+                      <span className="capitalize">{field}:</span> {error}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
+          )}
+
+          <form id="profile-form" onSubmit={form.handleSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Basic Information */}
               <Card>
@@ -205,46 +247,38 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                   <Input
                     id="firstName"
-                    name="firstName"
                     type="text"
                     label="First Name"
                     icon={<UserIcon className="w-5 h-5" />}
-                    value={formData.firstName}
-                    onChange={handleInputChange}
                     disabled={!isEditing}
+                    {...form.register('firstName')}
                   />
 
                   <Input
                     id="lastName"
-                    name="lastName"
                     type="text"
                     label="Last Name"
                     icon={<UserIcon className="w-5 h-5" />}
-                    value={formData.lastName}
-                    onChange={handleInputChange}
                     disabled={!isEditing}
+                    {...form.register('lastName')}
                   />
 
                   <Input
                     id="email"
-                    name="email"
                     type="email"
                     label="Email Address"
                     icon={<EnvelopeIcon className="w-5 h-5" />}
-                    value={formData.email}
-                    onChange={handleInputChange}
                     disabled={!isEditing}
+                    {...form.register('email')}
                   />
 
                   <Input
                     id="phone"
-                    name="phone"
                     type="tel"
                     label="Phone Number"
                     icon={<PhoneIcon className="w-5 h-5" />}
-                    value={formData.phone}
-                    onChange={handleInputChange}
                     disabled={!isEditing}
+                    {...form.register('phone')}
                   />
                 </div>
               </Card>
@@ -258,25 +292,21 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                   <Input
                     id="department"
-                    name="department"
                     type="text"
                     label="Department"
                     icon={<BuildingOfficeIcon className="w-5 h-5" />}
-                    value={formData.department}
-                    onChange={handleInputChange}
                     disabled={!isEditing}
+                    {...form.register('department')}
                   />
 
                   {user?.role === 'student' && (
                     <Input
                       id="studentId"
-                      name="studentId"
                       type="text"
                       label="Student ID"
                       icon={<AcademicCapIcon className="w-5 h-5" />}
-                      value={formData.studentId}
-                      onChange={handleInputChange}
                       disabled={!isEditing}
+                      {...form.register('studentId')}
                     />
                   )}
 
@@ -284,27 +314,23 @@ export default function ProfilePage() {
                     <>
                       <Input
                         id="specialties"
-                        name="specialties"
                         type="text"
                         label="Specialties"
                         icon={<StarIcon className="w-5 h-5" />}
-                        value={formData.specialties}
-                        onChange={handleInputChange}
                         disabled={!isEditing}
                         placeholder="e.g., Mathematics, Computer Science, Physics"
                         helperText="Separate multiple specialties with commas"
+                        {...form.register('specialties')}
                       />
 
                       <Input
                         id="officeHours"
-                        name="officeHours"
                         type="text"
                         label="Office Hours"
                         icon={<ClockIcon className="w-5 h-5" />}
-                        value={formData.officeHours}
-                        onChange={handleInputChange}
                         disabled={!isEditing}
                         placeholder="e.g., Mon/Wed 2-4pm"
+                        {...form.register('officeHours')}
                       />
                     </>
                   )}
@@ -317,19 +343,67 @@ export default function ProfilePage() {
                       </label>
                       <textarea
                         id="bio"
-                        name="bio"
                         rows={4}
-                        value={formData.bio}
-                        onChange={handleInputChange}
                         disabled={!isEditing}
                         className="input"
                         placeholder="Tell us about yourself..."
+                        {...form.register('bio')}
                       />
                     </div>
                   )}
                 </div>
               </Card>
             </div>
+            
+            {/* Accessibility Settings Card */}
+            <Card className="mt-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <AcademicCapIcon className="w-6 h-6 text-primary-600" />
+                Accessibility Settings
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="form-group">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="highContrast"
+                      checked={highContrast}
+                      onChange={(e) => handleAccessibilityChange('highContrast', e.target.checked)}
+                      disabled={!isEditing}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      aria-label="Enable high contrast mode"
+                    />
+                    <span className="text-gray-700">Enable High Contrast Mode</span>
+                  </label>
+                  <p className="text-sm text-gray-500 mt-1 ml-6">
+                    Improves visibility with higher contrast colors
+                  </p>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="fontSize" className="form-label">
+                    Font Size
+                  </label>
+                  <select
+                    id="fontSize"
+                    name="fontSize"
+                    value={fontSize}
+                    onChange={(e) => handleAccessibilityChange('fontSize', e.target.value)}
+                    disabled={!isEditing}
+                    className="input"
+                    aria-label="Select font size"
+                  >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium (Default)</option>
+                    <option value="large">Large</option>
+                  </select>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Adjust text size for better readability
+                  </p>
+                </div>
+              </div>
+            </Card>
           </form>
         </div>
       </DashboardLayout>

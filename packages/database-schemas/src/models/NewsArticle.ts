@@ -273,5 +273,5 @@ NewsArticleSchema.statics['getRecent'] = function(limit: number = 10) {
     .limit(limit);
 };
 
-// Create and export the model
-export const NewsArticleModel = mongoose.model<NewsArticleDocument, NewsArticleModelType>('NewsArticle', NewsArticleSchema) as NewsArticleModelType;
+// Create and export the model with overwrite protection
+export const NewsArticleModel = (mongoose.models['NewsArticle'] || mongoose.model<NewsArticleDocument, NewsArticleModelType>('NewsArticle', NewsArticleSchema)) as NewsArticleModelType;

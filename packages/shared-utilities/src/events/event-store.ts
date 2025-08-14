@@ -1,6 +1,6 @@
 // packages/shared-utilities/src/events/event-store.ts
 import mongoose, { Schema, Document, Connection } from 'mongoose';
-import { Event } from './event-bus';
+import { SystemEvent } from './event-bus';
 import { logger } from '../logging/logger';
 
 /**
@@ -221,7 +221,7 @@ export class EventStore {
    * @param aggregateType - Aggregate type (optional)
    * @returns Promise resolving to the stored event's sequence number
    */
-  async append(event: Event, aggregateId?: string, aggregateType?: string): Promise<number> {
+  async append(event: SystemEvent, aggregateId?: string, aggregateType?: string): Promise<number> {
     try {
       let version: number | undefined;
 
@@ -275,7 +275,7 @@ export class EventStore {
    * @param toVersion - Ending version (inclusive)
    * @returns Promise resolving to array of events in version order
    */
-  async getEvents(aggregateId: string, fromVersion?: number, toVersion?: number): Promise<Event[]> {
+  async getEvents(aggregateId: string, fromVersion?: number, toVersion?: number): Promise<SystemEvent[]> {
     try {
       const query: any = { aggregateId };
 
@@ -300,7 +300,7 @@ export class EventStore {
    * @param query - Query parameters for event retrieval
    * @returns Promise resolving to array of matching events
    */
-  async getEventsByQuery(query: EventQuery): Promise<Event[]> {
+  async getEventsByQuery(query: EventQuery): Promise<SystemEvent[]> {
     try {
       const mongoQuery: any = {};
       const options: any = {};
@@ -351,7 +351,7 @@ export class EventStore {
    * @param limit - Maximum number of events to return
    * @returns Promise resolving to array of events in sequence order
    */
-  async getEventsSince(fromSequence: number, limit = 1000): Promise<Event[]> {
+  async getEventsSince(fromSequence: number, limit = 1000): Promise<SystemEvent[]> {
     try {
       const events = await this.eventModel
         .find({ sequence: { $gt: fromSequence } })
@@ -373,7 +373,7 @@ export class EventStore {
    * @param fromSequence - Optional starting sequence number
    * @returns Promise resolving to all events in sequence order
    */
-  async getAllEvents(fromSequence?: number): Promise<Event[]> {
+  async getAllEvents(fromSequence?: number): Promise<SystemEvent[]> {
     try {
       const query = fromSequence ? { sequence: { $gte: fromSequence } } : {};
 
@@ -516,7 +516,7 @@ export class EventStore {
   /**
    * Map stored event document to domain event.
    */
-  private mapToEvent(storedEvent: any): Event {
+  private mapToEvent(storedEvent: any): SystemEvent {
     return {
       id: storedEvent.eventId,
       type: storedEvent.type,

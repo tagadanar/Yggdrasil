@@ -82,6 +82,14 @@ export class TestCleanup {
       this.addCustomCleanup(async () => {
         await this.cascadeCleanupUser(id);
       });
+    } else if (collection === 'promotions') {
+      this.addCustomCleanup(async () => {
+        await this.cascadeCleanupPromotion(id);
+      });
+    } else if (collection === 'events') {
+      this.addCustomCleanup(async () => {
+        await this.cascadeCleanupEvent(id);
+      });
     }
   }
 
@@ -222,19 +230,29 @@ export class TestCleanup {
 
       // Clean up promotion progress entries that reference this course
       const promotionProgress = mongoose.connection.db!.collection('promotion_progress');
+      // Use untyped operations to avoid TypeScript strict typing issues
       const progressUpdateResult = await promotionProgress.updateMany(
         { 'coursesProgress.courseId': objectId },
         {
           $pull: {
             coursesProgress: { courseId: objectId },
+          } as any,
+        },
+      );
+      
+      // Pull from simple array fields
+      const simpleProgressUpdateResult = await promotionProgress.updateMany(
+        {},
+        {
+          $pull: {
             coursesCompleted: objectId,
             coursesInProgress: objectId,
             coursesNotStarted: objectId,
-          },
+          } as any,
         },
       );
-      if (progressUpdateResult.modifiedCount > 0) {
-        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Updated ${progressUpdateResult.modifiedCount} promotion progress records for course ${courseId}`);
+      if (progressUpdateResult.modifiedCount > 0 || simpleProgressUpdateResult.modifiedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Updated ${progressUpdateResult.modifiedCount + simpleProgressUpdateResult.modifiedCount} promotion progress records for course ${courseId}`);
       }
 
       // Clean up exercise submissions
@@ -263,11 +281,28 @@ export class TestCleanup {
     try {
       const objectId = new mongoose.Types.ObjectId(userId);
 
+      // Clean up user from promotions
+      const promotions = mongoose.connection.db!.collection('promotions');
+      const promotionResult = await promotions.updateMany(
+        { studentIds: objectId },
+        { $pull: { studentIds: objectId } } as any
+      );
+      if (promotionResult.modifiedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Removed user ${userId} from ${promotionResult.modifiedCount} promotions`);
+      }
+
       // Clean up user's promotion progress
       const promotionProgress = mongoose.connection.db!.collection('promotion_progress');
-      const progressResult = await promotionProgress.deleteMany({ studentId: objectId });
-      if (progressResult.deletedCount > 0) {
-        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${progressResult.deletedCount} promotion progress records for user ${userId}`);
+      const promotionProgressResult = await promotionProgress.deleteMany({ studentId: objectId });
+      if (promotionProgressResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${promotionProgressResult.deletedCount} promotion progress records for user ${userId}`);
+      }
+
+      // Clean up event attendance
+      const attendance = mongoose.connection.db!.collection('event_attendance');
+      const attendanceResult = await attendance.deleteMany({ studentId: objectId });
+      if (attendanceResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${attendanceResult.deletedCount} attendance records for user ${userId}`);
       }
 
       // Clean up user submissions
@@ -284,8 +319,90 @@ export class TestCleanup {
         logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${progressResult.deletedCount} progress records for user ${userId}`);
       }
 
+      // Clean up user sessions
+      const sessions = mongoose.connection.db!.collection('sessions');
+      const sessionResult = await sessions.deleteMany({ userId: objectId });
+      if (sessionResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${sessionResult.deletedCount} sessions for user ${userId}`);
+      }
+
     } catch (error) {
       logger.warn(`⚠️ CASCADE CLEANUP [${this.testName}]: Failed to cleanup user ${userId}:`, error);
+    }
+  }
+
+  /**
+   * Cascade cleanup for promotion-related documents
+   */
+  private async cascadeCleanupPromotion(promotionId: string): Promise<void> {
+    try {
+      const objectId = new mongoose.Types.ObjectId(promotionId);
+
+      // Clean up promotion progress records
+      const promotionProgress = mongoose.connection.db!.collection('promotion_progress');
+      const progressResult = await promotionProgress.deleteMany({ promotionId: objectId });
+      if (progressResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${progressResult.deletedCount} progress records for promotion ${promotionId}`);
+      }
+
+      // Clean up event attendance records
+      const attendance = mongoose.connection.db!.collection('event_attendance');
+      const attendanceResult = await attendance.deleteMany({ promotionId: objectId });
+      if (attendanceResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${attendanceResult.deletedCount} attendance records for promotion ${promotionId}`);
+      }
+
+      // Remove promotion from events
+      const events = mongoose.connection.db!.collection('events');
+      const eventResult = await events.updateMany(
+        { promotionIds: objectId },
+        { $pull: { promotionIds: objectId } } as any
+      );
+      if (eventResult.modifiedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Removed promotion ${promotionId} from ${eventResult.modifiedCount} events`);
+      }
+
+      // Remove promotion from user history
+      const users = mongoose.connection.db!.collection('users');
+      const userResult = await users.updateMany(
+        { currentPromotionId: objectId },
+        { $unset: { currentPromotionId: 1 } }
+      );
+      if (userResult.modifiedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Removed current promotion from ${userResult.modifiedCount} users`);
+      }
+
+    } catch (error) {
+      logger.warn(`⚠️ CASCADE CLEANUP [${this.testName}]: Failed to cleanup promotion ${promotionId}:`, error);
+    }
+  }
+
+  /**
+   * Cascade cleanup for event-related documents
+   */
+  private async cascadeCleanupEvent(eventId: string): Promise<void> {
+    try {
+      const objectId = new mongoose.Types.ObjectId(eventId);
+
+      // Clean up event attendance records
+      const attendance = mongoose.connection.db!.collection('event_attendance');
+      const attendanceResult = await attendance.deleteMany({ eventId: objectId });
+      if (attendanceResult.deletedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Deleted ${attendanceResult.deletedCount} attendance records for event ${eventId}`);
+      }
+
+      // Remove event from promotions
+      const promotions = mongoose.connection.db!.collection('promotions');
+      const promotionResult = await promotions.updateMany(
+        { eventIds: objectId },
+        { $pull: { eventIds: objectId } } as any
+      );
+      if (promotionResult.modifiedCount > 0) {
+        logger.info(`🧹 CASCADE CLEANUP [${this.testName}]: Removed event ${eventId} from ${promotionResult.modifiedCount} promotions`);
+      }
+
+    } catch (error) {
+      logger.warn(`⚠️ CASCADE CLEANUP [${this.testName}]: Failed to cleanup event ${eventId}:`, error);
     }
   }
 

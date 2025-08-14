@@ -297,18 +297,8 @@ UserSchema.methods['incrementTokenVersion'] = async function() {
   await user.save();
 };
 
-// Create and export the User model
-let UserModel: UserModelType;
-
-try {
-  // Check if model already exists
-  UserModel = mongoose.model<UserDocument, UserModelType>('User');
-  logger.info('🏗️ USER MODEL: Reusing existing User model');
-} catch {
-  // Create new model
-  UserModel = mongoose.model<UserDocument, UserModelType>('User', UserSchema);
-  logger.info('🏗️ USER MODEL: Created new User model');
-}
+// Create and export the User model with overwrite protection
+const UserModel: UserModelType = (mongoose.models['User'] || mongoose.model<UserDocument, UserModelType>('User', UserSchema)) as UserModelType;
 
 // Helper function to create user model (for backwards compatibility)
 export function createUserModel(): UserModelType {

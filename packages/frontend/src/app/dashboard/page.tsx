@@ -5,13 +5,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Link } from '@/components/ui/Link';
+import { ProgressionTracker } from '@/components/student/ProgressionTracker';
 import { 
   UserGroupIcon, 
   AcademicCapIcon, 
   CalendarIcon, 
   ChartBarIcon,
   DocumentTextIcon,
-  XCircleIcon
+  XCircleIcon,
+  CpuChipIcon
 } from '@heroicons/react/24/outline';
 
 function DashboardPageContent() {
@@ -53,11 +55,11 @@ function DashboardPageContent() {
       case 'admin':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <UserGroupIcon className="w-10 h-10 text-primary-600" />
               Admin Dashboard
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Link
                 href="/admin/users"
                 className="block p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all"
@@ -82,16 +84,24 @@ function DashboardPageContent() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Course Overview</h3>
                 <p className="text-gray-600">Monitor all courses and enrollments</p>
               </Link>
+              <Link
+                href="/admin/validation?tab=monitoring"
+                className="block p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+              >
+                <CpuChipIcon className="w-8 h-8 text-orange-600 mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">System Monitoring</h3>
+                <p className="text-gray-600">Real-time validation system health</p>
+              </Link>
             </div>
           </div>
         );
       case 'teacher':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <AcademicCapIcon className="w-10 h-10 text-blue-600" />
               Teacher Dashboard
-            </h2>
+            </h1>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Link
                 href="/courses"
@@ -123,10 +133,10 @@ function DashboardPageContent() {
       case 'staff':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <CalendarIcon className="w-10 h-10 text-orange-600" />
               Staff Dashboard
-            </h2>
+            </h1>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Link
                 href="/planning"
@@ -158,10 +168,14 @@ function DashboardPageContent() {
       case 'student':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <AcademicCapIcon className="w-10 h-10 text-green-600" />
               Student Dashboard
-            </h2>
+            </h1>
+            
+            {/* Student Progression Tracker */}
+            <ProgressionTracker />
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Link
                 href="/courses"
@@ -193,7 +207,7 @@ function DashboardPageContent() {
       default:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-gray-600">Welcome to your dashboard!</p>
           </div>
         );

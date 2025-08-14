@@ -22,7 +22,7 @@ test.describe('Course & Learning Workflows - Comprehensive', () => {
 
   test('Course creation and content development', async ({ page }) => {
     test.setTimeout(90000); // Optimized timeout
-    const cleanup = TestCleanup.getInstance('COURSE-CREATE: Creation and Content');
+    const cleanup = await TestCleanup.ensureCleanStart('COURSE-CREATE: Creation and Content');
     const authHelper = new CleanAuthHelper(page);
 
     try {
@@ -65,16 +65,11 @@ test.describe('Course & Learning Workflows - Comprehensive', () => {
 
       console.log('✅ Course creation test completed successfully');
 
-      // Clean up created course
-      cleanup.addCustomCleanup(async () => {
-        try {
-          // Clean up any courses created during test
-          await CourseModel.deleteMany({ title: { $regex: /^Test Course.*/ } });
-          console.log('🧹 CLEANUP: Deleted test courses');
-        } catch (error) {
-          console.warn('🧹 CLEANUP: Failed to delete course:', error);
-        }
-      });
+      // Clean up created course using cascade cleanup
+      const createdCourses = await CourseModel.find({ title: { $regex: /^Test Course.*/ } });
+      for (const course of createdCourses) {
+        cleanup.trackDocumentWithCascade('courses', course._id.toString());
+      }
 
     } catch (error) {
       await captureEnhancedError(page, error, 'Course Creation');
@@ -865,6 +860,16 @@ test.describe('Course & Learning Workflows - Comprehensive', () => {
     const cleanup = TestCleanup.getInstance('COURSE-LIFECYCLE: Publishing');
     const authHelper = new CleanAuthHelper(page);
 
+    // CRITICAL: Clear cookies and navigate to a page before clearing storage
+    await page.context().clearCookies();
+    
+    // Navigate to login page first to have a valid context for clearing storage
+    await page.goto('http://localhost:3000/auth/login');
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
     // Capture console logs for debugging
     page.on('console', msg => {
       if (msg.text().includes('DEBUG') || msg.text().includes('ERROR') || msg.text().includes('course')) {
@@ -890,14 +895,22 @@ test.describe('Course & Learning Workflows - Comprehensive', () => {
 
       await authHelper.loginWithCustomUser(teacher.email, 'TestPass123!');
 
-      // Navigate to course settings
-      await page.goto(`/courses/${draftCourse._id}/settings`);
+      // Navigate to course settings with cache-busting
+      await page.goto(`/courses/${draftCourse._id}/settings`, {
+        waitUntil: 'networkidle',
+        timeout: 30000
+      });
 
-      // Wait for the settings page to load
-      await page.waitForLoadState('networkidle');
+      // Force fresh page load by waiting for React hydration
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1000); // Brief pause for React hydration
 
-      // Debug: Check what's actually on the page
-      await page.waitForTimeout(2000); // Give it time to load
+      // Wait for React to fully render the page
+      await page.waitForFunction(
+        () => document.querySelector('h2') !== null,
+        { timeout: 10000 }
+      );
+      
       const pageContent = await page.textContent('body');
       console.log('🔍 DEBUG: Page content:', pageContent?.substring(0, 500));
 
@@ -948,8 +961,11 @@ test.describe('Course & Learning Workflows - Comprehensive', () => {
       // Verify status changed
       await expect(page.locator('text=Status: Published')).toBeVisible();
 
-      // Test course management page access
-      await page.goto(`/courses/${draftCourse._id}/manage`);
+      // Test course management page access with cache-busting
+      await page.goto(`/courses/${draftCourse._id}/manage`, {
+        waitUntil: 'networkidle',
+        timeout: 30000
+      });
 
       // Look for page header to confirm page loaded (more specific than before)
       const pageHeader = page.locator('h1').first(); // Use .first() to avoid strict mode violation
@@ -959,7 +975,17 @@ test.describe('Course & Learning Workflows - Comprehensive', () => {
       await captureEnhancedError(page, error, 'Course Publishing');
       throw error;
     } finally {
+      // Enhanced cleanup: clear all browser state
       await authHelper.clearAuthState();
+      // Try to clear storage only if page is available
+      try {
+        await page.evaluate(() => {
+          localStorage.clear();
+          sessionStorage.clear();
+        });
+      } catch {
+        // Ignore errors if page context is not available
+      }
       await cleanup.cleanup();
     }
   });

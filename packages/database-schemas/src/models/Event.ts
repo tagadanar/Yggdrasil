@@ -433,5 +433,5 @@ EventSchema.statics['findByTeacher'] = function(teacherId: mongoose.Types.Object
   return this.find({ teacherId }).sort({ startDate: 1 });
 };
 
-// Create and export the model
-export const EventModel = mongoose.model<EventDocument, EventModelType>('Event', EventSchema) as EventModelType;
+// Create and export the model with overwrite protection
+export const EventModel = (mongoose.models['Event'] || mongoose.model<EventDocument, EventModelType>('Event', EventSchema)) as EventModelType;

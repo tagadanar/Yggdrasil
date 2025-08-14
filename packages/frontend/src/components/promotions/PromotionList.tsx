@@ -6,6 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { promotionApi, getSemesterName, getSemesterColor, getStatusColor } from '@/lib/api/promotions';
+import { tokenStorage } from '@/lib/auth/tokenStorage';
+import { createComponentLogger } from '@/lib/errors/logger';
 import { Promotion, PromotionFilters } from '@yggdrasil/shared-utilities';
 import {
   PlusIcon,
@@ -83,28 +85,21 @@ export const PromotionList: React.FC<PromotionListProps> = ({
   }, [filters, user?.role]);
 
   const loadPromotions = async () => {
-    console.log('🔄 loadPromotions called');
+    const logger = createComponentLogger('PromotionList');
+    logger.debug('Loading promotions');
+    
     try {
       setLoading(true);
       setError(null);
 
-      // Debug: Check if user is authenticated and token is available
-      console.log('Loading promotions, user:', user ? `${user.profile.firstName} (${user.role})` : 'none');
-
-      // Check if token is available
-      let token = localStorage.getItem('yggdrasil_access_token') || localStorage.getItem('access_token');
-      if (!token && typeof document !== 'undefined') {
-        const cookies = document.cookie.split(';');
-        for (const cookie of cookies) {
-          const [name, value] = cookie.trim().split('=');
-          if (name === 'yggdrasil_access_token') {
-            token = value;
-            break;
-          }
-        }
-      }
-
-      console.log('Token available for promotion loading:', !!token);
+      // Use secure token storage
+      const token = tokenStorage.getAccessToken();
+      
+      logger.debug('Authentication check', { 
+        hasUser: !!user, 
+        hasToken: !!token,
+        userRole: user?.role 
+      });
 
       if (!token) {
         setError('Authentication required to load promotions');
@@ -114,28 +109,31 @@ export const PromotionList: React.FC<PromotionListProps> = ({
 
       const response = await promotionApi.getPromotions(filters);
 
-      console.log('Promotion API response:', { success: response.success, dataLength: response.data?.length, error: response.error });
+      logger.debug('Promotions loaded', { 
+        success: response.success, 
+        count: response.data?.length, 
+        hasError: !!response.error 
+      });
 
       if (response.success && response.data) {
         setPromotions(response.data);
-        console.log(`✅ Loaded ${response.data.length} promotions`);
-        console.log('✅ Setting loading to false...');
+        logger.info('Promotions loaded successfully', { count: response.data.length });
       } else {
         setError(response.error || 'Failed to load promotions');
-        console.error('Promotion API error:', response.error);
+        logger.error('Promotion API error', { error: response.error });
       }
     } catch (err) {
       const errorMessage = 'Failed to load promotions';
       setError(errorMessage);
-      console.error('Failed to load promotions:', err);
+      logger.error('Failed to load promotions', { error: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
-      console.log('🔄 Finally block: Setting loading to false');
+      logger.debug('Promotions loading complete');
       // Ensure loading is set to false even if there are state update issues
       setLoading(false);
 
       // Additional fallback to force re-render after API call
       setTimeout(() => {
-        console.log('🔄 Backup: Ensuring loading state is false');
+        logger.debug('Backup loading state reset');
         setLoading(false);
       }, 100);
     }
