@@ -10,12 +10,6 @@ export const authenticateToken = AuthMiddleware.verifyTokenWithUserLookup(async 
   return user;
 });
 
-// Re-export other middleware from shared utilities
-export const {
-  requireRole: authorize,
-  optionalAuth,
-  adminOnly,
-  staffOnly,
-  teacherAndAbove,
-  authenticated,
-} = AuthMiddleware;
+// Re-export other middleware from shared utilities for consistent naming
+export const { requireRole, optionalAuth, adminOnly, staffOnly, teacherAndAbove, authenticated } =
+  AuthMiddleware;

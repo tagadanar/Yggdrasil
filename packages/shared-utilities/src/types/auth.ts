@@ -217,5 +217,5 @@ export interface UserPreferences {
 import { Request } from 'express';
 
 export interface AuthRequest extends Request {
-  user?: any; // Will be populated by auth middleware
+  user?: User; // Will be populated by auth middleware
 }

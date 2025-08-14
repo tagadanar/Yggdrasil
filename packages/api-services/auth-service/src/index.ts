@@ -13,27 +13,10 @@ import { initializeJWT } from '@yggdrasil/shared-utilities';
 import { authLogger as logger } from '@yggdrasil/shared-utilities';
 
 // Load environment variables from project root
-// Use absolute path resolution to find .env file regardless of working directory
-import path from 'path';
-import fs from 'fs';
-
-// Try multiple strategies to find the .env file
-const possiblePaths = [
-  path.resolve(__dirname, '../../../.env'),
-  path.resolve(__dirname, '../../../../.env'),
-  path.resolve(process.cwd(), '.env'),
-  path.resolve(process.cwd(), '../../.env'),
-  path.resolve(process.cwd(), '../../../.env'),
-  '/home/tagada/Desktop/Yggdrasil/.env'
-];
-
-const envPath = possiblePaths.find(p => fs.existsSync(p));
-if (envPath) {
-  dotenv.config({ path: envPath });
-  logger.debug(`🔧 AUTH SERVICE: Loaded .env from ${envPath}`);
-} else {
-  logger.warn('⚠️ AUTH SERVICE: Could not find .env file, using existing environment variables');
-}
+// Simplified approach - dotenv will automatically find .env files
+dotenv.config({ path: '.env' }); // Project root .env
+dotenv.config({ path: '../../../.env' }); // Fallback to monorepo root
+logger.debug('🔧 AUTH SERVICE: Environment variables loaded');
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {

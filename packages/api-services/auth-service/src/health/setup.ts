@@ -5,6 +5,7 @@ import {
   ExternalServiceHealthChecker,
   HealthChecker,
   HealthStatus,
+  HTTP_STATUS,
 } from '@yggdrasil/shared-utilities';
 
 import type { HealthCheckResult } from '@yggdrasil/shared-utilities';
@@ -74,12 +75,12 @@ export function setupHealthChecks(app: Express) {
   // Health endpoints
   app.get('/health', healthManager.createHealthEndpoint());
   app.get('/health/live', (_req, res) => {
-    res.status(200).json({ status: 'alive' });
+    res.status(HTTP_STATUS.OK).json({ status: 'alive' });
   });
   app.get('/health/ready', async (_req, res) => {
     const health = await healthManager.checkHealth();
     const isReady = health.status !== 'unhealthy';
-    res.status(isReady ? 200 : 503).json({ ready: isReady });
+    res.status(isReady ? HTTP_STATUS.OK : 503).json({ ready: isReady });
   });
 
   return healthManager;

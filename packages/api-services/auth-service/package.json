@@ -52,6 +52,12 @@
       "!src/**/*.d.ts",
       "!src/index.ts"
     ],
-    "testTimeout": 10000
+    "testTimeout": 10000,
+    "moduleNameMapper": {
+      "^p-queue$": "<rootDir>/__tests__/__mocks__/p-queue.js"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(p-queue|eventemitter3)/)"
+    ]
   }
 }

@@ -9,6 +9,7 @@ import {
   LoginRequestSchema,
   RefreshTokenSchema,
   HTTP_STATUS,
+  AuthRequest,
 } from '@yggdrasil/shared-utilities';
 import { authLogger as logger } from '@yggdrasil/shared-utilities';
 
@@ -120,9 +121,9 @@ export class AuthController {
    * POST /api/auth/logout
    * Logout user
    */
-  static async logout(req: Request, res: Response): Promise<void> {
+  static async logout(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?._id;
+      const userId = req.user?._id;
 
       if (!userId) {
         res
@@ -148,9 +149,9 @@ export class AuthController {
    * GET /api/auth/me
    * Get current user information
    */
-  static async me(req: Request, res: Response): Promise<void> {
+  static async me(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const user = (req as any).user;
+      const user = req.user;
 
       logger.info('🔍 AUTH CONTROLLER /me: User from middleware:', {
         email: user?.email,

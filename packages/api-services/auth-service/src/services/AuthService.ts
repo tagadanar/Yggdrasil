@@ -171,15 +171,8 @@ export class AuthService {
       // Update last login timestamp using findByIdAndUpdate to avoid document issues
       await UserModel.findByIdAndUpdate(user._id, { lastLogin: new Date() });
 
-      // Generate tokens - CRITICAL FIX for test users with ObjectIds
-      let userId = user._id.toString();
-
-      // CRITICAL FIX: For test users, we need to store the actual _id that was used
-      // in the JWT so that the /me endpoint can find the user again
-      if (process.env['NODE_ENV'] === 'test' && user.email.includes('@test.yggdrasil.local')) {
-        // Extract the actual stored _id value
-        userId = user._id.toString();
-      }
+      // Generate tokens
+      const userId = user._id.toString();
 
       const tokens = JWTHelper.generateTokens({
         _id: userId,
@@ -293,13 +286,8 @@ export class AuthService {
         };
       }
 
-      // Generate new tokens - CRITICAL FIX for test users
-      let userId = user._id.toString();
-
-      // CRITICAL FIX: For test users, ensure consistency
-      if (process.env['NODE_ENV'] === 'test' && user.email.includes('@test.yggdrasil.local')) {
-        userId = user._id.toString();
-      }
+      // Generate new tokens
+      const userId = user._id.toString();
 
       const tokens = JWTHelper.generateTokens({
         _id: userId,
