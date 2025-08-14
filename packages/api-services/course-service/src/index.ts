@@ -15,27 +15,32 @@ const possiblePaths = [
   path.resolve(process.cwd(), '.env'),
   path.resolve(process.cwd(), '../../.env'),
   path.resolve(process.cwd(), '../../../.env'),
-  '/home/tagada/Desktop/Yggdrasil/.env'
+  '/home/tagada/Desktop/Yggdrasil/.env',
 ];
 
 const envPath = possiblePaths.find(p => fs.existsSync(p));
 if (envPath) {
   dotenv.config({ path: envPath });
-  console.log(`🔧 COURSE SERVICE: Loaded .env from ${envPath}`);
+  logger.info(`🔧 COURSE SERVICE: Loaded .env from ${envPath}`);
 } else {
-  console.warn('⚠️ COURSE SERVICE: Could not find .env file, using existing environment variables');
+  logger.warn('⚠️ COURSE SERVICE: Could not find .env file, using existing environment variables');
 }
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {
-  const workerId = process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || process.env['TEST_WORKER_INDEX'] || '0';
-  const basePort = 3000 + (parseInt(workerId, 10) * 10);
+  const workerId =
+    process.env['WORKER_ID'] ||
+    process.env['PLAYWRIGHT_WORKER_ID'] ||
+    process.env['TEST_WORKER_INDEX'] ||
+    '0';
+  const basePort = 3000 + parseInt(workerId, 10) * 10;
   const coursePort = basePort + 4; // Course service is always basePort + 4
   return coursePort;
 }
 
-const PORT = parseInt(process.env['COURSE_SERVICE_PORT'] || process.env['PORT'] || '0', 10) || 
-            (process.env['NODE_ENV'] === 'test' ? getWorkerSpecificPort() : 3004);
+const PORT =
+  parseInt(process.env['COURSE_SERVICE_PORT'] || process.env['PORT'] || '0', 10) ||
+  (process.env['NODE_ENV'] === 'test' ? getWorkerSpecificPort() : 3004);
 
 // Start server after database initialization
 async function startServer() {
@@ -43,10 +48,10 @@ async function startServer() {
     // Initialize JWT system first (same as auth service)
     logger.info('🔑 Initializing JWT system...');
     initializeJWT();
-    
+
     // Wait for database connection first
     await initializeDatabase();
-    
+
     // Only start server after database is ready - force IPv4 binding
     const server = app.listen(PORT, '127.0.0.1', () => {
       logger.debug(`📚 Course Service running on port ${PORT}`);
@@ -56,7 +61,7 @@ async function startServer() {
 
     // Handle server errors
     server.on('error', (error: any) => {
-      logger.error(`❌ Course Service: Server error:`, error);
+      logger.error('❌ Course Service: Server error:', error);
       if (error.syscall !== 'listen') {
         throw error;
       }
@@ -104,9 +109,11 @@ async function startServer() {
 }
 
 // Start the server
-startServer().then(() => {
-  logger.info('✅ Course Service: Startup completed successfully');
-}).catch((error) => {
-  logger.error('❌ Course Service: Startup failed:', error);
-  process.exit(1);
-});
+startServer()
+  .then(() => {
+    logger.info('✅ Course Service: Startup completed successfully');
+  })
+  .catch(error => {
+    logger.error('❌ Course Service: Startup failed:', error);
+    process.exit(1);
+  });

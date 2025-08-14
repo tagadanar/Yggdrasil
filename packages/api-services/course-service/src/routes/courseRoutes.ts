@@ -3,10 +3,20 @@
 
 import { Router } from 'express';
 import { CourseController } from '../controllers/CourseController';
+import { authenticateToken, requireTeacherOrAdmin } from '../middleware/authMiddleware';
 import {
-  authenticateToken,
-  requireTeacherOrAdmin,
-} from '../middleware/authMiddleware';
+  auditCourseCreate,
+  auditCourseUpdate,
+  auditCourseDelete,
+  auditCoursePublish,
+  auditChapterCreate,
+  auditChapterUpdate,
+  auditChapterDelete,
+  auditSectionCreate,
+  auditSectionUpdate,
+  auditContentCreate,
+  auditContentUpdate,
+} from '../middleware/auditLogger';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();
@@ -42,6 +52,7 @@ router.post(
   createCourseRateLimit,
   authenticateToken,
   requireTeacherOrAdmin,
+  auditCourseCreate,
   courseController.createCourse,
 );
 
@@ -52,10 +63,10 @@ router.get('/:courseId', authenticateToken, courseController.getCourse);
 router.get('/slug/:slug', authenticateToken, courseController.getCourseBySlug);
 
 // Update course (instructors, collaborators, admins only)
-router.put('/:courseId', authenticateToken, courseController.updateCourse);
+router.put('/:courseId', authenticateToken, auditCourseUpdate, courseController.updateCourse);
 
 // Delete course (instructors, admins only)
-router.delete('/:courseId', authenticateToken, courseController.deleteCourse);
+router.delete('/:courseId', authenticateToken, auditCourseDelete, courseController.deleteCourse);
 
 // =============================================================================
 // COURSE SEARCH AND LISTING
@@ -79,6 +90,7 @@ router.post(
   '/:courseId/chapters',
   authenticateToken,
   requireTeacherOrAdmin,
+  auditChapterCreate,
   courseController.addChapter,
 );
 
@@ -87,6 +99,7 @@ router.put(
   '/:courseId/chapters/:chapterId',
   authenticateToken,
   requireTeacherOrAdmin,
+  auditChapterUpdate,
   courseController.updateChapter,
 );
 
@@ -95,6 +108,7 @@ router.delete(
   '/:courseId/chapters/:chapterId',
   authenticateToken,
   requireTeacherOrAdmin,
+  auditChapterDelete,
   courseController.deleteChapter,
 );
 
@@ -107,6 +121,7 @@ router.post(
   '/:courseId/chapters/:chapterId/sections',
   authenticateToken,
   requireTeacherOrAdmin,
+  auditSectionCreate,
   courseController.addSection,
 );
 
@@ -115,6 +130,7 @@ router.put(
   '/:courseId/chapters/:chapterId/sections/:sectionId',
   authenticateToken,
   requireTeacherOrAdmin,
+  auditSectionUpdate,
   courseController.updateSection,
 );
 
@@ -127,6 +143,7 @@ router.post(
   '/:courseId/chapters/:chapterId/sections/:sectionId/content',
   authenticateToken,
   requireTeacherOrAdmin,
+  auditContentCreate,
   courseController.addContent,
 );
 
@@ -135,6 +152,7 @@ router.put(
   '/:courseId/chapters/:chapterId/sections/:sectionId/content/:contentId',
   authenticateToken,
   requireTeacherOrAdmin,
+  auditContentUpdate,
   courseController.updateContent,
 );
 
@@ -160,6 +178,7 @@ router.patch(
   '/:courseId/publish',
   authenticateToken,
   requireTeacherOrAdmin,
+  auditCoursePublish,
   async (req, res) => {
     try {
       const { publish } = req.body;
@@ -175,21 +194,17 @@ router.patch(
 );
 
 // Archive/restore course (admins only)
-router.patch(
-  '/:courseId/archive',
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const { archive } = req.body;
-      const modifiedReq = {
-        ...req,
-        body: { status: archive ? 'archived' : 'published' },
-      } as any;
-      await courseController.updateCourse(modifiedReq, res);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to update course status' });
-    }
-  },
-);
+router.patch('/:courseId/archive', authenticateToken, auditCoursePublish, async (req, res) => {
+  try {
+    const { archive } = req.body;
+    const modifiedReq = {
+      ...req,
+      body: { status: archive ? 'archived' : 'published' },
+    } as any;
+    await courseController.updateCourse(modifiedReq, res);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update course status' });
+  }
+});
 
 export default router;

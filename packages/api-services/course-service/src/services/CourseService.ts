@@ -19,8 +19,13 @@ import {
   CourseFilters,
   CourseSearchResult,
   UserRole,
+  ValidationError,
+  NotFoundError,
+  AuthorizationError,
+  ConflictError,
+  DatabaseError,
+  courseLogger as logger,
 } from '@yggdrasil/shared-utilities';
-import { courseLogger as logger } from '@yggdrasil/shared-utilities';
 
 export class CourseService {
   // =============================================================================
@@ -44,11 +49,17 @@ export class CourseService {
         },
       });
       // Convert string dates to Date objects if they exist
-      const processedSettings = courseData.settings ? {
-        ...courseData.settings,
-        startDate: courseData.settings.startDate ? new Date(courseData.settings.startDate) : undefined,
-        endDate: courseData.settings.endDate ? new Date(courseData.settings.endDate) : undefined,
-      } : undefined;
+      const processedSettings = courseData.settings
+        ? {
+            ...courseData.settings,
+            startDate: courseData.settings.startDate
+              ? new Date(courseData.settings.startDate)
+              : undefined,
+            endDate: courseData.settings.endDate
+              ? new Date(courseData.settings.endDate)
+              : undefined,
+          }
+        : undefined;
 
       logger.info('Creating course model instance...');
       const course = new CourseModel({
@@ -92,30 +103,44 @@ export class CourseService {
       } catch (slugError) {
         logger.warn('Slug generation failed, using fallback:', slugError);
         // Fallback slug generation
-        course.slug = courseData.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, '-')
-          .replace(/-+/g, '-')
-          .replace(/^-|-$/g, '') + '-' + Date.now();
+        course.slug =
+          courseData.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '') +
+          '-' +
+          Date.now();
       }
 
       logger.info(`Generated slug: ${course.slug}`);
 
       logger.info('Checking slug uniqueness...');
-      // Ensure slug is unique
-      let slugCounter = 1;
-      const originalSlug = course.slug;
-      let maxAttempts = 10; // Prevent infinite loop
+      // Optimized unique slug generation - find existing similar slugs in single query
+      const baseSlug = course.slug;
+      const existingSlugs = await CourseModel.find(
+        {
+          slug: { $regex: `^${baseSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(-\\d+)?$` },
+        },
+        { slug: 1 },
+      ).lean();
 
-      while (maxAttempts > 0 && await CourseModel.findBySlug(course.slug)) {
-        course.slug = `${originalSlug}-${slugCounter}`;
-        slugCounter++;
-        maxAttempts--;
-      }
+      if (existingSlugs.length > 0) {
+        const slugNumbers = existingSlugs
+          .map(doc => {
+            const match = doc.slug.match(
+              new RegExp(`^${baseSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-(\\d+)$`),
+            );
+            return match && match[1] ? parseInt(match[1], 10) : 0;
+          })
+          .filter(num => !isNaN(num));
 
-      if (maxAttempts === 0) {
-        // Ultimate fallback with timestamp
-        course.slug = `${originalSlug}-${Date.now()}`;
+        const maxNumber = slugNumbers.length > 0 ? Math.max(...slugNumbers) : 0;
+        const exactMatch = existingSlugs.some(doc => doc.slug === baseSlug);
+
+        if (exactMatch || maxNumber > 0) {
+          course.slug = `${baseSlug}-${maxNumber + 1}`;
+        }
       }
 
       logger.info('Saving course to database...');
@@ -132,17 +157,22 @@ export class CourseService {
 
       // Check for specific MongoDB errors
       if (error.name === 'ValidationError') {
-        const validationErrors = Object.keys(error.errors).map(key =>
-          `${key}: ${error.errors[key].message}`,
-        );
-        throw new Error(`Validation error: ${validationErrors.join(', ')}`);
+        const validationErrors = Object.keys(error.errors).map(key => ({
+          field: key,
+          message: error.errors[key].message,
+          value: error.errors[key].value,
+        }));
+        throw new ValidationError(validationErrors);
       }
 
       if (error.code === 11000) {
-        throw new Error('Course with this title or slug already exists');
+        throw new ConflictError('Course with this title or slug already exists', {
+          operation: 'createCourse',
+          duplicateField: Object.keys(error.keyPattern || {})[0],
+        });
       }
 
-      throw new Error(`Failed to create course: ${error.message}`);
+      throw new DatabaseError('createCourse', error);
     }
   }
 
@@ -150,7 +180,7 @@ export class CourseService {
     try {
       return await CourseModel.findById(courseId);
     } catch (error: any) {
-      throw new Error(`Failed to get course: ${error.message}`);
+      throw new DatabaseError('getCourseById', error);
     }
   }
 
@@ -158,7 +188,7 @@ export class CourseService {
     try {
       return await CourseModel.findBySlug(slug);
     } catch (error: any) {
-      throw new Error(`Failed to get course by slug: ${error.message}`);
+      throw new DatabaseError('getCourseBySlug', error);
     }
   }
 
@@ -176,7 +206,12 @@ export class CourseService {
 
       // Check permissions
       if (!(await this.canModifyCourse(courseId, userId, userRole))) {
-        throw new Error('Insufficient permissions to modify this course');
+        throw new AuthorizationError('Insufficient permissions to modify this course', {
+          operation: 'updateCourse',
+          courseId,
+          userId,
+          userRole,
+        });
       }
 
       // Convert string dates to Date objects if they exist
@@ -184,8 +219,12 @@ export class CourseService {
       if (processedUpdateData.settings) {
         processedUpdateData.settings = {
           ...processedUpdateData.settings,
-          startDate: processedUpdateData.settings.startDate ? new Date(processedUpdateData.settings.startDate) : undefined,
-          endDate: processedUpdateData.settings.endDate ? new Date(processedUpdateData.settings.endDate) : undefined,
+          startDate: processedUpdateData.settings.startDate
+            ? new Date(processedUpdateData.settings.startDate)
+            : undefined,
+          endDate: processedUpdateData.settings.endDate
+            ? new Date(processedUpdateData.settings.endDate)
+            : undefined,
         };
       }
 
@@ -200,7 +239,11 @@ export class CourseService {
       await course.save();
       return course;
     } catch (error: any) {
-      throw new Error(`Failed to update course: ${error.message}`);
+      // Re-throw AppErrors without wrapping
+      if (error.isOperational) {
+        throw error;
+      }
+      throw new DatabaseError('updateCourse', error);
     }
   }
 
@@ -213,7 +256,12 @@ export class CourseService {
 
       // Check permissions (only admins or course instructors can delete)
       if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
-        throw new Error('Insufficient permissions to delete this course');
+        throw new AuthorizationError('Insufficient permissions to delete this course', {
+          operation: 'deleteCourse',
+          courseId,
+          userId,
+          userRole,
+        });
       }
 
       await CourseModel.findByIdAndDelete(courseId);
@@ -222,7 +270,11 @@ export class CourseService {
 
       return true;
     } catch (error: any) {
-      throw new Error(`Failed to delete course: ${error.message}`);
+      // Re-throw AppErrors without wrapping
+      if (error.isOperational) {
+        throw error;
+      }
+      throw new DatabaseError('deleteCourse', error);
     }
   }
 
@@ -232,11 +284,17 @@ export class CourseService {
 
   async searchCourses(filters: CourseFilters): Promise<CourseSearchResult> {
     try {
-      logger.info('CourseService.searchCourses called with filters:', JSON.stringify(filters, null, 2));
+      logger.info(
+        'CourseService.searchCourses called with filters:',
+        JSON.stringify(filters, null, 2),
+      );
       const { search, page = 1, limit = 20, ...otherFilters } = filters;
       const skip = (page - 1) * limit;
 
-      logger.info('Calling CourseModel.searchCourses with:', { search: search || '', otherFilters });
+      logger.info('Calling CourseModel.searchCourses with:', {
+        search: search || '',
+        otherFilters,
+      });
       const courses = await CourseModel.searchCourses(search || '', otherFilters)
         .skip(skip)
         .limit(limit);
@@ -260,7 +318,7 @@ export class CourseService {
       };
     } catch (error: any) {
       logger.error('CourseService.searchCourses error:', error);
-      throw new Error(`Failed to search courses: ${error?.message || error}`);
+      throw new DatabaseError('searchCourses', error);
     }
   }
 
@@ -268,7 +326,7 @@ export class CourseService {
     try {
       return await CourseModel.findByInstructor(instructorId);
     } catch (error: any) {
-      throw new Error(`Failed to get courses by instructor: ${error.message}`);
+      throw new DatabaseError('getCoursesByInstructor', error);
     }
   }
 
@@ -276,7 +334,7 @@ export class CourseService {
     try {
       return await CourseModel.findPublished();
     } catch (error: any) {
-      throw new Error(`Failed to get published courses: ${error.message}`);
+      throw new DatabaseError('getPublishedCourses', error);
     }
   }
 
@@ -297,7 +355,12 @@ export class CourseService {
       }
 
       if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
-        throw new Error('Insufficient permissions to modify this course');
+        throw new AuthorizationError('Insufficient permissions to modify this course', {
+          operation: 'addChapter',
+          courseId,
+          userId,
+          userRole,
+        });
       }
 
       const newChapter = {
@@ -315,7 +378,11 @@ export class CourseService {
 
       return course;
     } catch (error: any) {
-      throw new Error(`Failed to add chapter: ${error.message}`);
+      // Re-throw AppErrors without wrapping
+      if (error.isOperational) {
+        throw error;
+      }
+      throw new DatabaseError('addChapter', error);
     }
   }
 
@@ -333,12 +400,17 @@ export class CourseService {
       }
 
       if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
-        throw new Error('Insufficient permissions to modify this course');
+        throw new AuthorizationError('Insufficient permissions to modify this course', {
+          operation: 'modifyCourse',
+          courseId,
+          userId,
+          userRole,
+        });
       }
 
       const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
-        throw new Error('Chapter not found');
+        throw new NotFoundError('Chapter', chapterId);
       }
 
       Object.assign(chapter, updateData);
@@ -347,7 +419,11 @@ export class CourseService {
 
       return course;
     } catch (error: any) {
-      throw new Error(`Failed to update chapter: ${error.message}`);
+      // Re-throw AppErrors without wrapping
+      if (error.isOperational) {
+        throw error;
+      }
+      throw new DatabaseError('updateChapter', error);
     }
   }
 
@@ -364,12 +440,17 @@ export class CourseService {
       }
 
       if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
-        throw new Error('Insufficient permissions to modify this course');
+        throw new AuthorizationError('Insufficient permissions to modify this course', {
+          operation: 'modifyCourse',
+          courseId,
+          userId,
+          userRole,
+        });
       }
 
       const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
-        throw new Error('Chapter not found');
+        throw new NotFoundError('Chapter', chapterId);
       }
 
       const chapterIndex = course.chapters.findIndex((ch: any) => ch._id.toString() === chapterId);
@@ -381,7 +462,11 @@ export class CourseService {
 
       return course;
     } catch (error: any) {
-      throw new Error(`Failed to delete chapter: ${error.message}`);
+      // Re-throw AppErrors without wrapping
+      if (error.isOperational) {
+        throw error;
+      }
+      throw new DatabaseError('deleteChapter', error);
     }
   }
 
@@ -403,12 +488,17 @@ export class CourseService {
       }
 
       if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
-        throw new Error('Insufficient permissions to modify this course');
+        throw new AuthorizationError('Insufficient permissions to modify this course', {
+          operation: 'modifyCourse',
+          courseId,
+          userId,
+          userRole,
+        });
       }
 
       const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
-        throw new Error('Chapter not found');
+        throw new NotFoundError('Chapter', chapterId);
       }
 
       const newSection = {
@@ -426,7 +516,11 @@ export class CourseService {
 
       return course;
     } catch (error: any) {
-      throw new Error(`Failed to add section: ${error.message}`);
+      // Re-throw AppErrors without wrapping
+      if (error.isOperational) {
+        throw error;
+      }
+      throw new DatabaseError('addSection', error);
     }
   }
 
@@ -445,17 +539,22 @@ export class CourseService {
       }
 
       if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
-        throw new Error('Insufficient permissions to modify this course');
+        throw new AuthorizationError('Insufficient permissions to modify this course', {
+          operation: 'modifyCourse',
+          courseId,
+          userId,
+          userRole,
+        });
       }
 
       const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
-        throw new Error('Chapter not found');
+        throw new NotFoundError('Chapter', chapterId);
       }
 
       const section = chapter.sections.find((sec: any) => sec._id.toString() === sectionId);
       if (!section) {
-        throw new Error('Section not found');
+        throw new NotFoundError('Section', sectionId);
       }
 
       Object.assign(section, updateData);
@@ -464,7 +563,11 @@ export class CourseService {
 
       return course;
     } catch (error: any) {
-      throw new Error(`Failed to update section: ${error.message}`);
+      // Re-throw AppErrors without wrapping
+      if (error.isOperational) {
+        throw error;
+      }
+      throw new DatabaseError('updateSection', error);
     }
   }
 
@@ -487,17 +590,22 @@ export class CourseService {
       }
 
       if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
-        throw new Error('Insufficient permissions to modify this course');
+        throw new AuthorizationError('Insufficient permissions to modify this course', {
+          operation: 'modifyCourse',
+          courseId,
+          userId,
+          userRole,
+        });
       }
 
       const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
-        throw new Error('Chapter not found');
+        throw new NotFoundError('Chapter', chapterId);
       }
 
       const section = chapter.sections.find((sec: any) => sec._id.toString() === sectionId);
       if (!section) {
-        throw new Error('Section not found');
+        throw new NotFoundError('Section', sectionId);
       }
 
       const newContent = {
@@ -514,7 +622,11 @@ export class CourseService {
 
       return course;
     } catch (error: any) {
-      throw new Error(`Failed to add content: ${error.message}`);
+      // Re-throw AppErrors without wrapping
+      if (error.isOperational) {
+        throw error;
+      }
+      throw new DatabaseError('addContent', error);
     }
   }
 
@@ -534,22 +646,27 @@ export class CourseService {
       }
 
       if (!(await this.canModifyCourse(course._id.toString(), userId, userRole))) {
-        throw new Error('Insufficient permissions to modify this course');
+        throw new AuthorizationError('Insufficient permissions to modify this course', {
+          operation: 'modifyCourse',
+          courseId,
+          userId,
+          userRole,
+        });
       }
 
       const chapter = course.chapters.find((ch: any) => ch._id.toString() === chapterId);
       if (!chapter) {
-        throw new Error('Chapter not found');
+        throw new NotFoundError('Chapter', chapterId);
       }
 
       const section = chapter.sections.find((sec: any) => sec._id.toString() === sectionId);
       if (!section) {
-        throw new Error('Section not found');
+        throw new NotFoundError('Section', sectionId);
       }
 
       const content = section.content.find((cont: any) => cont._id.toString() === contentId);
       if (!content) {
-        throw new Error('Content not found');
+        throw new NotFoundError('Content', contentId);
       }
 
       Object.assign(content, updateData);
@@ -558,7 +675,11 @@ export class CourseService {
 
       return course;
     } catch (error: any) {
-      throw new Error(`Failed to update content: ${error.message}`);
+      // Re-throw AppErrors without wrapping
+      if (error.isOperational) {
+        throw error;
+      }
+      throw new DatabaseError('updateContent', error);
     }
   }
 
@@ -581,7 +702,9 @@ export class CourseService {
           logger.info(`DEBUG: Found course - title: ${course.title}`);
           logger.info(`DEBUG: Course instructor._id: ${course.instructor._id.toString()}`);
           logger.info(`DEBUG: User userId: ${userId}`);
-          logger.info(`DEBUG: ID comparison: '${course.instructor._id.toString()}' === '${userId}'`);
+          logger.info(
+            `DEBUG: ID comparison: '${course.instructor._id.toString()}' === '${userId}'`,
+          );
           logger.info(`DEBUG: ID match result: ${course.instructor._id.toString() === userId}`);
           logger.info('DEBUG: Course instructor object:', JSON.stringify(course.instructor));
 
@@ -603,22 +726,49 @@ export class CourseService {
 
       // Students access courses through their promotion
       if (userRole === 'student') {
-        const user = await UserModel.findById(userId);
-        if (!user || !user.currentPromotionId) {
-          return false;
-        }
+        // Optimized: Single aggregation to check user promotion and course access
+        const hasAccess = await UserModel.aggregate([
+          { $match: { _id: userId } },
+          { $limit: 1 },
+          {
+            $lookup: {
+              from: 'events',
+              let: {
+                promotionId: '$currentPromotionId',
+                targetCourseId: courseId,
+              },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ['$linkedCourse', '$$targetCourseId'] },
+                        { $in: ['$$promotionId', '$promotionIds'] },
+                      ],
+                    },
+                  },
+                },
+                { $limit: 1 },
+              ],
+              as: 'accessEvents',
+            },
+          },
+          {
+            $project: {
+              hasAccess: { $gt: [{ $size: '$accessEvents' }, 0] },
+            },
+          },
+        ]);
 
-        // Check if the course is linked to any events in the student's promotion
-        const events = await EventModel.find({
-          linkedCourse: courseId,
-          promotionIds: user.currentPromotionId,
-        });
-        return events.length > 0;
+        return hasAccess.length > 0 && hasAccess[0].hasAccess;
       }
 
       return false;
     } catch (error: any) {
-      logger.error(`Failed to check course access for user ${userId} on course ${courseId}:`, error);
+      logger.error(
+        `Failed to check course access for user ${userId} on course ${courseId}:`,
+        error,
+      );
       return false;
     }
   }
@@ -632,48 +782,73 @@ export class CourseService {
 
       // Teachers get courses they created or are assigned to teach
       if (userRole === 'teacher') {
-        // Get courses created by teacher
-        const ownCourses = await CourseModel.findByInstructor(userId);
+        // Optimized: Get assigned course IDs first, then query all courses in single operation
+        const [assignedEvents] = await Promise.all([
+          EventModel.find({ teacherId: userId }, { linkedCourse: 1 }).lean(),
+        ]);
 
-        // Get courses they're assigned to teach via events
-        const assignedEvents = await EventModel.find({ teacherId: userId });
         const assignedCourseIds = assignedEvents
           .map(event => event.linkedCourse)
           .filter(courseId => courseId);
 
-        const assignedCourses = assignedCourseIds.length > 0
-          ? await CourseModel.find({ _id: { $in: assignedCourseIds } })
-          : [];
+        // Single query to get all teacher courses (owned + assigned)
+        const allCourseIds = [...assignedCourseIds];
+        const courseQuery = {
+          $or: [
+            { 'instructor._id': userId }, // Courses created by teacher
+            ...(allCourseIds.length > 0 ? [{ _id: { $in: allCourseIds } }] : []), // Assigned courses
+          ],
+        };
 
-        // Combine and deduplicate
-        const allCourses = [...ownCourses, ...assignedCourses];
-        const uniqueCourses = allCourses.filter((course, index, self) =>
-          index === self.findIndex(c => c._id.toString() === course._id.toString()),
-        );
-
-        return uniqueCourses;
+        return await CourseModel.find(courseQuery).sort({ createdAt: -1 });
       }
 
       // Students get courses through their promotion events
       if (userRole === 'student') {
-        const user = await UserModel.findById(userId);
+        // Optimized: Single aggregation pipeline to get user and their courses
+        const userWithCourses = await UserModel.aggregate([
+          { $match: { _id: userId } },
+          { $limit: 1 },
+          {
+            $lookup: {
+              from: 'events',
+              let: { promotionId: '$currentPromotionId' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $in: ['$$promotionId', '$promotionIds'] },
+                        { $ne: ['$linkedCourse', null] },
+                      ],
+                    },
+                  },
+                },
+                { $project: { linkedCourse: 1 } },
+              ],
+              as: 'events',
+            },
+          },
+          {
+            $project: {
+              courseIds: {
+                $map: {
+                  input: '$events',
+                  as: 'event',
+                  in: '$$event.linkedCourse',
+                },
+              },
+            },
+          },
+        ]);
 
-        if (!user || !user.currentPromotionId) {
+        if (userWithCourses.length === 0 || !userWithCourses[0].courseIds.length) {
           return [];
         }
 
-        // Get events in the student's promotion that have linked courses
-        const promotionEvents = await EventModel.find({
-          promotionIds: { $in: [user.currentPromotionId] },
-          linkedCourse: { $exists: true, $ne: null },
-        });
-
-        const courseIds = promotionEvents.map(event => event.linkedCourse);
-        if (courseIds.length === 0) {
-          return [];
-        }
-
-        return await CourseModel.find({ _id: { $in: courseIds } }).sort({ createdAt: -1 });
+        return await CourseModel.find({
+          _id: { $in: userWithCourses[0].courseIds },
+        }).sort({ createdAt: -1 });
       }
 
       return [];
@@ -700,7 +875,11 @@ export class CourseService {
   // HELPER METHODS
   // =============================================================================
 
-  private async canModifyCourse(courseId: string, userId: string, userRole: UserRole): Promise<boolean> {
+  private async canModifyCourse(
+    courseId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<boolean> {
     try {
       // Admin and staff can modify any course
       if (userRole === 'admin' || userRole === 'staff') {
