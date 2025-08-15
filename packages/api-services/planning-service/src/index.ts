@@ -16,29 +16,36 @@ const possiblePaths = [
   path.resolve(process.cwd(), '.env'),
   path.resolve(process.cwd(), '../../.env'),
   path.resolve(process.cwd(), '../../../.env'),
-  '/home/tagada/Desktop/Yggdrasil/.env'
+  '/home/tagada/Desktop/Yggdrasil/.env',
 ];
 
 const envPath = possiblePaths.find(p => fs.existsSync(p));
 if (envPath) {
   dotenv.config({ path: envPath });
-  console.log(`🔧 PLANNING SERVICE: Loaded .env from ${envPath}`);
+  logger.info(`Loaded .env from ${envPath}`);
 } else {
-  console.warn('⚠️ PLANNING SERVICE: Could not find .env file, using existing environment variables');
+  logger.warn('Could not find .env file, using existing environment variables');
 }
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {
-  const workerId = process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || process.env['TEST_WORKER_INDEX'] || '0';
-  const basePort = 3000 + (parseInt(workerId, 10) * 10);
+  const workerId =
+    process.env['WORKER_ID'] ||
+    process.env['PLAYWRIGHT_WORKER_ID'] ||
+    process.env['TEST_WORKER_INDEX'] ||
+    '0';
+  const basePort = 3000 + parseInt(workerId, 10) * 10;
   const planningPort = basePort + 5; // Planning service is always basePort + 5
   return planningPort;
 }
 
-const PORT = process.env['PLANNING_SERVICE_PORT'] || 
-            (process.env['NODE_ENV'] === 'test' ? getWorkerSpecificPort() : 3005);
+const PORT =
+  process.env['PLANNING_SERVICE_PORT'] ||
+  (process.env['NODE_ENV'] === 'test' ? getWorkerSpecificPort() : 3005);
 
-logger.debug(`🔧 PLANNING SERVICE: Worker ID: ${process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || '0'}`);
+logger.debug(
+  `🔧 PLANNING SERVICE: Worker ID: ${process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || '0'}`,
+);
 logger.debug(`🔧 PLANNING SERVICE: Calculated PORT: ${PORT}`);
 
 const startServer = async () => {
@@ -46,9 +53,9 @@ const startServer = async () => {
     // Initialize JWT system first (same as auth service)
     logger.info('🔑 Initializing JWT system...');
     initializeJWT();
-    
+
     const app = await createApp();
-    
+
     const server = app.listen(PORT, () => {
       logger.debug(`Planning service running on port ${PORT}`);
     });
@@ -72,7 +79,6 @@ const startServer = async () => {
 
     process.on('SIGTERM', shutdown);
     process.on('SIGINT', shutdown);
-
   } catch (error) {
     logger.error('Failed to start planning service:', error);
     process.exit(1);

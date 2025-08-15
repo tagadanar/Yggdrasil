@@ -4,6 +4,7 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { ResponseHelper, AuthRequest, planningLogger as logger } from '@yggdrasil/shared-utilities';
+import { z } from 'zod';
 import {
   UserModel,
   CourseModel,
@@ -101,6 +102,17 @@ interface IndexStats {
 }
 
 export class SystemController {
+  // Validation schemas
+  private static seedConfigSchema = z
+    .object({
+      clearExisting: z.boolean().optional(),
+      userCount: z.number().min(1).max(1000).optional(),
+      courseCount: z.number().min(1).max(100).optional(),
+      promotionCount: z.number().min(1).max(50).optional(),
+      eventCount: z.number().min(1).max(200).optional(),
+      newsCount: z.number().min(1).max(100).optional(),
+    })
+    .optional();
   /**
    * Get comprehensive database state
    */
@@ -119,7 +131,9 @@ export class SystemController {
       return res.json(ResponseHelper.success(state));
     } catch (error: any) {
       logger.error('Failed to get database state:', error);
-      return res.status(500).json(ResponseHelper.error(`Failed to get database state: ${error.message}`, 500));
+      return res
+        .status(500)
+        .json(ResponseHelper.error(`Failed to get database state: ${error.message}`, 500));
     }
   }
 
@@ -141,7 +155,9 @@ export class SystemController {
       return res.json(ResponseHelper.success(health));
     } catch (error: any) {
       logger.error('System health check failed:', error);
-      return res.status(500).json(ResponseHelper.error(`System health check failed: ${error.message}`, 500));
+      return res
+        .status(500)
+        .json(ResponseHelper.error(`System health check failed: ${error.message}`, 500));
     }
   }
 
@@ -152,12 +168,21 @@ export class SystemController {
     try {
       // Only allow admins to seed
       if (req.user?.role !== 'admin') {
-        return res.status(403).json(ResponseHelper.error('Only administrators can seed the database', 403));
+        return res
+          .status(403)
+          .json(ResponseHelper.error('Only administrators can seed the database', 403));
+      }
+
+      // Validate seeding configuration
+      const validation = SystemController.seedConfigSchema.safeParse(req.body);
+      if (!validation.success) {
+        const errorResponse = ResponseHelper.badRequest(validation.error.errors[0]!.message);
+        return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
       logger.info(`Database seeding initiated by admin: ${req.user.email}`);
 
-      const config = req.body || {};
+      const config = validation.data || {};
       const seeder = new ComprehensiveDevSeeder(config);
       const result = await seeder.seedAll();
 
@@ -165,7 +190,9 @@ export class SystemController {
       return res.json(ResponseHelper.success(result, 'Database seeded successfully'));
     } catch (error: any) {
       logger.error('Database seeding failed:', error);
-      return res.status(500).json(ResponseHelper.error(`Database seeding failed: ${error.message}`, 500));
+      return res
+        .status(500)
+        .json(ResponseHelper.error(`Database seeding failed: ${error.message}`, 500));
     }
   }
 
@@ -176,7 +203,9 @@ export class SystemController {
     try {
       // Only allow admins to reset
       if (req.user?.role !== 'admin') {
-        return res.status(403).json(ResponseHelper.error('Only administrators can reset the database', 403));
+        return res
+          .status(403)
+          .json(ResponseHelper.error('Only administrators can reset the database', 403));
       }
 
       logger.warn(`Database reset initiated by admin: ${req.user.email}`);
@@ -189,7 +218,9 @@ export class SystemController {
       return res.json(ResponseHelper.success(result, 'Database reset and seeded successfully'));
     } catch (error: any) {
       logger.error('Database reset failed:', error);
-      return res.status(500).json(ResponseHelper.error(`Database reset failed: ${error.message}`, 500));
+      return res
+        .status(500)
+        .json(ResponseHelper.error(`Database reset failed: ${error.message}`, 500));
     }
   }
 
@@ -209,7 +240,9 @@ export class SystemController {
       return res.json(ResponseHelper.success(metrics));
     } catch (error: any) {
       logger.error('Failed to get performance metrics:', error);
-      return res.status(500).json(ResponseHelper.error(`Failed to get performance metrics: ${error.message}`, 500));
+      return res
+        .status(500)
+        .json(ResponseHelper.error(`Failed to get performance metrics: ${error.message}`, 500));
     }
   }
 
@@ -223,20 +256,26 @@ export class SystemController {
       const results = await this.checkDataIntegrity();
       const hasIssues = results.orphanedRecords.length > 0 || results.integrityIssues.length > 0;
 
-      logger.info(`Integrity check completed. Found ${results.integrityIssues.length} issues and ${results.orphanedRecords.length} orphaned records`);
+      logger.info(
+        `Integrity check completed. Found ${results.integrityIssues.length} issues and ${results.orphanedRecords.length} orphaned records`,
+      );
 
-      return res.json(ResponseHelper.success({
-        ...results,
-        summary: {
-          healthy: !hasIssues,
-          totalIssues: results.integrityIssues.length,
-          totalOrphanedRecords: results.orphanedRecords.reduce((sum, r) => sum + r.count, 0),
-        },
-        checkedAt: new Date().toISOString(),
-      }));
+      return res.json(
+        ResponseHelper.success({
+          ...results,
+          summary: {
+            healthy: !hasIssues,
+            totalIssues: results.integrityIssues.length,
+            totalOrphanedRecords: results.orphanedRecords.reduce((sum, r) => sum + r.count, 0),
+          },
+          checkedAt: new Date().toISOString(),
+        }),
+      );
     } catch (error: any) {
       logger.error('Integrity check failed:', error);
-      return res.status(500).json(ResponseHelper.error(`Integrity check failed: ${error.message}`, 500));
+      return res
+        .status(500)
+        .json(ResponseHelper.error(`Integrity check failed: ${error.message}`, 500));
     }
   }
 
@@ -282,14 +321,14 @@ export class SystemController {
         totalRecords: await EventAttendanceModel.countDocuments(),
         overallAttendanceRate: 0,
         recentEvents: await EventAttendanceModel.countDocuments({
-          markedAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+          markedAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
         }),
       },
     };
 
     // Get role distribution
     const roleAggregation = await UserModel.aggregate([
-      { $group: { _id: '$role', count: { $sum: 1 } } }
+      { $group: { _id: '$role', count: { $sum: 1 } } },
     ]);
     stats.users.byRole = roleAggregation.reduce((acc: any, item: any) => {
       acc[item._id] = item.count;
@@ -298,7 +337,7 @@ export class SystemController {
 
     // Get course categories
     const categoryAggregation = await CourseModel.aggregate([
-      { $group: { _id: '$category', count: { $sum: 1 } } }
+      { $group: { _id: '$category', count: { $sum: 1 } } },
     ]);
     stats.courses.byCategory = categoryAggregation.reduce((acc, item) => {
       acc[item._id || 'uncategorized'] = item.count;
@@ -307,7 +346,7 @@ export class SystemController {
 
     // Get promotion semester distribution
     const semesterAggregation = await PromotionModel.aggregate([
-      { $group: { _id: '$semester', count: { $sum: 1 } } }
+      { $group: { _id: '$semester', count: { $sum: 1 } } },
     ]);
     stats.promotions.bySemester = semesterAggregation.reduce((acc, item) => {
       acc[`S${item._id}`] = item.count;
@@ -316,7 +355,7 @@ export class SystemController {
 
     // Get promotion status distribution
     const statusAggregation = await PromotionModel.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } }
+      { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
     stats.promotions.byStatus = statusAggregation.reduce((acc, item) => {
       acc[item._id] = item.count;
@@ -325,7 +364,7 @@ export class SystemController {
 
     // Get event type distribution
     const eventTypeAggregation = await EventModel.aggregate([
-      { $group: { _id: '$type', count: { $sum: 1 } } }
+      { $group: { _id: '$type', count: { $sum: 1 } } },
     ]);
     stats.events.byType = eventTypeAggregation.reduce((acc, item) => {
       acc[item._id] = item.count;
@@ -334,7 +373,7 @@ export class SystemController {
 
     // Get news category distribution
     const newsCategoryAggregation = await NewsArticleModel.aggregate([
-      { $group: { _id: '$category', count: { $sum: 1 } } }
+      { $group: { _id: '$category', count: { $sum: 1 } } },
     ]);
     stats.news.byCategory = newsCategoryAggregation.reduce((acc, item) => {
       acc[item._id || 'uncategorized'] = item.count;
@@ -347,9 +386,9 @@ export class SystemController {
         $group: {
           _id: null,
           avgProgress: { $avg: '$overallProgress' },
-          studentsCount: { $sum: 1 }
-        }
-      }
+          studentsCount: { $sum: 1 },
+        },
+      },
     ]);
 
     if (progressStats.length > 0) {
@@ -363,15 +402,16 @@ export class SystemController {
         $group: {
           _id: null,
           totalAttended: { $sum: { $cond: ['$attended', 1, 0] } },
-          totalRecords: { $sum: 1 }
-        }
-      }
+          totalRecords: { $sum: 1 },
+        },
+      },
     ]);
 
     if (attendanceStats.length > 0) {
       const total = attendanceStats[0].totalRecords;
       const attended = attendanceStats[0].totalAttended;
-      stats.attendance.overallAttendanceRate = total > 0 ? Math.round((attended / total) * 100) : 100;
+      stats.attendance.overallAttendanceRate =
+        total > 0 ? Math.round((attended / total) * 100) : 100;
     }
 
     return stats;
@@ -384,7 +424,7 @@ export class SystemController {
     try {
       // Check for courses with invalid instructors
       const coursesWithInvalidInstructors = await CourseModel.find({
-        instructor: { $exists: true }
+        instructor: { $exists: true },
       }).populate('instructor');
 
       const invalidCourses = coursesWithInvalidInstructors.filter(course => !course.instructor);
@@ -400,7 +440,7 @@ export class SystemController {
 
       // Check for events with invalid linked courses
       const eventsWithInvalidCourses = await EventModel.find({
-        linkedCourse: { $exists: true, $ne: null }
+        linkedCourse: { $exists: true, $ne: null },
       }).populate('linkedCourse');
 
       const invalidEvents = eventsWithInvalidCourses.filter(event => !event.linkedCourse);
@@ -421,11 +461,11 @@ export class SystemController {
             from: 'users',
             localField: 'studentId',
             foreignField: '_id',
-            as: 'student'
-          }
+            as: 'student',
+          },
         },
         { $match: { student: { $size: 0 } } },
-        { $limit: 100 }
+        { $limit: 100 },
       ]);
 
       if (progressWithInvalidStudents.length > 0) {
@@ -443,11 +483,11 @@ export class SystemController {
             from: 'events',
             localField: 'eventId',
             foreignField: '_id',
-            as: 'event'
-          }
+            as: 'event',
+          },
         },
         { $match: { event: { $size: 0 } } },
-        { $limit: 100 }
+        { $limit: 100 },
       ]);
 
       if (attendanceWithInvalidEvents.length > 0) {
@@ -457,7 +497,6 @@ export class SystemController {
           ids: attendanceWithInvalidEvents.map(a => a._id.toString()),
         });
       }
-
     } catch (error) {
       logger.error('Error during integrity check:', error);
     }
@@ -524,12 +563,12 @@ export class SystemController {
   private async getSystemMetrics() {
     try {
       const serverStatus = await mongoose.connection.db!.admin().serverStatus();
-      
+
       return {
         uptime: serverStatus['uptime'] || 0,
         memoryUsage: 65.4, // Mock value - would need system monitoring
-        cpuUsage: 23.7,    // Mock value - would need system monitoring  
-        diskSpace: 78.2,   // Mock value - would need system monitoring
+        cpuUsage: 23.7, // Mock value - would need system monitoring
+        diskSpace: 78.2, // Mock value - would need system monitoring
       };
     } catch (error) {
       return {
@@ -571,7 +610,7 @@ export class SystemController {
     try {
       const serverStatus = await mongoose.connection.db!.admin().serverStatus();
       const connections = serverStatus['connections'] || {};
-      
+
       return {
         activeConnections: connections.current || 0,
         availableConnections: connections.available || 0,

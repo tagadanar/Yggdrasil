@@ -1,8 +1,14 @@
 import { Router } from 'express';
-import { authenticate, requireRole, teacherAndAbove } from '../middleware/authMiddleware';
+import { AuthMiddleware } from '@yggdrasil/shared-utilities';
+import { UserModel } from '@yggdrasil/database-schemas';
 import { PlanningController } from '../controllers/PlanningController';
 
 const router = Router();
+
+// Setup authentication middleware with user lookup
+const authenticateWithUser = AuthMiddleware.verifyTokenWithUserLookup(async id =>
+  UserModel.findById(id),
+);
 
 // Root route - public access for service info (like course service)
 router.get('/', (req, res) => {
@@ -23,19 +29,39 @@ router.get('/', (req, res) => {
 });
 
 // Events routes
-router.get('/events', authenticate, PlanningController.getEvents);
-router.post('/events', authenticate, teacherAndAbove, PlanningController.createEvent);
-router.get('/events/:eventId', authenticate, PlanningController.getEvent);
-router.put('/events/:eventId', authenticate, teacherAndAbove, PlanningController.updateEvent);
-router.delete('/events/:eventId', authenticate, requireRole('admin'), PlanningController.deleteEvent);
+router.get('/events', authenticateWithUser, PlanningController.getEvents);
+router.post(
+  '/events',
+  authenticateWithUser,
+  AuthMiddleware.requireRole('teacher', 'admin', 'staff'),
+  PlanningController.createEvent,
+);
+router.get('/events/:eventId', authenticateWithUser, PlanningController.getEvent);
+router.put(
+  '/events/:eventId',
+  authenticateWithUser,
+  AuthMiddleware.requireRole('teacher', 'admin', 'staff'),
+  PlanningController.updateEvent,
+);
+router.delete(
+  '/events/:eventId',
+  authenticateWithUser,
+  AuthMiddleware.adminOnly,
+  PlanningController.deleteEvent,
+);
 
 // Conflict detection
-router.get('/conflicts', authenticate, PlanningController.checkConflicts);
+router.get('/conflicts', authenticateWithUser, PlanningController.checkConflicts);
 
 // Export functionality
-router.post('/export', authenticate, PlanningController.exportCalendar);
+router.post('/export', authenticateWithUser, PlanningController.exportCalendar);
 
 // Recurring events
-router.post('/events/:eventId/instances', authenticate, teacherAndAbove, PlanningController.generateRecurringInstances);
+router.post(
+  '/events/:eventId/instances',
+  authenticateWithUser,
+  AuthMiddleware.requireRole('teacher', 'admin', 'staff'),
+  PlanningController.generateRecurringInstances,
+);
 
 export default router;

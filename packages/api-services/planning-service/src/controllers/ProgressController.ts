@@ -3,13 +3,41 @@
 
 import { Response } from 'express';
 import { ProgressTrackingService } from '../services/ProgressTrackingService';
-import {
-  ResponseHelper,
-  AuthRequest,
-} from '@yggdrasil/shared-utilities';
+import { ResponseHelper, AuthRequest } from '@yggdrasil/shared-utilities';
+import { z } from 'zod';
 
 export class ProgressController {
   private static progressService = new ProgressTrackingService();
+
+  // Validation schemas
+  private static markAttendanceSchema = z.object({
+    studentId: z.string().min(1, 'Student ID is required'),
+    attended: z.boolean(),
+    notes: z.string().optional(),
+  });
+
+  private static bulkAttendanceSchema = z.object({
+    promotionId: z.string().min(1, 'Promotion ID is required'),
+    attendanceRecords: z
+      .array(
+        z.object({
+          studentId: z.string().min(1, 'Student ID is required'),
+          attended: z.boolean(),
+          notes: z.string().optional(),
+        }),
+      )
+      .min(1, 'At least one attendance record is required'),
+  });
+
+  private static studentIdParamSchema = z.object({
+    studentId: z.string().min(1, 'Student ID is required'),
+  });
+
+  private static eventIdParamSchema = z.object({
+    eventId: z.string().min(1, 'Event ID is required'),
+  });
+
+  // Additional schemas can be added here as more endpoints are enhanced with validation
 
   // =============================================================================
   // ATTENDANCE ENDPOINTS
@@ -18,25 +46,34 @@ export class ProgressController {
   static async markAttendance(req: AuthRequest, res: Response): Promise<Response> {
     try {
       // Only teachers and admin can mark attendance
-      if (req.user!.role !== 'teacher' && req.user!.role !== 'admin' && req.user!.role !== 'staff') {
-        const errorResponse = ResponseHelper.forbidden('Only teachers and admin can mark attendance');
+      if (
+        req.user!.role !== 'teacher' &&
+        req.user!.role !== 'admin' &&
+        req.user!.role !== 'staff'
+      ) {
+        const errorResponse = ResponseHelper.forbidden(
+          'Only teachers and admin can mark attendance',
+        );
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
       const { eventId } = req.params;
-      const { studentId, attended, notes } = req.body;
 
-      if (!studentId || attended === undefined) {
-        const errorResponse = ResponseHelper.badRequest('studentId and attended are required');
+      // Validate request body
+      const validation = ProgressController.markAttendanceSchema.safeParse(req.body);
+      if (!validation.success) {
+        const errorResponse = ResponseHelper.badRequest(validation.error.errors[0]!.message);
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
+
+      const { studentId, attended, notes } = validation.data;
 
       const attendance = await ProgressController.progressService.markStudentAttendance(
         eventId!,
         studentId,
         attended,
         req.user!._id.toString(),
-        notes
+        notes,
       );
 
       const successResponse = ResponseHelper.success(attendance, 'Attendance marked successfully');
@@ -50,24 +87,39 @@ export class ProgressController {
   static async bulkMarkAttendance(req: AuthRequest, res: Response): Promise<Response> {
     try {
       // Only teachers and admin can mark attendance
-      if (req.user!.role !== 'teacher' && req.user!.role !== 'admin' && req.user!.role !== 'staff') {
-        const errorResponse = ResponseHelper.forbidden('Only teachers and admin can mark attendance');
+      if (
+        req.user!.role !== 'teacher' &&
+        req.user!.role !== 'admin' &&
+        req.user!.role !== 'staff'
+      ) {
+        const errorResponse = ResponseHelper.forbidden(
+          'Only teachers and admin can mark attendance',
+        );
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
-      const { eventId } = req.params;
-      const { promotionId, attendanceRecords } = req.body;
-
-      if (!promotionId || !attendanceRecords || !Array.isArray(attendanceRecords)) {
-        const errorResponse = ResponseHelper.badRequest('promotionId and attendanceRecords array are required');
+      // Validate event ID parameter
+      const eventIdValidation = ProgressController.eventIdParamSchema.safeParse(req.params);
+      if (!eventIdValidation.success) {
+        const errorResponse = ResponseHelper.badRequest(eventIdValidation.error.errors[0]!.message);
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
+
+      // Validate request body
+      const validation = ProgressController.bulkAttendanceSchema.safeParse(req.body);
+      if (!validation.success) {
+        const errorResponse = ResponseHelper.badRequest(validation.error.errors[0]!.message);
+        return res.status(errorResponse.statusCode).json(errorResponse);
+      }
+
+      const { eventId } = eventIdValidation.data;
+      const { promotionId, attendanceRecords } = validation.data;
 
       const result = await ProgressController.progressService.bulkMarkAttendance(
         eventId!,
         promotionId,
         attendanceRecords,
-        req.user!._id.toString()
+        req.user!._id.toString(),
       );
 
       const successResponse = ResponseHelper.success(result, 'Attendance marked successfully');
@@ -80,11 +132,20 @@ export class ProgressController {
 
   static async getEventAttendance(req: AuthRequest, res: Response): Promise<Response> {
     try {
-      const { eventId } = req.params;
+      // Validate event ID parameter
+      const eventIdValidation = ProgressController.eventIdParamSchema.safeParse(req.params);
+      if (!eventIdValidation.success) {
+        const errorResponse = ResponseHelper.badRequest(eventIdValidation.error.errors[0]!.message);
+        return res.status(errorResponse.statusCode).json(errorResponse);
+      }
 
-      const attendance = await ProgressController.progressService.getEventAttendance(eventId!);
+      const { eventId } = eventIdValidation.data;
+      const attendance = await ProgressController.progressService.getEventAttendance(eventId);
 
-      const successResponse = ResponseHelper.success(attendance, 'Event attendance retrieved successfully');
+      const successResponse = ResponseHelper.success(
+        attendance,
+        'Event attendance retrieved successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -94,21 +155,35 @@ export class ProgressController {
 
   static async getStudentAttendance(req: AuthRequest, res: Response): Promise<Response> {
     try {
-      const { studentId } = req.params;
+      // Validate student ID parameter
+      const studentIdValidation = ProgressController.studentIdParamSchema.safeParse(req.params);
+      if (!studentIdValidation.success) {
+        const errorResponse = ResponseHelper.badRequest(
+          studentIdValidation.error.errors[0]!.message,
+        );
+        return res.status(errorResponse.statusCode).json(errorResponse);
+      }
+
+      const { studentId } = studentIdValidation.data;
       const { promotionId } = req.query;
 
       // Students can only view their own attendance
       if (req.user!.role === 'student' && req.user!._id.toString() !== studentId) {
-        const errorResponse = ResponseHelper.forbidden('Students can only view their own attendance');
+        const errorResponse = ResponseHelper.forbidden(
+          'Students can only view their own attendance',
+        );
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
       const attendance = await ProgressController.progressService.getStudentAttendance(
         studentId!,
-        promotionId as string | undefined
+        promotionId as string | undefined,
       );
 
-      const successResponse = ResponseHelper.success(attendance, 'Student attendance retrieved successfully');
+      const successResponse = ResponseHelper.success(
+        attendance,
+        'Student attendance retrieved successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -138,10 +213,13 @@ export class ProgressController {
 
       const progress = await ProgressController.progressService.getStudentProgress(
         studentId!,
-        promotionId as string
+        promotionId as string,
       );
 
-      const successResponse = ResponseHelper.success(progress, 'Student progress retrieved successfully');
+      const successResponse = ResponseHelper.success(
+        progress,
+        'Student progress retrieved successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -153,7 +231,9 @@ export class ProgressController {
     try {
       // Only admin, staff, and teachers can view promotion-wide progress
       if (req.user!.role === 'student') {
-        const errorResponse = ResponseHelper.forbidden('Students cannot view promotion-wide progress');
+        const errorResponse = ResponseHelper.forbidden(
+          'Students cannot view promotion-wide progress',
+        );
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
@@ -161,7 +241,10 @@ export class ProgressController {
 
       const progress = await ProgressController.progressService.getPromotionProgress(promotionId!);
 
-      const successResponse = ResponseHelper.success(progress, 'Promotion progress retrieved successfully');
+      const successResponse = ResponseHelper.success(
+        progress,
+        'Promotion progress retrieved successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -175,22 +258,29 @@ export class ProgressController {
 
       // Only the system or admin can update course progress
       if (req.user!.role !== 'admin' && req.user!.role !== 'staff') {
-        const errorResponse = ResponseHelper.forbidden('Only admin can manually update course progress');
+        const errorResponse = ResponseHelper.forbidden(
+          'Only admin can manually update course progress',
+        );
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
       if (!studentId || !promotionId || !courseProgress) {
-        const errorResponse = ResponseHelper.badRequest('studentId, promotionId, and courseProgress are required');
+        const errorResponse = ResponseHelper.badRequest(
+          'studentId, promotionId, and courseProgress are required',
+        );
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
       const progress = await ProgressController.progressService.updateCourseProgress(
         studentId,
         promotionId,
-        courseProgress
+        courseProgress,
       );
 
-      const successResponse = ResponseHelper.success(progress, 'Course progress updated successfully');
+      const successResponse = ResponseHelper.success(
+        progress,
+        'Course progress updated successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -209,17 +299,22 @@ export class ProgressController {
       }
 
       if (!studentId || !promotionId || !courseId) {
-        const errorResponse = ResponseHelper.badRequest('studentId, promotionId, and courseId are required');
+        const errorResponse = ResponseHelper.badRequest(
+          'studentId, promotionId, and courseId are required',
+        );
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
       const progress = await ProgressController.progressService.markCourseCompleted(
         studentId,
         promotionId,
-        courseId
+        courseId,
       );
 
-      const successResponse = ResponseHelper.success(progress, 'Course marked as completed successfully');
+      const successResponse = ResponseHelper.success(
+        progress,
+        'Course marked as completed successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -241,9 +336,14 @@ export class ProgressController {
 
       const { promotionId } = req.params;
 
-      const statistics = await ProgressController.progressService.getPromotionStatistics(promotionId!);
+      const statistics = await ProgressController.progressService.getPromotionStatistics(
+        promotionId!,
+      );
 
-      const successResponse = ResponseHelper.success(statistics, 'Promotion statistics retrieved successfully');
+      const successResponse = ResponseHelper.success(
+        statistics,
+        'Promotion statistics retrieved successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -258,10 +358,13 @@ export class ProgressController {
 
       const topPerformers = await ProgressController.progressService.getTopPerformers(
         promotionId!,
-        limit ? parseInt(limit as string, 10) : 10
+        limit ? parseInt(limit as string, 10) : 10,
       );
 
-      const successResponse = ResponseHelper.success(topPerformers, 'Top performers retrieved successfully');
+      const successResponse = ResponseHelper.success(
+        topPerformers,
+        'Top performers retrieved successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -273,7 +376,9 @@ export class ProgressController {
     try {
       // Only admin and staff can view at-risk students
       if (req.user!.role !== 'admin' && req.user!.role !== 'staff') {
-        const errorResponse = ResponseHelper.forbidden('Only admin and staff can view at-risk students');
+        const errorResponse = ResponseHelper.forbidden(
+          'Only admin and staff can view at-risk students',
+        );
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
@@ -283,10 +388,13 @@ export class ProgressController {
       const atRiskStudents = await ProgressController.progressService.getAtRiskStudents(
         promotionId!,
         progressThreshold ? parseInt(progressThreshold as string, 10) : 30,
-        attendanceThreshold ? parseInt(attendanceThreshold as string, 10) : 70
+        attendanceThreshold ? parseInt(attendanceThreshold as string, 10) : 70,
       );
 
-      const successResponse = ResponseHelper.success(atRiskStudents, 'At-risk students retrieved successfully');
+      const successResponse = ResponseHelper.success(
+        atRiskStudents,
+        'At-risk students retrieved successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -298,7 +406,9 @@ export class ProgressController {
     try {
       // Only admin and staff can generate reports
       if (req.user!.role !== 'admin' && req.user!.role !== 'staff') {
-        const errorResponse = ResponseHelper.forbidden('Only admin and staff can generate progress reports');
+        const errorResponse = ResponseHelper.forbidden(
+          'Only admin and staff can generate progress reports',
+        );
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
@@ -306,7 +416,10 @@ export class ProgressController {
 
       const report = await ProgressController.progressService.generateProgressReport(promotionId!);
 
-      const successResponse = ResponseHelper.success(report, 'Progress report generated successfully');
+      const successResponse = ResponseHelper.success(
+        report,
+        'Progress report generated successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);
@@ -318,7 +431,9 @@ export class ProgressController {
     try {
       // Only admin can trigger recalculation
       if (req.user!.role !== 'admin') {
-        const errorResponse = ResponseHelper.forbidden('Only admin can trigger progress recalculation');
+        const errorResponse = ResponseHelper.forbidden(
+          'Only admin can trigger progress recalculation',
+        );
         return res.status(errorResponse.statusCode).json(errorResponse);
       }
 
@@ -326,7 +441,10 @@ export class ProgressController {
 
       await ProgressController.progressService.recalculatePromotionProgress(promotionId!);
 
-      const successResponse = ResponseHelper.success(null, 'Progress recalculation initiated successfully');
+      const successResponse = ResponseHelper.success(
+        null,
+        'Progress recalculation initiated successfully',
+      );
       return res.status(200).json(successResponse);
     } catch (error: any) {
       const errorResponse = ResponseHelper.error(error.message);

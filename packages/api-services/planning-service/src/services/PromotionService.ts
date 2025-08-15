@@ -80,11 +80,15 @@ export class PromotionService {
       // Fetch students and events
       const students = await UserModel.find({
         _id: { $in: promotion.studentIds },
-      }).select('_id email profile.firstName profile.lastName profile.studentId').lean();
+      })
+        .select('_id email profile.firstName profile.lastName profile.studentId')
+        .lean();
 
       const events = await EventModel.find({
         _id: { $in: promotion.eventIds },
-      }).select('_id title type startDate endDate linkedCourse teacherId').lean();
+      })
+        .select('_id title type startDate endDate linkedCourse teacherId')
+        .lean();
 
       return {
         ...promotion,
@@ -329,10 +333,7 @@ export class PromotionService {
       await promotion.removeEvent(objectId);
 
       // Remove promotion reference from event
-      await EventModel.updateOne(
-        { _id: eventId },
-        { $pull: { promotionIds: promotion._id } },
-      );
+      await EventModel.updateOne({ _id: eventId }, { $pull: { promotionIds: promotion._id } });
 
       logger.info(`Unlinked event ${eventId} from promotion ${promotionId}`);
       return promotion;
@@ -374,7 +375,6 @@ export class PromotionService {
 
       return promotion;
     } catch (error: any) {
-      console.error('❌ PROMOTION SERVICE ERROR:', error);
       logger.error('Failed to get student promotion:', error);
       throw new Error(`Failed to get student promotion: ${error.message}`);
     }
@@ -425,21 +425,23 @@ export class PromotionService {
         type: e.type,
         startDate: e.startDate,
         endDate: e.endDate,
-        linkedCourse: e.linkedCourse ? {
-          _id: (e.linkedCourse as any)._id.toString(),
-          title: (e.linkedCourse as any).title,
-          slug: (e.linkedCourse as any).slug,
-          description: (e.linkedCourse as any).description,
-          category: (e.linkedCourse as any).category,
-          level: (e.linkedCourse as any).level,
-          instructor: {
-            _id: (e.linkedCourse as any).instructor?._id?.toString() || 'unknown',
-            name: (e.linkedCourse as any).instructor?.email || 'Unknown Instructor',
-            email: (e.linkedCourse as any).instructor?.email || 'unknown@example.com',
-          },
-          estimatedDuration: (e.linkedCourse as any).estimatedDuration,
-          thumbnail: (e.linkedCourse as any).thumbnail,
-        } : undefined,
+        linkedCourse: e.linkedCourse
+          ? {
+              _id: (e.linkedCourse as any)._id.toString(),
+              title: (e.linkedCourse as any).title,
+              slug: (e.linkedCourse as any).slug,
+              description: (e.linkedCourse as any).description,
+              category: (e.linkedCourse as any).category,
+              level: (e.linkedCourse as any).level,
+              instructor: {
+                _id: (e.linkedCourse as any).instructor?._id?.toString() || 'unknown',
+                name: (e.linkedCourse as any).instructor?.email || 'Unknown Instructor',
+                email: (e.linkedCourse as any).instructor?.email || 'unknown@example.com',
+              },
+              estimatedDuration: (e.linkedCourse as any).estimatedDuration,
+              thumbnail: (e.linkedCourse as any).thumbnail,
+            }
+          : undefined,
         teacher: undefined, // Simplified for now
       });
 
@@ -500,7 +502,9 @@ export class PromotionService {
       });
 
       if (!nextPromotion) {
-        throw new Error(`No promotion found for semester ${nextSemester} (${nextIntake} ${nextAcademicYear})`);
+        throw new Error(
+          `No promotion found for semester ${nextSemester} (${nextIntake} ${nextAcademicYear})`,
+        );
       }
 
       // Remove from current promotion
@@ -509,7 +513,9 @@ export class PromotionService {
       // Add to next promotion
       await this.addStudentsToPromotion(nextPromotion._id.toString(), [studentId]);
 
-      logger.info(`Progressed student ${studentId} from semester ${currentPromotion.semester} to ${nextSemester}`);
+      logger.info(
+        `Progressed student ${studentId} from semester ${currentPromotion.semester} to ${nextSemester}`,
+      );
       return nextPromotion;
     } catch (error: any) {
       logger.error('Failed to progress student:', error);
@@ -536,11 +542,13 @@ export class PromotionService {
       // 2. Find promotions that contain these events
       const promotions = await PromotionModel.find({
         eventIds: { $in: eventIds },
-      }).populate('studentIds', 'email profile role').lean();
+      })
+        .populate('studentIds', 'email profile role')
+        .lean();
 
       // 3. Flatten and enrich student data
       const courseStudents: any[] = [];
-      
+
       for (const promotion of promotions) {
         if (promotion.studentIds && Array.isArray(promotion.studentIds)) {
           for (const student of promotion.studentIds) {
@@ -548,16 +556,27 @@ export class PromotionService {
             if (typeof student === 'object' && student !== null && 'email' in student) {
               courseStudents.push({
                 _id: student._id,
-                name: `${(student as any).profile?.firstName || ''} ${(student as any).profile?.lastName || ''}`.trim() || student.email,
+                name:
+                  `${(student as any).profile?.firstName || ''} ${(student as any).profile?.lastName || ''}`.trim() ||
+                  student.email,
                 email: student.email,
                 promotionId: promotion._id.toString(),
                 promotionName: promotion.name,
                 startedAt: promotion.createdAt,
-                progress: 0, // TODO: Get real progress data
-                completion: 0, // TODO: Get real completion data
-                lastActivity: new Date(),
-                status: 'active', // TODO: Get real status
-                grade: null, // TODO: Get real grade
+                progress: await this.calculateStudentProgress(
+                  student._id.toString(),
+                  promotion._id.toString(),
+                ),
+                completion: await this.calculateStudentCompletion(
+                  student._id.toString(),
+                  promotion._id.toString(),
+                ),
+                lastActivity: (await this.getLastActivity(student._id.toString())) || new Date(),
+                status: await this.getStudentStatus(
+                  student._id.toString(),
+                  promotion._id.toString(),
+                ),
+                grade: await this.getStudentGrade(student._id.toString(), promotion._id.toString()),
               });
             }
           }
@@ -587,5 +606,79 @@ export class PromotionService {
 
   canManagePromotion(userRole: UserRole): boolean {
     return userRole === 'admin' || userRole === 'staff';
+  }
+
+  // =============================================================================
+  // STUDENT DATA HELPERS
+  // =============================================================================
+
+  private async calculateStudentProgress(studentId: string, promotionId: string): Promise<number> {
+    try {
+      const progress = await this.progressService.getStudentProgress(studentId, promotionId);
+      return progress?.overallProgress || 0;
+    } catch (error) {
+      logger.warn(`Failed to calculate progress for student ${studentId}:`, error);
+      return 0;
+    }
+  }
+
+  private async calculateStudentCompletion(
+    studentId: string,
+    promotionId: string,
+  ): Promise<number> {
+    try {
+      const progress = await this.progressService.getStudentProgress(studentId, promotionId);
+      if (!progress?.coursesProgress) return 0;
+
+      const completedCourses = progress.coursesProgress.filter(cp => cp.completedAt != null).length;
+      const totalCourses = progress.coursesProgress.length;
+      return totalCourses > 0 ? Math.round((completedCourses / totalCourses) * 100) : 0;
+    } catch (error) {
+      logger.warn(`Failed to calculate completion for student ${studentId}:`, error);
+      return 0;
+    }
+  }
+
+  private async getLastActivity(studentId: string): Promise<Date | null> {
+    try {
+      const { EventAttendanceModel } = await import('@yggdrasil/database-schemas');
+      const lastAttendance = await EventAttendanceModel.findOne({
+        studentId: new mongoose.Types.ObjectId(studentId),
+      })
+        .sort({ createdAt: -1 })
+        .select('createdAt');
+
+      return lastAttendance?.createdAt || null;
+    } catch (error) {
+      logger.warn(`Failed to get last activity for student ${studentId}:`, error);
+      return null;
+    }
+  }
+
+  private async getStudentStatus(studentId: string, promotionId: string): Promise<string> {
+    try {
+      const progress = await this.progressService.getStudentProgress(studentId, promotionId);
+      if (!progress) return 'inactive';
+
+      // Determine status based on progress and attendance
+      if (progress.overallProgress > 75) return 'excellent';
+      if (progress.overallProgress > 50) return 'good';
+      if (progress.overallProgress > 25) return 'average';
+      if (progress.overallProgress > 0) return 'needs_improvement';
+      return 'inactive';
+    } catch (error) {
+      logger.warn(`Failed to get status for student ${studentId}:`, error);
+      return 'unknown';
+    }
+  }
+
+  private async getStudentGrade(studentId: string, promotionId: string): Promise<number | null> {
+    try {
+      const progress = await this.progressService.getStudentProgress(studentId, promotionId);
+      return progress?.averageGrade || null;
+    } catch (error) {
+      logger.warn(`Failed to get grade for student ${studentId}:`, error);
+      return null;
+    }
   }
 }

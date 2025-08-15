@@ -2,12 +2,12 @@
 // Automated attendance workflow management and alerting system
 
 import cron from 'node-cron';
-import { 
-  EventModel, 
-  PromotionModel, 
-  UserModel, 
+import {
+  EventModel,
+  PromotionModel,
+  UserModel,
   EventAttendanceModel,
-  PromotionProgressModel 
+  PromotionProgressModel,
 } from '@yggdrasil/database-schemas';
 // import { ProgressTrackingService } from './ProgressTrackingService'; // Reserved for future attendance progress integration
 import { logger } from '@yggdrasil/shared-utilities';
@@ -66,7 +66,7 @@ export class AttendanceWorkflowService {
       trendAnalysisPeriod: 14,
       enabledAlerts: ['low_attendance', 'consecutive_absences', 'missing_attendance'],
       notificationChannels: ['email', 'dashboard'],
-      autoMarkingEnabled: false
+      autoMarkingEnabled: false,
     };
   }
 
@@ -85,13 +85,13 @@ export class AttendanceWorkflowService {
 
       // Daily attendance check at 8 AM
       this.scheduleJob('daily-check', '0 8 * * *', () => this.runDailyAttendanceCheck());
-      
+
       // Hourly missing attendance check
       this.scheduleJob('hourly-missing', '0 * * * *', () => this.checkMissingAttendance());
-      
+
       // Weekly trend analysis on Sundays at 10 AM
       this.scheduleJob('weekly-trends', '0 10 * * 0', () => this.analyzeAttendanceTrends());
-      
+
       // Real-time alert processing every 15 minutes
       this.scheduleJob('alert-processing', '*/15 * * * *', () => this.processAlerts());
 
@@ -108,12 +108,12 @@ export class AttendanceWorkflowService {
    */
   stopWorkflows(): void {
     logger.info('🛑 Stopping attendance workflow automation');
-    
+
     for (const [name, task] of this.jobSchedules.entries()) {
       task.stop();
       logger.info(`Stopped job: ${name}`);
     }
-    
+
     this.jobSchedules.clear();
     this.isRunning = false;
     logger.info('✅ Attendance workflow automation stopped');
@@ -123,18 +123,22 @@ export class AttendanceWorkflowService {
    * Schedule a cron job
    */
   private scheduleJob(name: string, schedule: string, callback: () => Promise<void>): void {
-    const task = cron.schedule(schedule, async () => {
-      try {
-        logger.info(`📅 Running scheduled job: ${name}`);
-        await callback();
-        logger.info(`✅ Completed job: ${name}`);
-      } catch (error) {
-        logger.error(`❌ Job failed: ${name}`, error);
-      }
-    }, {
-      scheduled: true,
-      timezone: 'UTC'
-    });
+    const task = cron.schedule(
+      schedule,
+      async () => {
+        try {
+          logger.info(`📅 Running scheduled job: ${name}`);
+          await callback();
+          logger.info(`✅ Completed job: ${name}`);
+        } catch (error) {
+          logger.error(`❌ Job failed: ${name}`, error);
+        }
+      },
+      {
+        scheduled: true,
+        timezone: 'UTC',
+      },
+    );
 
     this.jobSchedules.set(name, task);
     logger.info(`📋 Scheduled job: ${name} with cron: ${schedule}`);
@@ -149,7 +153,7 @@ export class AttendanceWorkflowService {
     try {
       // Get all active promotions
       const promotions = await PromotionModel.find({ status: 'active' });
-      
+
       for (const promotion of promotions) {
         await this.checkPromotionAttendance(promotion._id);
       }
@@ -170,7 +174,7 @@ export class AttendanceWorkflowService {
       // Get promotion progress for all students
       const progressRecords = await PromotionProgressModel.find({ promotionId });
       const promotion = await PromotionModel.findById(promotionId);
-      
+
       if (!promotion) return alerts;
 
       for (const progress of progressRecords) {
@@ -195,16 +199,19 @@ export class AttendanceWorkflowService {
                 'Schedule a meeting with the student',
                 'Review recent attendance patterns',
                 'Provide additional support if needed',
-                'Consider academic counseling'
-              ]
+                'Consider academic counseling',
+              ],
             });
           }
         }
 
         // Check consecutive absences
         if (this.config.enabledAlerts.includes('consecutive_absences')) {
-          const consecutiveAbsences = await this.getConsecutiveAbsences(student._id as any, promotionId);
-          
+          const consecutiveAbsences = await this.getConsecutiveAbsences(
+            student._id as any,
+            promotionId,
+          );
+
           if (consecutiveAbsences >= this.config.consecutiveAbsenceLimit) {
             alerts.push({
               type: 'consecutive_absences',
@@ -221,8 +228,8 @@ export class AttendanceWorkflowService {
                 'Contact student immediately',
                 'Check for personal issues',
                 'Review academic standing',
-                'Consider intervention measures'
-              ]
+                'Consider intervention measures',
+              ],
             });
           }
         }
@@ -231,7 +238,6 @@ export class AttendanceWorkflowService {
       if (alerts.length > 0) {
         logger.info(`🚨 Generated ${alerts.length} alerts for promotion: ${promotion.name}`);
       }
-
     } catch (error) {
       logger.error(`❌ Failed to check attendance for promotion ${promotionId}:`, error);
     }
@@ -247,34 +253,34 @@ export class AttendanceWorkflowService {
 
     try {
       const cutoffTime = new Date(Date.now() - this.config.missingAttendanceHours * 60 * 60 * 1000);
-      
+
       // Find events that ended before cutoff time but have no attendance records
       const eventsWithoutAttendance = await EventModel.aggregate([
         {
           $match: {
             endDate: { $lt: cutoffTime },
-            isPublic: false
-          }
+            isPublic: false,
+          },
         },
         {
           $lookup: {
             from: 'eventattendances',
             localField: '_id',
             foreignField: 'eventId',
-            as: 'attendance'
-          }
+            as: 'attendance',
+          },
         },
         {
           $match: {
-            attendance: { $size: 0 }
-          }
-        }
+            attendance: { $size: 0 },
+          },
+        },
       ]);
 
       for (const event of eventsWithoutAttendance) {
         // Get teacher/admin for notification
         const teacher = await UserModel.findById(event.teacherId);
-        
+
         if (teacher) {
           const notification: AttendanceNotification = {
             recipientId: teacher._id.toString(),
@@ -286,8 +292,8 @@ export class AttendanceWorkflowService {
             data: {
               eventId: event._id,
               eventTitle: event.title,
-              eventDate: event.endDate
-            }
+              eventDate: event.endDate,
+            },
           };
 
           await this.sendNotification(notification);
@@ -308,10 +314,10 @@ export class AttendanceWorkflowService {
 
     try {
       const promotions = await PromotionModel.find({ status: 'active' });
-      
+
       for (const promotion of promotions) {
         const trendAnalysis = await this.calculateAttendanceTrend(promotion._id);
-        
+
         if (trendAnalysis.isDecreasing && trendAnalysis.severity === 'high') {
           // Generate trend alert
           const alert: AttendanceAlert = {
@@ -329,8 +335,8 @@ export class AttendanceWorkflowService {
               'Review recent events and curriculum',
               'Survey students for feedback',
               'Consider schedule adjustments',
-              'Implement engagement strategies'
-            ]
+              'Implement engagement strategies',
+            ],
           };
 
           // Notify administrators
@@ -343,7 +349,7 @@ export class AttendanceWorkflowService {
               subject: 'Attendance Trend Alert',
               message: alert.details,
               priority: 'high',
-              data: alert
+              data: alert,
             };
 
             await this.sendNotification(notification);
@@ -369,13 +375,16 @@ export class AttendanceWorkflowService {
   /**
    * Get consecutive absences for a student
    */
-  private async getConsecutiveAbsences(studentId: Types.ObjectId, promotionId: Types.ObjectId): Promise<number> {
+  private async getConsecutiveAbsences(
+    studentId: Types.ObjectId,
+    promotionId: Types.ObjectId,
+  ): Promise<number> {
     const recentAttendance = await EventAttendanceModel.find({
       studentId,
-      promotionId
+      promotionId,
     })
-    .sort({ createdAt: -1 })
-    .limit(10);
+      .sort({ createdAt: -1 })
+      .limit(10);
 
     let consecutiveCount = 0;
     for (const record of recentAttendance) {
@@ -399,31 +408,35 @@ export class AttendanceWorkflowService {
   }> {
     // Simplified trend calculation
     // In a real implementation, you'd use more sophisticated time series analysis
-    
+
     const startDate = new Date(Date.now() - this.config.trendAnalysisPeriod * 24 * 60 * 60 * 1000);
-    const midDate = new Date(Date.now() - (this.config.trendAnalysisPeriod / 2) * 24 * 60 * 60 * 1000);
-    
+    const midDate = new Date(
+      Date.now() - (this.config.trendAnalysisPeriod / 2) * 24 * 60 * 60 * 1000,
+    );
+
     const firstHalfEvents = await EventAttendanceModel.find({
       promotionId,
-      createdAt: { $gte: startDate, $lt: midDate }
+      createdAt: { $gte: startDate, $lt: midDate },
     });
-    
+
     const secondHalfEvents = await EventAttendanceModel.find({
       promotionId,
-      createdAt: { $gte: midDate }
+      createdAt: { $gte: midDate },
     });
 
-    const firstHalfRate = firstHalfEvents.length > 0 
-      ? (firstHalfEvents.filter(e => e.attended).length / firstHalfEvents.length) * 100
-      : 100;
+    const firstHalfRate =
+      firstHalfEvents.length > 0
+        ? (firstHalfEvents.filter(e => e.attended).length / firstHalfEvents.length) * 100
+        : 100;
 
-    const secondHalfRate = secondHalfEvents.length > 0
-      ? (secondHalfEvents.filter(e => e.attended).length / secondHalfEvents.length) * 100
-      : 100;
+    const secondHalfRate =
+      secondHalfEvents.length > 0
+        ? (secondHalfEvents.filter(e => e.attended).length / secondHalfEvents.length) * 100
+        : 100;
 
     const declineRate = firstHalfRate - secondHalfRate;
     const isDecreasing = declineRate > 5; // 5% decline threshold
-    
+
     let severity: 'low' | 'medium' | 'high' = 'low';
     if (declineRate > 20) severity = 'high';
     else if (declineRate > 10) severity = 'medium';
@@ -437,19 +450,33 @@ export class AttendanceWorkflowService {
   private async sendNotification(notification: AttendanceNotification): Promise<void> {
     try {
       // Log notification (in production, integrate with email service)
-      logger.info(`📧 Sending ${notification.priority} priority notification to ${notification.recipientEmail}`);
+      logger.info(
+        `📧 Sending ${notification.priority} priority notification to ${notification.recipientEmail}`,
+      );
       logger.info(`Subject: ${notification.subject}`);
       logger.info(`Message: ${notification.message}`);
 
-      // TODO: Integrate with actual notification service
+      // Notification service integration point
+      // Currently logging notifications - extend this method to integrate with:
       // - Email service (SendGrid, AWS SES, etc.)
       // - SMS service for high priority alerts
       // - Push notifications for mobile app
       // - Dashboard notifications
 
+      try {
+        // Placeholder for actual notification delivery
+        // In production, this would call the notification service API
+        logger.info(
+          `Notification queued for delivery: ${notification.type} to ${notification.recipientEmail}`,
+        );
+        // Placeholder implementation - in production this would return actual notification result
+      } catch (error) {
+        logger.error('Failed to queue notification:', error);
+        // Error handling - in production this would be handled by notification service
+      }
+
       // For now, we'll store in a notifications collection or queue
       // await NotificationModel.create(notification);
-
     } catch (error) {
       logger.error('❌ Failed to send notification:', error);
     }
@@ -474,7 +501,9 @@ export class AttendanceWorkflowService {
    * Manual trigger for attendance check
    */
   async triggerAttendanceCheck(promotionId?: string): Promise<AttendanceAlert[]> {
-    logger.info(`🔍 Manual attendance check triggered${promotionId ? ` for promotion ${promotionId}` : ' for all promotions'}`);
+    logger.info(
+      `🔍 Manual attendance check triggered${promotionId ? ` for promotion ${promotionId}` : ' for all promotions'}`,
+    );
 
     try {
       if (promotionId) {
@@ -482,12 +511,12 @@ export class AttendanceWorkflowService {
       } else {
         const allAlerts: AttendanceAlert[] = [];
         const promotions = await PromotionModel.find({ status: 'active' });
-        
+
         for (const promotion of promotions) {
           const alerts = await this.checkPromotionAttendance(promotion._id);
           allAlerts.push(...alerts);
         }
-        
+
         return allAlerts;
       }
     } catch (error) {
@@ -507,7 +536,7 @@ export class AttendanceWorkflowService {
     return {
       isRunning: this.isRunning,
       activeJobs: Array.from(this.jobSchedules.keys()),
-      config: this.config
+      config: this.config,
     };
   }
 }
