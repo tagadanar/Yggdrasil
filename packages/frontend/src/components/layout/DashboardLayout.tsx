@@ -25,27 +25,27 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'bg-gradient-to-r from-rose-100 to-rose-200 text-rose-800 dark:from-rose-900/30 dark:to-rose-800/30 dark:text-rose-300';
+        return 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300';
       case 'staff':
-        return 'bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 dark:from-amber-900/30 dark:to-amber-800/30 dark:text-amber-300';
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
       case 'teacher':
-        return 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-300';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
       case 'student':
-        return 'bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 dark:from-emerald-900/30 dark:to-emerald-800/30 dark:text-emerald-300';
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
       default:
-        return 'bg-gradient-to-r from-secondary-100 to-secondary-200 text-secondary-800 dark:from-secondary-700/30 dark:to-secondary-600/30 dark:text-secondary-300';
+        return 'bg-secondary-100 text-secondary-800 dark:bg-secondary-700/30 dark:text-secondary-300';
     }
   };
 
   return (
-    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-950 flex transition-colors duration-300">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-950 flex">
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col md:ml-64">
         {/* Top Navigation */}
-        <nav className="bg-white/80 dark:bg-secondary-800/80 backdrop-blur-md shadow-soft dark:shadow-dark-soft border-b border-secondary-200 dark:border-secondary-700 sticky top-0 z-10 transition-all duration-300">
+        <nav className="bg-white dark:bg-secondary-800 shadow-sm border-b border-secondary-200 dark:border-secondary-700 sticky top-0 z-10">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               {/* Mobile menu button */}
@@ -53,27 +53,27 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <button
                   onClick={() => setIsSidebarOpen(true)}
                   data-testid="mobile-menu-toggle"
-                  className="p-2 rounded-xl text-secondary-400 hover:text-secondary-500 hover:bg-secondary-100 dark:hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 transition-all duration-200 transform hover:scale-105"
+                  className="p-2 rounded-lg text-secondary-400 hover:text-secondary-500 hover:bg-secondary-100 dark:hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
                 >
                   <span className="sr-only">Open sidebar</span>
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
                   </svg>
                 </button>
               </div>
 
               {/* Desktop logo */}
               <div className="hidden md:flex items-center">
-                <Link href="/news" className="flex items-center group">
-                  <div className="relative mr-3">
-                    <img 
-                      src="/logo101.png" 
-                      alt="Yggdrasil Logo" 
-                      className="w-8 h-8 transition-transform duration-200 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-primary-500 opacity-0 group-hover:opacity-10 rounded-full transition-opacity duration-200"></div>
+                <Link href="/news" className="flex items-center">
+                  <div className="mr-3">
+                    <img src="/logo101.png" alt="Yggdrasil Logo" className="w-8 h-8" />
                   </div>
-                  <span className="text-lg font-bold text-secondary-900 dark:text-secondary-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
+                  <span className="text-lg font-bold text-secondary-900 dark:text-secondary-100">
                     Yggdrasil
                   </span>
                 </Link>
@@ -85,18 +85,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <ThemeToggle size="md" />
 
                 {/* User Info */}
-                <Link 
-                  href="/profile" 
+                <Link
+                  href="/profile"
                   data-testid="profile-link"
-                  className="flex items-center space-x-3 hover:bg-secondary-50 dark:hover:bg-secondary-700 rounded-xl px-3 py-2 transition-all duration-200 hover:shadow-sm transform hover:scale-[1.02] group"
+                  className="flex items-center space-x-3 hover:bg-secondary-50 dark:hover:bg-secondary-700 rounded-lg px-3 py-2"
                 >
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-secondary-900 dark:text-secondary-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
+                    <p className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">
                       {user?.profile?.firstName || 'Unknown'} {user?.profile?.lastName || 'User'}
                     </p>
-                    <p className="text-xs text-secondary-600 dark:text-secondary-400">{user?.email}</p>
+                    <p className="text-xs text-secondary-600 dark:text-secondary-400">
+                      {user?.email}
+                    </p>
                   </div>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold capitalize shadow-sm transition-all duration-200 ${getRoleColor(user?.role || '')}`}>
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize ${getRoleColor(user?.role || '')}`}
+                  >
                     {user?.role}
                   </span>
                 </Link>
@@ -109,7 +113,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   className="font-medium"
                   icon={
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                      />
                     </svg>
                   }
                   iconPosition="right"
@@ -122,10 +131,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-secondary-50 dark:bg-secondary-950 transition-colors duration-300 scrollbar-thin">
-          <div className="py-8 px-4 sm:px-6 lg:px-8 animate-fade-in">
-            {children}
-          </div>
+        <main className="flex-1 overflow-y-auto bg-secondary-50 dark:bg-secondary-950 scrollbar-thin">
+          <div className="py-8 px-4 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>

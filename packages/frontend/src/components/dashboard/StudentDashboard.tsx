@@ -21,10 +21,7 @@ import {
   StarIcon,
   PlayIcon,
 } from '@heroicons/react/24/outline';
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-} from '@heroicons/react/24/solid';
+import { CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 
 interface CourseProgress {
   courseId: string;
@@ -120,10 +117,7 @@ export const StudentDashboard: React.FC = () => {
 
       // Load current promotion and dashboard data in parallel
       const [dashboardResponse, promotionResponse] = await Promise.all([
-        Promise.race([
-          StatisticsApi.getStudentDashboard(user._id),
-          timeoutPromise,
-        ]) as Promise<any>,
+        Promise.race([StatisticsApi.getStudentDashboard(user._id), timeoutPromise]) as Promise<any>,
         promotionApi.getMyPromotion().catch(() => ({ success: false, data: null })),
       ]);
 
@@ -133,7 +127,9 @@ export const StudentDashboard: React.FC = () => {
 
         // Load real progress data for this promotion
         try {
-          const progressResponse = await progressApi.getMyProgress(promotionResponse.data.promotion._id);
+          const progressResponse = await progressApi.getMyProgress(
+            promotionResponse.data.promotion._id,
+          );
           if (progressResponse.success && progressResponse.data) {
             setStudentProgress(progressResponse.data);
           }
@@ -153,34 +149,40 @@ export const StudentDashboard: React.FC = () => {
         // Process heavy data transformations asynchronously to avoid blocking UI
         setTimeout(() => {
           // Transform API data to match component interfaces (non-blocking)
-          const transformedCourseProgress: CourseProgress[] = dashboardData.courseProgress.map((course: any) => ({
-            courseId: course.courseId,
-            courseTitle: course.courseTitle,
-            progress: course.progress,
-            timeSpent: course.timeSpent,
-            lastAccessed: new Date(course.lastAccessed),
-            accessStatus: course.accessStatus || 'active', // Updated from enrollmentStatus
-            instructor: course.instructor,
-            estimatedCompletion: new Date(course.estimatedCompletion),
-          }));
+          const transformedCourseProgress: CourseProgress[] = dashboardData.courseProgress.map(
+            (course: any) => ({
+              courseId: course.courseId,
+              courseTitle: course.courseTitle,
+              progress: course.progress,
+              timeSpent: course.timeSpent,
+              lastAccessed: new Date(course.lastAccessed),
+              accessStatus: course.accessStatus || 'active', // Updated from enrollmentStatus
+              instructor: course.instructor,
+              estimatedCompletion: new Date(course.estimatedCompletion),
+            }),
+          );
 
-          const transformedRecentActivity: RecentActivity[] = dashboardData.recentActivity.map((activity: any) => ({
-            id: activity.id,
-            type: activity.type,
-            courseTitle: activity.courseTitle,
-            activityTitle: activity.activityTitle,
-            completedAt: new Date(activity.completedAt),
-            score: activity.score,
-          }));
+          const transformedRecentActivity: RecentActivity[] = dashboardData.recentActivity.map(
+            (activity: any) => ({
+              id: activity.id,
+              type: activity.type,
+              courseTitle: activity.courseTitle,
+              activityTitle: activity.activityTitle,
+              completedAt: new Date(activity.completedAt),
+              score: activity.score,
+            }),
+          );
 
-          const transformedAchievements: Achievement[] = dashboardData.achievements.map((achievement: any) => ({
-            id: achievement.id,
-            title: achievement.title,
-            description: achievement.description,
-            iconName: achievement.iconName,
-            unlockedAt: new Date(achievement.unlockedAt),
-            category: achievement.category,
-          }));
+          const transformedAchievements: Achievement[] = dashboardData.achievements.map(
+            (achievement: any) => ({
+              id: achievement.id,
+              title: achievement.title,
+              description: achievement.description,
+              iconName: achievement.iconName,
+              unlockedAt: new Date(achievement.unlockedAt),
+              category: achievement.category,
+            }),
+          );
 
           // Set processed data (after basic stats are already shown)
           setCourseProgress(transformedCourseProgress);
@@ -190,7 +192,6 @@ export const StudentDashboard: React.FC = () => {
       } else {
         throw new Error(dashboardResponse.error || 'Failed to load dashboard data');
       }
-
     } catch (err: any) {
       console.error('Dashboard load error:', err);
 
@@ -293,13 +294,11 @@ export const StudentDashboard: React.FC = () => {
       )}
 
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg text-white p-6">
+      <div className="bg-primary-600 rounded-lg text-white p-6">
         <h1 className="text-3xl font-bold mb-2">
           Welcome back, {user?.profile?.firstName || user?.email?.split('@')[0]}!
         </h1>
-        <p className="text-indigo-100">
-          Continue your learning journey and track your progress
-        </p>
+        <p className="text-primary-100">Continue your learning journey and track your progress</p>
       </div>
 
       {/* Quick Stats */}
@@ -309,7 +308,9 @@ export const StudentDashboard: React.FC = () => {
             <div className="flex items-center">
               <BookOpenIcon className="h-8 w-8 text-indigo-600 mr-3" />
               <div>
-                <div className="text-2xl font-bold text-gray-900">{learningStats.activeCourses}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {learningStats.activeCourses}
+                </div>
                 <div className="text-sm text-gray-600">Active Courses</div>
               </div>
             </div>
@@ -319,7 +320,9 @@ export const StudentDashboard: React.FC = () => {
             <div className="flex items-center">
               <ClockIcon className="h-8 w-8 text-green-600 mr-3" />
               <div>
-                <div className="text-2xl font-bold text-gray-900">{formatTime(learningStats.totalTimeSpent)}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {formatTime(learningStats.totalTimeSpent)}
+                </div>
                 <div className="text-sm text-gray-600">Time Spent Learning</div>
               </div>
             </div>
@@ -329,7 +332,9 @@ export const StudentDashboard: React.FC = () => {
             <div className="flex items-center">
               <TrophyIcon className="h-8 w-8 text-yellow-600 mr-3" />
               <div>
-                <div className="text-2xl font-bold text-gray-900">{learningStats.completedCourses}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {learningStats.completedCourses}
+                </div>
                 <div className="text-sm text-gray-600">Courses Completed</div>
               </div>
             </div>
@@ -339,7 +344,9 @@ export const StudentDashboard: React.FC = () => {
             <div className="flex items-center">
               <FireIcon className="h-8 w-8 text-red-600 mr-3" />
               <div>
-                <div className="text-2xl font-bold text-gray-900">{learningStats.currentStreak}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {learningStats.currentStreak}
+                </div>
                 <div className="text-sm text-gray-600">Day Streak</div>
               </div>
             </div>
@@ -396,12 +403,17 @@ export const StudentDashboard: React.FC = () => {
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Study Time</span>
-                <span>{formatTime(learningStats.weeklyProgress)} / {formatTime(learningStats.weeklyGoal)}</span>
+                <span>
+                  {formatTime(learningStats.weeklyProgress)} /{' '}
+                  {formatTime(learningStats.weeklyGoal)}
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3" data-testid="progress-bar">
                 <div
-                  className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.min((learningStats.weeklyProgress / learningStats.weeklyGoal) * 100, 100)}%` }}
+                  className="bg-indigo-600 h-3 rounded-full"
+                  style={{
+                    width: `${Math.min((learningStats.weeklyProgress / learningStats.weeklyGoal) * 100, 100)}%`,
+                  }}
                 />
               </div>
             </div>
@@ -410,7 +422,8 @@ export const StudentDashboard: React.FC = () => {
                 <span className="text-green-600 font-medium">🎉 Goal achieved this week!</span>
               ) : (
                 <span>
-                  {formatTime(learningStats.weeklyGoal - learningStats.weeklyProgress)} remaining this week
+                  {formatTime(learningStats.weeklyGoal - learningStats.weeklyProgress)} remaining
+                  this week
                 </span>
               )}
             </div>
@@ -424,17 +437,22 @@ export const StudentDashboard: React.FC = () => {
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Completed</span>
-                <span>{learningStats.completedExercises} / {learningStats.totalExercises}</span>
+                <span>
+                  {learningStats.completedExercises} / {learningStats.totalExercises}
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3" data-testid="progress-bar">
                 <div
-                  className="bg-green-600 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${(learningStats.completedExercises / learningStats.totalExercises) * 100}%` }}
+                  className="bg-green-600 h-3 rounded-full"
+                  style={{
+                    width: `${(learningStats.completedExercises / learningStats.totalExercises) * 100}%`,
+                  }}
                 />
               </div>
             </div>
             <div className="text-sm text-gray-600">
-              Average Score: <span className="font-medium text-green-600">{learningStats.averageScore}%</span>
+              Average Score:{' '}
+              <span className="font-medium text-green-600">{learningStats.averageScore}%</span>
             </div>
           </div>
         )}
@@ -443,12 +461,16 @@ export const StudentDashboard: React.FC = () => {
         <div className="bg-white rounded-lg border p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Achievements</h3>
           <div className="space-y-3">
-            {achievements.slice(0, 2).map((achievement) => (
+            {achievements.slice(0, 2).map(achievement => (
               <div key={achievement.id} className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
-                  {achievement.iconName === 'trophy' && <TrophyIcon className="h-6 w-6 text-yellow-500" />}
+                  {achievement.iconName === 'trophy' && (
+                    <TrophyIcon className="h-6 w-6 text-yellow-500" />
+                  )}
                   {achievement.iconName === 'fire' && <FireIcon className="h-6 w-6 text-red-500" />}
-                  {achievement.iconName === 'star' && <StarIcon className="h-6 w-6 text-blue-500" />}
+                  {achievement.iconName === 'star' && (
+                    <StarIcon className="h-6 w-6 text-blue-500" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-900">{achievement.title}</div>
@@ -467,7 +489,7 @@ export const StudentDashboard: React.FC = () => {
 
       {/* Current Promotion */}
       {(currentPromotion || true) && (
-        <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-lg text-white p-6">
+        <div className="bg-emerald-600 rounded-lg text-white p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -478,9 +500,12 @@ export const StudentDashboard: React.FC = () => {
                   </span>
                 )}
               </div>
-              <p className="text-green-100">
+              <p className="text-emerald-100">
                 {currentPromotion ? (
-                  <>Academic Year {currentPromotion.academicYear} • {currentPromotion.upcomingEvents?.length || 0} upcoming events</>
+                  <>
+                    Academic Year {currentPromotion.academicYear} •{' '}
+                    {currentPromotion.upcomingEvents?.length || 0} upcoming events
+                  </>
                 ) : (
                   'Loading promotion details...'
                 )}
@@ -489,19 +514,19 @@ export const StudentDashboard: React.FC = () => {
             <div className="text-center mt-4 sm:mt-0">
               <div className="space-y-2">
                 <div className="text-2xl font-bold">{currentPromotion?.semester || 1}/10</div>
-                <div className="text-sm text-green-100">Semester Progress</div>
+                <div className="text-sm text-emerald-100">Semester Progress</div>
                 <div className="bg-white/20 rounded-lg p-3 mt-2" data-testid="progress-card">
-                  <div className="text-sm text-green-100 mb-1">Overall Progress</div>
+                  <div className="text-sm text-emerald-100 mb-1">Overall Progress</div>
                   <div className="text-xl font-bold" data-testid="overall-progress">
                     {studentProgress ? `${studentProgress.overallProgress}%` : '0%'}
                   </div>
                   <div className="w-full bg-white/30 rounded-full h-2 mt-2">
                     <div
-                      className="bg-white h-2 rounded-full transition-all duration-300"
+                      className="bg-white h-2 rounded-full"
                       style={{ width: `${studentProgress ? studentProgress.overallProgress : 0}%` }}
                     />
                   </div>
-                  <div className="text-xs text-green-100 mt-1">
+                  <div className="text-xs text-emerald-100 mt-1">
                     Attendance: {studentProgress ? `${studentProgress.attendanceRate}%` : '0%'}
                   </div>
                 </div>
@@ -519,7 +544,7 @@ export const StudentDashboard: React.FC = () => {
               {currentPromotion ? 'Your Courses' : 'Course Access'}
             </h2>
             <button
-              onClick={() => window.location.href = '/courses'}
+              onClick={() => (window.location.href = '/courses')}
               data-testid="courses-nav"
               className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
             >
@@ -532,110 +557,128 @@ export const StudentDashboard: React.FC = () => {
             <div className="text-center py-12" data-testid="courses-empty-state">
               <BookOpenIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
               <div className="text-gray-500">No promotion assigned</div>
-              <div className="text-sm text-gray-400 mt-2">Contact your administrator to be assigned to a promotion</div>
+              <div className="text-sm text-gray-400 mt-2">
+                Contact your administrator to be assigned to a promotion
+              </div>
             </div>
           ) : courseProgress.length === 0 ? (
             <div className="text-center py-12" data-testid="courses-empty-state">
               <BookOpenIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
               <div className="text-gray-500">No courses available yet</div>
-              <div className="text-sm text-gray-400 mt-2">Courses will appear when events are scheduled in your promotion calendar</div>
+              <div className="text-sm text-gray-400 mt-2">
+                Courses will appear when events are scheduled in your promotion calendar
+              </div>
             </div>
           ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {courseProgress.map((course) => (
-              <div key={course.courseId} className="border rounded-lg p-4" data-testid="course-card">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">{course.courseTitle}</h3>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    course.accessStatus === 'completed'
-                      ? 'bg-green-100 text-green-800'
-                      : course.accessStatus === 'active'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {course.accessStatus}
-                  </span>
-                </div>
-
-                <div className="mb-3">
-                  <div className="flex justify-between text-sm text-gray-600 mb-1">
-                    <span>Progress</span>
-                    <span>{course.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${course.progress}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div>Instructor: {course.instructor}</div>
-                  <div>Time spent: {formatTime(course.timeSpent)}</div>
-                  <div>Last accessed: {formatDate(course.lastAccessed)}</div>
-                  {course.accessStatus === 'active' && (
-                    <div>Est. completion: {formatDate(course.estimatedCompletion)}</div>
-                  )}
-                </div>
-
-                <button
-                  className="mt-3 w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm"
-                  onClick={() => window.location.href = `/courses/${course.courseId}`}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {courseProgress.map(course => (
+                <div
+                  key={course.courseId}
+                  className="border rounded-lg p-4"
+                  data-testid="course-card"
                 >
-                  {course.accessStatus === 'completed' ? 'Review Course' : 'Continue Learning'}
-                </button>
-              </div>
-            ))}
-          </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-900">{course.courseTitle}</h3>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        course.accessStatus === 'completed'
+                          ? 'bg-green-100 text-green-800'
+                          : course.accessStatus === 'active'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {course.accessStatus}
+                    </span>
+                  </div>
+
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm text-gray-600 mb-1">
+                      <span>Progress</span>
+                      <span>{course.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-indigo-600 h-2 rounded-full"
+                        style={{ width: `${course.progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <div>Instructor: {course.instructor}</div>
+                    <div>Time spent: {formatTime(course.timeSpent)}</div>
+                    <div>Last accessed: {formatDate(course.lastAccessed)}</div>
+                    {course.accessStatus === 'active' && (
+                      <div>Est. completion: {formatDate(course.estimatedCompletion)}</div>
+                    )}
+                  </div>
+
+                  <button
+                    className="mt-3 w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm"
+                    onClick={() => (window.location.href = `/courses/${course.courseId}`)}
+                  >
+                    {course.accessStatus === 'completed' ? 'Review Course' : 'Continue Learning'}
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
 
       {/* Upcoming Events */}
-      {currentPromotion && currentPromotion.upcomingEvents && currentPromotion.upcomingEvents.length > 0 && (
-        <div className="bg-white rounded-lg border">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">Upcoming Events</h2>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {currentPromotion.upcomingEvents.slice(0, 5).map((event) => (
-                <div key={event._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-medium text-gray-900 truncate">{event.title}</h3>
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {event.type}
-                      </span>
-                      {event.linkedCourse && (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          {event.linkedCourse.title}
+      {currentPromotion &&
+        currentPromotion.upcomingEvents &&
+        currentPromotion.upcomingEvents.length > 0 && (
+          <div className="bg-white rounded-lg border">
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">Upcoming Events</h2>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                {currentPromotion.upcomingEvents.slice(0, 5).map(event => (
+                  <div
+                    key={event._id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                          {event.title}
+                        </h3>
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {event.type}
                         </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 text-sm text-gray-500">
-                      <CalendarIcon className="h-4 w-4" />
-                      {formatDate(new Date(event.startDate))} - {formatDate(new Date(event.endDate))}
+                        {event.linkedCourse && (
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            {event.linkedCourse.title}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <CalendarIcon className="h-4 w-4" />
+                        {formatDate(new Date(event.startDate))} -{' '}
+                        {formatDate(new Date(event.endDate))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {currentPromotion.upcomingEvents.length > 5 && (
-              <div className="text-center mt-4">
-                <button
-                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                  onClick={() => window.location.href = '/planning'}
-                >
-                  View all {currentPromotion.upcomingEvents.length} events
-                </button>
+                ))}
               </div>
-            )}
+
+              {currentPromotion.upcomingEvents.length > 5 && (
+                <div className="text-center mt-4">
+                  <button
+                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                    onClick={() => (window.location.href = '/planning')}
+                  >
+                    View all {currentPromotion.upcomingEvents.length} events
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Attendance Section */}
       {currentPromotion && (
@@ -660,11 +703,12 @@ export const StudentDashboard: React.FC = () => {
         </div>
         <div className="p-6">
           <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg">
-                <div className="flex-shrink-0 text-gray-600">
-                  {getActivityIcon(activity.type)}
-                </div>
+            {recentActivity.map(activity => (
+              <div
+                key={activity.id}
+                className="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg"
+              >
+                <div className="flex-shrink-0 text-gray-600">{getActivityIcon(activity.type)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-900">{activity.activityTitle}</div>
                   <div className="text-sm text-gray-600">{activity.courseTitle}</div>

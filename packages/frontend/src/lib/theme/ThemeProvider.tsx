@@ -61,12 +61,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     const resolved = resolveTheme(theme);
     setActualTheme(resolved);
-    
+
     if (typeof window !== 'undefined') {
       const root = window.document.documentElement;
       root.classList.remove('light', 'dark');
       root.classList.add(resolved);
-      
+
       // Update meta theme-color for mobile browsers
       const metaThemeColor = document.querySelector('meta[name="theme-color"]');
       if (metaThemeColor) {
@@ -79,11 +79,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     if (typeof window !== 'undefined' && theme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      
+
       const handleChange = () => {
         setActualTheme(getSystemTheme());
       };
-      
+
       mediaQuery.addEventListener('change', handleChange);
       return () => mediaQuery.removeEventListener('change', handleChange);
     }
@@ -100,14 +100,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         // Default to system preference
         setThemeState('system');
       }
-    }
-  }, []);
-
-  // Add smooth theme transition
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const root = window.document.documentElement;
-      root.style.setProperty('--theme-transition', 'all 0.3s ease-in-out');
     }
   }, []);
 
