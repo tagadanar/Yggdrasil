@@ -44,20 +44,54 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
+    "displayName": "auth-service",
+    "setupFilesAfterEnv": [
+      "<rootDir>/__tests__/test-setup.ts"
+    ],
     "testMatch": [
       "**/__tests__/**/*.test.ts"
     ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 30,
+        "branches": 10,
+        "functions": 30,
+        "lines": 30
+      },
+      "./src/controllers/*.ts": {
+        "statements": 70,
+        "branches": 50,
+        "functions": 70,
+        "lines": 70
+      },
+      "./src/services/*.ts": {
+        "statements": 60,
+        "branches": 40,
+        "functions": 60,
+        "lines": 60
+      }
+    },
+    "coverageDirectory": "./coverage",
     "collectCoverageFrom": [
       "src/**/*.ts",
       "!src/**/*.d.ts",
       "!src/index.ts"
     ],
-    "testTimeout": 10000,
+    "coverageReporters": [
+      "text",
+      "text-summary",
+      "lcov",
+      "html",
+      "json-summary"
+    ],
+    "verbose": true,
+    "testTimeout": 30000,
+    "clearMocks": true,
+    "transformIgnorePatterns": [
+      "node_modules/(?!(p-queue|eventemitter3|mongodb|bson)/)"
+    ],
     "moduleNameMapper": {
       "^p-queue$": "<rootDir>/__tests__/__mocks__/p-queue.js"
-    },
-    "transformIgnorePatterns": [
-      "node_modules/(?!(p-queue|eventemitter3)/)"
-    ]
+    }
   }
 }

@@ -7,6 +7,7 @@ export { CleanAuthHelper, type CleanAuthResult } from './CleanAuthHelper';
 export { TestInitializer, type TestInitializationOptions } from './TestInitializer';
 export { TestCleanup, withCleanup, testCleanupHooks, type CleanupTracker } from './TestCleanup';
 export { TestConnectionPool, initializeWithConnectionPool } from './TestConnectionPool';
+export { ContractTester, type ContractTestConfig, type ContractTestResult } from './ContractTester';
 
 // Import for internal use
 import { TestInitializer } from './TestInitializer';
