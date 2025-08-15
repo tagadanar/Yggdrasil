@@ -11,9 +11,7 @@ if (process.env.MONGO_INITDB_ROOT_USERNAME && process.env.MONGO_INITDB_ROOT_PASS
     db.createUser({
       user: process.env.MONGO_INITDB_ROOT_USERNAME,
       pwd: process.env.MONGO_INITDB_ROOT_PASSWORD,
-      roles: [
-        { role: 'root', db: 'admin' }
-      ]
+      roles: [{ role: 'root', db: 'admin' }],
     });
     print('✅ Root admin user created successfully');
   } catch (error) {
@@ -38,8 +36,8 @@ if (process.env.MONGO_APP_USERNAME && process.env.MONGO_APP_PASSWORD) {
       pwd: process.env.MONGO_APP_PASSWORD,
       roles: [
         { role: 'readWrite', db: dbName },
-        { role: 'dbAdmin', db: dbName }
-      ]
+        { role: 'dbAdmin', db: dbName },
+      ],
     });
     print('✅ Application user created successfully');
   } catch (error) {
@@ -57,9 +55,7 @@ if (process.env.MONGO_READONLY_USERNAME && process.env.MONGO_READONLY_PASSWORD) 
     db.createUser({
       user: process.env.MONGO_READONLY_USERNAME,
       pwd: process.env.MONGO_READONLY_PASSWORD,
-      roles: [
-        { role: 'read', db: dbName }
-      ]
+      roles: [{ role: 'read', db: dbName }],
     });
     print('✅ Read-only user created successfully');
   } catch (error) {

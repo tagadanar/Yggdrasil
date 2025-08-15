@@ -11,8 +11,8 @@ db.createCollection('users');
 db.createCollection('sessions');
 
 // Add any indexes that might be useful
-db.users.createIndex({ "email": 1 }, { unique: true });
-db.users.createIndex({ "role": 1 });
-db.sessions.createIndex({ "expiresAt": 1 }, { expireAfterSeconds: 0 });
+db.users.createIndex({ email: 1 }, { unique: true });
+db.users.createIndex({ role: 1 });
+db.sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 print('✅ Yggdrasil development database initialized successfully!');

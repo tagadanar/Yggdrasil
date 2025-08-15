@@ -54,7 +54,6 @@ try {
   print('✅ Events indexes created');
 
   print('✅ All database indexes created successfully');
-
 } catch (error) {
   print('❌ Error creating indexes:', error);
   throw error;
