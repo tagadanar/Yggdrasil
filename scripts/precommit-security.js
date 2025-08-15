@@ -5,9 +5,9 @@
  * Checks for secrets, security-sensitive patterns, and vulnerable dependencies
  */
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 // Security patterns to check for
 const SECRET_PATTERNS = [
@@ -36,9 +36,12 @@ const SECRET_PATTERNS = [
   },
   { pattern: /mysql:\/\/[^:]+:[^@]+@[^\/]+/gi, message: 'MySQL URL with credentials detected' },
 
-  // AWS credentials
+  // AWS credentials - more specific patterns
   { pattern: /AKIA[0-9A-Z]{16}/g, message: 'AWS Access Key ID detected' },
-  { pattern: /[A-Za-z0-9\/+=]{40}/g, message: 'Potential AWS Secret Access Key detected' },
+  {
+    pattern: /(?:^|[^A-Za-z0-9\/+=])[A-Za-z0-9\/+]{40}(?:[^A-Za-z0-9\/+=]|$)/g,
+    message: 'Potential AWS Secret Access Key detected',
+  },
 
   // GitHub tokens
   { pattern: /ghp_[A-Za-z0-9]{36}/g, message: 'GitHub Personal Access Token detected' },
@@ -127,6 +130,29 @@ function isLikelyFalsePositive(match, content, filePath) {
     return true;
   }
 
+  // Skip file paths (common false positive)
+  if (
+    match.includes('/') &&
+    (match.includes('src/') || match.includes('packages/') || match.includes('controllers/'))
+  ) {
+    return true;
+  }
+
+  // Skip comment separators (======, -----, etc.)
+  if (/^[=\-*#]{20,}$/.test(match.trim())) {
+    return true;
+  }
+
+  // Skip obvious comment lines and headers
+  if (
+    match.startsWith('//') ||
+    match.startsWith('/*') ||
+    match.startsWith('*') ||
+    match.startsWith('#')
+  ) {
+    return true;
+  }
+
   // Skip example/placeholder values
   if (
     lowerMatch.includes('example') ||
@@ -151,6 +177,22 @@ function isLikelyFalsePositive(match, content, filePath) {
   // Skip development database URLs in package.json
   if (fileName === 'package.json' && lowerMatch.includes('localhost')) {
     return true;
+  }
+
+  // Skip TypeScript/JavaScript patterns that look like keys but aren't
+  if (fileName.includes('.ts') || fileName.includes('.js')) {
+    // Skip base64-looking strings in comments
+    if (
+      content.includes('//') &&
+      content.substring(content.indexOf(match) - 20, content.indexOf(match)).includes('//')
+    ) {
+      return true;
+    }
+
+    // Skip patterns in import/export statements
+    if (match.startsWith('@') || match.includes('node_modules') || match.includes('packages/')) {
+      return true;
+    }
   }
 
   return false;
@@ -286,9 +328,9 @@ function runSecurityScan() {
 }
 
 // Main execution
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const success = runSecurityScan();
   process.exit(success ? 0 : 1);
 }
 
-module.exports = { runSecurityScan };
+export { runSecurityScan };

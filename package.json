@@ -2,6 +2,7 @@
   "name": "@yggdrasil/platform",
   "version": "1.0.0",
   "description": "Yggdrasil Educational Platform - Modern IT school management system",
+  "type": "module",
   "private": true,
   "workspaces": [
     "packages/*",
