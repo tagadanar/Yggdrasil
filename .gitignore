@@ -88,6 +88,9 @@ backup/
 test-results-enhanced/
 debug-*.js
 
+# Testing utilities state files
+.service-coordinator-state.json
+
 # OS and misc
 .tern-port
 .serverless
