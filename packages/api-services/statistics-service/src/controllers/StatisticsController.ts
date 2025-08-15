@@ -2,11 +2,16 @@
 // HTTP request handlers for statistics endpoints
 
 import { Request, Response } from 'express';
-import { ResponseHelper, HTTP_STATUS, type AuthRequest, statsLogger as logger } from '@yggdrasil/shared-utilities';
+import {
+  ResponseHelper,
+  HTTP_STATUS,
+  type AuthRequest,
+  statsLogger as logger,
+} from '@yggdrasil/shared-utilities';
 import { StatisticsService } from '../services/StatisticsService';
+import { PromotionProgressModel, UserModel, CourseModel } from '@yggdrasil/database-schemas';
 
 export class StatisticsController {
-
   // =============================================================================
   // DASHBOARD ENDPOINTS
   // =============================================================================
@@ -21,23 +26,23 @@ export class StatisticsController {
 
       // Validate userId
       if (!userId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID is required'),
-        );
+        res.status(HTTP_STATUS.BAD_REQUEST).json(ResponseHelper.badRequest('User ID is required'));
         return;
       }
 
       // Get dashboard data
       const dashboardData = await StatisticsService.getStudentDashboard(userId);
 
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(dashboardData, 'Student dashboard data retrieved successfully'),
-      );
+      res
+        .status(HTTP_STATUS.OK)
+        .json(
+          ResponseHelper.success(dashboardData, 'Student dashboard data retrieved successfully'),
+        );
     } catch (error: any) {
       logger.error('Error getting student dashboard:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get student dashboard data'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Failed to get student dashboard data'));
     }
   }
 
@@ -50,22 +55,22 @@ export class StatisticsController {
       const { userId } = req.params;
 
       if (!userId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID is required'),
-        );
+        res.status(HTTP_STATUS.BAD_REQUEST).json(ResponseHelper.badRequest('User ID is required'));
         return;
       }
 
       const dashboardData = await StatisticsService.getTeacherDashboard(userId);
 
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(dashboardData, 'Teacher dashboard data retrieved successfully'),
-      );
+      res
+        .status(HTTP_STATUS.OK)
+        .json(
+          ResponseHelper.success(dashboardData, 'Teacher dashboard data retrieved successfully'),
+        );
     } catch (error: any) {
       logger.error('Error getting teacher dashboard:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get teacher dashboard data'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Failed to get teacher dashboard data'));
     }
   }
 
@@ -77,14 +82,14 @@ export class StatisticsController {
     try {
       const dashboardData = await StatisticsService.getAdminDashboard();
 
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(dashboardData, 'Admin dashboard data retrieved successfully'),
-      );
+      res
+        .status(HTTP_STATUS.OK)
+        .json(ResponseHelper.success(dashboardData, 'Admin dashboard data retrieved successfully'));
     } catch (error: any) {
       logger.error('Error getting admin dashboard:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get admin dashboard data'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Failed to get admin dashboard data'));
     }
   }
 
@@ -102,25 +107,25 @@ export class StatisticsController {
       const progressUpdate = req.body;
 
       if (!userId || !courseId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID and Course ID are required'),
-        );
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(ResponseHelper.badRequest('User ID and Course ID are required'));
         return;
       }
 
       // Validate progress update data
       if (!progressUpdate || typeof progressUpdate !== 'object') {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Valid progress data is required'),
-        );
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(ResponseHelper.badRequest('Valid progress data is required'));
         return;
       }
 
       // Validate required fields for typed progress updates
       if (progressUpdate.type && !progressUpdate.type.trim()) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Progress update type is required'),
-        );
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(ResponseHelper.badRequest('Progress update type is required'));
         return;
       }
 
@@ -131,19 +136,15 @@ export class StatisticsController {
       );
 
       if (result.success) {
-        res.status(HTTP_STATUS.OK).json(
-          ResponseHelper.success(result.data, result.message),
-        );
+        res.status(HTTP_STATUS.OK).json(ResponseHelper.success(result.data, result.message));
       } else {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest(result.error),
-        );
+        res.status(HTTP_STATUS.BAD_REQUEST).json(ResponseHelper.badRequest(result.error));
       }
     } catch (error: any) {
       logger.error('Error updating student progress:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error(error.message || 'Failed to update student progress'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error(error.message || 'Failed to update student progress'));
     }
   }
 
@@ -156,28 +157,27 @@ export class StatisticsController {
       const { userId, courseId } = req.params;
 
       if (!userId || !courseId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID and Course ID are required'),
-        );
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(ResponseHelper.badRequest('User ID and Course ID are required'));
         return;
       }
 
       // Get the student's promotion-based progress for this course
-      const { PromotionProgressModel, UserModel, CourseModel } = require('@yggdrasil/database-schemas');
 
       // Get the student's current promotion
       const student = await UserModel.findById(userId);
       if (!student?.currentPromotionId) {
-        res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Student not enrolled in any promotion'),
-        );
+        res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json(ResponseHelper.notFound('Student not enrolled in any promotion'));
         return;
       }
 
       // Get or create promotion progress
       const promotionProgress = await PromotionProgressModel.findOrCreateForStudent(
-        student.currentPromotionId,
-        userId,
+        student.currentPromotionId as any,
+        userId as any,
       );
 
       // Find course progress in the promotion
@@ -188,9 +188,7 @@ export class StatisticsController {
       // Get course details
       const course = await CourseModel.findById(courseId);
       if (!course) {
-        res.status(HTTP_STATUS.NOT_FOUND).json(
-          ResponseHelper.notFound('Course not found'),
-        );
+        res.status(HTTP_STATUS.NOT_FOUND).json(ResponseHelper.notFound('Course not found'));
         return;
       }
 
@@ -204,36 +202,42 @@ export class StatisticsController {
         lastAccessedAt: courseProgress?.lastActivityAt || new Date(),
         completedSections: [], // Will need to track this separately if needed
         completedExercises: [], // Will need to track this separately if needed
-        chapters: course.chapters?.map((chapter: any) => ({
-          id: chapter._id,
-          title: chapter.title,
-          isCompleted: courseProgress
-            ? (courseProgress.chaptersCompleted / courseProgress.totalChapters) * 100 >= 100
-            : false,
-          sections: chapter.sections?.map((section: any) => ({
-            id: section._id,
-            title: section.title,
-            isCompleted: false, // Would need more granular tracking
-            items: section.content?.map((content: any) => ({
-              id: content._id,
-              title: content.title || `${content.type} content`,
-              type: content.type,
-              isCompleted: false, // Would need more granular tracking
-              isOptional: false,
-              estimatedMinutes: content.type === 'video' ? 15 : content.type === 'exercise' ? 30 : 10,
-            })) || [],
+        chapters:
+          course.chapters?.map((chapter: any) => ({
+            id: chapter._id,
+            title: chapter.title,
+            isCompleted: courseProgress
+              ? (courseProgress.chaptersCompleted / courseProgress.totalChapters) * 100 >= 100
+              : false,
+            sections:
+              chapter.sections?.map((section: any) => ({
+                id: section._id,
+                title: section.title,
+                isCompleted: false, // Would need more granular tracking
+                items:
+                  section.content?.map((content: any) => ({
+                    id: content._id,
+                    title: content.title || `${content.type} content`,
+                    type: content.type,
+                    isCompleted: false, // Would need more granular tracking
+                    isOptional: false,
+                    estimatedMinutes:
+                      content.type === 'video' ? 15 : content.type === 'exercise' ? 30 : 10,
+                  })) || [],
+              })) || [],
           })) || [],
-        })) || [],
       };
 
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(progressData, 'Student course progress retrieved successfully'),
-      );
+      res
+        .status(HTTP_STATUS.OK)
+        .json(
+          ResponseHelper.success(progressData, 'Student course progress retrieved successfully'),
+        );
     } catch (error: any) {
       logger.error('Error getting student course progress:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get student course progress'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Failed to get student course progress'));
     }
   }
 
@@ -250,22 +254,22 @@ export class StatisticsController {
       const { courseId } = req.params;
 
       if (!courseId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('Course ID is required'),
-        );
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(ResponseHelper.badRequest('Course ID is required'));
         return;
       }
 
       const analytics = await StatisticsService.getCourseAnalytics(courseId);
 
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(analytics, 'Course analytics retrieved successfully'),
-      );
+      res
+        .status(HTTP_STATUS.OK)
+        .json(ResponseHelper.success(analytics, 'Course analytics retrieved successfully'));
     } catch (error: any) {
       logger.error('Error getting course analytics:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error(error.message || 'Failed to get course analytics'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error(error.message || 'Failed to get course analytics'));
     }
   }
 
@@ -279,14 +283,14 @@ export class StatisticsController {
       // In a real implementation, this could be more detailed
       const platformData = await StatisticsService.getAdminDashboard();
 
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(platformData, 'Platform analytics retrieved successfully'),
-      );
+      res
+        .status(HTTP_STATUS.OK)
+        .json(ResponseHelper.success(platformData, 'Platform analytics retrieved successfully'));
     } catch (error: any) {
       logger.error('Error getting platform analytics:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get platform analytics'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Failed to get platform analytics'));
     }
   }
 
@@ -303,9 +307,9 @@ export class StatisticsController {
       const { userId, courseId, sectionId } = req.body;
 
       if (!userId || !courseId || !sectionId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID, Course ID, and Section ID are required'),
-        );
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(ResponseHelper.badRequest('User ID, Course ID, and Section ID are required'));
         return;
       }
 
@@ -321,14 +325,14 @@ export class StatisticsController {
         progressUpdate,
       );
 
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(updatedProgress, 'Section marked as completed'),
-      );
+      res
+        .status(HTTP_STATUS.OK)
+        .json(ResponseHelper.success(updatedProgress, 'Section marked as completed'));
     } catch (error: any) {
       logger.error('Error marking section complete:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to mark section as completed'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Failed to mark section as completed'));
     }
   }
 
@@ -341,9 +345,9 @@ export class StatisticsController {
       const { userId, courseId, exerciseId, score: _score } = req.body;
 
       if (!userId || !courseId || !exerciseId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID, Course ID, and Exercise ID are required'),
-        );
+        res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json(ResponseHelper.badRequest('User ID, Course ID, and Exercise ID are required'));
         return;
       }
 
@@ -359,14 +363,14 @@ export class StatisticsController {
         progressUpdate,
       );
 
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success(updatedProgress, 'Exercise marked as completed'),
-      );
+      res
+        .status(HTTP_STATUS.OK)
+        .json(ResponseHelper.success(updatedProgress, 'Exercise marked as completed'));
     } catch (error: any) {
       logger.error('Error marking exercise complete:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to mark exercise as completed'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Failed to mark exercise as completed'));
     }
   }
 
@@ -379,9 +383,7 @@ export class StatisticsController {
       const { userId } = req.params;
 
       if (!userId) {
-        res.status(HTTP_STATUS.BAD_REQUEST).json(
-          ResponseHelper.badRequest('User ID is required'),
-        );
+        res.status(HTTP_STATUS.BAD_REQUEST).json(ResponseHelper.badRequest('User ID is required'));
         return;
       }
 
@@ -389,14 +391,14 @@ export class StatisticsController {
       const dashboardData = await StatisticsService.getStudentDashboard(userId);
       const achievements = dashboardData.achievements;
 
-      res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success({ achievements }, 'User achievements retrieved successfully'),
-      );
+      res
+        .status(HTTP_STATUS.OK)
+        .json(ResponseHelper.success({ achievements }, 'User achievements retrieved successfully'));
     } catch (error: any) {
       logger.error('Error getting user achievements:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Failed to get user achievements'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Failed to get user achievements'));
     }
   }
 
@@ -407,31 +409,33 @@ export class StatisticsController {
   static async healthCheck(_req: Request, res: Response): Promise<void> {
     try {
       // Test database connectivity and basic operations
-      const { UserModel } = require('@yggdrasil/database-schemas');
       const userCount = await UserModel.countDocuments();
 
       const memoryUsage = process.memoryUsage();
 
       res.status(HTTP_STATUS.OK).json(
-        ResponseHelper.success({
-          status: 'healthy',
-          timestamp: new Date().toISOString(),
-          database: 'connected',
-          userCount,
-          version: '1.0.0',
-          uptime: Math.floor(process.uptime()),
-          memory: {
-            used: memoryUsage.heapUsed,
-            total: memoryUsage.heapTotal,
-            percentage: Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100),
+        ResponseHelper.success(
+          {
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            database: 'connected',
+            userCount,
+            version: '1.0.0',
+            uptime: Math.floor(process.uptime()),
+            memory: {
+              used: memoryUsage.heapUsed,
+              total: memoryUsage.heapTotal,
+              percentage: Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100),
+            },
           },
-        }, 'Statistics service is healthy'),
+          'Statistics service is healthy',
+        ),
       );
     } catch (error: any) {
       logger.error('Statistics service health check failed:', error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-        ResponseHelper.error('Statistics service health check failed'),
-      );
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json(ResponseHelper.error('Statistics service health check failed'));
     }
   }
 }

@@ -15,30 +15,38 @@ const possiblePaths = [
   path.resolve(process.cwd(), '.env'),
   path.resolve(process.cwd(), '../../.env'),
   path.resolve(process.cwd(), '../../../.env'),
-  '/home/tagada/Desktop/Yggdrasil/.env'
 ];
 
 const envPath = possiblePaths.find(p => fs.existsSync(p));
 if (envPath) {
   dotenv.config({ path: envPath });
-  console.log(`🔧 STATISTICS SERVICE: Loaded .env from ${envPath}`);
+  logger.info(`🔧 STATISTICS SERVICE: Loaded .env from ${envPath}`);
 } else {
-  console.warn('⚠️ STATISTICS SERVICE: Could not find .env file, using existing environment variables');
+  logger.warn(
+    '⚠️ STATISTICS SERVICE: Could not find .env file, using existing environment variables',
+  );
 }
 
 // Calculate worker-specific port for parallel testing
 function getWorkerSpecificPort(): number {
-  const workerId = process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || process.env['TEST_WORKER_INDEX'] || '0';
-  const basePort = 3000 + (parseInt(workerId, 10) * 10);
+  const workerId =
+    process.env['WORKER_ID'] ||
+    process.env['PLAYWRIGHT_WORKER_ID'] ||
+    process.env['TEST_WORKER_INDEX'] ||
+    '0';
+  const basePort = 3000 + parseInt(workerId, 10) * 10;
   const statisticsPort = basePort + 6; // Statistics service is always basePort + 6
   return statisticsPort;
 }
 
-const PORT = process.env['STATISTICS_SERVICE_PORT'] || 
-            process.env['PORT'] || 
-            (process.env['NODE_ENV'] === 'test' ? getWorkerSpecificPort() : 3006);
+const PORT =
+  process.env['STATISTICS_SERVICE_PORT'] ||
+  process.env['PORT'] ||
+  (process.env['NODE_ENV'] === 'test' ? getWorkerSpecificPort() : 3006);
 
-logger.debug(`🔧 STATISTICS SERVICE: Worker ID: ${process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || '0'}`);
+logger.debug(
+  `🔧 STATISTICS SERVICE: Worker ID: ${process.env['WORKER_ID'] || process.env['PLAYWRIGHT_WORKER_ID'] || '0'}`,
+);
 logger.debug(`🔧 STATISTICS SERVICE: Calculated PORT: ${PORT}`);
 
 // Initialize JWT system first (same as other services)
@@ -49,7 +57,7 @@ const server = app.listen(PORT, () => {
   logger.debug(`📊 Statistics Service running on port ${PORT}`);
   logger.debug(`🔗 Health check: http://localhost:${PORT}/health`);
   logger.debug(`📈 API endpoint: http://localhost:${PORT}/api/statistics`);
-  logger.info(`📊 Dashboard endpoints:`);
+  logger.info('📊 Dashboard endpoints:');
   logger.debug(`   Student: http://localhost:${PORT}/api/statistics/dashboard/student/:userId`);
   logger.debug(`   Teacher: http://localhost:${PORT}/api/statistics/dashboard/teacher/:userId`);
   logger.debug(`   Admin: http://localhost:${PORT}/api/statistics/dashboard/admin`);
