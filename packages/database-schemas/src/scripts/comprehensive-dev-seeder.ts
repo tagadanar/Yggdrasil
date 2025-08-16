@@ -12,7 +12,6 @@ import {
   EventAttendanceModel,
 } from '../index';
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -455,11 +454,9 @@ export class ComprehensiveDevSeeder {
   private async createUsers(userData: any[]): Promise<any[]> {
     const users = [];
     for (const data of userData) {
-      const hashedPassword = await bcrypt.hash(data.password, 12);
-      const user = await UserModel.create({
-        ...data,
-        password: hashedPassword,
-      });
+      // Let the User model's pre-save middleware handle password hashing
+      // Do NOT manually hash here to avoid double-hashing
+      const user = await UserModel.create(data);
       users.push(user);
     }
     return users;
