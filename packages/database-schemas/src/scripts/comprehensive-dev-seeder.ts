@@ -13,6 +13,9 @@ import {
 } from '../index';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface SeederConfig {
   users: {
@@ -30,6 +33,7 @@ interface SeederConfig {
   };
   news: number;
   clearExisting: boolean;
+  verbose: boolean; // Add verbose logging option
 }
 
 interface SeederResult {
@@ -60,29 +64,60 @@ export class ComprehensiveDevSeeder {
     this.config = {
       users: {
         admins: 3,
-        staff: 4,
-        teachers: 12,
-        students: 45,
+        staff: 5,
+        teachers: 15,
+        students: 60, // More students for better distribution across promotions
       },
       courses: {
-        webDev: 5,
-        dataScience: 4,
-        mobile: 3,
-        devOps: 3,
-        design: 4,
+        webDev: 6,
+        dataScience: 5,
+        mobile: 4,
+        devOps: 4,
+        design: 5,
       },
-      news: 25,
+      news: 30, // More news for variety
       clearExisting: true,
+      verbose: false,
       ...config,
     };
   }
 
   async seedAll(): Promise<SeederResult> {
     console.log('🌱 Starting comprehensive database seeding...');
+
+    // Load environment variables from .env file if not already loaded
+    if (!process.env['MONGODB_URI']) {
+      // Look for .env file in the project root
+      // From dist/scripts/ we need to go up to project root
+      const possiblePaths = [
+        path.resolve(process.cwd(), '.env'), // Current working directory
+        path.resolve(__dirname, '../../../.env'), // From packages/database-schemas/dist/scripts
+        path.resolve(__dirname, '../../../../.env'), // If nested deeper
+      ];
+
+      let envLoaded = false;
+      for (const envPath of possiblePaths) {
+        if (fs.existsSync(envPath)) {
+          dotenv.config({ path: envPath });
+          console.log(`📋 Loaded environment variables from ${envPath}`);
+          envLoaded = true;
+          break;
+        }
+      }
+
+      if (!envLoaded) {
+        console.log('⚠️  No .env file found, using default MongoDB URI');
+      }
+    }
+
+    const dbUri = process.env['MONGODB_URI'] || 'mongodb://localhost:27018/yggdrasil-dev';
+    console.log('📊 Database URI:', dbUri.replace(/:[^:@]+@/, ':****@')); // Hide password in logs
     this.startTime = Date.now();
 
     try {
-      await connectDatabase();
+      // Connect to the database with the right URI
+      await connectDatabase(dbUri);
+      console.log('✅ Connected to database successfully');
 
       // Clear existing data if requested
       if (this.config.clearExisting) {
@@ -94,7 +129,7 @@ export class ComprehensiveDevSeeder {
       const courses = await this.seedCourses(users.teachers);
       const promotions = await this.seedPromotions(users.students);
       const events = await this.seedEvents(promotions, courses, users.teachers);
-      const news = await this.seedNews([...users.admins, ...users.staff]);
+      const news = await this.seedNews([...users.admins, ...users.staff, ...users.teachers]);
 
       // Seed realistic progress and attendance data
       await this.seedProgressData(users.students, promotions, courses);
@@ -102,15 +137,33 @@ export class ComprehensiveDevSeeder {
 
       const executionTime = Date.now() - this.startTime;
       const statistics = {
-        totalUsers: users.admins.length + users.staff.length + users.teachers.length + users.students.length,
+        totalUsers:
+          users.admins.length + users.staff.length + users.teachers.length + users.students.length,
         totalCourses: courses.length,
         totalEvents: events.length,
         totalNews: news.length,
         executionTime,
       };
 
-      console.log('✅ Database seeding completed successfully!');
-      console.log(`📊 Statistics:`, statistics);
+      console.log('\n✅ Database seeding completed successfully!');
+      console.log('━'.repeat(60));
+      console.log('📊 SEEDING STATISTICS:');
+      console.log('━'.repeat(60));
+      console.log(
+        `👥 Users: ${statistics.totalUsers} (${users.admins.length} admins, ${users.staff.length} staff, ${users.teachers.length} teachers, ${users.students.length} students)`,
+      );
+      console.log(`📚 Courses: ${statistics.totalCourses}`);
+      console.log(`📅 Events: ${statistics.totalEvents}`);
+      console.log(`📰 News Articles: ${statistics.totalNews}`);
+      console.log(`⏱️  Execution Time: ${(statistics.executionTime / 1000).toFixed(2)} seconds`);
+      console.log('━'.repeat(60));
+      console.log('\n🔑 DEMO ACCOUNTS:');
+      console.log('━'.repeat(60));
+      console.log('👤 Admin: admin@yggdrasil.edu / Admin123!');
+      console.log('👤 Teacher: teacher@yggdrasil.edu / Teacher123!');
+      console.log('👤 Student: alice.johnson@student.yggdrasil.edu / Student123!');
+      console.log('👤 Staff: staff@yggdrasil.edu / Staff123!');
+      console.log('━'.repeat(60));
 
       return {
         users,
@@ -122,6 +175,19 @@ export class ComprehensiveDevSeeder {
       };
     } catch (error) {
       console.error('❌ Database seeding failed:', error);
+      if (error instanceof Error) {
+        console.error('💡 Troubleshooting tips:');
+        if (error.message.includes('connect')) {
+          console.error('  - Check if MongoDB is running on port 27018');
+          console.error('  - Verify MONGODB_URI environment variable');
+          console.error('  - Try: docker-compose up -d mongodb');
+        }
+        if (error.message.includes('authentication') || error.message.includes('unauthorized')) {
+          console.error('  - Check MongoDB authentication settings');
+          console.error('  - Verify database user credentials');
+          console.error('  - For development, use: mongodb://localhost:27018/yggdrasil-dev');
+        }
+      }
       throw error;
     } finally {
       await disconnectDatabase();
@@ -130,7 +196,7 @@ export class ComprehensiveDevSeeder {
 
   private async clearDatabase(): Promise<void> {
     console.log('🧹 Clearing existing database data...');
-    
+
     const collections = [
       'users',
       'courses',
@@ -139,7 +205,7 @@ export class ComprehensiveDevSeeder {
       'news',
       'promotion_progress',
       'event_attendance',
-      'sessions'
+      'sessions',
     ];
 
     for (const collection of collections) {
@@ -154,7 +220,7 @@ export class ComprehensiveDevSeeder {
 
   private async seedUsers() {
     console.log('👥 Seeding users...');
-    
+
     // Admin users
     const adminUsers = [
       {
@@ -189,7 +255,7 @@ export class ComprehensiveDevSeeder {
           department: 'Student Affairs',
         },
         isActive: true,
-      }
+      },
     ];
 
     // Staff users
@@ -237,23 +303,47 @@ export class ComprehensiveDevSeeder {
           department: 'Registrar Office',
         },
         isActive: true,
-      }
+      },
     ];
 
     // Teacher users
     const teacherUsers = [
       { email: 'teacher@yggdrasil.edu', name: 'Demo Teacher', specialty: 'Web Development' },
       { email: 'john.doe@yggdrasil.edu', name: 'John Doe', specialty: 'Full Stack Development' },
-      { email: 'emily.watson@yggdrasil.edu', name: 'Emily Watson', specialty: 'Frontend Development' },
-      { email: 'michael.garcia@yggdrasil.edu', name: 'Michael Garcia', specialty: 'Backend Development' },
+      {
+        email: 'emily.watson@yggdrasil.edu',
+        name: 'Emily Watson',
+        specialty: 'Frontend Development',
+      },
+      {
+        email: 'michael.garcia@yggdrasil.edu',
+        name: 'Michael Garcia',
+        specialty: 'Backend Development',
+      },
       { email: 'anna.martinez@yggdrasil.edu', name: 'Anna Martinez', specialty: 'Data Science' },
-      { email: 'david.anderson@yggdrasil.edu', name: 'David Anderson', specialty: 'Machine Learning' },
+      {
+        email: 'david.anderson@yggdrasil.edu',
+        name: 'David Anderson',
+        specialty: 'Machine Learning',
+      },
       { email: 'lisa.taylor@yggdrasil.edu', name: 'Lisa Taylor', specialty: 'Data Analytics' },
-      { email: 'kevin.thomas@yggdrasil.edu', name: 'Kevin Thomas', specialty: 'Mobile Development' },
-      { email: 'sandra.jackson@yggdrasil.edu', name: 'Sandra Jackson', specialty: 'iOS Development' },
+      {
+        email: 'kevin.thomas@yggdrasil.edu',
+        name: 'Kevin Thomas',
+        specialty: 'Mobile Development',
+      },
+      {
+        email: 'sandra.jackson@yggdrasil.edu',
+        name: 'Sandra Jackson',
+        specialty: 'iOS Development',
+      },
       { email: 'chris.white@yggdrasil.edu', name: 'Chris White', specialty: 'DevOps Engineering' },
-      { email: 'michelle.martin@yggdrasil.edu', name: 'Michelle Martin', specialty: 'Cloud Architecture' },
-      { email: 'alex.rodriguez@yggdrasil.edu', name: 'Alex Rodriguez', specialty: 'UI/UX Design' }
+      {
+        email: 'michelle.martin@yggdrasil.edu',
+        name: 'Michelle Martin',
+        specialty: 'Cloud Architecture',
+      },
+      { email: 'alex.rodriguez@yggdrasil.edu', name: 'Alex Rodriguez', specialty: 'UI/UX Design' },
     ].map(t => ({
       email: t.email,
       password: 'Teacher123!',
@@ -267,17 +357,74 @@ export class ComprehensiveDevSeeder {
       isActive: true,
     }));
 
-    // Student users
+    // Student users - Expanded list for better distribution
     const studentNames = [
-      'Alice Johnson', 'Bob Smith', 'Carol Davis', 'Daniel Wilson', 'Emma Brown',
-      'Frank Miller', 'Grace Lee', 'Henry Clark', 'Isabella Moore', 'Jack Taylor',
-      'Kate Anderson', 'Liam Thomas', 'Mia Jackson', 'Noah White', 'Olivia Harris',
-      'Paul Martin', 'Quinn Garcia', 'Ruby Martinez', 'Sam Robinson', 'Tara Lewis',
-      'Ulysses Walker', 'Vera Hall', 'William Allen', 'Xara Young', 'Yuki King',
-      'Zoe Wright', 'Aaron Lopez', 'Bella Hill', 'Carter Green', 'Diana Adams',
-      'Ethan Baker', 'Fiona Nelson', 'George Carter', 'Hannah Mitchell', 'Ian Perez',
-      'Julia Roberts', 'Kyle Turner', 'Layla Phillips', 'Mason Campbell', 'Nora Parker',
-      'Oscar Evans', 'Penelope Edwards', 'Quinton Collins', 'Rachel Stewart', 'Sean Morris'
+      'Alice Johnson',
+      'Bob Smith',
+      'Carol Davis',
+      'Daniel Wilson',
+      'Emma Brown',
+      'Frank Miller',
+      'Grace Lee',
+      'Henry Clark',
+      'Isabella Moore',
+      'Jack Taylor',
+      'Kate Anderson',
+      'Liam Thomas',
+      'Mia Jackson',
+      'Noah White',
+      'Olivia Harris',
+      'Paul Martin',
+      'Quinn Garcia',
+      'Ruby Martinez',
+      'Sam Robinson',
+      'Tara Lewis',
+      'Ulysses Walker',
+      'Vera Hall',
+      'William Allen',
+      'Xara Young',
+      'Yuki King',
+      'Zoe Wright',
+      'Aaron Lopez',
+      'Bella Hill',
+      'Carter Green',
+      'Diana Adams',
+      'Ethan Baker',
+      'Fiona Nelson',
+      'George Carter',
+      'Hannah Mitchell',
+      'Ian Perez',
+      'Julia Roberts',
+      'Kyle Turner',
+      'Layla Phillips',
+      'Mason Campbell',
+      'Nora Parker',
+      'Oscar Evans',
+      'Penelope Edwards',
+      'Quinton Collins',
+      'Rachel Stewart',
+      'Sean Morris',
+      // Additional students for S6-S10
+      'Alex Chen',
+      'Brooke Wilson',
+      'Cameron Lee',
+      'Dylan Martinez',
+      'Eva Thompson',
+      'Felix Anderson',
+      'Gabriella Brown',
+      'Harrison Davis',
+      'Ivy Robinson',
+      'Jordan Miller',
+      'Kayla White',
+      'Leo Garcia',
+      'Maya Johnson',
+      'Nathan Harris',
+      'Sophia Clark',
+      'Tyler Moore',
+      'Uma Patel',
+      'Victor Zhang',
+      'Wendy Kim',
+      'Xavier Lopez',
     ];
 
     const studentUsers = studentNames.map((name, index) => ({
@@ -298,7 +445,9 @@ export class ComprehensiveDevSeeder {
     const teachers = await this.createUsers(teacherUsers.slice(0, this.config.users.teachers));
     const students = await this.createUsers(studentUsers.slice(0, this.config.users.students));
 
-    console.log(`  ✅ Created ${admins.length} admins, ${staff.length} staff, ${teachers.length} teachers, ${students.length} students`);
+    console.log(
+      `  ✅ Created ${admins.length} admins, ${staff.length} staff, ${teachers.length} teachers, ${students.length} students`,
+    );
 
     return { admins, staff, teachers, students };
   }
@@ -318,7 +467,7 @@ export class ComprehensiveDevSeeder {
 
   private async seedCourses(teachers: any[]): Promise<any[]> {
     console.log('📚 Seeding courses...');
-    
+
     const courseCategories = {
       'Web Development': [
         { title: 'HTML & CSS Fundamentals', level: 'beginner', duration: 40 },
@@ -338,17 +487,17 @@ export class ComprehensiveDevSeeder {
         { title: 'React Native Development', level: 'intermediate', duration: 80 },
         { title: 'iOS Development', level: 'intermediate', duration: 90 },
       ],
-      'DevOps': [
+      DevOps: [
         { title: 'Docker Containerization', level: 'intermediate', duration: 50 },
         { title: 'Kubernetes Orchestration', level: 'advanced', duration: 70 },
         { title: 'CI/CD Pipelines', level: 'intermediate', duration: 60 },
       ],
-      'Design': [
+      Design: [
         { title: 'UI/UX Design Principles', level: 'beginner', duration: 45 },
         { title: 'Design Systems', level: 'intermediate', duration: 60 },
         { title: 'User Research Methods', level: 'intermediate', duration: 50 },
         { title: 'Advanced Prototyping', level: 'advanced', duration: 70 },
-      ]
+      ],
     };
 
     const courses = [];
@@ -361,11 +510,18 @@ export class ComprehensiveDevSeeder {
 
         const course = await CourseModel.create({
           title: courseData.title,
-          slug: courseData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+          slug: courseData.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, ''),
           description: `A comprehensive ${courseData.level} course in ${courseData.title}. This course covers essential concepts and practical applications.`,
           category,
           level: courseData.level as 'beginner' | 'intermediate' | 'advanced',
-          instructor: instructor._id,
+          instructor: {
+            _id: instructor._id.toString(),
+            name: `${instructor.profile.firstName} ${instructor.profile.lastName}`,
+            email: instructor.email,
+          },
           estimatedDuration: courseData.duration,
           isPublished: true,
           publishedAt: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000), // Random date within 90 days
@@ -377,27 +533,36 @@ export class ComprehensiveDevSeeder {
               sections: [
                 {
                   title: 'Course Overview',
-                  content: 'Welcome to the course! In this section, we will cover what you can expect to learn.',
-                  type: 'text',
+                  description: 'Overview of the course objectives and structure',
                   order: 1,
-                  exercises: [
+                  content: [
                     {
-                      title: 'Knowledge Check',
-                      description: 'Test your understanding of the course objectives',
-                      type: 'multiple_choice',
+                      type: 'text',
+                      title: 'Welcome',
                       order: 1,
-                      questions: [
-                        {
-                          question: `What is the main focus of ${courseData.title}?`,
-                          type: 'multiple_choice',
-                          options: ['Theory only', 'Practical application', 'Both theory and practice', 'Neither'],
-                          correctAnswer: 2,
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
+                      data: {
+                        markdown: `# Welcome to ${courseData.title}\n\nThis course will guide you through essential concepts and practical applications.`,
+                        html: `<h1>Welcome to ${courseData.title}</h1><p>This course will guide you through essential concepts and practical applications.</p>`,
+                      },
+                      isPublished: true,
+                    },
+                    {
+                      type: 'video',
+                      title: 'Introduction Video',
+                      order: 2,
+                      data: {
+                        videoUrl: 'https://example.com/intro-video',
+                        videoDuration: 300,
+                        transcript: 'Video transcript goes here...',
+                      },
+                      isPublished: true,
+                    },
+                  ],
+                  isPublished: true,
+                  estimatedDuration: 15,
+                },
+              ],
+              isPublished: true,
             },
             {
               title: 'Core Concepts',
@@ -406,14 +571,80 @@ export class ComprehensiveDevSeeder {
               sections: [
                 {
                   title: 'Fundamentals',
-                  content: 'Core concepts you need to understand',
-                  type: 'text',
+                  description: 'Core concepts you need to understand',
                   order: 1,
-                }
-              ]
-            }
+                  content: [
+                    {
+                      type: 'text',
+                      title: 'Core Principles',
+                      order: 1,
+                      data: {
+                        markdown:
+                          '## Core Principles\n\nUnderstand the fundamental concepts that form the foundation of this course.',
+                        html: '<h2>Core Principles</h2><p>Understand the fundamental concepts that form the foundation of this course.</p>',
+                      },
+                      isPublished: true,
+                    },
+                    {
+                      type: 'quiz',
+                      title: 'Knowledge Check',
+                      order: 2,
+                      data: {
+                        quiz: {
+                          title: 'Knowledge Check Quiz',
+                          description: 'Test your understanding',
+                          questions: [
+                            {
+                              type: 'multiple_choice',
+                              question: `What is the main focus of ${courseData.title}?`,
+                              options: [
+                                'Theory only',
+                                'Practical application',
+                                'Both theory and practice',
+                                'Neither',
+                              ],
+                              correctAnswer: 2,
+                              explanation:
+                                'This course covers both theoretical concepts and practical applications.',
+                              points: 10,
+                            },
+                          ],
+                          passingScore: 60,
+                          maxAttempts: 3,
+                          timeLimit: 10,
+                        },
+                      },
+                      isPublished: true,
+                    },
+                  ],
+                  isPublished: true,
+                  estimatedDuration: 30,
+                },
+              ],
+              isPublished: true,
+            },
           ],
           tags: [category.toLowerCase().replace(' ', '-'), courseData.level],
+          settings: {
+            isPublic: true,
+            allowComments: true,
+            requireEnrollment: false,
+            certificateEnabled: true,
+          },
+          metadata: {
+            language: 'en',
+            targetAudience: 'Students and professionals',
+            learningObjectives: [
+              'Understand core concepts',
+              'Apply knowledge in practical scenarios',
+              'Build real-world projects',
+            ],
+            prerequisites:
+              courseData.level === 'beginner'
+                ? ['Basic computer skills']
+                : ['Previous course completion'],
+            skills: [category, courseData.level],
+          },
         });
 
         courses.push(course);
@@ -428,12 +659,12 @@ export class ComprehensiveDevSeeder {
     console.log('🎓 Seeding promotions (S1-S10)...');
 
     const promotions = [];
-    
+
     // Create all 10 semester promotions
     for (let semester = 1; semester <= 10; semester++) {
       const intake = semester % 2 === 1 ? 'september' : 'march';
       const academicYear = '2024-2025'; // Current academic year
-      
+
       // Calculate dates based on intake
       let startDate: Date, endDate: Date;
       if (intake === 'september') {
@@ -472,15 +703,15 @@ export class ComprehensiveDevSeeder {
       // Update students with current promotion
       await UserModel.updateMany(
         { _id: { $in: studentsForPromotion } },
-        { 
+        {
           $set: { currentPromotionId: promotion._id },
           $push: {
             promotionHistory: {
               promotionId: promotion._id,
               joinedAt: new Date(),
-            }
-          }
-        }
+            },
+          },
+        },
       );
 
       promotions.push(promotion);
@@ -495,30 +726,31 @@ export class ComprehensiveDevSeeder {
 
     const events = [];
     const now = new Date();
-    
+
     // Create events for each promotion
     for (const promotion of promotions) {
       // Select 3-5 random courses for this promotion
       const shuffledCourses = [...courses].sort(() => Math.random() - 0.5);
       const promotionCourses = shuffledCourses.slice(0, 3 + Math.floor(Math.random() * 3));
-      
+
       for (const course of promotionCourses) {
-        // Find teacher for this course
-        const teacher = teachers.find(t => t._id.equals(course.instructor)) || teachers[0];
-        
+        // Find teacher for this course - course.instructor is now an object with _id property
+        const teacher =
+          teachers.find(t => t._id.toString() === course.instructor._id) || teachers[0];
+
         // Create weekly events for this course (12 weeks)
         for (let week = 0; week < 12; week++) {
           // Schedule events in the future or recent past
           const eventDate = new Date(now.getTime() + (week - 6) * 7 * 24 * 60 * 60 * 1000);
           eventDate.setHours(9 + (week % 8)); // Vary start times
-          
+
           const endDate = new Date(eventDate);
           endDate.setHours(eventDate.getHours() + 2); // 2-hour sessions
 
           const event = await EventModel.create({
             title: `${course.title} - Session ${week + 1}`,
             description: `Weekly session for ${course.title}`,
-            type: 'lecture',
+            type: 'class', // Changed from 'lecture' to 'class' which is a valid enum value
             startDate: eventDate,
             endDate: endDate,
             location: `Room ${100 + (week % 50)}`,
@@ -526,6 +758,7 @@ export class ComprehensiveDevSeeder {
             isPublic: false,
             linkedCourse: course._id,
             teacherId: teacher._id,
+            createdBy: teacher._id, // Added required createdBy field
             promotionIds: [promotion._id] as any,
             attendanceRequired: true,
             status: eventDate < now ? 'completed' : 'scheduled',
@@ -539,10 +772,10 @@ export class ComprehensiveDevSeeder {
       const promotionEventIds = events
         .filter(e => e.promotionIds && e.promotionIds.some((pId: any) => pId.equals(promotion._id)))
         .map(e => e._id);
-      
+
       await PromotionModel.updateOne(
         { _id: promotion._id },
-        { $set: { eventIds: promotionEventIds } }
+        { $set: { eventIds: promotionEventIds } },
       );
     }
 
@@ -555,38 +788,52 @@ export class ComprehensiveDevSeeder {
 
     const newsTemplates = [
       { title: 'New Semester Registration Now Open', category: 'academic', priority: 'high' },
-      { title: 'Updated COVID-19 Campus Guidelines', category: 'health', priority: 'high' },
+      { title: 'Updated COVID-19 Campus Guidelines', category: 'announcements', priority: 'high' },
       { title: 'Career Fair 2024 - Industry Partners', category: 'events', priority: 'medium' },
       { title: 'Library Extended Hours During Finals', category: 'academic', priority: 'medium' },
-      { title: 'Student Achievement Awards Ceremony', category: 'achievements', priority: 'medium' },
-      { title: 'New Research Lab Opening', category: 'research', priority: 'medium' },
-      { title: 'Summer Internship Program Applications', category: 'opportunities', priority: 'high' },
+      { title: 'Student Achievement Awards Ceremony', category: 'events', priority: 'medium' },
+      { title: 'New Research Lab Opening', category: 'announcements', priority: 'medium' },
+      { title: 'Summer Internship Program Applications', category: 'academic', priority: 'high' },
       { title: 'Campus Maintenance Schedule', category: 'general', priority: 'low' },
       { title: 'Guest Lecture Series Announcement', category: 'events', priority: 'medium' },
-      { title: 'Student Housing Application Deadline', category: 'housing', priority: 'high' },
-      { title: 'New Online Learning Platform Features', category: 'technology', priority: 'medium' },
+      {
+        title: 'Student Housing Application Deadline',
+        category: 'announcements',
+        priority: 'high',
+      },
+      {
+        title: 'New Online Learning Platform Features',
+        category: 'announcements',
+        priority: 'medium',
+      },
       { title: 'Spring Break Campus Closure Dates', category: 'general', priority: 'medium' },
-      { title: 'Scholarship Applications Now Available', category: 'financial', priority: 'high' },
-      { title: 'Faculty Research Grants Awarded', category: 'research', priority: 'low' },
-      { title: 'Campus Security Updates', category: 'safety', priority: 'high' },
+      { title: 'Scholarship Applications Now Available', category: 'academic', priority: 'high' },
+      { title: 'Faculty Research Grants Awarded', category: 'academic', priority: 'low' },
+      { title: 'Campus Security Updates', category: 'announcements', priority: 'high' },
       { title: 'Alumni Networking Event', category: 'events', priority: 'medium' },
       { title: 'New Course Offerings Next Semester', category: 'academic', priority: 'medium' },
-      { title: 'Student Government Elections', category: 'governance', priority: 'medium' },
-      { title: 'IT System Maintenance Window', category: 'technology', priority: 'high' },
-      { title: 'Sustainability Initiative Launch', category: 'environment', priority: 'low' },
-      { title: 'Mental Health Resources Available', category: 'health', priority: 'high' },
-      { title: 'Study Abroad Program Fair', category: 'international', priority: 'medium' },
-      { title: 'Campus Recreation Center Updates', category: 'facilities', priority: 'low' },
+      { title: 'Student Government Elections', category: 'announcements', priority: 'medium' },
+      { title: 'IT System Maintenance Window', category: 'general', priority: 'high' },
+      { title: 'Sustainability Initiative Launch', category: 'general', priority: 'low' },
+      { title: 'Mental Health Resources Available', category: 'announcements', priority: 'high' },
+      { title: 'Study Abroad Program Fair', category: 'events', priority: 'medium' },
+      { title: 'Campus Recreation Center Updates', category: 'general', priority: 'low' },
       { title: 'Academic Calendar Changes', category: 'academic', priority: 'high' },
-      { title: 'New Parking Regulations', category: 'transportation', priority: 'medium' },
+      { title: 'New Parking Regulations', category: 'general', priority: 'medium' },
+      // Additional news articles for variety
+      { title: 'Final Exam Schedule Released', category: 'academic', priority: 'high' },
+      { title: 'Welcome Week Activities', category: 'events', priority: 'medium' },
+      { title: 'Distinguished Speaker Series', category: 'events', priority: 'medium' },
+      { title: 'Graduation Ceremony Details', category: 'academic', priority: 'high' },
+      { title: 'Campus Technology Upgrades', category: 'announcements', priority: 'medium' },
     ];
 
     const news = [];
-    
+
     for (let i = 0; i < this.config.news; i++) {
       const template = newsTemplates[i % newsTemplates.length];
       if (!template) continue;
-      
+
       const author = authors[i % authors.length];
       const publishDate = new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000); // Random date within 60 days
 
@@ -596,7 +843,11 @@ export class ComprehensiveDevSeeder {
         excerpt: `Important update: ${template.title.toLowerCase()}. Read more for details.`,
         category: template.category,
         priority: template.priority,
-        author: author._id,
+        author: {
+          userId: author._id,
+          name: `${author.profile.firstName} ${author.profile.lastName}`,
+          role: author.role,
+        },
         status: Math.random() > 0.1 ? 'published' : 'draft', // 90% published
         publishedAt: publishDate,
         tags: [template.category, template.priority],
@@ -611,23 +862,30 @@ export class ComprehensiveDevSeeder {
     return news;
   }
 
-  private async seedProgressData(students: any[], promotions: any[], _courses: any[]): Promise<void> {
+  private async seedProgressData(
+    students: any[],
+    promotions: any[],
+    _courses: any[],
+  ): Promise<void> {
     console.log('📊 Seeding progress data...');
 
     for (const student of students) {
       // Find student's promotion
-      const promotion = promotions.find(p => 
-        p.studentIds.some((sId: any) => sId.equals(student._id))
+      const promotion = promotions.find(p =>
+        p.studentIds.some((sId: any) => sId.equals(student._id)),
       );
-      
+
       if (!promotion) continue;
 
-      // Get courses for this promotion (through events)  
+      // Get courses for this promotion (through events)
       const promotionEvents = await EventModel.find({ promotionIds: promotion._id });
-      const courseIds = [...new Set(promotionEvents
-        .filter((e: any) => e.linkedCourse)
-        .map((e: any) => e.linkedCourse!.toString())
-      )];
+      const courseIds = [
+        ...new Set(
+          promotionEvents
+            .filter((e: any) => e.linkedCourse)
+            .map((e: any) => e.linkedCourse!.toString()),
+        ),
+      ];
 
       if (courseIds.length === 0) continue;
 
@@ -676,18 +934,18 @@ export class ComprehensiveDevSeeder {
 
     // Only create attendance for past events
     const pastEvents = events.filter(e => e.startDate < new Date());
-    
+
     for (const event of pastEvents) {
       // Get students from promotion
-      const promotion = await PromotionModel.findOne({ 
-        _id: { $in: event.promotionIds }
+      const promotion = await PromotionModel.findOne({
+        _id: { $in: event.promotionIds },
       });
-      
+
       if (!promotion) continue;
 
       for (const studentId of promotion.studentIds) {
         const attended = Math.random() > 0.2; // 80% attendance rate
-        
+
         await EventAttendanceModel.create({
           eventId: event._id,
           studentId,
@@ -705,18 +963,11 @@ export class ComprehensiveDevSeeder {
 }
 
 // CLI execution
-async function runSeeder(): Promise<void> {
-  const seeder = new ComprehensiveDevSeeder();
+async function runSeeder(config?: Partial<SeederConfig>): Promise<void> {
+  const seeder = new ComprehensiveDevSeeder(config);
   try {
-    const result = await seeder.seedAll();
-    console.log('🎉 Seeding completed successfully!');
-    console.log('📈 Summary:', {
-      users: result.statistics.totalUsers,
-      courses: result.statistics.totalCourses,
-      events: result.statistics.totalEvents,
-      news: result.statistics.totalNews,
-      executionTime: `${result.statistics.executionTime}ms`,
-    });
+    await seeder.seedAll();
+    // Summary is now handled in seedAll method with better formatting
     process.exit(0);
   } catch (error) {
     console.error('💥 Seeding failed:', error);
@@ -726,7 +977,26 @@ async function runSeeder(): Promise<void> {
 
 // Run if this file is executed directly
 if (require.main === module) {
-  runSeeder();
+  // Check for command line arguments
+  const args = process.argv.slice(2);
+  const clearExisting = !args.includes('--no-clear');
+  const verbose = args.includes('--verbose');
+
+  if (args.includes('--help')) {
+    console.log('\nUsage: npm run seed:dev [options]\n');
+    console.log('Options:');
+    console.log('  --no-clear    Do not clear existing data');
+    console.log('  --verbose     Enable verbose logging');
+    console.log('  --help        Show this help message\n');
+    console.log('Environment Variables:');
+    console.log(
+      '  MONGODB_URI   MongoDB connection URI (default: mongodb://localhost:27018/yggdrasil-dev)\n',
+    );
+    process.exit(0);
+  }
+
+  const config = { clearExisting, verbose };
+  runSeeder(config);
 }
 
 export type { SeederConfig, SeederResult };
