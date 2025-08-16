@@ -14,6 +14,83 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+/**
+ * DashboardLayout - The PRIMARY layout component for ALL main application pages
+ *
+ * 🚨 CRITICAL: This component MUST be used for ALL main app pages that require navigation.
+ * It provides consistent user interface elements and navigation across the entire platform.
+ *
+ * ✅ PROVIDES:
+ * - Left sidebar navigation with role-based menu items
+ * - Mobile-responsive design with hamburger menu toggle
+ * - Top navigation bar with user info, theme toggle, and logout
+ * - Consistent spacing, styling, and accessibility features
+ * - Theme support (light/dark mode integration)
+ *
+ * 📋 REQUIRED USAGE PATTERN:
+ * ```typescript
+ * import { DashboardLayout } from '@/components/layout/DashboardLayout';
+ * import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+ *
+ * export default function YourPage() {
+ *   return (
+ *     <ProtectedRoute>
+ *       <DashboardLayout>
+ *         <div className="max-w-7xl mx-auto">
+ *           {/* Your page content here *\/}
+ *         </div>
+ *       </DashboardLayout>
+ *     </ProtectedRoute>
+ *   );
+ * }
+ * ```
+ *
+ * 📊 PAGES THAT MUST USE THIS LAYOUT:
+ * - /dashboard - All user dashboards
+ * - /news - News and announcements
+ * - /courses - Course management and viewing
+ * - /planning - Calendar and event planning
+ * - /attendance - Attendance tracking (⚠️ was missing - now fixed)
+ * - /statistics - Analytics and reporting
+ * - /profile - User profile management
+ * - /admin/* - All administrative pages
+ * - /promotions - Academic promotion management
+ *
+ * ❌ EXCEPTIONS (DO NOT use DashboardLayout):
+ * - /auth/login, /auth/register - Use auth-specific layouts
+ * - Landing pages or public pages without navigation
+ *
+ * 🧪 TESTING:
+ * All pages using this layout are automatically tested for sidebar presence.
+ * Tests are located in: packages/testing-utilities/tests/reorganized/06-platform-core/
+ *
+ * 🔒 SECURITY & AUTHENTICATION:
+ * This layout assumes the user is already authenticated. Always wrap with ProtectedRoute
+ * to ensure proper authentication and authorization.
+ *
+ * @param props.children - The page content to render within the layout
+ * @returns JSX element with complete dashboard layout structure
+ *
+ * @example
+ * // ✅ Correct usage for a new attendance page
+ * <ProtectedRoute>
+ *   <DashboardLayout>
+ *     <div className="max-w-7xl mx-auto">
+ *       <h1>Attendance Management</h1>
+ *       {/* Page content *\/}
+ *     </div>
+ *   </DashboardLayout>
+ * </ProtectedRoute>
+ *
+ * @example
+ * // ❌ WRONG - Don't create custom layouts
+ * <div className="min-h-screen bg-gray-50">
+ *   <CustomHeader />
+ *   {/* Missing sidebar navigation *\/}
+ *   {/* Breaks user experience *\/}
+ * </div>
+ */
+
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

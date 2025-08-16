@@ -1,6 +1,6 @@
 # CLAUDE.md - Yggdrasil Development Guide
 
-> *"Code with the wisdom of the World Tree - structured, interconnected, and ever-growing"*
+> _"Code with the wisdom of the World Tree - structured, interconnected, and ever-growing"_
 
 ## 🌳 Project Overview
 
@@ -11,6 +11,7 @@
 **Services & Ports**: Frontend (3000), Auth (3001), User (3002), News (3003), Course (3004), Planning (3005), Statistics (3006)
 
 ### 🚨 CLEAN TESTING ARCHITECTURE
+
 - **Two-command system**: `test:quiet` (overview) + `test:single` (debug)
 - **Direct dev database**: `mongodb://localhost:27018/yggdrasil-dev`
 - **Automatic cleanup**: TestCleanup utility tracks/removes all test resources
@@ -27,6 +28,7 @@
 ## 🔐 Authentication System - DO NOT BREAK!
 
 ### Working Components (NEVER MODIFY):
+
 - ✅ bcrypt password hashing in `database-isolation.ts:245-247`
 - ✅ User lookup with `User.findByEmail()` and `User.findById()`
 - ✅ Test user creation flow in `createIsolatedUser()`
@@ -41,11 +43,12 @@
 await page.waitForFunction(
   () => {
     const notOnLoginPage = !window.location.pathname.includes('/auth/login');
-    const hasCookies = document.cookie.includes('yggdrasil_access_token') || 
-                      document.cookie.includes('yggdrasil_refresh_token');
+    const hasCookies =
+      document.cookie.includes('yggdrasil_access_token') ||
+      document.cookie.includes('yggdrasil_refresh_token');
     return notOnLoginPage && hasCookies;
   },
-  { timeout: 15000 } // OPTIMIZED: 15s timeout with retry logic
+  { timeout: 15000 }, // OPTIMIZED: 15s timeout with retry logic
 );
 await page.waitForTimeout(500); // Reduced buffer for state sync
 ```
@@ -57,6 +60,7 @@ await page.waitForTimeout(500); // Reduced buffer for state sync
 **BEFORE coding, CHECK `@yggdrasil/shared-utilities`!**
 
 ### Available Utilities:
+
 ```typescript
 // Authentication & JWT
 import { SharedJWTHelper, AuthMiddleware } from '@yggdrasil/shared-utilities';
@@ -76,6 +80,7 @@ const validated = loginSchema.parse(data);
 ```
 
 ### ❌ NEVER Implement Locally:
+
 - Port calculation, worker detection, database setup
 - JWT operations, response formatting
 - Service management, validation schemas
@@ -87,6 +92,7 @@ const validated = loginSchema.parse(data);
 **BEFORE making ANY modification that could affect other components:**
 
 #### **Step 1: Identify Potentially Breaking Changes**
+
 ```typescript
 ❌ BREAKING EXAMPLES:
 - API endpoint response format: { status: 'ok' } → { status: 'healthy' }
@@ -97,6 +103,7 @@ const validated = loginSchema.parse(data);
 ```
 
 #### **Step 2: MANDATORY Dependency Analysis**
+
 ```bash
 # ALWAYS search for dependencies FIRST:
 grep -r "status.*ok" packages/           # Find all code expecting 'ok'
@@ -108,29 +115,33 @@ git log --oneline -10 -- file/path      # Check recent changes
 
 **IF the new approach is OBJECTIVELY better (security, performance, standards):**
 ✅ **Update Everything Approach**
+
 1. Update all services to new standard
-2. Update all tests expecting old behavior  
+2. Update all tests expecting old behavior
 3. Update documentation
 4. Create migration plan if needed
 
 **IF the existing approach is established/working:**
 ✅ **Adapt to Existing Approach**
+
 1. Fix your code to match existing patterns
 2. Update only the incorrect expectations
 3. Maintain system consistency
 
 #### **Step 4: Implementation Rules**
+
 - **NEVER** change service contracts without full dependency audit
-- **ALWAYS** fix tests when they have wrong expectations 
+- **ALWAYS** fix tests when they have wrong expectations
 - **SEARCH FIRST, CODE SECOND** - understand before changing
 - **When in doubt, choose consistency over perfection**
 
 ### 🏆 **SUCCESS EXAMPLE: Health Check Fix**
+
 ```diff
 ❌ WRONG: Changed user-service to match incorrect test
 - { status: 'ok' } → { status: 'healthy' }
 
-✅ CORRECT: Fixed test to match established service pattern  
+✅ CORRECT: Fixed test to match established service pattern
 - expect('healthy') → expect('ok')
 - Maintained consistency with news-service, planning-service
 ```
@@ -140,6 +151,7 @@ git log --oneline -10 -- file/path      # Check recent changes
 ## 🧪 Testing Commands
 
 ### Two-Command Architecture:
+
 ```bash
 npm run test:quiet   # Overview - all suites, clean output - long run, above 30mn
 npm run test:single  # Debug - detailed logs - run under 5mn
@@ -149,6 +161,7 @@ npm run test:debug   # Visual debugging
 ### Testing Philosophy: FIX THE APP, NOT THE TEST!
 
 **Workflow**:
+
 1. `npm run test:quiet` - Check health
 2. `npm run test:single -- --grep "Suite Name"` - Debug failures
 3. Fix application code (NEVER modify tests)
@@ -157,6 +170,7 @@ npm run test:debug   # Visual debugging
 ### Test Suites (10 reorganized business-focused suites):
 
 #### **Reorganized Test Suites** (testing-utilities):
+
 - **Auth Security Suite** [CRITICAL]: JWT tokens, sessions, security workflows
 - **User Management Suite** [HIGH]: CRUD operations, RBAC, API endpoints, UI components
 - **Course Learning Suite** [HIGH]: Educational content workflows, learning progression
@@ -167,6 +181,7 @@ npm run test:debug   # Visual debugging
 - **System Integration Suite** [CRITICAL]: Full E2E workflows, service integration
 
 #### **Jest Unit/Service Tests** (individual packages):
+
 - **Auth Service Tests** [CRITICAL]: Unit + functional authentication
 - **User Service Tests** [HIGH]: Unit + functional user operations
 - **News Service Tests** [MEDIUM]: Unit + integration + functional + edge cases
@@ -175,6 +190,7 @@ npm run test:debug   # Visual debugging
 - **Shared Utilities Tests** [HIGH]: Unit + integration utility functions
 
 ### Individual Test Examples:
+
 ```bash
 # Debug specific reorganized test suites
 npm run test:single -- --grep "Auth Security"
@@ -196,15 +212,15 @@ npm run test --workspace=@yggdrasil/database-schemas
 ## 🏗️ Clean Testing Architecture
 
 ### Core Pattern - ALWAYS Use:
+
 ```typescript
 test('My Test', async ({ browser }) => {
   const cleanup = TestCleanup.getInstance('My Test');
-  
+
   try {
     // Test logic
     const userId = await createUser();
     cleanup.trackDocument('users', userId);
-    
   } finally {
     await cleanup.cleanup(); // MANDATORY
   }
@@ -212,6 +228,7 @@ test('My Test', async ({ browser }) => {
 ```
 
 ### Authentication Testing:
+
 ```typescript
 import { CleanAuthHelper } from '../helpers/clean-auth.helpers';
 
@@ -226,6 +243,7 @@ try {
 ```
 
 ### Cleanup Rules:
+
 - ✅ ALWAYS: Use TestCleanup, track documents, try/finally
 - ❌ NEVER: Skip cleanup, leave test data, use worker isolation
 
@@ -234,6 +252,7 @@ try {
 ### CRITICAL: Tests use REAL data mirroring production
 
 **FORBIDDEN**:
+
 ```typescript
 // ❌ NEVER mock data
 const mockUser = { id: 1, name: 'Test' };
@@ -241,28 +260,33 @@ jest.fn().returns(mockData);
 ```
 
 **REQUIRED**:
+
 ```typescript
 // ✅ Create real data
 const student = await factory.users.createUser('student');
 const courses = await factory.courses.createCoursesForTeacher(teacherId, 3);
 const enrollments = await factory.enrollments.createEnrollmentsForStudent(
-  studentId, courses, 'mixed'
+  studentId,
+  courses,
+  'mixed',
 );
 ```
 
 ### Test Data Factory System:
+
 ```typescript
 import { TestDataFactory } from '../helpers/TestDataFactory';
 
 const factory = new TestDataFactory('Test Name');
 // Provides comprehensive factories:
-factory.users        // Creates users with bcrypt passwords, profiles, roles
-factory.courses      // Creates courses with chapters, sections, exercises
-factory.enrollments  // Creates realistic progress patterns (high/low/mixed)
-factory.submissions  // Creates exercise submissions with varied scores
+factory.users; // Creates users with bcrypt passwords, profiles, roles
+factory.courses; // Creates courses with chapters, sections, exercises
+factory.enrollments; // Creates realistic progress patterns (high/low/mixed)
+factory.submissions; // Creates exercise submissions with varied scores
 ```
 
 ### Test Scenario Builders - Realistic User Journeys:
+
 ```typescript
 import { TestScenarios } from '../helpers/TestScenarioBuilders';
 
@@ -283,31 +307,31 @@ const { admin, teachers, students, courses } = await scenarios.createPlatformWit
 ```
 
 ### Real Data Patterns:
+
 - **Student Progress**: `'high'` (70-100%), `'low'` (0-30%), `'mixed'` (varied)
 - **Course Structure**: Chapters, sections, exercises with realistic content
 - **Submissions**: Varied scores, timing patterns, authentic feedback
 - **User Distribution**: Realistic role ratios and activity patterns
 
 ### Example - Real Data Test:
+
 ```typescript
 test('Student Dashboard', async ({ page }) => {
   const cleanup = TestCleanup.getInstance('Dashboard Test');
   const authHelper = new CleanAuthHelper(page);
-  
+
   try {
     // Create REAL learning scenario
     const scenarios = TestScenarios.createStudentScenarios('Test');
-    const { student, courses, enrollments, submissions } = 
-      await scenarios.createActiveStudent();
-    
+    const { student, courses, enrollments, submissions } = await scenarios.createActiveStudent();
+
     // Test with REAL authenticated user
     await authHelper.loginWithCustomUser(student.email, 'TestPass123!');
     await page.goto('/statistics');
-    
+
     // Verify REAL data displays
     const progressElements = page.locator('[data-testid*="progress"]');
     expect(await progressElements.count()).toBeGreaterThan(0);
-    
   } finally {
     await authHelper.clearAuthState();
     await cleanup.cleanup();
@@ -321,8 +345,156 @@ test('Student Dashboard', async ({ page }) => {
 2. **Shared Utilities**: ALWAYS check/use `@yggdrasil/shared-utilities` first
 3. **Security**: bcrypt passwords, JWT tokens, input validation
 4. **Clean Code**: DRY, KISS, explain WHY not WHAT
+5. **Layout Consistency**: ALWAYS use proper layout patterns for UI consistency
+
+## 🎨 Layout Architecture - CRITICAL FOR UI CONSISTENCY
+
+### ⚠️ **GOLDEN RULE: ALL Main App Pages MUST Use DashboardLayout**
+
+**REQUIRED Pattern for Main App Pages**:
+
+```typescript
+// ✅ CORRECT - Standard pattern for all main pages
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+
+export default function YourPage() {
+  const { user } = useAuth();
+
+  return (
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto">
+          {/* Your page content here */}
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
+  );
+}
+```
+
+### 🚨 **What DashboardLayout Provides - NEVER Reimplement**
+
+**Automatic Features**:
+
+- ✅ **Left sidebar navigation** with role-based menu items
+- ✅ **Mobile-responsive design** with hamburger menu
+- ✅ **Top navigation bar** with user info and logout
+- ✅ **Consistent spacing and styling** across all pages
+- ✅ **Theme support** (light/dark mode)
+- ✅ **Proper accessibility** features
+
+### ❌ **FORBIDDEN: Custom Layout Implementation**
+
+**NEVER create custom page layouts like this**:
+
+```typescript
+❌ BAD EXAMPLE:
+return (
+  <div className="min-h-screen bg-gray-50 p-6">
+    <div className="max-w-7xl mx-auto">
+      {/* Custom header */}
+      <div className="mb-8">...</div>
+      {/* Page content without sidebar */}
+    </div>
+  </div>
+);
+```
+
+**Why This Is Forbidden**:
+
+- Breaks sidebar navigation consistency
+- Users lose navigation context
+- Mobile experience is broken
+- Theme switching doesn't work
+- Accessibility features missing
+
+### 📊 **Pages That MUST Use DashboardLayout**
+
+**All these pages REQUIRE DashboardLayout**:
+
+- `/dashboard` - User dashboards
+- `/news` - News and announcements
+- `/courses` - Course management
+- `/planning` - Calendar and planning
+- `/attendance` - Attendance management ⚠️ (Was missing - now fixed)
+- `/statistics` - Analytics and reports
+- `/profile` - User profile pages
+- `/admin/*` - All admin pages
+- `/promotions` - Promotion management
+
+**Only Exception**: Auth pages (`/auth/login`, `/auth/register`) which use their own auth layout
+
+### 🧪 **Layout Testing Requirements**
+
+**All pages with DashboardLayout are automatically tested for**:
+
+- Sidebar visibility (`[data-testid="sidebar-nav"]`)
+- Navigation menu items (`[data-testid="nav-*"]`)
+- Mobile menu toggle (`[data-testid="mobile-menu-toggle"]`)
+- Role-based navigation visibility
+
+**Test Location**: `packages/testing-utilities/tests/reorganized/06-platform-core/platform-core.spec.ts`
+
+### 🛠️ **Creating New Pages - Checklist**
+
+**Before creating any new main app page**:
+
+1. ✅ Import `DashboardLayout` and `ProtectedRoute`
+2. ✅ Wrap content with both components
+3. ✅ Add page to sidebar navigation in `Sidebar.tsx` if needed
+4. ✅ Add page to test suite in platform-core tests
+5. ✅ Verify sidebar is visible in local testing
+
+**Template for New Pages**:
+
+```typescript
+'use client';
+
+import React from 'react';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+
+export default function NewPage() {
+  const { user } = useAuth();
+
+  return (
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Page Title</h1>
+            <p className="text-gray-600">Page description</p>
+          </div>
+
+          {/* Role-based content */}
+          {user?.role === 'admin' && (
+            <div>Admin content</div>
+          )}
+
+          {user?.role === 'student' && (
+            <div>Student content</div>
+          )}
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
+  );
+}
+```
+
+### 🔒 **Layout Safeguards**
+
+**Automatic Enforcement**:
+
+- All main pages tested for sidebar presence
+- Tests fail if sidebar is missing
+- Clear error messages point to layout issues
+
+**Remember**: The sidebar is NOT optional - it's the primary navigation method for users!
 
 ### AuthMiddleware Usage:
+
 ```typescript
 import { AuthMiddleware } from '@yggdrasil/shared-utilities';
 
@@ -330,23 +502,24 @@ import { AuthMiddleware } from '@yggdrasil/shared-utilities';
 router.use(AuthMiddleware.verifyToken);
 
 // Token + user lookup (includes user data in req.user)
-router.use(AuthMiddleware.verifyTokenWithUserLookup(async (id) => User.findById(id)));
+router.use(AuthMiddleware.verifyTokenWithUserLookup(async id => User.findById(id)));
 
 // Role-based access control
 router.use(AuthMiddleware.requireRole(['admin', 'staff'])); // Multiple roles
-router.use(AuthMiddleware.adminOnly);        // Admin only
-router.use(AuthMiddleware.staffOnly);        // Staff only
-router.use(AuthMiddleware.teacherAndAbove);  // Teacher, admin, staff
+router.use(AuthMiddleware.adminOnly); // Admin only
+router.use(AuthMiddleware.staffOnly); // Staff only
+router.use(AuthMiddleware.teacherAndAbove); // Teacher, admin, staff
 
 // Complete example for protected route:
-router.get('/admin/users', 
-  AuthMiddleware.verifyTokenWithUserLookup(async (id) => User.findById(id)),
+router.get(
+  '/admin/users',
+  AuthMiddleware.verifyTokenWithUserLookup(async id => User.findById(id)),
   AuthMiddleware.adminOnly,
   async (req, res) => {
     // req.user contains authenticated user with role verification
     const users = await User.find();
     return ResponseHelper.success(users);
-  }
+  },
 );
 ```
 
@@ -355,8 +528,9 @@ router.get('/admin/users',
 ### 🎯 **GOLDEN RULE: Fix Infrastructure First, Then Features**
 
 **Phase 2 Success Pattern**:
+
 1. ✅ **TypeScript Strict Mode** - Type safety foundation
-2. ✅ **ESLint Integration** - Automated code quality 
+2. ✅ **ESLint Integration** - Automated code quality
 3. ✅ **JSDoc Standards** - Documentation consistency
 4. ✅ **Pre-commit Hooks** - Quality gates
 5. ✅ **Real Testing** - Service validation
@@ -373,7 +547,7 @@ router.get('/admin/users',
 ✅ process.env['NODE_ENV']       // Correct bracket notation
 
 // 2. Prefix unused parameters
-❌ (req, res) => next()          // 'req' is unused error  
+❌ (req, res) => next()          // 'req' is unused error
 ✅ (_req, res) => next()         // Underscore prefix
 
 // 3. Add non-null assertions for validated data
@@ -406,16 +580,16 @@ export default [
     },
     rules: {
       'no-console': 'warn',
-      'no-debugger': 'error', 
+      'no-debugger': 'error',
       'no-var': 'error',
       'prefer-const': 'error',
-      'semi': ['error', 'always'],
-      'quotes': ['error', 'single', { 'avoidEscape': true }],
+      semi: ['error', 'always'],
+      quotes: ['error', 'single', { avoidEscape: true }],
       'comma-dangle': ['error', 'always-multiline'],
       'eol-last': 'error',
       'no-trailing-spaces': 'error',
-    }
-  }
+    },
+  },
 ];
 ```
 
@@ -425,19 +599,19 @@ export default [
 
 **Production JSDoc Pattern**:
 
-```typescript
+````typescript
 /**
  * Brief description of what the function does.
- * 
+ *
  * Detailed explanation of behavior, edge cases, and important context.
  * Include real-world usage scenarios and security considerations.
- * 
+ *
  * @param paramName - Description with type implications
  * @param optionalParam - Optional parameter (include default behavior)
  * @returns Description of return value and possible states
- * 
+ *
  * @throws {ErrorType} When specific conditions cause errors
- * 
+ *
  * @example
  * ```typescript
  * // Realistic example showing actual usage
@@ -447,7 +621,7 @@ export default [
  * }
  * ```
  */
-```
+````
 
 **🎯 FOCUS: Document WHY, not WHAT. Show real usage patterns.**
 
@@ -462,16 +636,9 @@ export default [
     "prepare": "husky"
   },
   "lint-staged": {
-    "**/*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "**/*.{json,md,yml,yaml}": [
-      "prettier --write"  
-    ],
-    "**/*.ts": [
-      "bash -c 'npm run typecheck'"
-    ]
+    "**/*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
+    "**/*.{json,md,yml,yaml}": ["prettier --write"],
+    "**/*.ts": ["bash -c 'npm run typecheck'"]
   }
 }
 ```
@@ -483,11 +650,12 @@ module.exports = {
   rules: {
     'subject-min-length': [2, 'always', 10],
     'subject-max-length': [2, 'always', 100],
-    'type-enum': [2, 'always', [
-      'feat', 'fix', 'docs', 'style', 'refactor', 
-      'test', 'chore', 'security', 'perf', 'ci'
-    ]]
-  }
+    'type-enum': [
+      2,
+      'always',
+      ['feat', 'fix', 'docs', 'style', 'refactor', 'test', 'chore', 'security', 'perf', 'ci'],
+    ],
+  },
 };
 ```
 
@@ -501,22 +669,22 @@ module.exports = {
 // ✅ CORRECT: Test real services, real data, real workflows
 test('Complete User Journey', async ({ browser }) => {
   const cleanup = TestCleanup.getInstance('Journey Test');
-  
+
   try {
     // Create REAL user with REAL data
     const factory = new TestDataFactory('Test');
     const user = await factory.users.createUser('student');
     cleanup.trackDocument('users', user._id);
-    
+
     // Test REAL authentication flow
     const auth = new CleanAuthHelper(browser, 'Test');
     await auth.loginWithCustomUser(user.email, 'TestPass123!');
-    
+
     // Verify REAL service integration
     await page.goto('/dashboard');
-    expect(await page.locator('[data-testid="user-name"]').textContent())
-      .toBe(`${user.profile.firstName} ${user.profile.lastName}`);
-      
+    expect(await page.locator('[data-testid="user-name"]').textContent()).toBe(
+      `${user.profile.firstName} ${user.profile.lastName}`,
+    );
   } finally {
     await cleanup.cleanup(); // MANDATORY
   }
@@ -537,14 +705,14 @@ const mockUser = { id: 1, name: 'Test' }; // This teaches nothing!
 npm run typecheck --workspace=@yggdrasil/service-name
 
 # 2. Look for these common patterns:
-- process.env.PROPERTY (needs bracket notation)  
+- process.env.PROPERTY (needs bracket notation)
 - Unused parameters (need underscore prefix)
 - Missing exports in shared-utilities
 - Type mismatches in interfaces
 
 # 3. Fix in this order:
 1. shared-utilities exports
-2. process.env access  
+2. process.env access
 3. unused parameters
 4. type assertions for validated data
 
@@ -560,7 +728,7 @@ npm run test:single -- --grep "Simple Test" --timeout 60000
 
 - ✅ **All services start**: `npm run test:single` shows "Clean testing environment shut down!"
 - ✅ **Pre-commit works**: Commit with bad code gets rejected
-- ✅ **ESLint integrated**: `npm run lint:fix` fixes formatting automatically  
+- ✅ **ESLint integrated**: `npm run lint:fix` fixes formatting automatically
 - ✅ **Types enforce safety**: TypeScript strict mode prevents runtime errors
 - ✅ **Documentation exists**: Core functions have comprehensive JSDoc
 
@@ -569,7 +737,7 @@ npm run test:single -- --grep "Simple Test" --timeout 60000
 ### 🎓 **Lessons That Must Never Be Forgotten**
 
 1. **Infrastructure before Features**: Never build on broken foundations
-2. **Fix Root Cause**: Shared-utilities errors cascade to all services  
+2. **Fix Root Cause**: Shared-utilities errors cascade to all services
 3. **Automate Quality**: Humans forget, computers don't
 4. **Document Everything**: Future you will thank present you
 5. **Test Real Things**: Mocks lie, real data reveals truth
@@ -595,11 +763,13 @@ if (process.env['NODE_ENV'] !== 'test') {
 ```
 
 **Key Files for Reference**:
+
 - `packages/shared-utilities/src/openapi/setup-swagger.ts` - Swagger setup utilities
 - `docs/api/IMPLEMENTATION_GUIDE.md` - Complete implementation guide
 - `packages/api-services/auth-service/src/openapi.ts` - Working example
 
 **✅ PATTERNS THAT WORK**:
+
 - Use shared schemas from `@yggdrasil/shared-utilities`
 - Add `addCommonResponses()` to all endpoints
 - Group endpoints with tags for organization
@@ -607,6 +777,7 @@ if (process.env['NODE_ENV'] !== 'test') {
 - Skip Swagger setup in test environments
 
 **❌ AVOID**:
+
 - Duplicating schemas across services
 - Missing security documentation
 - Inconsistent response formats
@@ -621,14 +792,16 @@ node scripts/migrate-console-logs.js
 ```
 
 **Script automatically**:
+
 - Maps console.error → logger.error
-- Maps console.warn → logger.warn  
+- Maps console.warn → logger.warn
 - Maps console.log → logger.info
 - Maps console.debug → logger.debug
 - Adds logger imports where needed
 - Creates backup before migration
 
 **KEY LESSONS**:
+
 - Never manually migrate - use the script for consistency
 - Script handles 327 statements across 26 files in seconds
 - Always create backup (script does this automatically)
@@ -658,6 +831,7 @@ describe('CircuitBreaker', () => {
 ```
 
 **PROVEN PATTERNS**:
+
 - Test error inheritance chains
 - Test JSON serialization
 - Test edge cases (null errors, circular references)
@@ -665,6 +839,7 @@ describe('CircuitBreaker', () => {
 - Test real error scenarios, not mocked ones
 
 **FILES TO REFERENCE**:
+
 - `packages/shared-utilities/__tests__/unit/AppError.test.ts`
 - `packages/shared-utilities/__tests__/unit/ErrorHandler.test.ts`
 - `packages/shared-utilities/__tests__/unit/ErrorMonitor.test.ts`
@@ -673,6 +848,7 @@ describe('CircuitBreaker', () => {
 ### 🎯 **Next Developer Checklist**
 
 **Before modifying ANY code**:
+
 - [ ] Does `npm run typecheck` pass everywhere?
 - [ ] Do pre-commit hooks prevent bad commits?
 - [ ] Are new functions documented with JSDoc?
@@ -684,6 +860,7 @@ describe('CircuitBreaker', () => {
 - [ ] Are all tests using real data, not mocks?
 
 **Phase 2 Infrastructure Files (ALWAYS REFERENCE)**:
+
 - `packages/shared-utilities/src/openapi/setup-swagger.ts` - API documentation
 - `docs/api/IMPLEMENTATION_GUIDE.md` - OpenAPI implementation guide
 - `scripts/migrate-console-logs.js` - Console.log migration
@@ -695,6 +872,7 @@ describe('CircuitBreaker', () => {
 **Remember: These standards aren't optional. They're the foundation everything else builds on.**
 
 ## 📁 Project Structure
+
 ```
 packages/
 ├── frontend/          # Next.js app
@@ -711,6 +889,7 @@ packages/
 **Testing**: `npm run test:quiet` → `npm run test:single -- --grep "Name"`
 
 **Golden Rules**:
+
 - Fix app code, not tests
 - Use shared utilities
 - Real data only
